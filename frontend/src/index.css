@@ -1,0 +1,291 @@
+@import "tailwindcss";
+
+/* ── Global Font ── */
+* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+/* Article body content uses Merriweather for readability */
+.prose-content p,
+.prose-content li,
+.prose-content blockquote {
+  font-family: 'Merriweather', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.85;
+  color: #1a1a2e;
+}
+
+@theme {
+  --color-primary-50: #f0f4ff;
+  --color-primary-100: #e0e9ff;
+  --color-primary-200: #c7d8ff;
+  --color-primary-300: #a3bfff;
+  --color-primary-400: #7a9fff;
+  --color-primary-500: #4a7cff;
+  --color-primary-600: #3b5fd9;
+  --color-primary-700: #2a45b3;
+  --color-primary-800: #1c2f8c;
+  --color-primary-900: #0f1c66;
+
+  --color-gray-50: #f8f9fa;
+  --color-gray-100: #f1f3f5;
+  --color-gray-200: #e9ecef;
+  --color-gray-300: #dee2e6;
+  --color-gray-400: #ced4da;
+  --color-gray-500: #adb5bd;
+  --color-gray-600: #868e96;
+  --color-gray-700: #495057;
+  --color-gray-800: #343a40;
+  --color-gray-900: #212529;
+
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+/* ===== Ant Design Card Cover — never crop banner images ===== */
+.ant-card-cover {
+  overflow: visible !important;
+}
+.ant-card-cover img {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  object-fit: unset !important;
+  max-height: unset !important;
+  border-radius: 8px 8px 0 0;
+}
+/* ============================================================ */
+
+/* ===== GLOBAL RESPONSIVE FIXES ===== */
+
+/* Prevent horizontal overflow on all screens */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { overflow-x: hidden; max-width: 100vw; }
+
+/* ── Navbar ── */
+.mobile-menu-toggle { display: none; }
+@media (max-width: 900px) {
+  .desktop-nav { display: none !important; }
+  .mobile-menu-toggle { display: inline-flex !important; }
+}
+
+/* ── Hero grid (Home page) ── */
+.hero-grid { grid-template-columns: 1fr 1fr; }
+@media (max-width: 768px) {
+  .hero-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Stats grid ── */
+.stats-grid { grid-template-columns: repeat(4,1fr); }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2,1fr) !important; } }
+@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr 1fr !important; } }
+
+/* ── CategoryList: list+sidebar → stack on mobile ── */
+@media (max-width: 768px) {
+  .cat-layout { flex-direction: column !important; }
+  .cat-sidebar { width: 100% !important; }
+  .cat-list-item { flex-direction: column !important; }
+  .cat-list-item-thumb { width: 100% !important; height: 180px !important; }
+  /* Hero banner stack */
+  .cat-hero { flex-direction: column !important; height: auto !important; }
+  .cat-hero > div { flex: none !important; height: 160px !important; }
+}
+
+/* ── Footer grid ── */
+@media (max-width: 1024px) {
+  .footer-grid { grid-template-columns: repeat(3,1fr) !important; }
+}
+@media (max-width: 768px) {
+  .footer-grid { grid-template-columns: repeat(2,1fr) !important; }
+}
+@media (max-width: 480px) {
+  .footer-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Admin/User tables: horizontal scroll ── */
+.responsive-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+@media (max-width: 768px) {
+  .ant-table { font-size: 12px !important; }
+  .ant-table-cell { padding: 8px 10px !important; white-space: nowrap; }
+  /* Admin dashboard table */
+  .admin-table-wrap { overflow-x: auto !important; }
+}
+
+/* ── Ant Design Row/Col gutter fix on mobile ── */
+@media (max-width: 576px) {
+  .ant-row { margin-left: 0 !important; margin-right: 0 !important; }
+  .ant-col { padding-left: 0 !important; padding-right: 0 !important; }
+}
+
+/* ── Article detail ── */
+@media (max-width: 768px) {
+  .article-layout { flex-direction: column !important; }
+  .article-sidebar { width: 100% !important; }
+}
+
+/* ── Login/Register split layout ── */
+@media (max-width: 768px) {
+  .auth-left { display: none !important; }
+}
+
+/* ── General padding on small screens ── */
+@media (max-width: 576px) {
+  .p-6 { padding: 16px !important; }
+  .p-4 { padding: 12px !important; }
+  .md\:p-6 { padding: 16px !important; }
+}
+
+/* ── Ant Design Card responsive ── */
+@media (max-width: 576px) {
+  .ant-card-body { padding: 12px !important; }
+}
+
+/* ── Tabs scroll on mobile ── */
+.ant-tabs-nav { overflow-x: auto !important; }
+.ant-tabs-nav-wrap { overflow: visible !important; }
+
+/* ── Buttons wrap on small screens ── */
+@media (max-width: 480px) {
+  .ant-space { flex-wrap: wrap !important; }
+  .ant-btn { font-size: 12px !important; padding: 0 10px !important; }
+}
+
+/* ── Search results ── */
+@media (max-width: 768px) {
+  .search-layout { flex-direction: column !important; }
+}
+
+/* ── CreateContent / Editor ── */
+@media (max-width: 768px) {
+  .create-content-layout { flex-direction: column !important; }
+  .create-content-sidebar { width: 100% !important; }
+}
+
+/* ── Modals full width on mobile ── */
+@media (max-width: 576px) {
+  .ant-modal { max-width: calc(100vw - 24px) !important; margin: 12px auto !important; }
+  .ant-modal-content { border-radius: 12px !important; }
+}
+
+/* ── Images never overflow ── */
+img { max-width: 100%; height: auto; }
+
+/* ============================================================ */
+
+/* Ticker animation */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Hero progress bar */
+@keyframes heroProgress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+/* ============================================================ */
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-800 font-sans antialiased;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl font-bold text-gray-900;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl font-semibold text-gray-900;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-semibold text-gray-900;
+  }
+
+  h4 {
+    @apply text-lg md:text-xl font-medium text-gray-900;
+  }
+
+  a {
+    @apply text-primary-500 hover:text-primary-600 transition-colors;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-soft p-6 border border-gray-200 hover:shadow-medium transition-shadow;
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-600 transition-all hover:shadow-medium disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-all border border-gray-300;
+  }
+
+  .btn-danger {
+    @apply bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-all;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  .tag {
+    @apply inline-block px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .tag-primary {
+    @apply bg-primary-100 text-primary-700;
+  }
+
+  .tag-success {
+    @apply bg-green-100 text-green-700;
+  }
+
+  .tag-warning {
+    @apply bg-yellow-100 text-yellow-700;
+  }
+
+  .tag-error {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .tag-gray {
+    @apply bg-gray-100 text-gray-700;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded hover:bg-gray-500;
+  }
+}
+
