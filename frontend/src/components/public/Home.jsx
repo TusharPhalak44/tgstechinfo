@@ -115,10 +115,10 @@ const HeroCard = ({ article, navigate, onImgClick, accent = '#4a7cff' }) => (
 );
 
 // ── Compact list card ────────────────────────────────────────────
-const ListCard = ({ article, navigate, onImgClick }) => (
-  <div style={{ display: 'flex', gap: 12, padding: '12px 0',
-    borderBottom: '1px solid #f3f4f6', cursor: 'pointer', borderRadius: 8,
-    transition: 'padding-left .18s' }}
+const ListCard = ({ article, navigate, onImgClick, isLast }) => (
+  <div style={{ display: 'flex', gap: 12, padding: '12px 0', flex: 1,
+    borderBottom: isLast ? 'none' : '1px solid #f3f4f6', cursor: 'pointer', borderRadius: 8,
+    transition: 'padding-left .18s', alignItems: 'center' }}
     onMouseEnter={e => e.currentTarget.style.paddingLeft = '6px'}
     onMouseLeave={e => e.currentTarget.style.paddingLeft = '0'}
     onClick={() => navigate(`/article/${article.slug}`)}
@@ -633,10 +633,10 @@ const Home = () => {
                 </Col>
               )}
               {/* Side list */}
-              <Col xs={24} lg={10}>
-                <div style={{ background: '#fff', borderRadius: 16, padding: '20px 20px 8px', boxShadow: '0 2px 20px rgba(0,0,0,0.11)', height: '100%' }}>
-                  {restArticles.slice(0, 4).map(a => (
-                    <ListCard key={a.id} article={a} navigate={navigate} onImgClick={(src, alt) => setLightbox({ src, alt })} />
+              <Col xs={24} lg={10} style={{ display: 'flex' }}>
+                <div style={{ background: '#fff', borderRadius: 16, padding: '20px 20px 8px', boxShadow: '0 2px 20px rgba(0,0,0,0.11)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  {restArticles.slice(0, 4).map((a, i, arr) => (
+                    <ListCard key={a.id} article={a} navigate={navigate} isLast={i === arr.length - 1} onImgClick={(src, alt) => setLightbox({ src, alt })} />
                   ))}
                 </div>
               </Col>
