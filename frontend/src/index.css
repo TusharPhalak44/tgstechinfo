@@ -3,16 +3,6 @@
 /* ── Global Font ── */
 * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-/* Article body content uses Merriweather for readability */
-.prose-content p,
-.prose-content li,
-.prose-content blockquote {
-  font-family: 'Merriweather', Georgia, serif;
-  font-size: 17px;
-  line-height: 1.85;
-  color: #1a1a2e;
-}
-
 @theme {
   --color-primary-50: #f0f4ff;
   --color-primary-100: #e0e9ff;

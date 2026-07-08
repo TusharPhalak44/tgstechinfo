@@ -44,23 +44,24 @@ const Login = () => {
     <>
       <style>{`
         .auth-input .ant-input, .auth-input .ant-input-password {
-          border-radius: 10px !important; height: 46px !important;
-          border-color: #e2e8f0 !important; font-size: 14px !important;
+          border-radius: 8px !important; height: 36px !important;
+          border-color: #e2e8f0 !important; font-size: 13px !important;
         }
         .auth-input .ant-input:focus, .auth-input .ant-input-affix-wrapper:focus,
         .auth-input .ant-input-affix-wrapper-focused {
-          border-color: #4a7cff !important; box-shadow: 0 0 0 3px rgba(74,124,255,.12) !important;
+          border-color: #4a7cff !important; box-shadow: 0 0 0 2px rgba(74,124,255,.12) !important;
         }
-        .auth-input .ant-input-affix-wrapper { border-radius: 10px !important; height: 46px !important; border-color: #e2e8f0 !important; }
-        .auth-label .ant-form-item-label > label { font-weight: 600 !important; font-size: 13px !important; color: #374151 !important; }
+        .auth-input .ant-input-affix-wrapper { border-radius: 8px !important; height: 36px !important; border-color: #e2e8f0 !important; font-size: 13px !important; }
+        .auth-label .ant-form-item-label > label { font-weight: 600 !important; font-size: 12px !important; color: #374151 !important; }
+        .auth-label { margin-bottom: 12px !important; }
         @media (max-width: 768px) { .auth-left { display: none !important; } }
       `}</style>
 
-      <div style={{ display: 'flex', height: 'calc(100vh - 61px)', overflow: 'hidden', background: '#f1f5f9' }}>
+      <div style={{ display: 'flex', minHeight: 'calc(100vh - 61px)', background: '#f1f5f9' }}>
 
         {/* ── LEFT PANEL ── */}
         <div className="auth-left" style={{
-          width: '45%', flexShrink: 0,
+          flex: 1, flexShrink: 0,
           background: 'linear-gradient(145deg, #0a1628 0%, #0f2044 50%, #1a1060 100%)',
           display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
           padding: '40px 48px', position: 'relative', overflow: 'hidden'
@@ -113,8 +114,8 @@ const Login = () => {
         </div>
 
         {/* ── RIGHT PANEL ── */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', overflowY: 'auto' }}>
-          <div style={{ width: '100%', maxWidth: 420 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
+          <div style={{ width: '100%', maxWidth: 400 }}>
 
             {/* Header */}
             <div style={{ marginBottom: 24 }}>
@@ -130,13 +131,13 @@ const Login = () => {
               <Form.Item name="email" label="Email Address" className="auth-label"
                 rules={[{ required: true, message: 'Please enter your email' }, { type: 'email', message: 'Invalid email' }]}
               >
-                <Input className="auth-input" prefix={<MailOutlined style={{ color: '#94a3b8' }} />} placeholder="you@example.com" size="large" />
+                <Input className="auth-input" prefix={<MailOutlined style={{ color: '#94a3b8' }} />} placeholder="you@example.com" />
               </Form.Item>
 
               <Form.Item name="password" label="Password" className="auth-label"
                 rules={[{ required: true, message: 'Please enter your password' }]}
               >
-                <Input.Password className="auth-input" prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Enter your password" size="large"
+                <Input.Password className="auth-input" prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Enter your password"
                   iconRender={v => v ? <EyeTwoTone /> : <EyeInvisibleOutlined />}
                 />
               </Form.Item>
@@ -150,16 +151,16 @@ const Login = () => {
 
               <Form.Item>
                 <button type="submit" disabled={loading} style={{
-                  width: '100%', height: 50, borderRadius: 12, border: 'none',
+                  width: '100%', height: 40, borderRadius: 8, border: 'none',
                   background: loading ? '#94a3b8' : 'linear-gradient(135deg,#4a7cff,#6c5ce7)',
-                  color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 4px 16px rgba(74,124,255,.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  color: '#fff', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 3px 10px rgba(74,124,255,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   transition: 'opacity .2s'
                 }}
                   onMouseEnter={e => { if (!loading) e.currentTarget.style.opacity = '.9'; }}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
-                  {loading ? 'Signing in...' : <><span>Sign In</span><ArrowRightOutlined style={{ fontSize: 13 }} /></>}
+                  {loading ? 'Signing in...' : <><span>Sign In</span><ArrowRightOutlined style={{ fontSize: 11 }} /></>}
                 </button>
               </Form.Item>
             </Form>

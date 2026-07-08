@@ -129,22 +129,32 @@ const ListItem = ({ item, navigate, accent }) => (
 
 // ── Sidebar recent post ──────────────────────────────────────────
 const SidebarPost = ({ item, navigate, accent }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '14px 0', borderBottom: '1px solid #eef0f5', cursor: 'pointer' }}
+  <div style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: '12px 0', borderBottom: '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
     onClick={() => navigate(`/article/${item.slug}`)}
   >
-    <h4 style={{ fontWeight: 700, fontSize: 13.5, color: '#0f172a', margin: 0, lineHeight: 1.4,
-      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-      transition: 'color .2s'
-    }}
-      onMouseEnter={e => e.currentTarget.style.color = accent}
-      onMouseLeave={e => e.currentTarget.style.color = '#0f172a'}
-    >
-      {item.title}
-    </h4>
-    <p style={{ fontSize: 12, color: '#94a3b8', margin: 0, lineHeight: 1.5,
-      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-      {item.short_description}
-    </p>
+    {/* Thumbnail */}
+    <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: '#f0f4ff' }}>
+      {item.banner_image
+        ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📄</div>
+      }
+    </div>
+    {/* Title + Description */}
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <h4 style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', margin: '0 0 3px', lineHeight: 1.4,
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+        transition: 'color .2s'
+      }}
+        onMouseEnter={e => e.currentTarget.style.color = accent}
+        onMouseLeave={e => e.currentTarget.style.color = '#0f172a'}
+      >
+        {item.title}
+      </h4>
+      <p style={{ fontSize: 11.5, color: '#94a3b8', margin: 0, lineHeight: 1.5,
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+        {item.short_description}
+      </p>
+    </div>
   </div>
 );
 
@@ -207,30 +217,32 @@ const CategoryList = () => {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
         <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start' }} className="cat-layout">
 
-          {/* ── Main List ── */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          {/* ── Main List — scrollable, height matches sidebar ── */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {/* Count bar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: 16, borderBottom: `3px solid ${accent}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: 16, borderBottom: `3px solid ${accent}`, flexShrink: 0 }}>
               <span style={{ fontWeight: 800, fontSize: 18, color: '#0f172a' }}>{pageTitle}</span>
               <span style={{ fontSize: 13, color: '#94a3b8' }}>{total} posts found</span>
             </div>
 
-            {loading
-              ? <Skeleton active paragraph={{ rows: 6 }} />
-              : contents.length === 0
-                ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: 15 }}>No content found.</div>
-                : contents.map(item => (
-                    <ListItem key={item.id} item={item} navigate={navigate} accent={accent} />
-                  ))
-            }
+            <div style={{ overflowY: 'auto', maxHeight: 600, paddingRight: 4 }}>
+              {loading
+                ? <Skeleton active paragraph={{ rows: 6 }} />
+                : contents.length === 0
+                  ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: 15 }}>No content found.</div>
+                  : contents.map(item => (
+                      <ListItem key={item.id} item={item} navigate={navigate} accent={accent} />
+                    ))
+              }
+            </div>
 
             {total > PAGE_SIZE && (
-              <div style={{ marginTop: 32, display: 'flex', justifyContent: 'center' }}>
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
                 <Pagination
                   current={currentPage}
                   total={total}
                   pageSize={PAGE_SIZE}
-                  onChange={page => { setCurrentPage(page); window.scrollTo(0, 0); }}
+                  onChange={page => setCurrentPage(page)}
                   showSizeChanger={false}
                   showTotal={t => `Total ${t} items`}
                 />
@@ -238,9 +250,9 @@ const CategoryList = () => {
             )}
           </div>
 
-          {/* ── Sidebar ── */}
+          {/* ── Sidebar — natural height, no scroll ── */}
           <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
-            <div style={{ background: '#fff', borderRadius: 14, padding: '20px 20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5' }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5' }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
                 Recent Posts
               </div>

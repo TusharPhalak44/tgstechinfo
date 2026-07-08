@@ -50,6 +50,7 @@ const CreateContent = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [editorMode, setEditorMode] = useState('write'); // 'write' | 'builder'
+  const [selectedTypeName, setSelectedTypeName] = useState('');
 
   useEffect(() => {
     fetchCategoriesAndTypes();
@@ -92,6 +93,9 @@ const CreateContent = () => {
           } catch { setCustomFields([]); }
         }
       if (data.webhook_url) form.setFieldsValue({ webhook_url: data.webhook_url });
+      // Set selected type name for conditional rendering
+      const typeName = contentTypes.find(t => t.id === data.content_type_id)?.name?.toLowerCase() || '';
+      setSelectedTypeName(typeName);
     } catch {
       message.error('Failed to load article');
     }
@@ -193,6 +197,9 @@ const CreateContent = () => {
     setCustomFields(fields);
   };
 
+  const LANDING_TYPES = ['webinar', 'whitepaper', 'event'];
+  const showLandingFields = LANDING_TYPES.includes(selectedTypeName.toLowerCase());
+
   const getImageUrl = (file) => {
     if (!file) return null;
     if (file.originFileObj) return URL.createObjectURL(file.originFileObj);
@@ -265,7 +272,10 @@ const CreateContent = () => {
               <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</Text>
               <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
                 <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                  <Select placeholder="Select type" size="large">
+                  <Select placeholder="Select type" size="large" onChange={val => {
+                    const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                    setSelectedTypeName(name);
+                  }}>
                     {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
                   </Select>
                 </Form.Item>
@@ -419,8 +429,8 @@ const CreateContent = () => {
               </div>
             )}
 
-            {/* Custom Fields Builder */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8' }}>
+            {/* Custom Fields Builder — only for webinar/whitepaper/event */}
+            {showLandingFields && <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div>
                   <Text strong style={{ fontSize: 14 }}>
@@ -498,10 +508,10 @@ const CreateContent = () => {
                   <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => removeField(field.id)} style={{ flexShrink: 0 }} />
                 </div>
               ))}
-            </div>
+            </div>}
 
-            {/* Webhook URL */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginTop: 20 }}>
+            {/* Webhook URL — only for webinar/whitepaper/event */}
+            {showLandingFields && <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginTop: 20 }}>
               <div style={{ marginBottom: 12 }}>
                 <Text strong style={{ fontSize: 14 }}>
                   <ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL
@@ -518,7 +528,7 @@ const CreateContent = () => {
                   allowClear
                 />
               </Form.Item>
-            </div>
+            </div>}
 
           </div>
           <div style={{ width: 300, flexShrink: 0, display: editorMode === 'builder' ? 'none' : 'block' }}>

@@ -127,6 +127,7 @@ const ArticleDetail = () => {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [relatedArticles, setRelatedArticles] = useState([]);
+  const [recentPosts, setRecentPosts] = useState([]);
   const [showLandingModal, setShowLandingModal] = useState(false);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -137,6 +138,7 @@ const ArticleDetail = () => {
 
   useEffect(() => {
     fetchContent();
+    fetchRecentPosts();
   }, [slug]);
 
   useEffect(() => {
@@ -145,6 +147,13 @@ const ArticleDetail = () => {
       setHasAccess(storedAccess === 'true');
     }
   }, [content?.id]);
+
+  const fetchRecentPosts = async () => {
+    try {
+      const res = await axios.get('/api/public/content?status=published&limit=8');
+      setRecentPosts(res.data?.data || []);
+    } catch {}
+  };
 
   const fetchContent = async () => {
     setLoading(true);
@@ -219,6 +228,9 @@ const ArticleDetail = () => {
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} style={{ padding: 24 }} />;
   if (!content) return <Title level={3} style={{ padding: 24 }}>Content not found</Title>;
 
+  const LANDING_TYPES = ['webinar', 'whitepaper', 'event'];
+  const requiresLanding = LANDING_TYPES.includes((content?.content_type || '').toLowerCase());
+
   const fullContent = content.content || '';
   const contentParts = (fullContent || '').split('<!--more-->');
   const previewContent = getPreviewHtml(content.short_description || fullContent);
@@ -227,11 +239,11 @@ const ArticleDetail = () => {
   return (
     <>
       {contextHolder}
-      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '24px 0' }}>
+      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '24px 20px 40px' }}>
       <style>{`
         .prose-content * { box-sizing: border-box; }
       `}</style>
-      <Row gutter={[24, 24]} style={{ display: 'flex', flexWrap: 'wrap' }}>
+      <Row gutter={[24, 24]} style={{ alignItems: 'flex-start' }}>
         {/* Main Content - 70% */}
         <Col xs={24} lg={17} style={{ order: 1 }}>
           <div style={{ background: '#fff', padding: 32, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
@@ -288,7 +300,7 @@ const ArticleDetail = () => {
             )}
 
             {/* Content */}
-            {!hasAccess && (
+            {requiresLanding && !hasAccess && (
               <div style={{ marginBottom: 20, padding: '14px 16px', background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8 }}>
                 <Text strong style={{ color: '#8c4b00' }}>
                   <LockOutlined style={{ marginRight: 8 }} /> Preview only. Fill the form on the right to unlock the full article.
@@ -296,10 +308,9 @@ const ArticleDetail = () => {
               </div>
             )}
 
-            <div 
+            <div
               className="prose-content"
-              style={{ fontSize: 16, lineHeight: 1.8, color: '#333', wordBreak: 'break-word' }}
-              dangerouslySetInnerHTML={{ __html: hasAccess ? fullContent : previewContent }} 
+              dangerouslySetInnerHTML={{ __html: (requiresLanding && !hasAccess) ? previewContent : fullContent }}
             />
 
             {/* Share */}
@@ -327,12 +338,13 @@ const ArticleDetail = () => {
 
         {/* Sidebar - 30% */}
         <Col xs={24} lg={7} style={{ order: 2 }}>
-          <div style={{ position: 'sticky', top: 80 }}>
-            <Card style={{ 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: 12,
-              border: 'none'
-            }}>
+          <div style={{
+            position: 'sticky', top: 80,
+            display: 'flex', flexDirection: 'column', gap: 16
+          }}>
+
+            {/* ── Get Access Card — only for webinar/whitepaper/event ── */}
+            {requiresLanding && <Card style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 12, border: 'none' }}>
               <div style={{ color: '#fff' }}>
                 {remainingContent && (
                   <>
@@ -340,8 +352,7 @@ const ArticleDetail = () => {
                     <Divider style={{ borderColor: 'rgba(255,255,255,0.2)' }} />
                   </>
                 )}
-
-                <Title level={4} style={{ color: '#fff' }}>{hasAccess ? 'Full Article Unlocked' : 'Get Access'}</Title>
+                <Title level={4} style={{ color: '#fff', marginBottom: 6 }}>{hasAccess ? 'Full Article Unlocked' : 'Get Access'}</Title>
                 {!hasAccess ? (
                   <Text style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: 16 }}>
                     Fill in your details to unlock the full article and receive access by email.
@@ -351,7 +362,6 @@ const ArticleDetail = () => {
                     You can now read the complete article content.
                   </Text>
                 )}
-                
                 {!hasAccess && (
                   <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
                     <Form.Item name="first_name" rules={[{ required: true, message: 'Required' }]}>
@@ -366,34 +376,12 @@ const ArticleDetail = () => {
                     <Form.Item name="contact_number" rules={[{ required: true, message: 'Required' }]}>
                       <Input placeholder="Mobile Number" style={{ background: 'rgba(255,255,255,0.95)' }} />
                     </Form.Item>
-                    {/* Dynamic custom fields */}
                     {customFields.map(field => (
-                      <Form.Item
-                        key={field.name}
-                        name={field.name}
-                        rules={[{ required: true, message: `${field.label} is required` }]}
-                      >
+                      <Form.Item key={field.name} name={field.name} rules={[{ required: true, message: `${field.label} is required` }]}>
                         {field.type === 'textarea' ? (
-                          <Input.TextArea
-                            placeholder={field.placeholder || field.label}
-                            rows={3}
-                            style={{ background: 'rgba(255,255,255,0.95)' }}
-                          />
-                        ) : field.type === 'select' ? (
-                          <Select
-                            placeholder={field.placeholder || field.label}
-                            style={{ width: '100%' }}
-                          >
-                            {(field.options || '').split(',').map(o => o.trim()).filter(Boolean).map(o => (
-                              <Select.Option key={o} value={o}>{o}</Select.Option>
-                            ))}
-                          </Select>
+                          <Input.TextArea placeholder={field.placeholder || field.label} rows={3} style={{ background: 'rgba(255,255,255,0.95)' }} />
                         ) : (
-                          <Input
-                            type={field.type || 'text'}
-                            placeholder={field.placeholder || field.label}
-                            style={{ background: 'rgba(255,255,255,0.95)' }}
-                          />
+                          <Input type={field.type || 'text'} placeholder={field.placeholder || field.label} style={{ background: 'rgba(255,255,255,0.95)' }} />
                         )}
                       </Form.Item>
                     ))}
@@ -405,52 +393,50 @@ const ArticleDetail = () => {
                   </Form>
                 )}
               </div>
-            </Card>
-          </div>
-        </Col>
-      </Row>
+            </Card>}
 
-      {/* Related Articles - mobile pe sidebar ke baad, desktop pe main col ke niche */}
-      {relatedArticles.length > 0 && (
-        <div style={{ marginTop: 40, padding: '0 12px' }}>
-          <Title level={3}>Related Articles</Title>
-          <Row gutter={[20, 20]}>
-            {relatedArticles.map((article) => (
-              <Col xs={24} sm={12} lg={8} key={article.id}>
-                <Card
-                  hoverable
+          </div>
+
+          {/* ── Related Articles — vertical list below landing card ── */}
+          {relatedArticles.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', paddingBottom: 8, borderBottom: '2px solid #e8ecf4' }}>
+                Related Articles
+              </div>
+              {relatedArticles.map(article => (
+                <div
+                  key={article.id}
                   onClick={() => navigate(`/article/${article.slug}`)}
-                  style={{ borderRadius: 12, cursor: 'pointer' }}
-                  styles={{ body: { padding: 0 } }}
+                  style={{ background: '#fff', borderRadius: 10, border: '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
+                  onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
                 >
-                  {article.banner_image ? (
-                    <img src={`/uploads/${article.banner_image}`} alt={article.title}
-                      style={{ width: '100%', height: 200, objectFit: 'contain', display: 'block', borderRadius: '8px 8px 0 0', background: '#f0f4ff' }} />
-                  ) : (
-                    <div style={{ height: 200, background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px 8px 0 0' }}>
-                      <Text style={{ fontSize: 48 }}>📄</Text>
-                    </div>
-                  )}
-                  <div style={{ padding: 20 }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                      <Tag color="blue" style={{ borderRadius: 12, fontSize: 11 }}>{article.category_name}</Tag>
-                    </div>
-                    <Text strong style={{ fontSize: 15, color: '#1a1a2e', display: 'block', marginBottom: 6, lineHeight: 1.4 }}>
+                  {article.banner_image
+                    ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                    : <div style={{ height: 100, background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📄</div>
+                  }
+                  <div style={{ padding: '10px 12px' }}>
+                    <Tag color="blue" style={{ fontSize: 10, marginBottom: 6 }}>{article.category_name}</Tag>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a', lineHeight: 1.4, marginBottom: 4,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {article.title}
-                    </Text>
-                    <div style={{ fontSize: 13, color: '#6c6c80', marginBottom: 10, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: '#6b7280', lineHeight: 1.4,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {article.short_description}
                     </div>
-                    <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#adb5bd' }}>
-                      <span><CalendarOutlined /> {moment(article.published_date || article.created_at).format('MMM D, YYYY')}</span>
+                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+                      <CalendarOutlined style={{ marginRight: 3 }} />
+                      {moment(article.published_date || article.created_at).format('MMM D, YYYY')}
                     </div>
                   </div>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </div>
-      )}
+                </div>
+              ))}
+            </div>
+          )}
+
+        </Col>
+      </Row>
 
       {/* Modal */}
       <Modal
