@@ -96,7 +96,7 @@ const ArticlePreview = () => {
         {content.status === 'changes_requested' && content.admin_comment && (
           <div className="mb-5 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <div className="font-semibold text-amber-700 mb-1">
-              <EditOutlined className="mr-1.5" /> Admin Feedback — Changes Required
+              <EditOutlined className="mr-1.5" /> Admin Feedback: Changes Required
             </div>
             <div className="text-amber-800">{content.admin_comment}</div>
           </div>

@@ -42,11 +42,14 @@ const STATIC_NAV = [
 ];
 
 // ── Dropdown panel — fixed position ─────────────────────────────
-const MegaPanel = ({ items, onClose, anchorRect }) => {
+const MegaPanel = ({ items, onClose, anchorRect, onMouseEnter, onMouseLeave }) => {
   if (!anchorRect) return null;
   const left = Math.max(8, anchorRect.left + anchorRect.width / 2 - 130);
   return (
-    <div style={{
+    <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      style={{
       position: 'fixed',
       top: anchorRect.bottom + 8,
       left,
@@ -73,8 +76,8 @@ const MegaPanel = ({ items, onClose, anchorRect }) => {
             fontSize: 13, fontWeight: 500, color: '#1a1a2e',
             transition: 'background .15s, color .15s'
           }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#f0f4ff'; e.currentTarget.style.color = '#4a7cff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#1a1a2e'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#e8f8fe'; e.currentTarget.style.color = '#0AAEEF'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#0D2B4E'; }}
           >
             {item.label}
           </div>
@@ -89,31 +92,31 @@ const NavLink = ({ item, active }) => {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState(null);
   const ref = useRef(null);
+  const closeTimer = useRef(null);
 
-  useEffect(() => {
-    const handler = e => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
 
-  const handleToggle = () => {
+  const handleMouseEnter = () => {
+    clearTimeout(closeTimer.current);
     if (ref.current) setRect(ref.current.getBoundingClientRect());
-    setOpen(o => !o);
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
   };
 
   if (!item.children) {
     return (
       <Link to={item.to} style={{
-        fontSize: 13.5, fontWeight: 600, color: active ? '#4a7cff' : '#374151',
+        fontSize: 13.5, fontWeight: 600, color: active ? '#0AAEEF' : '#0D2B4E',
         textDecoration: 'none', padding: '4px 2px', position: 'relative',
         transition: 'color .2s', whiteSpace: 'nowrap'
       }}>
         {item.label}
         <span style={{
           position: 'absolute', bottom: -2, left: 0, right: 0, height: 2,
-          background: 'linear-gradient(90deg,#4a7cff,#6c5ce7)', borderRadius: 2,
+          background: 'linear-gradient(90deg,#0AAEEF,#5BBD2B)', borderRadius: 2,
           transform: active ? 'scaleX(1)' : 'scaleX(0)',
           transition: 'transform .22s', transformOrigin: 'left'
         }} />
@@ -122,14 +125,16 @@ const NavLink = ({ item, active }) => {
   }
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <div ref={ref} style={{ position: 'relative' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <button
-        onClick={handleToggle}
         style={{
-          background: open ? '#f0f4ff' : 'none',
+          background: open ? '#e8f8fe' : 'none',
           border: 'none', cursor: 'pointer',
           fontSize: 13.5, fontWeight: 600,
-          color: open ? '#4a7cff' : '#374151',
+          color: open ? '#0AAEEF' : '#0D2B4E',
           display: 'flex', alignItems: 'center', gap: 5,
           padding: '5px 10px', borderRadius: 8,
           transition: 'all .2s', whiteSpace: 'nowrap'
@@ -142,7 +147,15 @@ const NavLink = ({ item, active }) => {
           transform: open ? 'rotate(180deg)' : 'none'
         }} />
       </button>
-      {open && <MegaPanel items={item.children} onClose={() => setOpen(false)} anchorRect={rect} />}
+      {open && (
+        <MegaPanel
+          items={item.children}
+          onClose={() => setOpen(false)}
+          anchorRect={rect}
+          onMouseEnter={() => clearTimeout(closeTimer.current)}
+          onMouseLeave={handleMouseLeave}
+        />
+      )}
     </div>
   );
 };
@@ -290,7 +303,7 @@ const Navbar = () => {
 
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
       {/* ── Top accent bar ── */}
-      <div style={{ height: 3, background: 'linear-gradient(90deg,#4a7cff 0%,#6c5ce7 50%,#00b894 100%)', flexShrink: 0 }} />
+      <div style={{ height: 3, background: 'linear-gradient(90deg,#0AAEEF 0%,#5BBD2B 50%,#F7941D 100%)', flexShrink: 0 }} />
 
       <header style={{
         background: scrolled ? 'rgba(255,255,255,0.98)' : '#fff',
@@ -302,7 +315,7 @@ const Navbar = () => {
 
           {/* Logo */}
           <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/logo.jpg" alt="TGS TechInfo" style={{ height: 48, width: 'auto', display: 'block' }} />
+            <img src="/logo.jpg" alt="TGS TechInfo" style={{ height: 52, width: 'auto', display: 'block' }} />
           </Link>
 
           {/* Desktop nav */}
@@ -322,10 +335,10 @@ const Navbar = () => {
               {searchVisible ? (
                 <div style={{
                   display: 'flex', alignItems: 'center',
-                  background: '#f4f6ff', borderRadius: 24,
-                  padding: '0 12px', border: '1.5px solid #c7d7ff'
+                  background: '#e8f8fe', borderRadius: 24,
+                  padding: '0 12px', border: '1.5px solid #0AAEEF'
                 }}>
-                  <SearchOutlined style={{ color: '#4a7cff', fontSize: 13 }} />
+                  <SearchOutlined style={{ color: '#0AAEEF', fontSize: 13 }} />
                   <input
                     autoFocus
                     value={searchQuery}
@@ -343,7 +356,7 @@ const Navbar = () => {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#6b7280', transition: 'background .2s'
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f4f6ff'}
+                  onMouseEnter={e => e.currentTarget.style.background = '#e8f8fe'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
                   <SearchOutlined style={{ fontSize: 16 }} />
@@ -365,7 +378,7 @@ const Navbar = () => {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: '#6b7280', transition: 'background .2s'
                   }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f4f6ff'}
+                    onMouseEnter={e => e.currentTarget.style.background = '#e8f8fe'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
                     <BellOutlined style={{ fontSize: 16 }} />
@@ -380,34 +393,34 @@ const Navbar = () => {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                   padding: '5px 12px 5px 6px', borderRadius: 24,
-                  border: '1.5px solid #e8f0ff', background: '#f8faff',
+                  border: '1.5px solid #c5edfc', background: '#e8f8fe',
                   transition: 'border-color .2s'
                 }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = '#4a7cff'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = '#e8f0ff'}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = '#0AAEEF'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = '#c5edfc'}
                 >
-                  <Avatar size={26} icon={<UserOutlined />} style={{ background: 'linear-gradient(135deg,#4a7cff,#6c5ce7)', flexShrink: 0 }} />
-                  {!isMobile && <span style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>{user?.first_name}</span>}
-                  <DownOutlined style={{ fontSize: 9, color: '#9ca3af' }} />
+                  <Avatar size={26} icon={<UserOutlined />} style={{ background: 'linear-gradient(135deg,#0AAEEF,#5BBD2B)', flexShrink: 0 }} />
+                  {!isMobile && <span style={{ fontSize: 13, fontWeight: 600, color: '#0D2B4E' }}>{user?.first_name}</span>}
+                  <DownOutlined style={{ fontSize: 9, color: '#0AAEEF' }} />
                 </div>
               </Dropdown>
             ) : !isMobile ? (
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => navigate('/login')} style={{
-                  padding: '7px 18px', borderRadius: 24, border: '1.5px solid #4a7cff',
-                  background: 'transparent', color: '#4a7cff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  padding: '7px 18px', borderRadius: 24, border: '1.5px solid #0AAEEF',
+                  background: 'transparent', color: '#0AAEEF', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   transition: 'all .2s'
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#4a7cff'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#4a7cff'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#0AAEEF'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#0AAEEF'; }}
                 >
                   Login
                 </button>
                 <button onClick={() => navigate('/register')} style={{
                   padding: '7px 18px', borderRadius: 24, border: 'none',
-                  background: 'linear-gradient(135deg,#4a7cff,#6c5ce7)', color: '#fff',
+                  background: 'linear-gradient(135deg,#F7941D,#0AAEEF)', color: '#fff',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  boxShadow: '0 2px 10px rgba(74,124,255,.3)', transition: 'opacity .2s'
+                  boxShadow: '0 2px 10px rgba(247,148,29,.3)', transition: 'opacity .2s'
                 }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -465,12 +478,12 @@ const Navbar = () => {
           {!isAuthenticated && (
             <div style={{ display: 'flex', gap: 10, marginTop: 20, paddingTop: 16, borderTop: '1px solid #f4f4f8' }}>
               <button onClick={() => { navigate('/login'); setMobileOpen(false); }} style={{
-                flex: 1, padding: '10px', borderRadius: 24, border: '1.5px solid #4a7cff',
-                background: 'transparent', color: '#4a7cff', fontSize: 14, fontWeight: 600, cursor: 'pointer'
+                flex: 1, padding: '10px', borderRadius: 24, border: '1.5px solid #0AAEEF',
+                background: 'transparent', color: '#0AAEEF', fontSize: 14, fontWeight: 600, cursor: 'pointer'
               }}>Login</button>
               <button onClick={() => { navigate('/register'); setMobileOpen(false); }} style={{
                 flex: 1, padding: '10px', borderRadius: 24, border: 'none',
-                background: 'linear-gradient(135deg,#4a7cff,#6c5ce7)', color: '#fff',
+                background: 'linear-gradient(135deg,#F7941D,#0AAEEF)', color: '#fff',
                 fontSize: 14, fontWeight: 600, cursor: 'pointer'
               }}>Register</button>
             </div>

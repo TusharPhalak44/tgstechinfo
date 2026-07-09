@@ -11,8 +11,10 @@ router.get('/search', notificationController.searchContent);
 router.get('/content', publicController.getPublishedContent);
 router.get('/content/:slug', publicController.getContentBySlug);
 router.post('/landing-page', publicController.submitLandingPage);
+router.post('/subscribe-content', publicController.subscribeContent);
 router.post('/newsletter', publicController.subscribeNewsletter);
 router.get('/categories', publicController.getCategories);
+router.get('/categories-with-count', publicController.getCategoriesWithCount);
 router.get('/content-types', publicController.getContentTypes);
 
 // Public stats

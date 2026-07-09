@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Table, Select, Button, Input, message, Avatar, Tooltip, Badge } from 'antd';
 import {
   DownloadOutlined, SearchOutlined, ReloadOutlined,
-  MailOutlined, PhoneOutlined, FileTextOutlined,
-  FilePdfOutlined, UserOutlined, CalendarOutlined,
-  FormOutlined
+  FileTextOutlined, FilePdfOutlined, UserOutlined,
+  CalendarOutlined, FormOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -32,11 +31,26 @@ const StatCard = ({ icon, label, value, color }) => (
   </div>
 );
 
-const getInitials = (first, last) =>
-  `${(first || '')[0] || ''}${(last || '')[0] || ''}`.toUpperCase() || '?';
-
 const AVATAR_COLORS = ['#4a7cff', '#6c5ce7', '#00b894', '#e17055', '#fdcb6e', '#0984e3', '#e84393'];
-const avatarColor = (name) => AVATAR_COLORS[(name?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+const avatarColor = (str) => AVATAR_COLORS[(str?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+
+const getDisplayName = (extra_fields) => {
+  if (!extra_fields) return '—';
+  try {
+    const data = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
+    const nameKey = Object.keys(data).find(k => /name|first/i.test(k));
+    return nameKey ? String(data[nameKey]) : Object.values(data)[0] || '—';
+  } catch { return '—'; }
+};
+
+const getEmail = (extra_fields) => {
+  if (!extra_fields) return null;
+  try {
+    const data = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
+    const emailKey = Object.keys(data).find(k => /email/i.test(k));
+    return emailKey ? data[emailKey] : null;
+  } catch { return null; }
+};
 
 const AdminSubmissions = () => {
   const [submissions, setSubmissions] = useState([]);
@@ -78,12 +92,12 @@ const AdminSubmissions = () => {
 
   const exportCSV = () => {
     const rows = filtered.map(s => [
-      s.id, s.first_name, s.last_name, s.email, s.contact_number,
+      s.id,
       s.content_title || '-',
       s.extra_fields ? JSON.stringify(typeof s.extra_fields === 'string' ? JSON.parse(s.extra_fields) : s.extra_fields) : '-',
       moment(s.created_at).format('YYYY-MM-DD HH:mm')
     ]);
-    const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Contact', 'Article', 'Extra Fields', 'Submitted At'];
+    const headers = ['ID', 'Article', 'Form Data', 'Submitted At'];
     const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
     const a = Object.assign(document.createElement('a'), {
       href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
@@ -92,57 +106,38 @@ const AdminSubmissions = () => {
     a.click();
   };
 
-  const filtered = submissions.filter(s =>
-    !search || `${s.first_name} ${s.last_name} ${s.email} ${s.contact_number || ''}`
-      .toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = submissions.filter(s => {
+    if (!search) return true;
+    const name = getDisplayName(s.extra_fields).toLowerCase();
+    const email = (getEmail(s.extra_fields) || '').toLowerCase();
+    const q = search.toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
   const uniqueContents = allContents;
-
-  const todayCount = submissions.filter(s =>
-    moment(s.created_at).isSame(moment(), 'day')
-  ).length;
-
-  const accessGranted = submissions.filter(s => s.has_access).length;
+  const todayCount = submissions.filter(s => moment(s.created_at).isSame(moment(), 'day')).length;
 
   const columns = [
     {
       title: 'Subscriber',
       key: 'subscriber',
-      width: 220,
-      render: (_, r) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Avatar
-            size={36}
-            style={{ background: avatarColor(r.first_name), fontSize: 13, fontWeight: 600, flexShrink: 0 }}
-          >
-            {getInitials(r.first_name, r.last_name)}
-          </Avatar>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a2e', whiteSpace: 'nowrap' }}>
-              {r.first_name} {r.last_name}
+      width: 260,
+      render: (_, r) => {
+        const name = getDisplayName(r.extra_fields);
+        const email = getEmail(r.extra_fields);
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Avatar size={36} style={{ background: avatarColor(name), fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
+              {name[0]?.toUpperCase() || '?'}
+            </Avatar>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a2e' }}>{name}</div>
+              {email && <a href={`mailto:${email}`} style={{ fontSize: 11, color: '#4a7cff' }}>{email}</a>}
+              <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 1 }}>ID #{r.id}</div>
             </div>
-            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 1 }}>ID #{r.id}</div>
           </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Contact Info',
-      key: 'contact',
-      width: 230,
-      render: (_, r) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <a href={`mailto:${r.email}`} style={{ fontSize: 12, color: '#4a7cff', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <MailOutlined style={{ fontSize: 11 }} /> {r.email}
-          </a>
-          {r.contact_number && (
-            <span style={{ fontSize: 12, color: '#595959', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <PhoneOutlined style={{ fontSize: 11, color: '#8c8c8c' }} /> {r.contact_number}
-            </span>
-          )}
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Article',
@@ -220,24 +215,7 @@ const AdminSubmissions = () => {
         </Tooltip>
       ) : <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>,
     },
-    {
-      title: 'Access',
-      dataIndex: 'has_access',
-      width: 100,
-      align: 'center',
-      render: v => (
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500,
-          background: v ? '#f6ffed' : '#fafafa',
-          color: v ? '#52c41a' : '#8c8c8c',
-          border: `1px solid ${v ? '#b7eb8f' : '#e8e8e8'}`
-        }}>
-          <span style={{ width: 5, height: 5, borderRadius: '50%', background: v ? '#52c41a' : '#d9d9d9', display: 'inline-block' }} />
-          {v ? 'Granted' : 'Pending'}
-        </span>
-      ),
-    },
+
     {
       title: 'Submitted',
       dataIndex: 'created_at',
@@ -279,7 +257,7 @@ const AdminSubmissions = () => {
       <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
         <StatCard icon={<FormOutlined />} label="Total Submissions" value={total} color="#4a7cff" />
         <StatCard icon={<CalendarOutlined />} label="Today" value={todayCount} color="#6c5ce7" />
-        <StatCard icon={<UserOutlined />} label="Access Granted" value={accessGranted} color="#00b894" />
+        <StatCard icon={<UserOutlined />} label="Unique Articles" value={uniqueContents.length} color="#00b894" />
         <StatCard icon={<FileTextOutlined />} label="Articles Tracked" value={uniqueContents.length} color="#e17055" />
       </div>
 

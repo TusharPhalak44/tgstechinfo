@@ -16,7 +16,8 @@ exports.createContent = async (req, res) => {
             banner_image: req.files?.banner_image?.[0]?.filename || null,
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
             tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-            custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null
+            custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null,
+            webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null
         };
 
         const content = await Content.create(contentData);
@@ -71,6 +72,7 @@ exports.updateContent = async (req, res) => {
         if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
+        if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
         if (req.body.tags) updateData.tags = JSON.stringify(req.body.tags.split(',').map(t => t.trim()).filter(Boolean));
         // webhook_url is already in req.body via spread
 
@@ -78,6 +80,27 @@ exports.updateContent = async (req, res) => {
         res.json({ message: 'Content updated successfully', content: updatedContent });
     } catch (error) {
         console.error('Update content error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.updateWebhookSettings = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const content = await Content.findById(id);
+        if (!content) return res.status(404).json({ message: 'Content not found' });
+        if (content.user_id !== req.user.id && req.user.role !== 'admin')
+            return res.status(403).json({ message: 'Access denied' });
+
+        const updateData = {};
+        if (req.body.webhook_url !== undefined) updateData.webhook_url = req.body.webhook_url;
+        if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
+        if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
+
+        const updated = await Content.update(id, updateData);
+        res.json({ message: 'Webhook settings updated', content: updated });
+    } catch (error) {
+        console.error('Update webhook settings error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

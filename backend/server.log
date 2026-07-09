@@ -1,0 +1,17 @@
+◇ injected env (17) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+Server running on port 5000
+✅ Connected to MySQL database successfully
+Email failed: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials 5a478bee46e88-311747f5975sm30325700eec.4 - gsmtp
+customFieldsDef: [{"id":1783611383671,"name":"firstname","label":"firstname","type":"text","placeholder":"firstname","options":"","required":true,"webhook_key":"firstname"},{"id":1783611383839,"name":"lastname","label":"lastname","type":"text","placeholder":"lastname","options":"","required":true,"webhook_key":"lastname"},{"id":1783611384039,"name":"contact","label":"contact","type":"text","placeholder":"contact","options":"","required":true,"webhook_key":"contact"},{"id":1783611384191,"name":"email","label":"email","type":"text","placeholder":"email","options":"","required":true,"webhook_key":"email"},{"id":1783611384607,"name":"address","label":"address","type":"text","placeholder":"address","options":"","required":true,"webhook_key":"address"},{"id":1783611384855,"name":"country","label":"country","type":"text","placeholder":"country","options":"","required":true,"webhook_key":"country"}]
+Webhook payload: {"firstname":"abc","lastname":"xyz","contact":"7896541023","email":"abc123@gmail.com","address":"Pune","country":"India"}
+Webhook failed [https://8de3-182-156-137-106.ngrok-free.app/api/users] — status: 400 — error: Request failed with status code 400 {
+  success: false,
+  message: 'Validation failed.',
+  errors: [ 'State is required', 'State must be a string' ]
+}
+Email send skipped: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+535 5.7.8  https://support.google.com/mail/?p=BadCredentials 5a478bee46e88-31174839f89sm32736905eec.10 - gsmtp

@@ -53,8 +53,9 @@ const CreateContent = () => {
   const [selectedTypeName, setSelectedTypeName] = useState('');
 
   useEffect(() => {
-    fetchCategoriesAndTypes();
-    if (isEditMode) fetchExistingContent();
+    fetchCategoriesAndTypes().then(() => {
+      if (isEditMode) fetchExistingContent();
+    });
   }, []);
 
   const fetchExistingContent = async () => {
@@ -93,8 +94,8 @@ const CreateContent = () => {
           } catch { setCustomFields([]); }
         }
       if (data.webhook_url) form.setFieldsValue({ webhook_url: data.webhook_url });
-      // Set selected type name for conditional rendering
-      const typeName = contentTypes.find(t => t.id === data.content_type_id)?.name?.toLowerCase() || '';
+      // Use content_type_name directly from API — don't depend on contentTypes state
+      const typeName = (data.content_type_name || '').toLowerCase();
       setSelectedTypeName(typeName);
     } catch {
       message.error('Failed to load article');
@@ -109,9 +110,13 @@ const CreateContent = () => {
       ]);
       setCategories(categoriesRes.data || []);
       setContentTypes(typesRes.data || []);
+      return { categories: categoriesRes.data || [], contentTypes: typesRes.data || [] };
     } catch {
-      setCategories([{ id: 1, name: 'Technology' }, { id: 2, name: 'AI' }]);
-      setContentTypes([{ id: 1, name: 'Article' }, { id: 2, name: 'Blog' }]);
+      const fallbackCategories = [{ id: 1, name: 'Technology' }, { id: 2, name: 'AI' }];
+      const fallbackTypes = [{ id: 1, name: 'Article' }, { id: 2, name: 'Blog' }];
+      setCategories(fallbackCategories);
+      setContentTypes(fallbackTypes);
+      return { categories: fallbackCategories, contentTypes: fallbackTypes };
     }
   };
 
@@ -133,10 +138,19 @@ const CreateContent = () => {
       if (pdfList.length > 0 && pdfList[0].originFileObj) formData.append('pdf_file', pdfList[0].originFileObj);
       if (customFields.length > 0) formData.append('custom_fields', JSON.stringify(customFields));
 
+      const existingContent = isEditMode ? (await axios.get(`/api/user/content/${id}`)).data : null;
+      const isPublished = existingContent?.status === 'published';
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
       let contentId = id;
 
-      if (isEditMode) {
+      if (isEditMode && isPublished) {
+        // Published content: only update webhook settings
+        await axios.put(`/api/user/content/${id}/webhook`, {
+          webhook_url: values.webhook_url || '',
+          ...(customFields.length > 0 ? { custom_fields: JSON.stringify(customFields) } : {})
+        });
+        message.success('Webhook settings updated successfully!');
+      } else if (isEditMode) {
         await axios.put(`/api/user/content/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         message.success(`${typeName} updated successfully!`);
       } else {
@@ -145,7 +159,7 @@ const CreateContent = () => {
         message.success(`${typeName} created successfully!`);
       }
 
-      if (submitActionRef.current === 'submit') {
+      if (!isPublished && submitActionRef.current === 'submit') {
         await axios.post(`/api/user/content/${contentId}/submit`);
         message.success(`${typeName} submitted for review!`);
       }
@@ -437,22 +451,15 @@ const CreateContent = () => {
                     <MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields
                   </Text>
                   <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>
-                    These fields will appear in the access form. First Name, Last Name, Email, Mobile are always included.
+                    Add all form fields with their label, API key, and type.
                   </div>
                 </div>
                 <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
               </div>
 
-              {/* Default fields preview */}
-              <div style={{ marginBottom: 12, padding: '10px 14px', background: '#f6ffed', borderRadius: 8, border: '1px solid #b7eb8f' }}>
-                <Text style={{ fontSize: 12, color: '#52c41a' }}>
-                  ✓ Default fields (always shown): First Name · Last Name · Email Address · Mobile Number
-                </Text>
-              </div>
-
               {customFields.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c', fontSize: 13, border: '2px dashed #e8e8e8', borderRadius: 8 }}>
-                  No extra fields added. Click "Add Field" to add custom fields.
+                  No fields added. Click "Add Field" to add form fields.
                 </div>
               )}
 
@@ -474,16 +481,23 @@ const CreateContent = () => {
                   <HolderOutlined style={{ color: '#bfbfbf', marginTop: 8, cursor: 'grab', flexShrink: 0 }} />
                   <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <Input
-                      placeholder="Field Label (e.g. Company Name)"
+                      placeholder="Field Label (e.g. First Name)"
                       value={field.label}
                       onChange={e => updateField(field.id, 'label', e.target.value)}
-                      style={{ flex: '1 1 160px' }}
+                      style={{ flex: '1 1 140px' }}
+                      size="small"
+                    />
+                    <Input
+                      placeholder="API Key (e.g. firstname)"
+                      value={field.webhook_key || ''}
+                      onChange={e => updateField(field.id, 'webhook_key', e.target.value)}
+                      style={{ flex: '1 1 130px' }}
                       size="small"
                     />
                     <Select
                       value={field.type}
                       onChange={v => updateField(field.id, 'type', v)}
-                      style={{ width: 120 }}
+                      style={{ width: 110 }}
                       size="small"
                     >
                       {FIELD_TYPES.map(t => <Option key={t.value} value={t.value}>{t.label}</Option>)}
@@ -492,7 +506,7 @@ const CreateContent = () => {
                       placeholder="Placeholder text"
                       value={field.placeholder}
                       onChange={e => updateField(field.id, 'placeholder', e.target.value)}
-                      style={{ flex: '1 1 140px' }}
+                      style={{ flex: '1 1 130px' }}
                       size="small"
                     />
                     {field.type === 'select' && (
@@ -512,16 +526,13 @@ const CreateContent = () => {
 
             {/* Webhook URL — only for webinar/whitepaper/event */}
             {showLandingFields && <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginTop: 20 }}>
-              <div style={{ marginBottom: 12 }}>
+              <div style={{ marginBottom: 16 }}>
                 <Text strong style={{ fontSize: 14 }}>
                   <ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL
                 </Text>
-                <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>
-                  Jab bhi koi visitor is article ka form submit kare, form data is URL pe bhi POST hoga (client ki external API).
-                </div>
               </div>
               <Form.Item name="webhook_url" style={{ marginBottom: 0 }}
-                rules={[{ type: 'url', message: 'Valid URL enter karo (https://...)' }]}>
+                rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
                 <Input
                   placeholder="https://client-api.example.com/webhook"
                   prefix={<ApiOutlined style={{ color: '#bfbfbf' }} />}

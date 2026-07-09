@@ -187,6 +187,7 @@ exports.adminEditContent = async (req, res) => {
         if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
+        if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
 
         const updated = await Content.update(id, updateData);
         res.json({ message: 'Content updated successfully', content: updated });
@@ -213,8 +214,7 @@ exports.getSubmissionById = async (req, res) => {
     try {
         const { id } = req.params;
         const [rows] = await pool.query(
-            `SELECT s.id, s.first_name, s.last_name, s.email, s.contact_number,
-                    s.extra_fields, s.has_access, s.created_at,
+            `SELECT s.id, s.extra_fields, s.created_at,
                     c.title as content_title, c.slug as content_slug, c.pdf_file
              FROM landing_page_submissions s
              LEFT JOIN contents c ON s.content_id = c.id
@@ -230,19 +230,12 @@ exports.getSubmissionById = async (req, res) => {
         res.json({
             id: row.id,
             submitted_at: row.created_at,
-            has_access: !!row.has_access,
             article: {
                 title: row.content_title,
                 slug: row.content_slug,
                 pdf_file: row.pdf_file ? `/uploads/${row.pdf_file}` : null
             },
-            form_data: {
-                first_name: row.first_name,
-                last_name: row.last_name,
-                email: row.email,
-                mobile_number: row.contact_number,
-                ...extraFields
-            }
+            form_data: extraFields
         });
     } catch (error) {
         console.error('Get submission by id error:', error);

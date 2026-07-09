@@ -5,7 +5,7 @@ import { CalendarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 15;
 
 const parseTags = (value) => {
   if (!value) return [];
@@ -167,6 +167,7 @@ const CategoryList = () => {
 
   const [contents, setContents] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
+  const [categoriesTree, setCategoriesTree] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -178,23 +179,36 @@ const CategoryList = () => {
   const leftImg = typeInfo?.leftImg || catImgInfo.leftImg || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
   const rightImg = typeInfo?.rightImg || catImgInfo.rightImg || 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80';
 
-  useEffect(() => { setCurrentPage(1); }, [slug]);
-  useEffect(() => { fetchContents(); }, [slug, currentPage]);
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchSidebar();
+  }, [slug]);
 
-  const fetchContents = async () => {
+  useEffect(() => { fetchMainList(); }, [slug, currentPage]);
+
+  const fetchSidebar = async () => {
+    try {
+      const catCountParams = typeInfo ? { content_type: typeInfo.type } : {};
+      const [recentRes, catRes] = await Promise.all([
+        axios.get('/api/public/content', { params: { status: 'published', limit: 5, ...(typeInfo ? { content_type: typeInfo.type } : { category: slug }) } }),
+        axios.get('/api/public/categories-with-count', { params: catCountParams }),
+      ]);
+      setRecentPosts(recentRes.data?.data || []);
+      setCategoriesTree(catRes.data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchMainList = async () => {
     setLoading(true);
     try {
       const params = { status: 'published', limit: PAGE_SIZE, offset: (currentPage - 1) * PAGE_SIZE };
       if (typeInfo) params.content_type = typeInfo.type;
       else params.category = slug;
-
-      const [mainRes, recentRes] = await Promise.all([
-        axios.get('/api/public/content', { params }),
-        axios.get('/api/public/content', { params: { status: 'published', limit: 5, ...(typeInfo ? { content_type: typeInfo.type } : { category: slug }) } }),
-      ]);
+      const mainRes = await axios.get('/api/public/content', { params });
       setContents(mainRes.data?.data || []);
       setTotal(mainRes.data?.total || 0);
-      setRecentPosts(recentRes.data?.data || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -225,7 +239,7 @@ const CategoryList = () => {
               <span style={{ fontSize: 13, color: '#94a3b8' }}>{total} posts found</span>
             </div>
 
-            <div style={{ overflowY: 'auto', maxHeight: 600, paddingRight: 4 }}>
+            <div>
               {loading
                 ? <Skeleton active paragraph={{ rows: 6 }} />
                 : contents.length === 0
@@ -252,7 +266,8 @@ const CategoryList = () => {
 
           {/* ── Sidebar — natural height, no scroll ── */}
           <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
-            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5' }}>
+            {/* Recent Posts */}
+            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5', marginBottom: 24 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
                 Recent Posts
               </div>
@@ -261,6 +276,43 @@ const CategoryList = () => {
                 : recentPosts.map(item => (
                     <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} />
                   ))
+              }
+            </div>
+
+            {/* Categories with Count */}
+            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5' }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
+                Categories
+              </div>
+              {loading
+                ? <Skeleton active paragraph={{ rows: 5 }} />
+                : categoriesTree.length === 0
+                  ? <div style={{ fontSize: 13, color: '#94a3b8', padding: '8px 0' }}>No categories found.</div>
+                  : categoriesTree.map(parent => (
+                      <div key={parent.id} style={{ marginBottom: 10 }}>
+                        <div
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}
+                          onClick={() => navigate(`/category/${parent.slug}`)}
+                        >
+                          <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{parent.name}</span>
+                          <span style={{ fontSize: 11, fontWeight: 700, background: `${accent}18`, color: accent, borderRadius: 20, padding: '2px 8px', minWidth: 24, textAlign: 'center' }}>
+                            {parent.count}
+                          </span>
+                        </div>
+                        {parent.subcategories?.map(sub => (
+                          <div
+                            key={sub.id}
+                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0 4px 14px' }}
+                            onClick={() => navigate(`/category/${sub.slug}`)}
+                          >
+                            <span style={{ fontSize: 12, color: '#475569' }}>↳ {sub.name}</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, background: '#f1f5f9', color: '#64748b', borderRadius: 20, padding: '1px 7px', minWidth: 20, textAlign: 'center' }}>
+                              {sub.count}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ))
               }
             </div>
           </div>

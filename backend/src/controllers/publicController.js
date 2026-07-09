@@ -3,29 +3,21 @@ const Category = require('../models/Category');
 const ContentType = require('../models/ContentType');
 const LandingPage = require('../models/LandingPage');
 const { pool } = require('../config/database');
-const { sendEmail, accessGrantEmailTemplate } = require('../config/email');
-const https = require('https');
-const http = require('http');
+const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate } = require('../config/email');
+const axios = require('axios');
 
 // Forward form data to client's external webhook URL
-const forwardToWebhook = (webhookUrl, payload) => {
+const forwardToWebhook = async (webhookUrl, payload) => {
     try {
-        const data = JSON.stringify(payload);
-        const url = new URL(webhookUrl);
-        const lib = url.protocol === 'https:' ? https : http;
-        const options = {
-            hostname: url.hostname,
-            port: url.port || (url.protocol === 'https:' ? 443 : 80),
-            path: url.pathname + url.search,
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
-        };
-        const req = lib.request(options);
-        req.on('error', (e) => console.warn('Webhook forward failed:', e.message));
-        req.write(data);
-        req.end();
+        const response = await axios.post(webhookUrl, payload, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 10000
+        });
+        console.log(`Webhook delivered to ${webhookUrl} — status: ${response.status}`);
     } catch (e) {
-        console.warn('Webhook URL invalid:', e.message);
+        const status = e.response?.status;
+        const body = e.response?.data;
+        console.error(`Webhook failed [${webhookUrl}] — status: ${status || 'no response'} — error: ${e.message}`, body || '');
     }
 };
 
@@ -39,7 +31,11 @@ const normalizeContentTypeSlug = (value) => {
         webinars: 'webinar',
         webinar: 'webinar',
         events: 'event',
-        event: 'event'
+        event: 'event',
+        whitepaper: 'whitepaper',
+        'white-paper': 'whitepaper',
+        'white paper': 'whitepaper',
+        whitepapers: 'whitepaper'
     };
 
     return slugMap[String(value || '').toLowerCase().trim()] || String(value || '').toLowerCase().trim();
@@ -109,72 +105,64 @@ exports.getContentBySlug = async (req, res) => {
 
 exports.submitLandingPage = async (req, res) => {
     try {
-        const { first_name, last_name, email, contact_number, content_id, extra_fields } = req.body;
+        const { content_id, extra_fields } = req.body;
         let normalizedContentId = content_id ? Number(content_id) : null;
         if (normalizedContentId && Number.isNaN(normalizedContentId)) normalizedContentId = null;
 
         const content = normalizedContentId ? await Content.findById(normalizedContentId) : null;
         if (!content) normalizedContentId = null;
 
-        // Parse custom fields from content
-        let customFields = [];
+        // Parse custom fields definition from content
+        let customFieldsDef = [];
         if (content?.custom_fields) {
-            try { customFields = JSON.parse(content.custom_fields); } catch { customFields = []; }
+            try {
+                const raw = content.custom_fields;
+                customFieldsDef = Array.isArray(raw) ? raw : JSON.parse(raw);
+            } catch { customFieldsDef = []; }
         }
+        console.log('customFieldsDef:', JSON.stringify(customFieldsDef));
 
-        // Validate all required custom fields are present
-        if (customFields.length > 0) {
-            const extraData = extra_fields ? (typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields) : {};
-            for (const field of customFields) {
-                const key = field.label || field.name; // label is used as key from frontend
-                if (!extraData[key] || String(extraData[key]).trim() === '') {
-                    return res.status(400).json({ message: `Field "${field.label || field.name}" is required` });
-                }
+        const extraData = extra_fields ? (typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields) : {};
+
+        // Validate required fields
+        for (const field of customFieldsDef) {
+            if (field.required !== false && (!extraData[field.name] || String(extraData[field.name]).trim() === '')) {
+                return res.status(400).json({ message: `Field "${field.label || field.name}" is required` });
             }
         }
 
-        const extraData = extra_fields ? (typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields) : null;
+        // Find email field value for dedup check
+        const emailField = customFieldsDef.find(f => f.type === 'email' || f.name === 'email' || (f.webhook_key || '').toLowerCase() === 'email');
+        const emailValue = emailField ? extraData[emailField.name] : null;
 
-        const existing = await LandingPage.findByEmailAndContent(email, normalizedContentId);
-        let submission;
-        if (existing) {
-            submission = await LandingPage.grantAccess(existing.id);
-        } else {
-            submission = await LandingPage.create({
-                first_name, last_name, email, contact_number,
-                content_id: normalizedContentId,
-                extra_fields: extraData
-            });
-            await LandingPage.grantAccess(submission.id);
+        const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, normalizedContentId) : null;
+        if (!existing) {
+            await LandingPage.create({ content_id: normalizedContentId, extra_fields: extraData });
         }
 
-        // Increment view count on successful form submission
         if (normalizedContentId) await Content.incrementViewCount(normalizedContentId);
 
-        // Forward to client's external webhook if configured
+        // Always forward to webhook
         if (content?.webhook_url) {
-            const webhookPayload = {
-                event: 'form_submission',
-                article_title: content.title,
-                article_slug: content.slug,
-                submitted_at: new Date().toISOString(),
-                form_data: {
-                    first_name,
-                    last_name,
-                    email,
-                    contact_number,
-                    ...(extraData || {})
-                }
-            };
-            forwardToWebhook(content.webhook_url, webhookPayload);
+            const webhookPayload = {};
+            customFieldsDef.forEach(field => {
+                const clientKey = (field.webhook_key || '').trim() || field.name;
+                // value field.name se dhundho, nahi mila to webhook_key se try karo
+                const value = extraData[field.name] ?? extraData[field.webhook_key] ?? extraData[clientKey] ?? '';
+                webhookPayload[clientKey] = value;
+            });
+            console.log('Webhook payload:', JSON.stringify(webhookPayload));
+            await forwardToWebhook(content.webhook_url, webhookPayload);
         }
 
-        const fullName = [first_name, last_name].filter(Boolean).join(' ') || 'there';
+        // Find name/email for email template
+        const nameField = customFieldsDef.find(f => f.name === 'first_name' || f.name === 'name' || (f.webhook_key || '').toLowerCase().includes('name'));
+        const fullName = nameField ? (extraData[nameField.name] || 'there') : 'there';
         const contentTitle = content?.title || 'the requested article';
 
         try {
             const emailHtml = accessGrantEmailTemplate(fullName, contentTitle);
-            const emailResult = await sendEmail(email, 'Access Granted - TGS Tech Info', emailHtml);
+            const emailResult = await sendEmail(emailValue, 'Access Granted - TGS Tech Info', emailHtml);
             if (emailResult?.skipped) console.warn('Email skipped:', emailResult.reason);
         } catch (emailError) {
             console.warn('Email send skipped:', emailError.message);
@@ -188,6 +176,58 @@ exports.submitLandingPage = async (req, res) => {
     } catch (error) {
         console.error('Landing page submission error:', error);
         res.status(500).json({ message: error.message || 'Server error' });
+    }
+};
+
+exports.subscribeContent = async (req, res) => {
+    try {
+        const { content_id, extra_fields } = req.body;
+        if (!content_id) return res.status(400).json({ message: 'content_id is required' });
+
+        const content = await Content.findById(Number(content_id));
+        const extraData = extra_fields ? (typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields) : {};
+
+        let customFieldsDef = [];
+        if (content?.custom_fields) {
+            try {
+                const raw = content.custom_fields;
+                customFieldsDef = Array.isArray(raw) ? raw : JSON.parse(raw);
+            } catch {}
+        }
+
+        const emailField = customFieldsDef.find(f => f.type === 'email' || f.name === 'email' || (f.webhook_key || '').toLowerCase() === 'email');
+        const emailValue = emailField ? extraData[emailField.name] : null;
+        const nameField = customFieldsDef.find(f => f.name === 'first_name' || f.name === 'name' || (f.webhook_key || '').toLowerCase().includes('name'));
+        const fullName = nameField ? (extraData[nameField.name] || 'there') : 'there';
+        const contentTitle = content?.title || 'the requested content';
+
+        const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, Number(content_id)) : null;
+        if (!existing) {
+            await LandingPage.create({ content_id: Number(content_id), extra_fields: { ...extraData, subscription: true } });
+        }
+
+        // Forward to webhook using each field's webhook_key
+        if (content?.webhook_url) {
+            const webhookPayload = {};
+            customFieldsDef.forEach(field => {
+                const clientKey = (field.webhook_key || '').trim() || field.name;
+                const value = extraData[field.name] ?? extraData[field.webhook_key] ?? extraData[clientKey] ?? '';
+                webhookPayload[clientKey] = value;
+            });
+            await forwardToWebhook(content.webhook_url, webhookPayload);
+        }
+
+        try {
+            const emailHtml = subscriptionEmailTemplate(fullName, contentTitle);
+            await sendEmail(emailValue, `Subscription Confirmed - ${contentTitle}`, emailHtml);
+        } catch (e) {
+            console.warn('Subscription email failed:', e.message);
+        }
+
+        res.json({ message: 'Subscription email sent successfully.' });
+    } catch (error) {
+        console.error('Subscribe content error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 
@@ -236,6 +276,56 @@ exports.getContentTypes = async (req, res) => {
         res.json(contentTypes);
     } catch (error) {
         console.error('Get content types error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.getCategoriesWithCount = async (req, res) => {
+    try {
+        const { content_type } = req.query;
+        const { pool } = require('../config/database');
+
+        let contentTypeFilter = '';
+        const values = [];
+
+        if (content_type) {
+            const normalizedSlug = normalizeContentTypeSlug(content_type);
+            const matchedType = await ContentType.findBySlug(normalizedSlug);
+            if (matchedType) {
+                contentTypeFilter = ' AND c.content_type_id = ?';
+                values.push(matchedType.id);
+            }
+        }
+
+        // Get all categories with parent info
+        const [categories] = await pool.query(
+            'SELECT id, name, slug, parent_id FROM categories ORDER BY parent_id ASC, name ASC'
+        );
+
+        // Get count per category
+        const countQuery = `
+            SELECT cat.id, COUNT(c.id) as count
+            FROM categories cat
+            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published'${contentTypeFilter}
+            GROUP BY cat.id
+        `;
+        const [counts] = await pool.query(countQuery, values);
+        const countMap = {};
+        counts.forEach(r => { countMap[r.id] = parseInt(r.count, 10); });
+
+        // Build tree: parent categories with their subcategories
+        const parents = categories.filter(c => !c.parent_id);
+        const result = parents.map(parent => ({
+            ...parent,
+            count: countMap[parent.id] || 0,
+            subcategories: categories
+                .filter(c => c.parent_id === parent.id)
+                .map(sub => ({ ...sub, count: countMap[sub.id] || 0 }))
+        }));
+
+        res.json(result);
+    } catch (error) {
+        console.error('Get categories with count error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

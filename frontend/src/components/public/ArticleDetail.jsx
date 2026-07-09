@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
-  Row, Col, Typography, Tag, Divider, Button, Form, Input,
-  Modal, message, Card, Avatar, Space, Skeleton
+  Row, Col, Typography, Tag, Button, Form, Input,
+  message, Card, Avatar, Space, Skeleton, Select
 } from 'antd';
 import { 
   CalendarOutlined, ClockCircleOutlined, ShareAltOutlined,
-  UserOutlined, MailOutlined, PhoneOutlined, LockOutlined, CloseOutlined
+  UserOutlined, LockOutlined, CloseOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -27,7 +27,7 @@ const getPreviewHtml = (html = '') => {
   if (!plainText) return '';
 
   const words = plainText.split(' ').filter(Boolean);
-  const previewWords = Math.max(60, Math.floor(words.length * 0.3));
+  const previewWords = Math.max(40, Math.floor(words.length * 0.2));
   const previewText = words.slice(0, previewWords).join(' ');
 
   return `<p>${previewText}${words.length > previewWords ? '...' : ''}</p>`;
@@ -127,18 +127,18 @@ const ArticleDetail = () => {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [relatedArticles, setRelatedArticles] = useState([]);
-  const [recentPosts, setRecentPosts] = useState([]);
-  const [showLandingModal, setShowLandingModal] = useState(false);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [comments, setComments] = useState([]);
   const [hasAccess, setHasAccess] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const [customFields, setCustomFields] = useState([]);
+  const [subscribing, setSubscribing] = useState(false);
+  const [submittedData, setSubmittedData] = useState(null); // stores {name, email} after form submit
+  const [pdfFile, setPdfFile] = useState(null);
 
   useEffect(() => {
     fetchContent();
-    fetchRecentPosts();
   }, [slug]);
 
   useEffect(() => {
@@ -147,13 +147,6 @@ const ArticleDetail = () => {
       setHasAccess(storedAccess === 'true');
     }
   }, [content?.id]);
-
-  const fetchRecentPosts = async () => {
-    try {
-      const res = await axios.get('/api/public/content?status=published&limit=8');
-      setRecentPosts(res.data?.data || []);
-    } catch {}
-  };
 
   const fetchContent = async () => {
     setLoading(true);
@@ -182,42 +175,26 @@ const ArticleDetail = () => {
   const handleLandingPageSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const { first_name, last_name, email, contact_number, ...extraValues } = values;
-
-      // Build extra_fields with label as key (not raw field name)
-      let extra_fields = null;
-      if (customFields.length > 0) {
-        extra_fields = {};
-        customFields.forEach(field => {
-          if (extraValues[field.name] !== undefined) {
-            extra_fields[field.label || field.name] = extraValues[field.name];
-          }
-        });
-      }
+      const extra_fields = {};
+      customFields.forEach(field => {
+        if (values[field.name] !== undefined) {
+          extra_fields[field.name] = values[field.name];
+          // webhook_key bhi store karo taaki backend correctly map kar sake
+          if (field.webhook_key && field.webhook_key !== field.name)
+            extra_fields[field.webhook_key] = values[field.name];
+        }
+      });
 
       const res = await axios.post('/api/public/landing-page', {
-        first_name, last_name, email, contact_number,
         content_id: content.id,
         extra_fields
       });
 
       localStorage.setItem(`article-access-${content.id}`, 'true');
       setHasAccess(true);
+      setPdfFile(res.data?.pdf_file || null);
+      setSubmittedData(extra_fields);
       form.resetFields();
-      messageApi.success('Access granted! You can now read the full article.');
-
-      // Trigger PDF download if available
-      if (res.data?.pdf_file) {
-        const link = document.createElement('a');
-        link.href = `/uploads/${res.data.pdf_file}`;
-        link.download = res.data.pdf_file;
-        link.target = '_blank';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      navigate(`/article/${slug}`, { replace: true });
     } catch (error) {
       messageApi.error(error.response?.data?.message || 'Failed to submit');
     } finally {
@@ -225,16 +202,42 @@ const ArticleDetail = () => {
     }
   };
 
+  const handleDownloadPdf = () => {
+    if (!pdfFile) return;
+    const link = document.createElement('a');
+    link.href = `/uploads/${pdfFile}`;
+    link.download = pdfFile;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSubscribe = async () => {
+    if (!submittedData) return;
+    setSubscribing(true);
+    try {
+      await axios.post('/api/public/subscribe-content', {
+        content_id: content.id,
+        extra_fields: submittedData
+      });
+      messageApi.success('Subscription email sent! Check your inbox.');
+    } catch (error) {
+      messageApi.error(error.response?.data?.message || 'Failed to subscribe');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} style={{ padding: 24 }} />;
   if (!content) return <Title level={3} style={{ padding: 24 }}>Content not found</Title>;
 
-  const LANDING_TYPES = ['webinar', 'whitepaper', 'event'];
-  const requiresLanding = LANDING_TYPES.includes((content?.content_type || '').toLowerCase());
+  const LANDING_TYPES = ['webinar', 'whitepaper', 'white paper', 'white-paper', 'event'];
+  const contentTypeName = (content?.content_type_name || content?.content_type || '').toLowerCase().trim();
+  const requiresLanding = LANDING_TYPES.includes(contentTypeName);
 
   const fullContent = content.content || '';
-  const contentParts = (fullContent || '').split('<!--more-->');
   const previewContent = getPreviewHtml(content.short_description || fullContent);
-  const remainingContent = contentParts[1] || '';
 
   return (
     <>
@@ -338,134 +341,129 @@ const ArticleDetail = () => {
 
         {/* Sidebar - 30% */}
         <Col xs={24} lg={7} style={{ order: 2 }}>
-          <div style={{
-            position: 'sticky', top: 80,
-            display: 'flex', flexDirection: 'column', gap: 16
-          }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* ── Get Access Card — only for webinar/whitepaper/event ── */}
-            {requiresLanding && <Card style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 12, border: 'none' }}>
-              <div style={{ color: '#fff' }}>
-                {remainingContent && (
-                  <>
-                    <div dangerouslySetInnerHTML={{ __html: remainingContent }} />
-                    <Divider style={{ borderColor: 'rgba(255,255,255,0.2)' }} />
-                  </>
-                )}
-                <Title level={4} style={{ color: '#fff', marginBottom: 6 }}>{hasAccess ? 'Full Article Unlocked' : 'Get Access'}</Title>
-                {!hasAccess ? (
-                  <Text style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: 16 }}>
-                    Fill in your details to unlock the full article and receive access by email.
-                  </Text>
-                ) : (
-                  <Text style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: 16 }}>
-                    You can now read the complete article content.
-                  </Text>
-                )}
-                {!hasAccess && (
-                  <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
-                    <Form.Item name="first_name" rules={[{ required: true, message: 'Required' }]}>
-                      <Input placeholder="First Name" style={{ background: 'rgba(255,255,255,0.95)' }} />
-                    </Form.Item>
-                    <Form.Item name="last_name" rules={[{ required: true, message: 'Required' }]}>
-                      <Input placeholder="Last Name" style={{ background: 'rgba(255,255,255,0.95)' }} />
-                    </Form.Item>
-                    <Form.Item name="email" rules={[{ required: true, type: 'email', message: 'Valid email required' }]}>
-                      <Input placeholder="Email Address" style={{ background: 'rgba(255,255,255,0.95)' }} />
-                    </Form.Item>
-                    <Form.Item name="contact_number" rules={[{ required: true, message: 'Required' }]}>
-                      <Input placeholder="Mobile Number" style={{ background: 'rgba(255,255,255,0.95)' }} />
-                    </Form.Item>
-                    {customFields.map(field => (
-                      <Form.Item key={field.name} name={field.name} rules={[{ required: true, message: `${field.label} is required` }]}>
-                        {field.type === 'textarea' ? (
-                          <Input.TextArea placeholder={field.placeholder || field.label} rows={3} style={{ background: 'rgba(255,255,255,0.95)' }} />
-                        ) : (
-                          <Input type={field.type || 'text'} placeholder={field.placeholder || field.label} style={{ background: 'rgba(255,255,255,0.95)' }} />
-                        )}
-                      </Form.Item>
-                    ))}
-                    <Form.Item style={{ marginBottom: 0 }}>
-                      <Button type="primary" htmlType="submit" block loading={submitting} style={{ background: '#fff', color: '#667eea', fontWeight: 600 }}>
-                        {content?.pdf_file ? '📄 Unlock & Download PDF' : 'Unlock Full Article'}
-                      </Button>
-                    </Form.Item>
-                  </Form>
-                )}
-              </div>
-            </Card>}
+            {requiresLanding && (
+              <Card style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 12, border: 'none' }}>
+                <div style={{ color: '#fff' }}>
+                  <Title level={4} style={{ color: '#fff', marginBottom: 16 }}>
+                    {hasAccess ? '✅ Access Granted' : 'Get Access'}
+                  </Title>
+                  {/* BEFORE SUBMIT: show form */}
+                  {!hasAccess && (
+                    <>
+                      <Text style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: 16 }}>
+                        Fill in your details to unlock the full article.
+                      </Text>
+                      <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
+                        {customFields.map(field => (
+                          <Form.Item key={field.name} name={field.name} rules={[{ required: field.required !== false, message: `${field.label || field.name} is required` }]} style={{ marginBottom: 10 }}>
+                            {field.type === 'textarea' ? (
+                              <Input.TextArea placeholder={field.placeholder || field.label} rows={3} style={{ background: 'rgba(255,255,255,0.95)' }} />
+                            ) : field.type === 'select' ? (
+                              <Select placeholder={field.placeholder || field.label} style={{ width: '100%' }}>
+                                {(field.options || '').split(',').map(o => o.trim()).filter(Boolean).map(o => (
+                                  <Select.Option key={o} value={o}>{o}</Select.Option>
+                                ))}
+                              </Select>
+                            ) : (
+                              <Input type={field.type || 'text'} placeholder={field.placeholder || field.label} style={{ background: 'rgba(255,255,255,0.95)' }} />
+                            )}
+                          </Form.Item>
+                        ))}
+                        <Form.Item style={{ marginBottom: 0 }}>
+                          <Button type="primary" htmlType="submit" block loading={submitting}
+                            style={{ background: '#fff', color: '#667eea', fontWeight: 600 }}>
+                            Submit
+                          </Button>
+                        </Form.Item>
+                      </Form>
+                    </>
+                  )}
 
-          </div>
+                  {/* AFTER SUBMIT: show 2 options */}
+                  {hasAccess && (
+                    <>
+                      <Text style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: 16, fontSize: 13 }}>
+                        ✅ Details submitted! Choose an option below:
+                      </Text>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {/* Option 1: Read full article (+ PDF if available) */}
+                        <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 8, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.25)' }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>📖 Option 1: Read Full Article</div>
+                          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, display: 'block', marginBottom: 10 }}>
+                            Full article is now unlocked above.{pdfFile ? ' PDF will also be downloaded.' : ''}
+                          </Text>
+                          {pdfFile && (
+                            <Button block onClick={handleDownloadPdf}
+                              style={{ background: '#fff', color: '#667eea', fontWeight: 600, border: 'none' }}>
+                              📄 Download PDF
+                            </Button>
+                          )}
+                        </div>
 
-          {/* ── Related Articles — vertical list below landing card ── */}
-          {relatedArticles.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4 }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', paddingBottom: 8, borderBottom: '2px solid #e8ecf4' }}>
-                Related Articles
-              </div>
-              {relatedArticles.map(article => (
-                <div
-                  key={article.id}
-                  onClick={() => navigate(`/article/${article.slug}`)}
-                  style={{ background: '#fff', borderRadius: 10, border: '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
-                  onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
-                  onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
-                >
-                  {article.banner_image
-                    ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
-                    : <div style={{ height: 100, background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📄</div>
-                  }
-                  <div style={{ padding: '10px 12px' }}>
-                    <Tag color="blue" style={{ fontSize: 10, marginBottom: 6 }}>{article.category_name}</Tag>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a', lineHeight: 1.4, marginBottom: 4,
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {article.title}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: '#6b7280', lineHeight: 1.4,
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {article.short_description}
-                    </div>
-                    <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
-                      <CalendarOutlined style={{ marginRight: 3 }} />
-                      {moment(article.published_date || article.created_at).format('MMM D, YYYY')}
+                        {/* Option 2: Subscribe */}
+                        <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 8, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.25)' }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>📧 Option 2: Subscribe</div>
+                          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, display: 'block', marginBottom: 10 }}>
+                            Get a subscription confirmation email with access details.
+                          </Text>
+                          <Button block loading={subscribing} onClick={handleSubscribe}
+                            style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                            Subscribe & Get Email
+                          </Button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </Card>
+            )}
+
+            {/* ── Related Articles — below landing card ── */}
+            {relatedArticles.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', paddingBottom: 8, borderBottom: '2px solid #e8ecf4' }}>
+                  Related Articles
+                </div>
+                {relatedArticles.map(article => (
+                  <div
+                    key={article.id}
+                    onClick={() => navigate(`/article/${article.slug}`)}
+                    style={{ background: '#fff', borderRadius: 10, border: '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
+                    onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+                  >
+                    {article.banner_image
+                      ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                      : <div style={{ height: 100, background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📄</div>
+                    }
+                    <div style={{ padding: '10px 12px' }}>
+                      <Tag color="blue" style={{ fontSize: 10, marginBottom: 6 }}>{article.category_name}</Tag>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a', lineHeight: 1.4, marginBottom: 4,
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {article.title}
+                      </div>
+                      <div style={{ fontSize: 11.5, color: '#6b7280', lineHeight: 1.4,
+                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        {article.short_description}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+                        <CalendarOutlined style={{ marginRight: 3 }} />
+                        {moment(article.published_date || article.created_at).format('MMM D, YYYY')}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
 
+          </div>
         </Col>
       </Row>
 
-      {/* Modal */}
-      <Modal
-        title="Get Full Access"
-        open={showLandingModal}
-        onCancel={() => setShowLandingModal(false)}
-        footer={null}
-        width={400}
-      >
-        <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
-          <Form.Item name="first_name" rules={[{ required: true }]}>
-            <Input placeholder="First Name" prefix={<UserOutlined />} />
-          </Form.Item>
-          <Form.Item name="last_name" rules={[{ required: true }]}>
-            <Input placeholder="Last Name" prefix={<UserOutlined />} />
-          </Form.Item>
-          <Form.Item name="email" rules={[{ required: true, type: 'email' }]}>
-            <Input placeholder="Email" prefix={<MailOutlined />} />
-          </Form.Item>
-          <Form.Item name="contact_number" rules={[{ required: true }]}>
-            <Input placeholder="Contact Number" prefix={<PhoneOutlined />} />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={submitting}>
-              Get Access
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+
     </div>
     </>
   );

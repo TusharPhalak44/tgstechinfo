@@ -6,6 +6,7 @@ class Content {
         const {
             user_id, content_type_id, category_id, title, short_description,
             tags, banner_image, pdf_file, custom_fields, content, webhook_url,
+            webhook_field_mapping,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
             scheduled_publish_date, status = 'draft'
         } = contentData;
@@ -18,9 +19,10 @@ class Content {
             INSERT INTO contents (
                 user_id, content_type_id, category_id, title, slug,
                 short_description, tags, banner_image, pdf_file, custom_fields, content, webhook_url,
+                webhook_field_mapping,
                 seo_meta_title, seo_meta_description, seo_meta_keywords,
                 scheduled_publish_date, reading_time, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             user_id, content_type_id, category_id, title, slug,
@@ -29,6 +31,7 @@ class Content {
             custom_fields ? JSON.stringify(custom_fields) : null,
             content,
             webhook_url || null,
+            webhook_field_mapping ? JSON.stringify(webhook_field_mapping) : null,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
             scheduled_publish_date, reading_time, status
         ];
@@ -106,7 +109,8 @@ class Content {
         const allowedFields = [
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
-            'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url'
+            'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
+            'webhook_field_mapping'
         ];
 
         const updates = [];

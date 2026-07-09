@@ -1,6 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Select, Input, Button, message, Tooltip, Tag } from 'antd';
-import { SearchOutlined, ReloadOutlined, MailOutlined, PhoneOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Table, Select, Input, Button, message, Tooltip } from 'antd';
+import { SearchOutlined, ReloadOutlined, FileTextOutlined } from '@ant-design/icons';
+
+const getDisplayName = (extra_fields) => {
+  if (!extra_fields) return '—';
+  try {
+    const data = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
+    const nameKey = Object.keys(data).find(k => /name|first/i.test(k));
+    return nameKey ? String(data[nameKey]) : Object.values(data)[0] || '—';
+  } catch { return '—'; }
+};
+
+const getEmail = (extra_fields) => {
+  if (!extra_fields) return null;
+  try {
+    const data = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
+    const emailKey = Object.keys(data).find(k => /email/i.test(k));
+    return emailKey ? data[emailKey] : null;
+  } catch { return null; }
+};
 import axios from 'axios';
 import moment from 'moment';
 
@@ -45,39 +63,30 @@ const UserSubmissions = () => {
     }
   };
 
-  const filtered = submissions.filter(s =>
-    !search || `${s.first_name} ${s.last_name} ${s.email} ${s.contact_number || ''}`
-      .toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = submissions.filter(s => {
+    if (!search) return true;
+    const name = getDisplayName(s.extra_fields).toLowerCase();
+    const email = (getEmail(s.extra_fields) || '').toLowerCase();
+    const q = search.toLowerCase();
+    return name.includes(q) || email.includes(q);
+  });
 
   const columns = [
     {
       title: 'Subscriber',
       key: 'subscriber',
-      width: 200,
-      render: (_, r) => (
-        <div>
-          <div style={{ fontWeight: 600, fontSize: 13 }}>{r.first_name} {r.last_name}</div>
-          <div style={{ fontSize: 11, color: '#8c8c8c' }}>ID #{r.id}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Contact Info',
-      key: 'contact',
-      width: 230,
-      render: (_, r) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <a href={`mailto:${r.email}`} style={{ fontSize: 12, color: '#4a7cff', display: 'flex', alignItems: 'center', gap: 5 }}>
-            <MailOutlined style={{ fontSize: 11 }} /> {r.email}
-          </a>
-          {r.contact_number && (
-            <span style={{ fontSize: 12, color: '#595959', display: 'flex', alignItems: 'center', gap: 5 }}>
-              <PhoneOutlined style={{ fontSize: 11, color: '#8c8c8c' }} /> {r.contact_number}
-            </span>
-          )}
-        </div>
-      ),
+      width: 260,
+      render: (_, r) => {
+        const name = getDisplayName(r.extra_fields);
+        const email = getEmail(r.extra_fields);
+        return (
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 13 }}>{name}</div>
+            {email && <a href={`mailto:${email}`} style={{ fontSize: 11, color: '#4a7cff' }}>{email}</a>}
+            <div style={{ fontSize: 11, color: '#8c8c8c' }}>ID #{r.id}</div>
+          </div>
+        );
+      },
     },
     {
       title: 'Article',
@@ -131,17 +140,7 @@ const UserSubmissions = () => {
         );
       },
     },
-    {
-      title: 'Access',
-      dataIndex: 'has_access',
-      width: 100,
-      align: 'center',
-      render: v => (
-        <Tag color={v ? 'success' : 'default'} style={{ fontSize: 11 }}>
-          {v ? 'Granted' : 'Pending'}
-        </Tag>
-      ),
-    },
+
     {
       title: 'Submitted',
       dataIndex: 'created_at',

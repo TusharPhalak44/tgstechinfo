@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Form, Input, Button, Checkbox, message } from 'antd';
 import {
   UserOutlined, LockOutlined, MailOutlined, PhoneOutlined,
-  ThunderboltOutlined, ArrowRightOutlined,
+  ArrowRightOutlined,
   EyeInvisibleOutlined, EyeTwoTone, CheckCircleFilled
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
@@ -70,16 +70,8 @@ const Register = () => {
           <div style={{ position: 'absolute', inset: 0, opacity: .03, backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '36px 36px', pointerEvents: 'none' }} />
 
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32, alignSelf: 'flex-start' }}>
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,#4a7cff,#6c5ce7)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(74,124,255,.4)' }}>
-              <ThunderboltOutlined style={{ color: '#fff', fontSize: 20 }} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 900, fontSize: 18, color: '#fff', lineHeight: 1.1 }}>
-                TGS <span style={{ background: 'linear-gradient(90deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Tech Info</span>
-              </div>
-              <div style={{ fontSize: 10, color: '#475569', letterSpacing: 1.5, textTransform: 'uppercase' }}>Tech Intelligence Hub</div>
-            </div>
+          <div style={{ marginBottom: 32, alignSelf: 'flex-start' }}>
+            <img src="/logo.jpg" alt="TGS Tech Info" style={{ height: 64, width: 'auto', display: 'block', borderRadius: 10 }} />
           </div>
 
           <div style={{ textAlign: 'center', width: '100%' }}>

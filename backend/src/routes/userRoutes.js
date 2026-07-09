@@ -15,6 +15,7 @@ router.put('/notifications/:id/read', notificationController.markAsRead);
 // ✅ Content creation - Only users can create, not admin
 router.post('/content', isContentCreator, uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), contentController.createContent);
 router.put('/content/:id', isContentCreator, uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), contentController.updateContent);
+router.put('/content/:id/webhook', isContentCreator, contentController.updateWebhookSettings);
 router.post('/content/:id/submit', isContentCreator, contentController.submitForReview);
 
 // ✅ View content - Both users and admin can view

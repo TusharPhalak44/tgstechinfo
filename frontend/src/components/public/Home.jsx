@@ -1,3 +1,4 @@
+// Home.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Tag, Skeleton, Input } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
@@ -256,32 +257,178 @@ const StatsBar = ({ stats }) => {
 };
 
 // ── Category pill nav ────────────────────────────────────────────
-const CategoryNav = () => {
-  const cats = [
-    { label: 'AI & ML', to: '/category/artificial-intelligence' },
-    { label: 'Cybersecurity', to: '/category/cybersecurity' },
-    { label: 'Cloud', to: '/category/cloud-computing' },
-    { label: 'DevOps', to: '/category/devops' },
-    { label: 'Data Analytics', to: '/category/data-analytics' },
-    { label: 'FinTech', to: '/category/fintech' },
-    { label: 'Healthcare IT', to: '/category/healthcare' },
-    { label: 'Interviews', to: '/interviews' },
-  ];
-  return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '28px 0 36px' }}>
-      {cats.map(c => (
-        <Link key={c.label} to={c.to} style={{
-          padding: '6px 16px', borderRadius: 20, fontSize: 13, fontWeight: 500,
-          background: '#f4f6ff', color: '#4a7cff', border: '1px solid #dce6ff',
-          textDecoration: 'none', transition: 'all .2s',
-          whiteSpace: 'nowrap'
-        }}
-          onMouseEnter={e => { e.currentTarget.style.background = '#4a7cff'; e.currentTarget.style.color = '#fff'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = '#f4f6ff'; e.currentTarget.style.color = '#4a7cff'; }}
+const CAT_TABS = [
+  { label: 'AI & ML',        key: 'artificial-intelligence', param: 'category' },
+  { label: 'Cybersecurity',  key: 'cybersecurity',           param: 'category' },
+  { label: 'Cloud',          key: 'cloud-computing',         param: 'category' },
+  { label: 'DevOps',         key: 'devops',                  param: 'category' },
+  { label: 'Data Analytics', key: 'data-analytics',          param: 'category' },
+  { label: 'FinTech',        key: 'fintech',                 param: 'category' },
+  { label: 'Healthcare IT',  key: 'healthcare',              param: 'category' },
+  { label: 'Interviews',     key: 'interview',               param: 'content_type' },
+];
+
+const CategoryNav = ({ activeTab, setActiveTab }) => (
+  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '28px 0 20px' }}>
+    {CAT_TABS.map(c => {
+      const isActive = activeTab === c.key;
+      return (
+        <button key={c.key} onClick={() => setActiveTab(isActive ? null : c.key)}
+          style={{
+            padding: '7px 18px', borderRadius: 20, fontSize: 13, fontWeight: 600,
+            background: isActive ? '#4a7cff' : '#f4f6ff',
+            color: isActive ? '#fff' : '#4a7cff',
+            border: isActive ? '1px solid #4a7cff' : '1px solid #dce6ff',
+            cursor: 'pointer', transition: 'all .2s', whiteSpace: 'nowrap',
+            boxShadow: isActive ? '0 4px 14px rgba(74,124,255,0.3)' : 'none'
+          }}
         >
           {c.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
+// ── Why Publish With Us ─────────────────────────────────────────
+const WHY_ITEMS = [
+  { icon: '🎯', title: 'Targeted B2B Audience', desc: 'Reach 200,000+ verified IT decision-makers, CXOs, and tech buyers across industries.' },
+  { icon: '📊', title: 'Measurable ROI', desc: 'Real-time analytics dashboard: track impressions, leads, downloads and engagement.' },
+  { icon: '🏆', title: 'Thought Leadership', desc: 'Position your brand as an industry authority with expert-curated editorial placement.' },
+  { icon: '🔗', title: 'Multi-Channel Distribution', desc: 'Your content amplified via newsletter, social, SEO and partner syndication networks.' },
+  { icon: '⚡', title: 'Fast-Track Publishing', desc: 'Dedicated editorial team ensures your content goes live within 48 hours of approval.' },
+  { icon: '🤝', title: 'Dedicated Account Manager', desc: 'White-glove support from strategy to execution, with a single point of contact for your team.' },
+];
+
+const WhyPublishSection = () => {
+  const [ref, visible] = useReveal();
+  return (
+    <div ref={ref} style={{
+      margin: '56px 0',
+      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)',
+      transition: 'opacity .6s ease, transform .6s ease'
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 40 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#4a7cff', textTransform: 'uppercase', letterSpacing: 2 }}>Why Choose Us</span>
+        <h2 style={{ fontSize: 28, fontWeight: 900, color: '#111827', margin: '8px 0 12px', lineHeight: 1.2 }}>
+          The Smartest Way to Publish in B2B Tech
+        </h2>
+        <p style={{ color: '#6b7280', fontSize: 15, maxWidth: 520, margin: '0 auto' }}>
+          From whitepapers to webinars, we give your content the reach, credibility and conversions it deserves.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }} className="why-grid">
+        {WHY_ITEMS.map((item, i) => (
+          <div key={i} style={{
+            background: '#fff', borderRadius: 16, padding: '28px 24px',
+            border: '1px solid #e5e7eb', boxShadow: '0 2px 12px rgba(74,124,255,0.06)',
+            transition: 'transform .22s, box-shadow .22s',
+            opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)',
+            transitionDelay: `${i * 80}ms`
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(74,124,255,0.14)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(74,124,255,0.06)'; }}
+          >
+            <div style={{ fontSize: 36, marginBottom: 14, lineHeight: 1 }}>{item.icon}</div>
+            <div style={{ fontWeight: 700, fontSize: 16, color: '#111827', marginBottom: 8 }}>{item.title}</div>
+            <div style={{ fontSize: 13.5, color: '#6b7280', lineHeight: 1.65 }}>{item.desc}</div>
+            <div style={{ marginTop: 18, height: 3, borderRadius: 2, background: 'linear-gradient(90deg,#4a7cff,#6c5ce7)', width: '40%' }} />
+          </div>
+        ))}
+      </div>
+      <div style={{ textAlign: 'center', marginTop: 36 }}>
+        <Link to="/register" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: 'linear-gradient(135deg,#4a7cff,#6c5ce7)',
+          color: '#fff', fontWeight: 700, fontSize: 15,
+          padding: '13px 32px', borderRadius: 12, textDecoration: 'none',
+          boxShadow: '0 6px 20px rgba(74,124,255,0.35)', transition: 'transform .2s, box-shadow .2s'
+        }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(74,124,255,0.45)'; }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(74,124,255,0.35)'; }}
+        >
+          Start Publishing Today <ArrowRightOutlined style={{ fontSize: 13 }} />
         </Link>
-      ))}
+      </div>
+    </div>
+  );
+};
+
+// ── Publishing Solutions (B2B) ────────────────────────────────────
+const SOLUTIONS = [
+  {
+    accent: '#4a7cff', bg: '#eef2ff', icon: '📝', label: 'Articles & Blogs',
+    desc: 'Long-form thought leadership, how-tos and opinion pieces that rank on Google and drive organic traffic.',
+    tags: ['SEO Optimised', 'Editorial Review', 'Author Profile'],
+  },
+  {
+    accent: '#00b894', bg: '#e8faf5', icon: '📄', label: 'Whitepapers & Reports',
+    desc: 'Gated research assets that generate qualified leads. We handle design, hosting and lead capture forms.',
+    tags: ['Lead Gen', 'Branded Design', 'CRM Integration'],
+  },
+  {
+    accent: '#6c5ce7', bg: '#f3f0ff', icon: '🎙️', label: 'Webinars & Events',
+    desc: 'Live and on-demand virtual events promoted to our engaged audience of IT professionals.',
+    tags: ['Registration Page', 'Email Promotion', 'Recording Hosting'],
+  },
+  {
+    accent: '#e17055', bg: '#fff4f0', icon: '🗞️', label: 'Sponsored News',
+    desc: 'Get your product launches, partnerships and announcements in front of the right audience instantly.',
+    tags: ['Instant Publish', 'Homepage Feature', 'Newsletter Blast'],
+  },
+];
+
+const PublishingSolutions = () => {
+  const [ref, visible] = useReveal();
+  return (
+    <div ref={ref} style={{
+      margin: '56px 0',
+      opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)',
+      transition: 'opacity .6s ease, transform .6s ease'
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: 36 }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#6c5ce7', textTransform: 'uppercase', letterSpacing: 2 }}>Publishing Solutions</span>
+        <h2 style={{ fontSize: 26, fontWeight: 900, color: '#111827', margin: '8px 0 10px' }}>
+          Content Formats Built for B2B Impact
+        </h2>
+        <p style={{ color: '#6b7280', fontSize: 14.5, maxWidth: 480, margin: '0 auto' }}>
+          Choose the format that fits your marketing goals. We handle the rest.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 18 }} className="solutions-grid">
+        {SOLUTIONS.map((s, i) => (
+          <div key={i} style={{
+            background: '#fff', borderRadius: 18, overflow: 'hidden',
+            border: `1px solid ${s.accent}22`, boxShadow: `0 4px 18px ${s.accent}0d`,
+            transition: 'transform .22s, box-shadow .22s',
+            opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(24px)',
+            transitionDelay: `${i * 90}ms`
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = `0 16px 36px ${s.accent}22`; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 18px ${s.accent}0d`; }}
+          >
+            <div style={{ height: 5, background: `linear-gradient(90deg,${s.accent},${s.accent}88)` }} />
+            <div style={{ padding: '24px 22px 26px' }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14, background: s.bg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 26, marginBottom: 16
+              }}>{s.icon}</div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: '#111827', marginBottom: 10 }}>{s.label}</div>
+              <div style={{ fontSize: 13, color: '#6b7280', lineHeight: 1.65, marginBottom: 18 }}>{s.desc}</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {s.tags.map(t => (
+                  <span key={t} style={{
+                    fontSize: 11, fontWeight: 600, color: s.accent,
+                    background: s.bg, borderRadius: 20, padding: '3px 10px',
+                    border: `1px solid ${s.accent}33`
+                  }}>{t}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -407,7 +554,7 @@ const HeroSection = ({ searchVal, setSearchVal, handleSearch }) => {
           </h1>
 
           <p style={{ color: 'rgba(255,255,255,.65)', fontSize: 15, lineHeight: 1.75, margin: '0 0 32px', maxWidth: 440 }}>
-            In-depth articles, expert interviews, breaking news and research across AI, Cloud, Cybersecurity, DevOps and more — curated for technology leaders.
+            In-depth articles, expert interviews, breaking news and research across AI, Cloud, Cybersecurity, DevOps and more, curated for technology leaders.
           </p>
 
           {/* Search */}
@@ -516,6 +663,286 @@ const HeroSection = ({ searchVal, setSearchVal, handleSearch }) => {
   );
 };
 
+// ── Widget Section ──────────────────────────────────────────────
+const WIDGET_TYPES = [
+  { key: 'trending', label: '🔥 Trending Now', icon: <FireOutlined />, color: '#4a7cff' },
+  { key: 'popular', label: '📈 Most Popular', icon: <EyeOutlined />, color: '#00b894' },
+  { key: 'quicklinks', label: '🎯 Quick Links', icon: <GlobalOutlined />, color: '#6c5ce7' },
+  { key: 'editorspick', label: '⭐ Editor\'s Picks', icon: <ReadOutlined />, color: '#e17055' },
+];
+
+const WidgetSection = ({ articles, onWidgetClick, navigate }) => {
+  const [activeWidget, setActiveWidget] = useState('trending');
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const widgetRef = useRef(null);
+  const [showArrows, setShowArrows] = useState({ left: false, right: true });
+
+  // Widget data mapping
+  const getWidgetData = (type) => {
+    const baseArticles = articles?.slice(0, 8) || [];
+    switch(type) {
+      case 'trending':
+        return baseArticles.filter(a => a.view_count > 100).slice(0, 6);
+      case 'popular':
+        return [...baseArticles].sort((a,b) => (b.view_count || 0) - (a.view_count || 0)).slice(0, 6);
+      case 'quicklinks':
+        return [
+          { id: 'ql1', title: 'Submit Your Article', icon: '📝', link: '/submit-article' },
+          { id: 'ql2', title: 'Become a Contributor', icon: '✍️', link: '/contributor' },
+          { id: 'ql3', title: 'Advertise With Us', icon: '📢', link: '/advertise' },
+          { id: 'ql4', title: 'Newsletter Archive', icon: '📧', link: '/newsletter' },
+          { id: 'ql5', title: 'Editorial Calendar', icon: '📅', link: '/editorial-calendar' },
+          { id: 'ql6', title: 'Media Kit', icon: '📋', link: '/media-kit' },
+        ];
+      case 'editorspick':
+        return baseArticles.filter((_, i) => i % 3 === 0).slice(0, 5);
+      default:
+        return baseArticles.slice(0, 6);
+    }
+  };
+
+  const widgetData = getWidgetData(activeWidget);
+  const currentWidget = WIDGET_TYPES.find(w => w.key === activeWidget);
+
+  // Scroll handlers
+  const handleScroll = (direction) => {
+    const container = widgetRef.current;
+    if (!container) return;
+    const scrollAmount = container.clientWidth * 0.8;
+    const targetScroll = direction === 'left' 
+      ? container.scrollLeft - scrollAmount 
+      : container.scrollLeft + scrollAmount;
+    container.scrollTo({ left: targetScroll, behavior: 'smooth' });
+  };
+
+  const handleScrollUpdate = () => {
+    const container = widgetRef.current;
+    if (!container) return;
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setScrollPosition(scrollLeft);
+    setShowArrows({
+      left: scrollLeft > 20,
+      right: scrollLeft < scrollWidth - clientWidth - 20
+    });
+  };
+
+  useEffect(() => {
+    const container = widgetRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScrollUpdate);
+      handleScrollUpdate();
+      return () => container.removeEventListener('scroll', handleScrollUpdate);
+    }
+  }, [activeWidget]);
+
+  return (
+    <div style={{ margin: '40px 0', position: 'relative' }}>
+      {/* Widget Header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 20, flexWrap: 'wrap', gap: 12
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 4, height: 22, background: currentWidget?.color || '#4a7cff', borderRadius: 4 }} />
+          <span style={{ fontSize: 20, color: currentWidget?.color || '#4a7cff' }}>{currentWidget?.icon}</span>
+          <span style={{ fontWeight: 700, fontSize: 20, color: '#1a1a2e' }}>{currentWidget?.label}</span>
+          <span style={{
+            background: `${currentWidget?.color || '#4a7cff'}15`, 
+            color: currentWidget?.color || '#4a7cff',
+            fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 12,
+            marginLeft: 4
+          }}>
+            {widgetData.length} items
+          </span>
+        </div>
+        
+        {/* Widget Tabs */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {WIDGET_TYPES.map(w => (
+            <button
+              key={w.key}
+              onClick={() => setActiveWidget(w.key)}
+              style={{
+                padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                background: activeWidget === w.key ? w.color : '#f4f6ff',
+                color: activeWidget === w.key ? '#fff' : w.color,
+                border: activeWidget === w.key ? `1px solid ${w.color}` : '1px solid #dce6ff',
+                cursor: 'pointer', transition: 'all .2s', whiteSpace: 'nowrap',
+                boxShadow: activeWidget === w.key ? `0 2px 12px ${w.color}40` : 'none'
+              }}
+            >
+              {w.icon} {w.label.split(' ').slice(1).join(' ')}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Widget Carousel Container */}
+      <div style={{ position: 'relative' }}>
+        {/* Navigation Arrows */}
+        {showArrows.left && (
+          <button
+            onClick={() => handleScroll('left')}
+            style={{
+              position: 'absolute', left: -6, top: '50%', transform: 'translateY(-50%)',
+              zIndex: 5, width: 32, height: 32, borderRadius: '50%', border: 'none',
+              background: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, color: '#1a1a2e', transition: 'all .2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1)'}
+          >
+            ❮
+          </button>
+        )}
+        {showArrows.right && (
+          <button
+            onClick={() => handleScroll('right')}
+            style={{
+              position: 'absolute', right: -6, top: '50%', transform: 'translateY(-50%)',
+              zIndex: 5, width: 32, height: 32, borderRadius: '50%', border: 'none',
+              background: '#fff', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 14, color: '#1a1a2e', transition: 'all .2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'translateY(-50%) scale(1)'}
+          >
+            ❯
+          </button>
+        )}
+
+        {/* Widget Items */}
+        <div
+          ref={widgetRef}
+          style={{
+            display: 'flex', gap: 16, overflowX: 'auto', scrollSnapType: 'x mandatory',
+            padding: '8px 4px 16px', scrollBehavior: 'smooth',
+            scrollbarWidth: 'none', msOverflowStyle: 'none'
+          }}
+          className="widget-scroll"
+        >
+          {widgetData.map((item, index) => (
+            <div
+              key={item.id || index}
+              onClick={() => {
+                if (item.link) {
+                  navigate(item.link);
+                } else if (item.slug) {
+                  navigate(`/article/${item.slug}`);
+                }
+                if (onWidgetClick) onWidgetClick(item);
+              }}
+              style={{
+                flex: '0 0 180px', scrollSnapAlign: 'start',
+                background: '#fff', borderRadius: 14, padding: '18px 16px',
+                border: `1px solid ${currentWidget?.color || '#4a7cff'}22`,
+                boxShadow: `0 2px 12px ${currentWidget?.color || '#4a7cff'}0d`,
+                cursor: 'pointer', transition: 'all .25s ease',
+                display: 'flex', flexDirection: 'column',
+                minHeight: 140, position: 'relative'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-6px)';
+                e.currentTarget.style.boxShadow = `0 12px 32px ${currentWidget?.color || '#4a7cff'}25`;
+                e.currentTarget.style.borderColor = currentWidget?.color || '#4a7cff';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = `0 2px 12px ${currentWidget?.color || '#4a7cff'}0d`;
+                e.currentTarget.style.borderColor = `${currentWidget?.color || '#4a7cff'}22`;
+              }}
+            >
+              {/* Item number badge */}
+              <span style={{
+                position: 'absolute', top: 8, right: 10,
+                fontSize: 10, fontWeight: 700, color: `${currentWidget?.color || '#4a7cff'}40`
+              }}>#{index + 1}</span>
+
+              {/* Quick links special rendering */}
+              {item.icon && item.link ? (
+                <>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>{item.icon}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: '#1a1a2e', flex: 1 }}>
+                    {item.title}
+                  </div>
+                  <span style={{
+                    fontSize: 11, color: currentWidget?.color || '#4a7cff',
+                    marginTop: 8, display: 'flex', alignItems: 'center', gap: 4
+                  }}>
+                    Explore <ArrowRightOutlined style={{ fontSize: 10 }} />
+                  </span>
+                </>
+              ) : (
+                <>
+                  {/* Category tag */}
+                  {item.category_name && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, color: currentWidget?.color || '#4a7cff',
+                      textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6
+                    }}>
+                      {item.category_name}
+                    </span>
+                  )}
+                  <div style={{
+                    fontWeight: 600, fontSize: 14, lineHeight: 1.4, color: '#1a1a2e',
+                    flex: 1, display: '-webkit-box', WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                  }}>
+                    {item.title}
+                  </div>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    marginTop: 10, fontSize: 11, color: '#9ca3af',
+                    borderTop: '1px solid #f3f4f6', paddingTop: 8
+                  }}>
+                    <span><EyeOutlined style={{ marginRight: 3 }} />{item.view_count || 0}</span>
+                    {item.published_date && (
+                      <span><CalendarOutlined style={{ marginRight: 3 }} />
+                        {moment(item.published_date).format('MMM D')}
+                      </span>
+                    )}
+                  </div>
+                  {/* Progress bar */}
+                  {item.view_count && (
+                    <div style={{
+                      position: 'absolute', bottom: 0, left: 0, right: 0,
+                      height: 3, background: `${currentWidget?.color || '#4a7cff'}15`,
+                      borderRadius: '0 0 14px 14px', overflow: 'hidden'
+                    }}>
+                      <div style={{
+                        height: '100%', background: currentWidget?.color || '#4a7cff',
+                        width: `${Math.min((item.view_count / 500) * 100, 100)}%`,
+                        borderRadius: '0 0 14px 14px'
+                      }} />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Scroll indicator */}
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: 6, marginTop: 8
+      }}>
+        {widgetData.slice(0, 5).map((_, i) => (
+          <div key={i} style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: i === Math.round(scrollPosition / 200) % 5 
+              ? currentWidget?.color || '#4a7cff' 
+              : '#dce6ff',
+            transition: 'all .3s'
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── Main Home ────────────────────────────────────────────────────
 const Home = () => {
   const navigate = useNavigate();
@@ -524,8 +951,27 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);
   const [searchVal, setSearchVal] = useState('');
+  const [activeTab, setActiveTab] = useState(null);
+  const [tabData, setTabData] = useState([]);
+  const [tabLoading, setTabLoading] = useState(false);
+  const catSectionRef = useRef(null);
 
   useEffect(() => { fetchHomeData(); }, []);
+
+  useEffect(() => {
+    if (!activeTab) { setTabData([]); return; }
+    setTabLoading(true);
+    const tab = CAT_TABS.find(c => c.key === activeTab);
+    const qs = tab?.param === 'content_type'
+      ? `content_type=${tab.key}`
+      : `category=${tab?.key}`;
+    axios.get(`/api/public/content?status=published&${qs}&limit=8`)
+      .then(r => setTabData(r.data?.data || []))
+      .catch(() => setTabData([]))
+      .finally(() => {
+        setTabLoading(false);
+       });
+  }, [activeTab]);
 
   const fetchHomeData = async () => {
     setLoading(true);
@@ -578,8 +1024,57 @@ const Home = () => {
       {/* ── Main content ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px' }}>
 
+        {/* ── Widget Section ── */}
+        <WidgetSection 
+          articles={data.articles} 
+          navigate={navigate}
+          onWidgetClick={(item) => {
+            // Analytics tracking
+            console.log('Widget clicked:', item);
+            // You can add GA/GTM tracking here
+          }} 
+        />
+
         {/* Category pills */}
-        <CategoryNav />
+        <CategoryNav activeTab={activeTab} setActiveTab={setActiveTab} />
+
+        {/* ── Category filtered content ── */}
+        <div ref={catSectionRef}>
+          {activeTab && (
+            <div style={{ margin: '24px 0 40px', minHeight: 120 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ width: 4, height: 22, background: '#4a7cff', borderRadius: 4, display: 'inline-block' }} />
+                  <span style={{ fontWeight: 700, fontSize: 18, color: '#1a1a2e' }}>
+                    {CAT_TABS.find(c => c.key === activeTab)?.label}
+                  </span>
+                  {!tabLoading && <span style={{ fontSize: 12, color: '#9ca3af', fontWeight: 500 }}>({tabData.length} results)</span>}
+                </div>
+                <button onClick={() => setActiveTab(null)} style={{
+                  fontSize: 12, color: '#6b7280', background: '#f3f4f6', border: '1px solid #e5e7eb',
+                  borderRadius: 20, padding: '4px 14px', cursor: 'pointer'
+                }}>✕ Clear</button>
+              </div>
+              {tabLoading ? (
+                <Row gutter={[20, 20]}>
+                  {[1,2,3,4].map(i => <Col xs={24} sm={12} lg={6} key={i}><Skeleton active /></Col>)}
+                </Row>
+              ) : tabData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af', fontSize: 14 }}>
+                  No content found for this category yet.
+                </div>
+              ) : (
+                <Row gutter={[20, 20]}>
+                  {tabData.map(a => (
+                    <Col xs={24} sm={12} lg={6} key={a.id}>
+                      <HeroCard article={a} navigate={navigate} onImgClick={(src, alt) => setLightbox({ src, alt })} accent="#4a7cff" />
+                    </Col>
+                  ))}
+                </Row>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ── Featured Articles ── */}
         {data.articles.length > 0 && (
@@ -635,7 +1130,7 @@ const Home = () => {
               {/* Side list */}
               <Col xs={24} lg={10} style={{ display: 'flex' }}>
                 <div style={{ background: '#fff', borderRadius: 16, padding: '20px 20px 8px', boxShadow: '0 2px 20px rgba(0,0,0,0.11)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  {restArticles.slice(0, 4).map((a, i, arr) => (
+                  {restArticles.slice(0, 5).map((a, i, arr) => (
                     <ListCard key={a.id} article={a} navigate={navigate} isLast={i === arr.length - 1} onImgClick={(src, alt) => setLightbox({ src, alt })} />
                   ))}
                 </div>
@@ -677,6 +1172,12 @@ const Home = () => {
           </RevealSection>
         )}
 
+        {/* Why Publish With Us */}
+        <WhyPublishSection />
+
+        {/* Publishing Solutions */}
+        <PublishingSolutions />
+
         {/* Newsletter */}
         <NewsletterBox />
 
@@ -695,6 +1196,37 @@ const Home = () => {
         )}
 
       </div>
+
+      {/* CSS for animations and responsive design */}
+      <style>{`
+        @keyframes ticker {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        @keyframes heroProgress {
+          0% { width: 0%; }
+          100% { width: 100%; }
+        }
+        .widget-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        .stats-grid, .why-grid, .solutions-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+        @media (max-width: 768px) {
+          .stats-grid, .why-grid, .solutions-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .hero-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .stats-grid, .why-grid, .solutions-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 };
