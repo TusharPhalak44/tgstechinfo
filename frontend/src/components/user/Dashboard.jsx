@@ -3,7 +3,8 @@ import { Row, Col, Card, Statistic, Button, Typography, Tag, Badge, Avatar, Empt
 import {
   FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined,
   PlusOutlined, UserOutlined, CalendarOutlined, EditOutlined,
-  CloseCircleOutlined, SendOutlined, TagOutlined, FormOutlined
+  CloseCircleOutlined, SendOutlined, TagOutlined, FormOutlined,
+  DownOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -37,6 +38,10 @@ const CONTENT_TABS = [
   { key: 'webinar',   label: 'Webinar' },
   { key: 'event',     label: 'Event' },
 ];
+
+const ITEMS_PER_PAGE = 18;
+const INITIAL_SHOW = 12;
+const LOAD_MORE_COUNT = 3;
 
 const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
   const status = statusConfig[article.status] || { color: 'default', text: article.status };
@@ -178,9 +183,19 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
   const navigate = useNavigate();
 
-  useEffect(() => { fetchContents(); }, []);
+  useEffect(() => { 
+    fetchContents(); 
+  }, []);
+
+  // Reset page and visible count when tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setVisibleCount(INITIAL_SHOW);
+  }, [activeTab]);
 
   const fetchContents = async () => {
     setLoading(true);
@@ -210,6 +225,10 @@ const Dashboard = () => {
     }
   };
 
+  const handleShowMore = () => {
+    setVisibleCount(prev => Math.min(prev + LOAD_MORE_COUNT, ITEMS_PER_PAGE));
+  };
+
   const stats = {
     total: contents.length,
     draft: contents.filter(c => c.status === 'draft').length,
@@ -221,6 +240,18 @@ const Dashboard = () => {
   const filteredContents = activeTab === 'all'
     ? contents
     : contents.filter(c => (c.content_type_name || '').toLowerCase() === activeTab);
+
+  // Pagination
+  const totalItems = filteredContents.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+  const currentPageItems = filteredContents.slice(startIndex, endIndex);
+  
+  // Visible items for current page with "Show More" logic
+  const visibleItems = currentPageItems.slice(0, visibleCount);
+  const hasMoreInPage = visibleCount < currentPageItems.length;
+  const hasNextPage = currentPage < totalPages;
 
   // Build tab items with count badges
   const tabItems = CONTENT_TABS.map(tab => {
@@ -234,9 +265,13 @@ const Dashboard = () => {
           {tab.label}
           {count > 0 && (
             <span style={{
-              marginLeft: 6, background: activeTab === tab.key ? '#4a7cff' : '#f0f0f0',
+              marginLeft: 6, 
+              background: activeTab === tab.key ? '#4a7cff' : '#f0f0f0',
               color: activeTab === tab.key ? '#fff' : '#595959',
-              borderRadius: 10, padding: '1px 7px', fontSize: 11, fontWeight: 600
+              borderRadius: 10, 
+              padding: '1px 7px', 
+              fontSize: 11, 
+              fontWeight: 600
             }}>
               {count}
             </span>
@@ -245,6 +280,13 @@ const Dashboard = () => {
       )
     };
   });
+
+  // Reset visible count when changing pages
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    setVisibleCount(INITIAL_SHOW);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="p-6">
@@ -289,25 +331,123 @@ const Dashboard = () => {
         <div className="py-12 text-center"><Spin size="large" /></div>
       ) : filteredContents.length === 0 ? (
         <Empty
-          description={activeTab === 'all' ? 'No articles yet' : `No ${activeTab}s yet`}
+          description={activeTab === 'all' ? 'No content yet' : `No ${CONTENT_TABS.find(t => t.key === activeTab)?.label.toLowerCase() || 'content'} yet`}
           className="py-12"
         >
           <Button type="primary" onClick={() => navigate('/create-content')}>
-            Create Your First {activeTab === 'all' ? 'Article' : CONTENT_TABS.find(t => t.key === activeTab)?.label.slice(0, -1)}
+            Create Your First {activeTab === 'all' ? 'Content' : CONTENT_TABS.find(t => t.key === activeTab)?.label.slice(0, -1) || 'Content'}
           </Button>
         </Empty>
       ) : (
-        <Row gutter={[20, 20]}>
-          {filteredContents.map(article => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              submitting={submitting}
-              onSubmit={handleSubmitForReview}
-              navigate={navigate}
-            />
-          ))}
-        </Row>
+        <>
+          <Row gutter={[20, 20]}>
+            {visibleItems.map(article => (
+              <ArticleCard
+                key={article.id}
+                article={article}
+                submitting={submitting}
+                onSubmit={handleSubmitForReview}
+                navigate={navigate}
+              />
+            ))}
+          </Row>
+          
+          {/* Show More / Pagination Controls */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center', 
+            marginTop: 32,
+            padding: '16px 0',
+            gap: 16
+          }}>
+            {/* Show More Button - Only show if there are more items in current page */}
+            {hasMoreInPage && (
+              <Button
+                type="primary"
+                icon={<DownOutlined />}
+                onClick={handleShowMore}
+                style={{
+                  borderRadius: 24,
+                  padding: '8px 32px',
+                  height: 'auto',
+                  minWidth: 200
+                }}
+              >
+                Show More ({visibleCount}/{currentPageItems.length})
+              </Button>
+            )}
+
+            {/* Pagination - Show when there are multiple pages or after all items in current page are shown */}
+            {totalPages > 1 && !hasMoreInPage && (
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center',
+                gap: 16,
+                flexWrap: 'wrap',
+                justifyContent: 'center'
+              }}>
+                <Button
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  style={{ borderRadius: 8 }}
+                >
+                  Previous
+                </Button>
+                
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        type={currentPage === pageNum ? 'primary' : 'default'}
+                        onClick={() => handlePageChange(pageNum)}
+                        style={{ 
+                          borderRadius: 8,
+                          minWidth: 36,
+                          ...(currentPage === pageNum ? {} : { border: '1px solid #d9d9d9' })
+                        }}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  style={{ borderRadius: 8 }}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+
+            {/* Show total items info */}
+            {totalItems > 0 && (
+              <div style={{ 
+                fontSize: 13, 
+                color: '#8c8c8c',
+                textAlign: 'center'
+              }}>
+                Showing {startIndex + 1}-{Math.min(startIndex + visibleCount, endIndex)} of {totalItems} items
+                {currentPage < totalPages && ` (Page ${currentPage} of ${totalPages})`}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

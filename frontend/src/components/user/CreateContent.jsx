@@ -75,7 +75,9 @@ const CreateContent = () => {
         tags,
         seo_meta_title: data.seo_meta_title,
         seo_meta_description: data.seo_meta_description,
-        seo_meta_keywords: data.seo_meta_keywords,
+        seo_meta_keywords: data.seo_meta_keywords
+          ? data.seo_meta_keywords.split(',').map(k => k.trim()).filter(Boolean)
+          : [],
         scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null
       });
       setInitialContent(data.content || '');
@@ -132,6 +134,9 @@ const CreateContent = () => {
       });
       if (values.webhook_url !== undefined) formData.set('webhook_url', values.webhook_url || '');
       if (values.tags?.length) formData.append('tags', values.tags.join(','));
+      if (values.seo_meta_keywords?.length) {
+        formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
+      }
       if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
       formData.append('content', content || '');
       if (fileList.length > 0 && fileList[0].originFileObj) formData.append('banner_image', fileList[0].originFileObj);
@@ -310,7 +315,7 @@ const CreateContent = () => {
               <Form.Item name="short_description"
                 label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
                 rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
-                <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} showCount maxLength={300} />
+                <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} />
               </Form.Item>
             </div>
 
@@ -433,7 +438,7 @@ const CreateContent = () => {
                       <Input placeholder="SEO title" size="small" />
                     </Form.Item>
                     <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12 }}>Keywords</Text>} style={{ marginBottom: 0, flex: 1, minWidth: 160 }}>
-                      <Input placeholder="keyword1, keyword2" size="small" />
+                      <Select mode="tags" placeholder="Add keyword..." style={{ width: '100%' }} size="small" tokenSeparators={[',']} />
                     </Form.Item>
                     <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12 }}>Meta Description</Text>} style={{ marginBottom: 0, width: '100%' }}>
                       <TextArea rows={2} placeholder="SEO description" style={{ resize: 'none', fontSize: 12 }} />
@@ -576,7 +581,7 @@ const CreateContent = () => {
                 <TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', fontSize: 12 }} />
               </Form.Item>
               <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12 }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
-                <Input placeholder="keyword1, keyword2, ..." size="small" />
+                <Select mode="tags" placeholder="Add keyword and press Enter..." style={{ width: '100%' }} size="small" tokenSeparators={[',']} />
               </Form.Item>
             </div>
 

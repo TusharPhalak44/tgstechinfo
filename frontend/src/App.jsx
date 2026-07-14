@@ -15,6 +15,15 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfUse from './pages/TermsOfUse';
+import CookiePolicy from './pages/CookiePolicy';
+import DataPrivacyNotice from './pages/DataPrivacyNotice';
+import DataRequests from './pages/DataRequests';
+import Disclaimer from './pages/Disclaimer';
+import AccessibilityStatement from './pages/AccessibilityStatement';
+import AcceptableUsePolicy from './pages/AcceptableUsePolicy';
+import SecurityStatement from './pages/SecurityStatement';
+import VendorList from './pages/VendorList';
+import ContactPrivacyOfficer from './pages/ContactPrivacyOfficer';
 import ArticleDetail from './components/public/ArticleDetail';
 import CategoryList from './components/public/CategoryList';
 import Newsletter from './components/public/Newsletter';
@@ -34,23 +43,22 @@ import SearchResults from './components/public/SearchResults';
 
 const { Content } = Layout;
 
-// Ant Design Theme Configuration (TechInfo Design System)
+// Ant Design Theme Configuration
 const theme = {
   token: {
-    colorPrimary: '#0B1F4D', // Navy Blue
-    colorPrimaryHover: '#123A8C',
-    colorSuccess: '#16A34A',
-    colorWarning: '#F7941D', // Accent Orange
-    colorError: '#DC2626',
-    colorInfo: '#2563EB',
+    colorPrimary: '#0AAEEF',
+    colorSuccess: '#5BBD2B',
+    colorWarning: '#F7941D',
+    colorError: '#c92a2a',
+    colorInfo: '#0AAEEF',
     borderRadius: 8,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     fontSize: 14,
-    colorText: '#0F172A',
-    colorTextSecondary: '#475569',
+    colorText: '#0D2B4E',
+    colorTextSecondary: '#2a5070',
     colorBgContainer: '#ffffff',
-    colorBorder: '#E2E8F0',
-    boxShadow: '0 2px 8px rgba(11, 31, 77, 0.08)',
+    colorBorder: '#d0eaf8',
+    boxShadow: '0 1px 3px rgba(10,174,239,0.08)',
     controlHeight: 36,
     controlHeightLG: 40,
     controlHeightSM: 28,
@@ -63,7 +71,7 @@ const theme = {
     },
     Card: {
       borderRadius: 8,
-      boxShadow: '0 2px 8px rgba(11, 31, 77, 0.08)',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
     },
     Input: {
       borderRadius: 8,
@@ -79,7 +87,7 @@ const theme = {
     Menu: {
       itemHeight: 40,
       itemFontSize: 13,
-      itemColor: '#475569',
+      itemColor: '#495057',
     },
     Typography: {
       titleMarginBottom: 16,
@@ -116,6 +124,16 @@ function AppContent() {
           <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-use" element={<TermsOfUse />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/data-privacy-notice" element={<DataPrivacyNotice />} />
+          <Route path="/data-requests" element={<DataRequests />} />
+          <Route path="/do-not-sell" element={<DataRequests />} />
+          <Route path="/disclaimer" element={<Disclaimer />} />
+          <Route path="/accessibility" element={<AccessibilityStatement />} />
+          <Route path="/acceptable-use" element={<AcceptableUsePolicy />} />
+          <Route path="/security" element={<SecurityStatement />} />
+          <Route path="/vendor-list" element={<VendorList />} />
+          <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
 
           {/* User Routes */}
           <Route path="/dashboard" element={

@@ -103,13 +103,21 @@ const Footer = () => {
 
           {/* Company */}
           <div>
-            <ColHead>Company</ColHead>
-            <FooterLink to="/newsletter">Newsletter</FooterLink>
+            <ColHead accent="#F7941D">Legal &amp; Privacy</ColHead>
             <FooterLink to="/privacy-policy">Privacy Policy</FooterLink>
             <FooterLink to="/terms-of-use">Terms of Use</FooterLink>
             <FooterLink to="/cookie-policy">Cookie Policy</FooterLink>
-            <FooterLink to="/contact">Contact Us</FooterLink>
+            <FooterLink to="/data-privacy-notice">GDPR / CCPA Notice</FooterLink>
+            <FooterLink to="/data-requests">Data Requests (DSAR)</FooterLink>
+            <FooterLink to="/do-not-sell">Do Not Sell My Info</FooterLink>
+            <FooterLink to="/disclaimer">Disclaimer &amp; Copyright</FooterLink>
+            <FooterLink to="/accessibility">Accessibility</FooterLink>
+            <FooterLink to="/acceptable-use">Acceptable Use</FooterLink>
+            <FooterLink to="/security">Security &amp; Data Retention</FooterLink>
+            <FooterLink to="/vendor-list">Vendor List</FooterLink>
+            <FooterLink to="/contact-privacy-officer">Contact Privacy Officer</FooterLink>
           </div>
+
 
           {/* Contact + Newsletter */}
           <div>

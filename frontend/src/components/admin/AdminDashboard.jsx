@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Tag, message, Popconfirm } from 'antd';
+import { Button, Tag, message, Popconfirm, Pagination } from 'antd';
 import { 
   FileTextOutlined, 
   UserOutlined, 
@@ -19,24 +19,29 @@ const AdminDashboard = () => {
     published: 0, 
     totalUsers: 0 
   });
-  const [recentContent, setRecentContent] = useState([]);
+  const [allContent, setAllContent] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [publishingId, setPublishingId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
   const navigate = useNavigate();
 
-  useEffect(() => { 
-    fetchDashboardData(); 
-  }, []);
+  useEffect(() => {
+    fetchDashboardData(currentPage);
+  }, [currentPage]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (page = 1) => {
     setLoading(true);
     try {
       const [statsRes, contentRes] = await Promise.all([
         axios.get('/api/admin/stats'),
-        axios.get('/api/admin/content/pending')
+        axios.get('/api/admin/content/pending', { params: { page, limit: pageSize } })
       ]);
       setStats(statsRes.data);
-      setRecentContent(contentRes.data?.data || contentRes.data || []);
+      const res = contentRes.data;
+      setAllContent(res?.data || []);
+      setTotalItems(res?.total ?? 0);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -47,12 +52,9 @@ const AdminDashboard = () => {
   const handleDirectPublish = async (id) => {
     setPublishingId(id);
     try {
-      await axios.put(`/api/admin/content/${id}/review`, { 
-        action: 'publish', 
-        comment: '' 
-      });
+      await axios.put(`/api/admin/content/${id}/review`, { action: 'publish', comment: '' });
       message.success('Content published successfully');
-      fetchDashboardData();
+      fetchDashboardData(currentPage);
     } catch {
       message.error('Failed to publish content');
     } finally {
@@ -64,7 +66,11 @@ const AdminDashboard = () => {
     try {
       await axios.delete(`/api/admin/content/${id}`);
       message.success('Content deleted successfully');
-      fetchDashboardData();
+      const newTotal = totalItems - 1;
+      const maxPage = Math.ceil(newTotal / pageSize) || 1;
+      const goToPage = currentPage > maxPage ? maxPage : currentPage;
+      if (goToPage !== currentPage) setCurrentPage(goToPage);
+      else fetchDashboardData(currentPage);
     } catch {
       message.error('Failed to delete content');
     }
@@ -79,7 +85,6 @@ const AdminDashboard = () => {
     draft:             { color: 'default', text: 'Draft' }
   };
 
-  // Stat Card Component
   const StatCard = ({ title, value, icon, color = 'primary', valueColor }) => {
     const colorMap = {
       primary: 'text-primary-500',
@@ -88,25 +93,22 @@ const AdminDashboard = () => {
       danger: 'text-red-500',
       info: 'text-blue-500'
     };
-
     return (
       <div className="bg-white rounded-lg shadow-soft p-6 border border-gray-200 hover:shadow-medium transition-shadow">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className={`text-2xl font-bold mt-1 ${valueColor || 'text-gray-900'}`}>
-              {value}
-            </p>
+            <p className={`text-2xl font-bold mt-1 ${valueColor || 'text-gray-900'}`}>{value}</p>
           </div>
-          <div className={`text-3xl ${colorMap[color]}`}>
-            {icon}
-          </div>
+          <div className={`text-3xl ${colorMap[color]}`}>{icon}</div>
         </div>
       </div>
     );
   };
 
-  // Loading Skeleton
+  const startIndex = (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(currentPage * pageSize, totalItems);
+
   if (loading) {
     return (
       <div className="p-6">
@@ -137,45 +139,19 @@ const AdminDashboard = () => {
 
   return (
     <div className="p-4 md:p-6">
-      {/* Page Title */}
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-        Admin Dashboard
-      </h1>
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">Admin Dashboard</h1>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard 
-          title="Total Content" 
-          value={stats.totalContent} 
-          icon={<FileTextOutlined />} 
-          color="primary" 
-        />
-        <StatCard 
-          title="Pending Review" 
-          value={stats.pendingReview} 
-          icon={<ClockCircleOutlined />} 
-          color="warning"
-          valueColor="text-yellow-500"
-        />
-        <StatCard 
-          title="Published" 
-          value={stats.published} 
-          icon={<CheckCircleOutlined />} 
-          color="success"
-          valueColor="text-green-500"
-        />
-        <StatCard 
-          title="Total Users" 
-          value={stats.totalUsers} 
-          icon={<UserOutlined />} 
-          color="primary" 
-        />
+        <StatCard title="Total Content" value={stats.totalContent} icon={<FileTextOutlined />} color="primary" />
+        <StatCard title="Pending Review" value={stats.pendingReview} icon={<ClockCircleOutlined />} color="warning" valueColor="text-yellow-500" />
+        <StatCard title="Published" value={stats.published} icon={<CheckCircleOutlined />} color="success" valueColor="text-green-500" />
+        <StatCard title="Total Users" value={stats.totalUsers} icon={<UserOutlined />} color="primary" />
       </div>
 
-      {/* Content Table */}
       <div className="bg-white rounded-lg shadow-soft border border-gray-200 overflow-hidden">
-        <div className="p-4 md:p-6 border-b border-gray-200">
+        <div className="p-4 md:p-6 border-b border-gray-200 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900">Content Submissions</h2>
+          <span className="text-sm text-gray-500">Total: {stats.totalContent} submissions</span>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200" style={{ display: 'block' }}>
@@ -189,14 +165,12 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200" style={{ display: 'block', maxHeight: '520px', overflowY: 'auto' }}>
-              {recentContent.length === 0 ? (
+              {allContent.length === 0 ? (
                 <tr style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                    No content found
-                  </td>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No content found</td>
                 </tr>
               ) : (
-                recentContent.map((record) => (
+                allContent.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 transition-colors" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -207,7 +181,7 @@ const AdminDashboard = () => {
                             style={{ width: 48, height: 36, objectFit: 'contain', borderRadius: 4, flexShrink: 0, border: '1px solid #e5e7eb', background: '#f0f4ff' }}
                           />
                         )}
-                        <span 
+                        <span
                           className="text-primary-500 cursor-pointer hover:text-primary-600 transition-colors"
                           onClick={() => navigate(`/admin/review/${record.id}`)}
                         >
@@ -227,7 +201,7 @@ const AdminDashboard = () => {
                       </Tag>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                         {record.status === 'pending' && (
                           <Button type="primary" size="small" icon={<EyeOutlined />}
                             onClick={() => navigate(`/admin/review/${record.id}`)}
@@ -263,11 +237,24 @@ const AdminDashboard = () => {
             </tbody>
           </table>
         </div>
-        {recentContent.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200">
+
+        {totalItems > 0 && (
+          <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center flex-wrap gap-4">
             <span className="text-sm text-gray-500">
-              Total {recentContent.length} submissions
+              Showing {startIndex}-{endIndex} of {totalItems} submissions
             </span>
+            <Pagination
+              current={currentPage}
+              total={totalItems}
+              pageSize={pageSize}
+              onChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              showSizeChanger={false}
+              showQuickJumper={totalItems > 100}
+              size="default"
+            />
           </div>
         )}
       </div>

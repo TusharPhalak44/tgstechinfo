@@ -6,6 +6,8 @@ import axios from 'axios';
 import moment from 'moment';
 
 const PAGE_SIZE = 15;
+const INITIAL_SHOW = 9;
+const SEE_MORE_STEP = 3;
 
 const parseTags = (value) => {
   if (!value) return [];
@@ -171,6 +173,7 @@ const CategoryList = () => {
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
 
   const typeInfo = TYPE_MAP[slug];
   const catImgInfo = !typeInfo ? (CATEGORY_IMG_MAP[slug] || {}) : {};
@@ -181,10 +184,14 @@ const CategoryList = () => {
 
   useEffect(() => {
     setCurrentPage(1);
+    setVisibleCount(INITIAL_SHOW);
     fetchSidebar();
   }, [slug]);
 
-  useEffect(() => { fetchMainList(); }, [slug, currentPage]);
+  useEffect(() => {
+    setVisibleCount(INITIAL_SHOW);
+    fetchMainList();
+  }, [slug, currentPage]);
 
   const fetchSidebar = async () => {
     try {
@@ -231,7 +238,7 @@ const CategoryList = () => {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
         <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start' }} className="cat-layout">
 
-          {/* ── Main List — scrollable, height matches sidebar ── */}
+          {/* ── Main List ── */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {/* Count bar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: 16, borderBottom: `3px solid ${accent}`, flexShrink: 0 }}>
@@ -244,13 +251,28 @@ const CategoryList = () => {
                 ? <Skeleton active paragraph={{ rows: 6 }} />
                 : contents.length === 0
                   ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: 15 }}>No content found.</div>
-                  : contents.map(item => (
+                  : contents.slice(0, visibleCount).map(item => (
                       <ListItem key={item.id} item={item} navigate={navigate} accent={accent} />
                     ))
               }
             </div>
 
-            {total > PAGE_SIZE && (
+            {/* See More button */}
+            {!loading && contents.length > 0 && visibleCount < contents.length && (
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+                <button
+                  onClick={() => setVisibleCount(v => Math.min(v + SEE_MORE_STEP, contents.length))}
+                  style={{ padding: '11px 36px', background: '#fff', color: accent, border: `2px solid ${accent}`, borderRadius: 30, fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
+                  onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = accent; }}
+                >
+                  See More
+                 </button>
+              </div>
+            )}
+
+            {/* Pagination — only shown after all items on this page are visible */}
+            {!loading && total > PAGE_SIZE && visibleCount >= contents.length && (
               <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
                 <Pagination
                   current={currentPage}
@@ -264,7 +286,7 @@ const CategoryList = () => {
             )}
           </div>
 
-          {/* ── Sidebar — natural height, no scroll ── */}
+          {/* ── Sidebar ── */}
           <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
             {/* Recent Posts */}
             <div style={{ background: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5', marginBottom: 24 }}>
