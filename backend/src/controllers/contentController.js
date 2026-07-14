@@ -5,12 +5,23 @@ const { validationResult } = require('express-validator');
 const { sendEmail, accessGrantEmailTemplate } = require('../config/email');
 const { notifyAdmins } = require('./notificationController');
 
+// Replace em-dash (—) with hyphen (-) in any string or object
+const stripEmDash = (val) => {
+    if (typeof val === 'string') return val.replace(/—/g, '-');
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const out = {};
+        for (const k of Object.keys(val)) out[k] = stripEmDash(val[k]);
+        return out;
+    }
+    return val;
+};
+
 exports.createContent = async (req, res) => {
     try {
         const errors = validationResult(req);
         if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-        const contentData = {
+        const contentData = stripEmDash({
             ...req.body,
             user_id: req.user.id,
             banner_image: req.files?.banner_image?.[0]?.filename || null,
@@ -18,7 +29,7 @@ exports.createContent = async (req, res) => {
             tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
             custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null,
             webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null
-        };
+        });
 
         const content = await Content.create(contentData);
         res.status(201).json({ message: 'Content created successfully', content });
@@ -68,13 +79,13 @@ exports.updateContent = async (req, res) => {
         if (content.status === 'published')
             return res.status(400).json({ message: 'Published content cannot be edited' });
 
-        const updateData = { ...req.body };
+        let updateData = { ...req.body };
         if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
         if (req.body.tags) updateData.tags = JSON.stringify(req.body.tags.split(',').map(t => t.trim()).filter(Boolean));
-        // webhook_url is already in req.body via spread
+        updateData = stripEmDash(updateData);
 
         const updatedContent = await Content.update(id, updateData);
         res.json({ message: 'Content updated successfully', content: updatedContent });

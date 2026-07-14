@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+/* const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -112,4 +112,4 @@ module.exports = {
     sendEmail,
     accessGrantEmailTemplate,
     subscriptionEmailTemplate
-};
+}; */

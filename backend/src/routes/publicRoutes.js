@@ -20,6 +20,10 @@ router.get('/content-types', publicController.getContentTypes);
 // Public stats
 router.get('/stats', publicController.getPublicStats);
 
+// Data requests (DSAR + Do Not Sell)
+router.post('/data-request/dsar', publicController.submitDataRequest);
+router.post('/data-request/do-not-sell', publicController.submitDoNotSell);
+
 // Public submission API — no auth required
 router.get('/submission/:id', adminController.getSubmissionById);
 

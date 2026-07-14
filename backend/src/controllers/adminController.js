@@ -1,14 +1,25 @@
 const Content = require('../models/Content');
 const User = require('../models/User');
 const LandingPage = require('../models/LandingPage');
+const DataRequest = require('../models/DataRequest');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate } = require('../config/email');
 const { createNotification } = require('./notificationController');
 
+const stripEmDash = (val) => {
+    if (typeof val === 'string') return val.replace(/—/g, '-');
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const out = {};
+        for (const k of Object.keys(val)) out[k] = stripEmDash(val[k]);
+        return out;
+    }
+    return val;
+};
+
 // ✅ Get pending content for review
 exports.getPendingContent = async (req, res) => {
     try {
-        const { status, page = 1, limit = 10 } = req.query;
+        const { status, page = 1, limit = 15 } = req.query;
         const offset = (page - 1) * limit;
 
         const filters = {
@@ -189,7 +200,7 @@ exports.adminEditContent = async (req, res) => {
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
 
-        const updated = await Content.update(id, updateData);
+        const updated = await Content.update(id, stripEmDash(updateData));
         res.json({ message: 'Content updated successfully', content: updated });
     } catch (error) {
         console.error('Admin edit content error:', error);
@@ -239,6 +250,32 @@ exports.getSubmissionById = async (req, res) => {
         });
     } catch (error) {
         console.error('Get submission by id error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Get data requests (DSAR + Do Not Sell)
+exports.getDataRequests = async (req, res) => {
+    try {
+        const { status, request_type, limit = 50, offset = 0 } = req.query;
+        const { rows, total } = await DataRequest.findAll({ status, request_type, limit, offset });
+        res.json({ data: rows, total });
+    } catch (error) {
+        console.error('Get data requests error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Update data request status
+exports.updateDataRequestStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, admin_notes } = req.body;
+        const updated = await DataRequest.updateStatus(id, status, admin_notes);
+        if (!updated) return res.status(404).json({ message: 'Request not found' });
+        res.json({ message: 'Status updated successfully', data: updated });
+    } catch (error) {
+        console.error('Update data request status error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

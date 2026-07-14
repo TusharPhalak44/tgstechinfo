@@ -30,6 +30,10 @@ router.get('/stats', adminController.getDashboardStats);
 // Landing page submissions
 router.get('/submissions', adminController.getSubmissions);
 
+// Data requests (DSAR + Do Not Sell)
+router.get('/data-requests', adminController.getDataRequests);
+router.put('/data-requests/:id/status', adminController.updateDataRequestStatus);
+
 // ✅ Admin can edit any content directly
 router.put('/content/:id/edit', uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), adminController.adminEditContent);
 router.delete('/content/:id', adminController.deleteContent);

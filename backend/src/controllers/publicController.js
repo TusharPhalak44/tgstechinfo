@@ -2,6 +2,7 @@ const Content = require('../models/Content');
 const Category = require('../models/Category');
 const ContentType = require('../models/ContentType');
 const LandingPage = require('../models/LandingPage');
+const DataRequest = require('../models/DataRequest');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate } = require('../config/email');
 const axios = require('axios');
@@ -340,6 +341,96 @@ exports.getPublicStats = async (req, res) => {
         res.json({ totalPublished, totalCategories, totalAuthors, totalViews });
     } catch (error) {
         console.error('Get public stats error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.submitDataRequest = async (req, res) => {
+    try {
+        const {
+            first_name, last_name, email, phone, company, country, state,
+            request_type: dsar_type, details
+        } = req.body;
+
+        if (!first_name || !last_name || !email || !dsar_type) {
+            return res.status(400).json({ message: 'first_name, last_name, email, and request_type are required.' });
+        }
+
+        const record = await DataRequest.create({
+            request_type: 'dsar',
+            first_name, last_name, email, phone, company, country, state,
+            dsar_type, details,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+        });
+
+        try {
+            await sendEmail(
+                email,
+                'Data Request Received — TGS Tech Info',
+                `<p>Dear ${first_name},</p>
+                 <p>We have received your data subject request (ID: <strong>#${record.id}</strong>).</p>
+                 <p><strong>Request Type:</strong> ${dsar_type}</p>
+                 <p>We will process your request within the legally required timeframe (GDPR: 30 days / CCPA: 45 days).</p>
+                 <p>If you have any questions, contact us at <a href="mailto:privacy@tgstechinfo.com">privacy@tgstechinfo.com</a></p>
+                 <p>— TGS Tech Info Privacy Team</p>`
+            );
+        } catch (e) {
+            console.warn('DSAR confirmation email failed:', e.message);
+        }
+
+        res.json({ message: 'Data request submitted successfully.', id: record.id });
+    } catch (error) {
+        console.error('Submit data request error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.submitDoNotSell = async (req, res) => {
+    try {
+        const {
+            firstName, lastName, email, altEmail, phone, company, jobTitle,
+            state, requestType: dns_type, description
+        } = req.body;
+
+        if (!firstName || !lastName || !email || !state || !dns_type) {
+            return res.status(400).json({ message: 'firstName, lastName, email, state, and requestType are required.' });
+        }
+
+        const record = await DataRequest.create({
+            request_type: 'do_not_sell',
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            alt_email: altEmail,
+            phone,
+            company,
+            job_title: jobTitle,
+            state,
+            dns_type,
+            details: description,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+        });
+
+        try {
+            await sendEmail(
+                email,
+                'Opt-Out Request Received — TGS Tech Info',
+                `<p>Dear ${firstName},</p>
+                 <p>We have received your opt-out request (ID: <strong>#${record.id}</strong>).</p>
+                 <p><strong>Request Type:</strong> ${dns_type}</p>
+                 <p>We will process your request within 15 business days and suppress your information from applicable sale/sharing activities.</p>
+                 <p>If you have any questions, contact us at <a href="mailto:privacy@tgstechinfo.com">privacy@tgstechinfo.com</a></p>
+                 <p>— TGS Tech Info Privacy Team</p>`
+            );
+        } catch (e) {
+            console.warn('DNS confirmation email failed:', e.message);
+        }
+
+        res.json({ message: 'Opt-out request submitted successfully.', id: record.id });
+    } catch (error) {
+        console.error('Submit do not sell error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
