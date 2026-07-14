@@ -8,12 +8,12 @@ import {
 
 const FooterLink = ({ to, children }) => (
   <Link to={to} style={{
-    fontSize: 13, color: '#94a3b8', textDecoration: 'none',
+    fontSize: 13, color: 'var(--color-muted)', textDecoration: 'none',
     display: 'flex', alignItems: 'center', gap: 7, padding: '5px 0',
     transition: 'color .2s, gap .2s'
   }}
-    onMouseEnter={e => { e.currentTarget.style.color = '#0AAEEF'; e.currentTarget.style.gap = '10px'; }}
-    onMouseLeave={e => { e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.gap = '7px'; }}
+    onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.gap = '10px'; }}
+    onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-muted)'; e.currentTarget.style.gap = '7px'; }}
   >
     <ArrowRightOutlined style={{ fontSize: 9 }} />
     {children}
@@ -24,18 +24,18 @@ const SocialBtn = ({ href, icon, label, color }) => (
   <a href={href} aria-label={label} target="_blank" rel="noopener noreferrer" style={{
     width: 38, height: 38, borderRadius: 10,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#94a3b8', fontSize: 17, textDecoration: 'none',
-    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+    color: 'var(--color-muted)', fontSize: 17, textDecoration: 'none',
+    background: 'var(--color-primary-light)', border: '1px solid var(--color-border)',
     transition: 'all .22s'
   }}
-    onMouseEnter={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = color; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#94a3b8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.transform = 'none'; }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-primary-light)'; e.currentTarget.style.color = 'var(--color-muted)'; e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.transform = 'none'; }}
   >
     {icon}
   </a>
 );
 
-const ColHead = ({ children, accent = '#0AAEEF' }) => (
+const ColHead = ({ children, accent = 'var(--color-accent)' }) => (
   <div style={{ marginBottom: 18 }}>
     <div style={{ fontWeight: 700, fontSize: 12, color: accent, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
       {children}
@@ -48,10 +48,7 @@ const Footer = () => {
   const year = new Date().getFullYear();
 
   return (
-    <footer style={{ background: '#0D2B4E', marginTop: 0 }}>
-
-      {/* ── Top gradient bar ── */}
-      <div style={{ height: 4, background: 'linear-gradient(90deg,#0AAEEF 0%,#5BBD2B 40%,#F7941D 70%,#0D2B4E 100%)' }} />
+    <footer style={{ background: 'var(--color-primary)', marginTop: 0 }}>
 
       {/* ── Main footer ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 44px' }}>
@@ -62,7 +59,7 @@ const Footer = () => {
             <div style={{ marginBottom: 16 }}>
               <img src="/logo.jpg" alt="TGS Tech Info" style={{ height: 70, objectFit: 'contain' }} />
             </div>
-            <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.8, marginBottom: 22, maxWidth: 240 }}>
+            <p style={{ fontSize: 13, color: 'var(--color-muted)', lineHeight: 1.8, marginBottom: 22, maxWidth: 240 }}>
               Your gateway to technology insights, news, and resources for IT and B2B professionals worldwide.
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
@@ -75,8 +72,8 @@ const Footer = () => {
             <div style={{ display: 'flex', gap: 20 }}>
               {[['50K+', 'Readers'], ['500+', 'Articles'], ['100+', 'Experts']].map(([num, lbl]) => (
                 <div key={lbl}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: '#0AAEEF' }}>{num}</div>
-                  <div style={{ fontSize: 11, color: '#475569' }}>{lbl}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{num}</div>
+                  <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>{lbl}</div>
                 </div>
               ))}
             </div>
@@ -84,7 +81,7 @@ const Footer = () => {
 
           {/* Insights */}
           <div>
-            <ColHead accent="#0AAEEF">Insights</ColHead>
+            <ColHead>Insights</ColHead>
             <FooterLink to="/articles">Articles</FooterLink>
             <FooterLink to="/news">News</FooterLink>
             <FooterLink to="/blogs">Blogs</FooterLink>
@@ -95,7 +92,7 @@ const Footer = () => {
 
           {/* Technology */}
           <div>
-            <ColHead accent="#5BBD2B">Technology</ColHead>
+            <ColHead>Technology</ColHead>
             <FooterLink to="/category/artificial-intelligence">AI & ML</FooterLink>
             <FooterLink to="/category/cybersecurity">Cybersecurity</FooterLink>
             <FooterLink to="/category/cloud-computing">Cloud Computing</FooterLink>
@@ -106,7 +103,7 @@ const Footer = () => {
 
           {/* Company */}
           <div>
-            <ColHead accent="#F7941D">Company</ColHead>
+            <ColHead>Company</ColHead>
             <FooterLink to="/newsletter">Newsletter</FooterLink>
             <FooterLink to="/privacy-policy">Privacy Policy</FooterLink>
             <FooterLink to="/terms-of-use">Terms of Use</FooterLink>
@@ -116,39 +113,39 @@ const Footer = () => {
 
           {/* Contact + Newsletter */}
           <div>
-            <ColHead accent="#0AAEEF">Get In Touch</ColHead>
+            <ColHead>Get In Touch</ColHead>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(10,174,239,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <MailOutlined style={{ color: '#0AAEEF', fontSize: 12 }} />
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <MailOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#64748b', paddingTop: 5 }}>contact@tgstechinfo.com</span>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>contact@tgstechinfo.com</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(10,174,239,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <PhoneOutlined style={{ color: '#0AAEEF', fontSize: 12 }} />
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <PhoneOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#64748b', paddingTop: 5 }}>+1 (555) 123-4567</span>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>+1 (555) 123-4567</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(10,174,239,.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <EnvironmentOutlined style={{ color: '#0AAEEF', fontSize: 12 }} />
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#64748b', paddingTop: 5 }}>123 Tech Park, Silicon Valley, CA</span>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>123 Tech Park, Silicon Valley, CA</span>
               </div>
             </div>
 
             {/* Newsletter */}
-            <div style={{ background: 'rgba(10,174,239,.08)', border: '1px solid rgba(10,174,239,.2)', borderRadius: 12, padding: '16px' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#0AAEEF', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Newsletter</div>
-              <div style={{ fontSize: 12, color: '#475569', marginBottom: 10 }}>Weekly tech digest, free.</div>
-              <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(255,255,255,.1)' }}>
+            <div style={{ background: 'var(--color-primary-light)', border: '1px solid var(--color-border)', borderRadius: 12, padding: '16px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Newsletter</div>
+              <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 10 }}>Weekly tech digest, free.</div>
+              <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
                 <input placeholder="your@email.com" style={{
                   flex: 1, padding: '9px 12px', border: 'none', fontSize: 12,
-                  outline: 'none', background: 'rgba(255,255,255,.06)', color: '#e2e8f0'
+                  outline: 'none', background: 'var(--color-surface)', color: 'var(--color-heading)'
                 }} />
                 <button style={{
-                  padding: '9px 14px', background: 'linear-gradient(135deg,#0AAEEF,#5BBD2B)',
+                  padding: '9px 14px', background: 'var(--color-accent)',
                   border: 'none', color: '#fff', fontSize: 14, cursor: 'pointer'
                 }}>
                   <SendOutlined />
@@ -161,18 +158,18 @@ const Footer = () => {
       </div>
 
       {/* ── Divider ── */}
-      <div style={{ height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent)', margin: '0 24px' }} />
+      <div style={{ height: 1, background: 'var(--color-border)', margin: '0 24px' }} />
 
       {/* ── Bottom bar ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 13, color: '#64748b' }}>
-          © {year} <span style={{ color: '#0AAEEF', fontWeight: 600 }}>TGS Tech Info</span>. All rights reserved.
+        <span style={{ fontSize: 13, color: 'var(--color-muted)' }}>
+          © {year} <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>TGS Tech Info</span>. All rights reserved.
         </span>
         <div style={{ display: 'flex', gap: 20 }}>
           {[['Privacy', '/privacy-policy'], ['Terms', '/terms-of-use'], ['Cookies', '/cookie-policy']].map(([label, to]) => (
-            <Link key={label} to={to} style={{ fontSize: 13, color: '#64748b', textDecoration: 'none', transition: 'color .2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#0AAEEF'}
-              onMouseLeave={e => e.currentTarget.style.color = '#64748b'}
+            <Link key={label} to={to} style={{ fontSize: 13, color: 'var(--color-muted)', textDecoration: 'none', transition: 'color .2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
             >{label}</Link>
           ))}
         </div>

@@ -34,22 +34,23 @@ import SearchResults from './components/public/SearchResults';
 
 const { Content } = Layout;
 
-// Ant Design Theme Configuration
+// Ant Design Theme Configuration (TechInfo Design System)
 const theme = {
   token: {
-    colorPrimary: '#0AAEEF',
-    colorSuccess: '#5BBD2B',
-    colorWarning: '#F7941D',
-    colorError: '#c92a2a',
-    colorInfo: '#0AAEEF',
+    colorPrimary: '#0B1F4D', // Navy Blue
+    colorPrimaryHover: '#123A8C',
+    colorSuccess: '#16A34A',
+    colorWarning: '#F7941D', // Accent Orange
+    colorError: '#DC2626',
+    colorInfo: '#2563EB',
     borderRadius: 8,
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
     fontSize: 14,
-    colorText: '#0D2B4E',
-    colorTextSecondary: '#2a5070',
+    colorText: '#0F172A',
+    colorTextSecondary: '#475569',
     colorBgContainer: '#ffffff',
-    colorBorder: '#d0eaf8',
-    boxShadow: '0 1px 3px rgba(10,174,239,0.08)',
+    colorBorder: '#E2E8F0',
+    boxShadow: '0 2px 8px rgba(11, 31, 77, 0.08)',
     controlHeight: 36,
     controlHeightLG: 40,
     controlHeightSM: 28,
@@ -62,7 +63,7 @@ const theme = {
     },
     Card: {
       borderRadius: 8,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+      boxShadow: '0 2px 8px rgba(11, 31, 77, 0.08)',
     },
     Input: {
       borderRadius: 8,
@@ -78,7 +79,7 @@ const theme = {
     Menu: {
       itemHeight: 40,
       itemFontSize: 13,
-      itemColor: '#495057',
+      itemColor: '#475569',
     },
     Typography: {
       titleMarginBottom: 16,

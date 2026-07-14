@@ -29,10 +29,10 @@ const STATIC_NAV = [
   {
     key: 'resources', label: 'Resources',
     children: [
-      { label: '✍️ Blog', to: '/blogs' },
-      { label: '📄 Whitepaper', to: '/category/whitepaper' },
-      { label: '🎥 Webinar', to: '/webinars' },
-      { label: '📅 Events', to: '/events' },
+      { label: 'Blog', to: '/blogs' },
+      { label: 'Whitepaper', to: '/category/whitepaper' },
+      { label: 'Webinar', to: '/webinars' },
+      { label: 'Events', to: '/events' },
     ]
   },
   { key: 'technology', label: 'Technology', dynamic: true },
@@ -41,7 +41,7 @@ const STATIC_NAV = [
   { key: 'contact', label: 'Contact', to: '/contact' },
 ];
 
-// ── Dropdown panel — fixed position ─────────────────────────────
+// ── Dropdown panel ─ fixed position ─────────────────────────────
 const MegaPanel = ({ items, onClose, anchorRect, onMouseEnter, onMouseLeave }) => {
   if (!anchorRect) return null;
   const left = Math.max(8, anchorRect.left + anchorRect.width / 2 - 130);
@@ -54,30 +54,30 @@ const MegaPanel = ({ items, onClose, anchorRect, onMouseEnter, onMouseLeave }) =
       top: anchorRect.bottom + 8,
       left,
       zIndex: 99999,
-      background: '#fff',
+      background: 'var(--color-surface)',
       borderRadius: 14,
       padding: '10px 6px',
-      boxShadow: '0 12px 48px rgba(0,0,0,0.16)',
-      border: '1px solid #e8ecf4',
+      boxShadow: '0 12px 48px rgba(11,31,77,0.16)',
+      border: '1px solid var(--color-border)',
       minWidth: 220,
       animation: 'navFadeDown .18s ease'
     }}>
       {/* arrow */}
       <div style={{
         position: 'absolute', top: -7, left: 130 - 8,
-        width: 14, height: 14, background: '#fff',
-        border: '1px solid #e8ecf4', borderBottom: 'none', borderRight: 'none',
+        width: 14, height: 14, background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)', borderBottom: 'none', borderRight: 'none',
         transform: 'rotate(45deg)', borderRadius: '2px 0 0 0'
       }} />
       {items.map(item => (
         <Link key={item.label} to={item.to} onClick={onClose} style={{ textDecoration: 'none' }}>
           <div style={{
             padding: '9px 14px', borderRadius: 8, cursor: 'pointer',
-            fontSize: 13, fontWeight: 500, color: '#1a1a2e',
+            fontSize: 13, fontWeight: 500, color: 'var(--color-heading)',
             transition: 'background .15s, color .15s'
           }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#e8f8fe'; e.currentTarget.style.color = '#0AAEEF'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#0D2B4E'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary-light)'; e.currentTarget.style.color = 'var(--color-primary)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-heading)'; }}
           >
             {item.label}
           </div>
@@ -109,14 +109,14 @@ const NavLink = ({ item, active }) => {
   if (!item.children) {
     return (
       <Link to={item.to} style={{
-        fontSize: 13.5, fontWeight: 600, color: active ? '#0AAEEF' : '#0D2B4E',
+        fontSize: 13.5, fontWeight: 600, color: active ? 'var(--color-primary)' : 'var(--color-heading)',
         textDecoration: 'none', padding: '4px 2px', position: 'relative',
         transition: 'color .2s', whiteSpace: 'nowrap'
       }}>
         {item.label}
         <span style={{
           position: 'absolute', bottom: -2, left: 0, right: 0, height: 2,
-          background: 'linear-gradient(90deg,#0AAEEF,#5BBD2B)', borderRadius: 2,
+          background: 'var(--color-primary)', borderRadius: 2,
           transform: active ? 'scaleX(1)' : 'scaleX(0)',
           transition: 'transform .22s', transformOrigin: 'left'
         }} />
@@ -131,10 +131,10 @@ const NavLink = ({ item, active }) => {
     >
       <button
         style={{
-          background: open ? '#e8f8fe' : 'none',
+          background: open ? 'var(--color-primary-light)' : 'none',
           border: 'none', cursor: 'pointer',
           fontSize: 13.5, fontWeight: 600,
-          color: open ? '#0AAEEF' : '#0D2B4E',
+          color: open ? 'var(--color-primary)' : 'var(--color-heading)',
           display: 'flex', alignItems: 'center', gap: 5,
           padding: '5px 10px', borderRadius: 8,
           transition: 'all .2s', whiteSpace: 'nowrap'
@@ -163,10 +163,10 @@ const NavLink = ({ item, active }) => {
 // ── Notification panel ───────────────────────────────────────────
 const NotifPanel = ({ notifications, onMarkRead }) => (
   <div style={{
-    width: 360, background: '#fff', borderRadius: 14,
-    boxShadow: '0 8px 40px rgba(0,0,0,0.12)', border: '1px solid #f0f0f8', overflow: 'hidden'
+    width: 360, background: 'var(--color-surface)', borderRadius: 14,
+    boxShadow: '0 8px 40px rgba(11,31,77,0.12)', border: '1px solid var(--color-border)', overflow: 'hidden'
   }}>
-    <div style={{ padding: '14px 18px', borderBottom: '1px solid #f4f4f8', fontWeight: 700, fontSize: 14, color: '#1a1a2e', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', fontWeight: 700, fontSize: 14, color: 'var(--color-heading)', display: 'flex', alignItems: 'center', gap: 8 }}>
       Notifications
       {notifications.length > 0 && <Tag color="blue" style={{ borderRadius: 10, fontSize: 11 }}>{notifications.length}</Tag>}
     </div>
@@ -177,7 +177,7 @@ const NotifPanel = ({ notifications, onMarkRead }) => (
             <List.Item style={{ padding: '10px 18px', alignItems: 'flex-start' }}
               actions={[
                 <Button key="r" type="text" size="small" icon={<CheckOutlined />}
-                  style={{ color: '#52c41a', fontSize: 12 }} onClick={e => onMarkRead(item.id, e)}>
+                  style={{ color: 'var(--color-success)', fontSize: 12 }} onClick={e => onMarkRead(item.id, e)}>
                   Read
                 </Button>
               ]}>
@@ -185,8 +185,8 @@ const NotifPanel = ({ notifications, onMarkRead }) => (
                 title={<Tag color={NOTIF_COLOR[item.type] || 'default'} style={{ fontSize: 11 }}>{item.type?.replace('_', ' ').toUpperCase()}</Tag>}
                 description={
                   <div>
-                    <Text style={{ fontSize: 13, color: '#333' }}>{item.message}</Text>
-                    <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>{new Date(item.created_at).toLocaleString()}</div>
+                    <Text style={{ fontSize: 13, color: 'var(--color-body)' }}>{item.message}</Text>
+                    <div style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 2 }}>{new Date(item.created_at).toLocaleString()}</div>
                   </div>
                 }
               />
@@ -302,13 +302,11 @@ const Navbar = () => {
       `}</style>
 
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
-      {/* ── Top accent bar ── */}
-      <div style={{ height: 3, background: 'linear-gradient(90deg,#0AAEEF 0%,#5BBD2B 50%,#F7941D 100%)', flexShrink: 0 }} />
 
       <header style={{
-        background: scrolled ? 'rgba(255,255,255,0.98)' : '#fff',
+        background: scrolled ? 'rgba(255,255,255,0.98)' : 'var(--color-surface)',
         backdropFilter: scrolled ? 'blur(16px)' : 'none',
-        boxShadow: scrolled ? '0 4px 24px rgba(0,0,0,0.09)' : '0 1px 0 #eef0f5',
+        boxShadow: scrolled ? '0 4px 24px rgba(11,31,77,0.09)' : '0 1px 0 var(--color-border)',
         transition: 'box-shadow .3s, background .3s',
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', height: 58, display: 'flex', alignItems: 'center', gap: 24 }}>
@@ -335,28 +333,28 @@ const Navbar = () => {
               {searchVisible ? (
                 <div style={{
                   display: 'flex', alignItems: 'center',
-                  background: '#e8f8fe', borderRadius: 24,
-                  padding: '0 12px', border: '1.5px solid #0AAEEF'
+                  background: 'var(--color-primary-light)', borderRadius: 24,
+                  padding: '0 12px', border: '1.5px solid var(--color-primary)'
                 }}>
-                  <SearchOutlined style={{ color: '#0AAEEF', fontSize: 13 }} />
+                  <SearchOutlined style={{ color: 'var(--color-primary)', fontSize: 13 }} />
                   <input
                     autoFocus
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
                     placeholder="Search..."
-                    style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, padding: '7px 8px', width: 180, color: '#1a1a2e' }}
+                    style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, padding: '7px 8px', width: 180, color: 'var(--color-heading)' }}
                   />
-                  <CloseOutlined style={{ color: '#9ca3af', fontSize: 11, cursor: 'pointer' }} onClick={() => { setSearchVisible(false); setSearchQuery(''); }} />
+                  <CloseOutlined style={{ color: 'var(--color-muted)', fontSize: 11, cursor: 'pointer' }} onClick={() => { setSearchVisible(false); setSearchQuery(''); }} />
                 </div>
               ) : (
                 <button onClick={() => setSearchVisible(true)} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   width: 36, height: 36, borderRadius: 10,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#6b7280', transition: 'background .2s'
+                  color: 'var(--color-muted)', transition: 'background .2s'
                 }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#e8f8fe'}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-light)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'none'}
                 >
                   <SearchOutlined style={{ fontSize: 16 }} />
@@ -376,9 +374,9 @@ const Navbar = () => {
                     background: 'none', border: 'none', cursor: 'pointer',
                     width: 36, height: 36, borderRadius: 10,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: '#6b7280', transition: 'background .2s'
+                    color: 'var(--color-muted)', transition: 'background .2s'
                   }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#e8f8fe'}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-light)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
                     <BellOutlined style={{ fontSize: 16 }} />
@@ -393,32 +391,32 @@ const Navbar = () => {
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
                   padding: '5px 12px 5px 6px', borderRadius: 24,
-                  border: '1.5px solid #c5edfc', background: '#e8f8fe',
+                  border: '1.5px solid var(--color-primary-light)', background: 'var(--color-primary-light)',
                   transition: 'border-color .2s'
                 }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = '#0AAEEF'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = '#c5edfc'}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-primary-light)'}
                 >
-                  <Avatar size={26} icon={<UserOutlined />} style={{ background: 'linear-gradient(135deg,#0AAEEF,#5BBD2B)', flexShrink: 0 }} />
-                  {!isMobile && <span style={{ fontSize: 13, fontWeight: 600, color: '#0D2B4E' }}>{user?.first_name}</span>}
-                  <DownOutlined style={{ fontSize: 9, color: '#0AAEEF' }} />
+                  <Avatar size={26} icon={<UserOutlined />} style={{ background: 'var(--color-primary)', flexShrink: 0 }} />
+                  {!isMobile && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-heading)' }}>{user?.first_name}</span>}
+                  <DownOutlined style={{ fontSize: 9, color: 'var(--color-primary)' }} />
                 </div>
               </Dropdown>
             ) : !isMobile ? (
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => navigate('/login')} style={{
-                  padding: '7px 18px', borderRadius: 24, border: '1.5px solid #0AAEEF',
-                  background: 'transparent', color: '#0AAEEF', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  padding: '7px 18px', borderRadius: 24, border: '1.5px solid var(--color-primary)',
+                  background: 'transparent', color: 'var(--color-primary)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   transition: 'all .2s'
                 }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#0AAEEF'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#0AAEEF'; }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary)'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-primary)'; }}
                 >
                   Login
                 </button>
                 <button onClick={() => navigate('/register')} style={{
                   padding: '7px 18px', borderRadius: 24, border: 'none',
-                  background: 'linear-gradient(135deg,#F7941D,#0AAEEF)', color: '#fff',
+                  background: 'var(--color-accent)', color: '#fff',
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   boxShadow: '0 2px 10px rgba(247,148,29,.3)', transition: 'opacity .2s'
                 }}
@@ -438,7 +436,7 @@ const Navbar = () => {
                   background: 'none', border: 'none', cursor: 'pointer',
                   width: 36, height: 36, borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#374151', flexShrink: 0
+                  color: 'var(--color-heading)', flexShrink: 0
                 }}
               >
                 {mobileOpen ? <CloseOutlined style={{ fontSize: 18 }} /> : <MenuOutlined style={{ fontSize: 18 }} />}
@@ -453,21 +451,21 @@ const Navbar = () => {
       {isMobile && mobileOpen && (
         <div style={{
           position: 'fixed', top: 61, left: 0, right: 0, bottom: 0,
-          background: '#fff', zIndex: 9998, overflowY: 'auto', padding: '16px 20px',
-          borderTop: '1px solid #eef0f5'
+          background: 'var(--color-surface)', zIndex: 9998, overflowY: 'auto', padding: '16px 20px',
+          borderTop: '1px solid var(--color-border)'
         }}>
           {navItems.map(item => (
             <div key={item.key}>
               {item.to
                 ? <Link to={item.to} onClick={() => setMobileOpen(false)} style={{
                     display: 'block', padding: '12px 0', fontSize: 15, fontWeight: 600,
-                    color: '#1a1a2e', textDecoration: 'none', borderBottom: '1px solid #f4f4f8'
+                    color: 'var(--color-heading)', textDecoration: 'none', borderBottom: '1px solid var(--color-border)'
                   }}>{item.label}</Link>
                 : <>
-                    <div style={{ padding: '12px 0 6px', fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1.2 }}>{item.label}</div>
+                    <div style={{ padding: '12px 0 6px', fontSize: 11, fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', letterSpacing: 1.2 }}>{item.label}</div>
                     {item.children?.map(c => (
                       <Link key={c.label} to={c.to} onClick={() => setMobileOpen(false)} style={{
-                        display: 'block', padding: '9px 12px', fontSize: 14, color: '#374151',
+                        display: 'block', padding: '9px 12px', fontSize: 14, color: 'var(--color-body)',
                         textDecoration: 'none', borderRadius: 8
                       }}>{c.label}</Link>
                     ))}
@@ -476,14 +474,14 @@ const Navbar = () => {
             </div>
           ))}
           {!isAuthenticated && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 20, paddingTop: 16, borderTop: '1px solid #f4f4f8' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
               <button onClick={() => { navigate('/login'); setMobileOpen(false); }} style={{
-                flex: 1, padding: '10px', borderRadius: 24, border: '1.5px solid #0AAEEF',
-                background: 'transparent', color: '#0AAEEF', fontSize: 14, fontWeight: 600, cursor: 'pointer'
+                flex: 1, padding: '10px', borderRadius: 24, border: '1.5px solid var(--color-primary)',
+                background: 'transparent', color: 'var(--color-primary)', fontSize: 14, fontWeight: 600, cursor: 'pointer'
               }}>Login</button>
               <button onClick={() => { navigate('/register'); setMobileOpen(false); }} style={{
                 flex: 1, padding: '10px', borderRadius: 24, border: 'none',
-                background: 'linear-gradient(135deg,#F7941D,#0AAEEF)', color: '#fff',
+                background: 'var(--color-accent)', color: '#fff',
                 fontSize: 14, fontWeight: 600, cursor: 'pointer'
               }}>Register</button>
             </div>
