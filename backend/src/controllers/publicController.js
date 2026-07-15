@@ -3,6 +3,7 @@ const Category = require('../models/Category');
 const ContentType = require('../models/ContentType');
 const LandingPage = require('../models/LandingPage');
 const DataRequest = require('../models/DataRequest');
+const ContactSubmission = require('../models/ContactSubmission');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate } = require('../config/email');
 const axios = require('axios');
@@ -431,6 +432,92 @@ exports.submitDoNotSell = async (req, res) => {
         res.json({ message: 'Opt-out request submitted successfully.', id: record.id });
     } catch (error) {
         console.error('Submit do not sell error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.submitContact = async (req, res) => {
+    try {
+        const {
+            full_name,
+            email,
+            company,
+            inquiry_category = 'general',
+            subject,
+            message,
+            consent_given = false
+        } = req.body;
+
+        // Validation
+        if (!full_name || !email || !subject || !message) {
+            return res.status(400).json({ message: 'full_name, email, subject, and message are required.' });
+        }
+
+        if (!consent_given) {
+            return res.status(400).json({ message: 'You must agree to the Privacy Policy to submit.' });
+        }
+
+        // Email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Invalid email address.' });
+        }
+
+        const record = await ContactSubmission.create({
+            full_name,
+            email,
+            company,
+            inquiry_category,
+            subject,
+            message,
+            consent_given,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+        });
+
+        // Send confirmation email to user
+        try {
+            const emailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #0f2044;">Thank you for contacting TGS Tech Info</h2>
+                    <p>Dear ${full_name},</p>
+                    <p>We have received your message and will get back to you within 24-48 hours.</p>
+                    <p><strong>Subject:</strong> ${subject}</p>
+                    <p><strong>Category:</strong> ${inquiry_category}</p>
+                    <p>If you have any urgent questions, please email us directly at <a href="mailto:info@tgstechinfo.com">info@tgstechinfo.com</a></p>
+                    <p>— TGS Tech Info Team</p>
+                </div>
+            `;
+            await sendEmail(email, 'Contact Form Submission Received — TGS Tech Info', emailHtml);
+        } catch (e) {
+            console.warn('Contact confirmation email failed:', e.message);
+        }
+
+        // Send notification email to admin
+        try {
+            const adminEmailHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h2 style="color: #0f2044;">New Contact Form Submission</h2>
+                    <p><strong>From:</strong> ${full_name} (${email})</p>
+                    <p><strong>Company:</strong> ${company || 'N/A'}</p>
+                    <p><strong>Category:</strong> ${inquiry_category}</p>
+                    <p><strong>Subject:</strong> ${subject}</p>
+                    <p><strong>Message:</strong></p>
+                    <p style="background: #f5f5f5; padding: 15px; border-radius: 5px;">${message}</p>
+                    <p>— TGS Tech Info System</p>
+                </div>
+            `;
+            await sendEmail('info@tgstechinfo.com', `New Contact: ${subject}`, adminEmailHtml);
+        } catch (e) {
+            console.warn('Admin notification email failed:', e.message);
+        }
+
+        res.json({ 
+            message: 'Contact form submitted successfully. We will get back to you soon.', 
+            id: record.id 
+        });
+    } catch (error) {
+        console.error('Submit contact error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

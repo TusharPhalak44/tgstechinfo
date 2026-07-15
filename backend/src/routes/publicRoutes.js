@@ -24,6 +24,9 @@ router.get('/stats', publicController.getPublicStats);
 router.post('/data-request/dsar', publicController.submitDataRequest);
 router.post('/data-request/do-not-sell', publicController.submitDoNotSell);
 
+// Contact form submission
+router.post('/contact', publicController.submitContact);
+
 // Public submission API — no auth required
 router.get('/submission/:id', adminController.getSubmissionById);
 

@@ -1,242 +1,318 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Checkbox, message } from 'antd';
-import {
-  UserOutlined, LockOutlined, MailOutlined, PhoneOutlined,
-  ArrowRightOutlined,
-  EyeInvisibleOutlined, EyeTwoTone, CheckCircleFilled
-} from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { User, Mail, Lock, Phone, ArrowRight, Eye, EyeOff, Newspaper, Mic, Mail as MailIcon, Trophy, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 const PERKS = [
-  { icon: '📰', text: 'Access 500+ exclusive articles' },
-  { icon: '🎙️', text: 'Expert interviews & podcasts' },
-  { icon: '📧', text: 'Weekly tech digest newsletter' },
-  { icon: '🏆', text: 'Publish your own content' },
+  { icon: Newspaper, text: 'Access 500+ exclusive articles' },
+  { icon: Mic, text: 'Expert interviews & podcasts' },
+  { icon: MailIcon, text: 'Weekly tech digest newsletter' },
+  { icon: Trophy, text: 'Publish your own content' },
 ];
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
-  const [form] = Form.useForm();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [agreement, setAgreement] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState({});
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const onFinish = async (values) => {
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'At least 6 characters';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Must include uppercase, lowercase & number';
+    }
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    if (!agreement) newErrors.agreement = 'Please agree to continue';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
     setLoading(true);
     try {
       const result = await register({
-        first_name: values.firstName, last_name: values.lastName,
-        email: values.email, password: values.password, role: 'user'
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: 'user'
       });
       if (result.success) {
-        message.success('Welcome to TGS Tech Info!');
         navigate('/');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
   return (
-    <>
-      <style>{`
-        .auth-input .ant-input, .auth-input .ant-input-password {
-          border-radius: 8px !important; height: 36px !important;
-          border-color: #e2e8f0 !important; font-size: 13px !important;
-        }
-        .auth-input .ant-input:focus, .auth-input .ant-input-affix-wrapper:focus,
-        .auth-input .ant-input-affix-wrapper-focused {
-          border-color: #4a7cff !important; box-shadow: 0 0 0 2px rgba(74,124,255,.12) !important;
-        }
-        .auth-input .ant-input-affix-wrapper { border-radius: 8px !important; height: 36px !important; border-color: #e2e8f0 !important; font-size: 13px !important; }
-        .auth-label .ant-form-item-label > label { font-weight: 600 !important; font-size: 12px !important; color: #374151 !important; }
-        .auth-label .ant-form-item { margin-bottom: 10px !important; }
-        @media (max-width: 768px) { .auth-left { display: none !important; } }
-      `}</style>
+    <div className="min-h-screen bg-[var(--color-bg-alt)] flex">
+      {/* Left Panel - Branding */}
+      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-accent-hover)] to-[var(--color-success)]">
+        {/* Background decorations */}
+        <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-[rgba(255,255,255,0.1)] blur-3xl pointer-events-none" />
+        <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-[rgba(255,255,255,0.08)] blur-2xl pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
+        
+        {/* Floating glass cards */}
+        <div className="absolute top-24 right-16 w-28 h-28 bg-[rgba(255,255,255,0.05)] backdrop-blur-sm rounded-2xl border border-[rgba(255,255,255,0.1)] pointer-events-none" />
+        <div className="absolute bottom-28 left-20 w-20 h-20 bg-[rgba(255,255,255,0.04)] backdrop-blur-sm rounded-xl border border-[rgba(255,255,255,0.08)] pointer-events-none" />
 
-      <div style={{ display: 'flex', minHeight: 'calc(100vh - 61px)', background: '#f1f5f9' }}>
-
-        {/* ── LEFT PANEL ── */}
-        <div className="auth-left" style={{
-          flex: 1, flexShrink: 0,
-          background: 'linear-gradient(145deg, #0a1628 0%, #0f2044 50%, #1a1060 100%)',
-          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-          padding: '40px 48px', position: 'relative', overflow: 'hidden'
-        }}>
-          <div style={{ position: 'absolute', top: -80, right: -80, width: 320, height: 320, borderRadius: '50%', background: 'rgba(74,124,255,.08)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', bottom: -60, left: -60, width: 240, height: 240, borderRadius: '50%', background: 'rgba(108,92,231,.08)', pointerEvents: 'none' }} />
-          <div style={{ position: 'absolute', inset: 0, opacity: .03, backgroundImage: 'linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px)', backgroundSize: '36px 36px', pointerEvents: 'none' }} />
-
-          {/* Logo */}
-          <div style={{ marginBottom: 32, alignSelf: 'flex-start' }}>
-            <img src="/logo.jpg" alt="TGS Tech Info" style={{ height: 64, width: 'auto', display: 'block', borderRadius: 10 }} />
-          </div>
-
-          <div style={{ textAlign: 'center', width: '100%' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#00b894', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 10 }}>Join Free Today</div>
-            <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 26, lineHeight: 1.2, margin: '0 0 12px', letterSpacing: -.5 }}>
-              Join 50,000+ <span style={{ background: 'linear-gradient(90deg,#60a5fa,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Tech Professionals</span>
-            </h1>
-            <p style={{ color: '#64748b', fontSize: 13, lineHeight: 1.7, margin: '0 auto 24px', maxWidth: 280 }}>
-              Get exclusive content, expert insights, and the latest tech news — completely free.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', marginBottom: 24 }}>
-            {PERKS.map(p => (
-              <div key={p.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(0,184,148,.12)', border: '1px solid rgba(0,184,148,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
-                  {p.icon}
-                </div>
-                <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>{p.text}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Trust badges */}
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', width: '100%' }}>
-            {[['🔒', 'Secure'], ['✅', 'Free Forever'], ['🚫', 'No Spam']].map(([icon, label]) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <span style={{ fontSize: 14 }}>{icon}</span>
-                <span style={{ fontSize: 11, color: '#475569', fontWeight: 600 }}>{label}</span>
-              </div>
-            ))}
+        {/* Logo */}
+        <div className="mb-12 self-start">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-2xl">
+            <img src="/logo.jpg" alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
           </div>
         </div>
 
-        {/* ── RIGHT PANEL ── */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '32px 24px' }}>
-          <div style={{ width: '100%', maxWidth: 420 }}>
+        {/* Content */}
+        <div className="text-center w-full">
+          <div className="text-xs font-bold text-white uppercase tracking-[0.2em] mb-4">Join Free Today</div>
+          <h1 className="text-white font-black text-4xl leading-tight mb-4 tracking-tight">
+            Join 50,000+ <span className="bg-gradient-to-r from-white to-[var(--color-primary-light)] bg-clip-text text-transparent">Tech Professionals</span>
+          </h1>
+          <p className="text-white/60 text-base leading-relaxed max-w-[300px] mx-auto mb-10">
+            Get exclusive content, expert insights, and the latest tech news — completely free.
+          </p>
+        </div>
 
-            {/* Header */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#00b894,#00cec9)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14, boxShadow: '0 6px 20px rgba(0,184,148,.3)' }}>
-                <UserOutlined style={{ color: '#fff', fontSize: 20 }} />
+        {/* Perks */}
+        <div className="flex flex-col gap-4 w-full mb-10">
+          {PERKS.map((perk, index) => (
+            <div key={index} className="flex items-center gap-4 group">
+              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-all duration-300">
+                <perk.icon className="w-5 h-5 text-white" />
               </div>
-              <h2 style={{ fontWeight: 900, fontSize: 22, color: '#0f172a', margin: '0 0 4px', letterSpacing: -.5 }}>Create Account</h2>
-              <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>Join the TGS Tech Info community today</p>
+              <span className="text-sm text-white/90 font-medium group-hover:text-white transition-colors duration-300">{perk.text}</span>
             </div>
+          ))}
+        </div>
 
-            {/* Form */}
-            <Form form={form} name="register" onFinish={onFinish} layout="vertical">
+        {/* Trust badges */}
+        <div className="flex gap-8 justify-center w-full">
+          {[
+            { icon: Shield, label: 'Secure' },
+            { icon: CheckCircle, label: 'Free Forever' },
+            { icon: XCircle, label: 'No Spam' },
+          ].map((badge) => (
+            <div key={badge.label} className="flex items-center gap-2 group">
+              <badge.icon className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" />
+              <span className="text-xs text-white/80 font-semibold group-hover:text-white transition-colors">{badge.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
 
-              <div style={{ display: 'flex', gap: 12 }}>
-                <Form.Item name="firstName" label="First Name" className="auth-label" style={{ flex: 1 }}
-                  rules={[{ required: true, message: 'Required' }]}
-                >
-                <Input className="auth-input" prefix={<UserOutlined style={{ color: '#94a3b8' }} />} placeholder="John" />
-                </Form.Item>
-                <Form.Item name="lastName" label="Last Name" className="auth-label" style={{ flex: 1 }}
-                  rules={[{ required: true, message: 'Required' }]}
-                >
-                <Input className="auth-input" prefix={<UserOutlined style={{ color: '#94a3b8' }} />} placeholder="Doe" />
-                </Form.Item>
+      {/* Right Panel - Form */}
+      <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
+        <div className="w-full max-w-[400px] md:max-w-md space-y-6">
+          <div className="space-y-2 text-center">
+            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-heading)]">Create Account</h1>
+            <p className="text-sm text-[var(--color-muted)]">Join the TGS Tech Info community today</p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-[var(--color-body)]">First Name</label>
+                <div className="relative group">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                  <input
+                    name="firstName"
+                    placeholder="John"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                    required
+                  />
+                </div>
+                {errors.firstName && <p className="text-xs text-[var(--color-error)]">{errors.firstName}</p>}
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-[var(--color-body)]">Last Name</label>
+                <div className="relative group">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                  <input
+                    name="lastName"
+                    placeholder="Doe"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                    required
+                  />
+                </div>
+                {errors.lastName && <p className="text-xs text-[var(--color-error)]">{errors.lastName}</p>}
+              </div>
+            </div>
 
-              <Form.Item name="email" label="Email Address" className="auth-label"
-                rules={[{ required: true, message: 'Please enter your email' }, { type: 'email', message: 'Invalid email' }]}
-              >
-                <Input className="auth-input" prefix={<MailOutlined style={{ color: '#94a3b8' }} />} placeholder="you@example.com" />
-              </Form.Item>
-
-              <Form.Item name="phone" label="Phone Number (Optional)" className="auth-label">
-                <Input className="auth-input" prefix={<PhoneOutlined style={{ color: '#94a3b8' }} />} placeholder="+1 234 567 8900" />
-              </Form.Item>
-
-              <Form.Item name="password" label="Password" className="auth-label"
-                rules={[
-                  { required: true, message: 'Please enter a password' },
-                  { min: 6, message: 'At least 6 characters' },
-                  { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, message: 'Must include uppercase, lowercase & number' }
-                ]}
-              >
-                <Input.Password className="auth-input" prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Create a strong password"
-                  iconRender={v => v ? <EyeTwoTone /> : <EyeInvisibleOutlined />}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[var(--color-body)]">Email Address</label>
+              <div className="relative group">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  required
                 />
-              </Form.Item>
+              </div>
+              {errors.email && <p className="text-xs text-[var(--color-error)]">{errors.email}</p>}
+            </div>
 
-              <Form.Item name="confirmPassword" label="Confirm Password" className="auth-label"
-                dependencies={['password']}
-                rules={[
-                  { required: true, message: 'Please confirm your password' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue('password') === value) return Promise.resolve();
-                      return Promise.reject(new Error('Passwords do not match'));
-                    }
-                  })
-                ]}
-              >
-                <Input.Password className="auth-input" prefix={<LockOutlined style={{ color: '#94a3b8' }} />} placeholder="Confirm your password"
-                  iconRender={v => v ? <EyeTwoTone /> : <EyeInvisibleOutlined />}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[var(--color-body)]">Phone Number (Optional)</label>
+              <div className="relative group">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                <input
+                  name="phone"
+                  placeholder="+1 234 567 8900"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
                 />
-              </Form.Item>
+              </div>
+            </div>
 
-              <Form.Item name="agreement" valuePropName="checked" style={{ marginBottom: 20 }}
-                rules={[{ validator: (_, v) => v ? Promise.resolve() : Promise.reject(new Error('Please agree to continue')) }]}
-              >
-                <Checkbox style={{ fontSize: 13, color: '#374151' }}>
-                  I agree to the{' '}
-                  <Link to="/terms-of-use" style={{ color: '#4a7cff', fontWeight: 600 }}>Terms of Service</Link>
-                  {' '}and{' '}
-                  <Link to="/privacy-policy" style={{ color: '#4a7cff', fontWeight: 600 }}>Privacy Policy</Link>
-                </Checkbox>
-              </Form.Item>
-
-              <Form.Item style={{ marginBottom: 16 }}>
-                <button type="submit" disabled={loading} style={{
-                  width: '100%', height: 40, borderRadius: 8, border: 'none',
-                  background: loading ? '#94a3b8' : 'linear-gradient(135deg,#00b894,#00cec9)',
-                  color: '#fff', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 3px 10px rgba(0,184,148,.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  transition: 'opacity .2s'
-                }}
-                  onMouseEnter={e => { if (!loading) e.currentTarget.style.opacity = '.9'; }}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[var(--color-body)]">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                <input
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Create a strong password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="pl-10 pr-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-body)] transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {loading ? 'Creating account...' : <><span>Create Free Account</span><ArrowRightOutlined style={{ fontSize: 11 }} /></>}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              </Form.Item>
-            </Form>
-
-            {/* Divider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 16px' }}>
-              <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
-              <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>OR SIGN UP WITH</span>
-              <div style={{ flex: 1, height: 1, background: '#e2e8f0' }} />
+              </div>
+              {errors.password && <p className="text-xs text-[var(--color-error)]">{errors.password}</p>}
             </div>
 
-            {/* Social */}
-            <div style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-              {[
-                { label: 'Google', color: '#ea4335', bg: '#fff5f5', border: '#fecaca' },
-                { label: 'Facebook', color: '#1877f2', bg: '#eff6ff', border: '#bfdbfe' },
-                { label: 'LinkedIn', color: '#0077b5', bg: '#f0f9ff', border: '#bae6fd' },
-              ].map(s => (
-                <button key={s.label} style={{
-                  flex: 1, height: 42, borderRadius: 10, border: `1.5px solid ${s.border}`,
-                  background: s.bg, color: s.color, fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  transition: 'transform .15s'
-                }}
-                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-[var(--color-body)]">Confirm Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
+                <input
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="pl-10 pr-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-body)] transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                 >
-                  {s.label}
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
-              ))}
+              </div>
+              {errors.confirmPassword && <p className="text-xs text-[var(--color-error)]">{errors.confirmPassword}</p>}
             </div>
 
-            <div style={{ textAlign: 'center' }}>
-              <span style={{ fontSize: 14, color: '#64748b' }}>Already have an account? </span>
-              <Link to="/login" style={{ fontSize: 14, color: '#4a7cff', fontWeight: 700, textDecoration: 'none' }}>Sign in →</Link>
+            <div className="flex items-start space-x-2">
+              <input
+                type="checkbox"
+                id="agreement"
+                checked={agreement}
+                onChange={(e) => setAgreement(e.target.checked)}
+                className="h-4 w-4 mt-0.5 rounded-sm border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+              />
+              <label htmlFor="agreement" className="text-sm text-[var(--color-body)] cursor-pointer leading-tight">
+                I agree to the{' '}
+                <Link to="/terms-of-use" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-primary-hover)] transition-colors">
+                  Terms of Service
+                </Link>
+                {' '}and{' '}
+                <Link to="/privacy-policy" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-primary-hover)] transition-colors">
+                  Privacy Policy
+                </Link>
+              </label>
             </div>
+            {errors.agreement && <p className="text-xs text-[var(--color-error)]">{errors.agreement}</p>}
 
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-lg shadow-[var(--color-accent)]/20 transition-all duration-200 hover:shadow-xl hover:shadow-[var(--color-accent)]/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Creating account...' : (
+                <>
+                  <span>Create Free Account</span>
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="flex flex-col space-y-4">
+            <div className="text-center text-sm">
+              <span className="text-[var(--color-muted)]">Already have an account? </span>
+              <Link to="/login" className="text-[var(--color-primary)] font-bold hover:text-[var(--color-primary-hover)] transition-colors">
+                Sign in →
+              </Link>
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

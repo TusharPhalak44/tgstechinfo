@@ -40,6 +40,7 @@ import AdminSubmissions from './components/admin/AdminSubmissions';
 import PrivateRoute from './components/common/PrivateRoute';
 import AdminRoute from './components/common/AdminRoute';
 import SearchResults from './components/public/SearchResults';
+import ContactUs from './pages/ContactUs';
 
 const { Content } = Layout;
 
@@ -96,15 +97,19 @@ const theme = {
 };
 
 function AppContent() {
+  const authRoutes = ['/login', '/register', '/forgot-password'];
+  const location = useLocation();
+  const isAuthRoute = authRoutes.includes(location.pathname);
+
   return (
     <Layout className="app-layout" style={{ background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <ScrollToTop />
-      <Navbar />
+      {!isAuthRoute && <Navbar />}
       <Content className="app-content" style={{ 
-        minHeight: 'calc(100vh - 120px)',
-        background: '#f8f9fa',
+        minHeight: isAuthRoute ? '100vh' : 'calc(100vh - 120px)',
+        background: isAuthRoute ? 'transparent' : '#f8f9fa',
         flex: 1,
-        paddingTop: 61
+        paddingTop: isAuthRoute ? 0 : 61
       }}>
         <Routes>
           {/* Public Routes */}
@@ -115,13 +120,15 @@ function AppContent() {
           <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
           <Route path="/category/:slug" element={<CategoryList />} />
           <Route path="/articles" element={<CategoryList />} />
-          <Route path="/blogs" element={<CategoryList />} />
+          <Route path="/ebooks" element={<CategoryList />} />
+           <Route path="/blogs" element={<CategoryList />} />
           <Route path="/news" element={<CategoryList />} />
           <Route path="/interviews" element={<CategoryList />} />
           <Route path="/webinars" element={<CategoryList />} />
           <Route path="/events" element={<CategoryList />} />
           <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
           <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
+          <Route path="/contact" element={<ContactUs />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-use" element={<TermsOfUse />} />
           <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -195,7 +202,7 @@ function AppContent() {
           } />
         </Routes>
       </Content>
-      <Footer />
+      {!isAuthRoute && <Footer />}
     </Layout>
   );
 }
