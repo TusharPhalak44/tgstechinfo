@@ -42,3 +42,7 @@ Thumbs.db
 # Ignore all .webp files
 
 *.webp
+*.pdf
+*.png
+*.jpg
+*.jpeg
