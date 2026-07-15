@@ -29,16 +29,29 @@ const FIELD_TYPES = [
   { value: 'select', label: 'Dropdown' },
 ];
 
+// Only these 4 sections are reorderable
+const STANDARD_SECTIONS = [
+  { key: 'meta',    label: 'Article Details' },
+  { key: 'title',   label: 'Title & Description'},
+  { key: 'banner',  label: 'Banner Image'     },
+  { key: 'content', label: 'Content' },
+];
+
 const CreateContent = () => {
   const { id } = useParams();
   const isEditMode = !!id;
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  const submitActionRef = useRef('draft');
   const dragItem = useRef(null);
   const dragOver = useRef(null);
+  const layoutDragItem = useRef(null);
+  const layoutDragOver = useRef(null);
 
   const [loading, setLoading] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [savedContentId, setSavedContentId] = useState(isEditMode ? id : null);
+  const [contentStatus, setContentStatus] = useState('draft');
+  const [draftSaved, setDraftSaved] = useState(isEditMode);
   const [categories, setCategories] = useState([]);
   const [contentTypes, setContentTypes] = useState([]);
   const [content, setContent] = useState('');
@@ -49,8 +62,11 @@ const CreateContent = () => {
   const [customFields, setCustomFields] = useState([]);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewData, setPreviewData] = useState(null);
-  const [editorMode, setEditorMode] = useState('write'); // 'write' | 'builder'
+  const [activeTab, setActiveTab] = useState('standard'); // 'standard' | 'builder'
+  const [builderContent, setBuilderContent] = useState('');
+  const [builderSections, setBuilderSections] = useState([]);
   const [selectedTypeName, setSelectedTypeName] = useState('');
+  const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
 
   useEffect(() => {
     fetchCategoriesAndTypes().then(() => {
@@ -83,6 +99,24 @@ const CreateContent = () => {
       setInitialContent(data.content || '');
       setContent(data.content || '');
       setEditorReady(true);
+      setContentStatus(data.status || 'draft');
+      // Restore layout
+      if (data.builder_layout) {
+        try {
+          const layout = typeof data.builder_layout === 'string' ? JSON.parse(data.builder_layout) : data.builder_layout;
+          if (Array.isArray(layout) && layout.length > 0) {
+            // Standard layout: array of strings like ['meta','title',...]
+            if (typeof layout[0] === 'string') {
+              setStandardLayout(layout);
+            } else {
+              // Builder layout: array of objects with id/type
+              setBuilderSections(layout);
+              setBuilderContent(data.content || '');
+              setActiveTab('builder');
+            }
+          }
+        } catch { /* ignore */ }
+      }
       if (data.banner_image) {
         setFileList([{ uid: '-1', name: data.banner_image, status: 'done', url: `/uploads/${data.banner_image}` }]);
       }
@@ -122,57 +156,79 @@ const CreateContent = () => {
     }
   };
 
-  const handleSubmit = async (values) => {
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file'];
-      Object.keys(values).forEach(key => {
-        if (!skip.includes(key) && values[key] !== undefined && values[key] !== null) {
-          formData.append(key, values[key]);
-        }
-      });
-      if (values.webhook_url !== undefined) formData.set('webhook_url', values.webhook_url || '');
-      if (values.tags?.length) formData.append('tags', values.tags.join(','));
-      if (values.seo_meta_keywords?.length) {
-        formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
+  const buildFormData = (values) => {
+    const formData = new FormData();
+    const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file'];
+    Object.keys(values).forEach(key => {
+      if (!skip.includes(key) && values[key] !== undefined && values[key] !== null) {
+        formData.append(key, values[key]);
       }
-      if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
-      formData.append('content', content || '');
-      if (fileList.length > 0 && fileList[0].originFileObj) formData.append('banner_image', fileList[0].originFileObj);
-      if (pdfList.length > 0 && pdfList[0].originFileObj) formData.append('pdf_file', pdfList[0].originFileObj);
-      if (customFields.length > 0) formData.append('custom_fields', JSON.stringify(customFields));
+    });
+    if (values.webhook_url !== undefined) formData.set('webhook_url', values.webhook_url || '');
+    if (values.tags?.length) formData.append('tags', values.tags.join(','));
+    if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
+    if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
+    formData.append('content', (activeTab === 'builder' ? builderContent : content) || '');
+    if (activeTab === 'builder' && builderSections.length > 0) {
+      formData.append('builder_layout', JSON.stringify(builderSections));
+    } else if (activeTab === 'standard') {
+      formData.append('builder_layout', JSON.stringify(standardLayout));
+    }
+    if (fileList.length > 0 && fileList[0].originFileObj) formData.append('banner_image', fileList[0].originFileObj);
+    if (pdfList.length > 0 && pdfList[0].originFileObj) formData.append('pdf_file', pdfList[0].originFileObj);
+    if (customFields.length > 0) formData.append('custom_fields', JSON.stringify(customFields));
+    return formData;
+  };
 
-      const existingContent = isEditMode ? (await axios.get(`/api/user/content/${id}`)).data : null;
-      const isPublished = existingContent?.status === 'published';
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      setLoading(true);
+      const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
-      let contentId = id;
 
-      if (isEditMode && isPublished) {
-        // Published content: only update webhook settings
-        await axios.put(`/api/user/content/${id}/webhook`, {
-          webhook_url: values.webhook_url || '',
-          ...(customFields.length > 0 ? { custom_fields: JSON.stringify(customFields) } : {})
-        });
-        message.success('Webhook settings updated successfully!');
-      } else if (isEditMode) {
-        await axios.put(`/api/user/content/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        message.success(`${typeName} updated successfully!`);
+      if (savedContentId) {
+        const existing = (await axios.get(`/api/user/content/${savedContentId}`)).data;
+        if (existing.status === 'published') {
+          await axios.put(`/api/user/content/${savedContentId}/webhook`, {
+            webhook_url: values.webhook_url || '',
+            ...(customFields.length > 0 ? { custom_fields: JSON.stringify(customFields) } : {})
+          });
+          message.success('Settings updated successfully!');
+        } else {
+          await axios.put(`/api/user/content/${savedContentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          setContentStatus(existing.status);
+          setDraftSaved(true);
+          message.success(`${typeName} updated! Edit anytime before submitting.`);
+        }
       } else {
         const response = await axios.post('/api/user/content', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        contentId = response.data.content.id;
-        message.success(`${typeName} created successfully!`);
+        setSavedContentId(response.data.content.id);
+        setContentStatus('draft');
+        setDraftSaved(true);
+        message.success(`${typeName} saved as draft! You can edit before submitting.`);
       }
-
-      if (!isPublished && submitActionRef.current === 'submit') {
-        await axios.post(`/api/user/content/${contentId}/submit`);
-        message.success(`${typeName} submitted for review!`);
-      }
-      navigate('/dashboard');
     } catch (error) {
+      if (error?.errorFields) return; // validation error, antd handles it
       message.error(error.response?.data?.message || 'Failed to save');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!savedContentId) return;
+    setSubmitLoading(true);
+    try {
+      const typeName = contentTypes.find(t => t.id === form.getFieldValue('content_type_id'))?.name || 'Content';
+      await axios.post(`/api/user/content/${savedContentId}/submit`);
+      setContentStatus('pending');
+      message.success(`${typeName} submitted for review!`);
+      navigate('/dashboard');
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Failed to submit');
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -216,7 +272,20 @@ const CreateContent = () => {
     setCustomFields(fields);
   };
 
-  const LANDING_TYPES = ['webinar', 'whitepaper', 'event'];
+  // Standard layout drag handlers
+  const onLayoutDragStart = (index) => { layoutDragItem.current = index; };
+  const onLayoutDragEnter = (index) => { layoutDragOver.current = index; };
+  const onLayoutDragEnd = () => {
+    if (layoutDragItem.current === null || layoutDragOver.current === null) return;
+    const items = [...standardLayout];
+    const dragged = items.splice(layoutDragItem.current, 1)[0];
+    items.splice(layoutDragOver.current, 0, dragged);
+    layoutDragItem.current = null;
+    layoutDragOver.current = null;
+    setStandardLayout(items);
+  };
+
+  const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook'];
   const showLandingFields = LANDING_TYPES.includes(selectedTypeName.toLowerCase());
 
   const getImageUrl = (file) => {
@@ -267,288 +336,315 @@ const CreateContent = () => {
               seo_meta_title: v.seo_meta_title || '',
               seo_meta_description: v.seo_meta_description || '',
               seo_meta_keywords: v.seo_meta_keywords || '',
-              content,
+              content: activeTab === 'builder' ? builderContent : content,
             });
             setPreviewVisible(true);
           }}>Preview</Button>
-          <Button icon={<SaveOutlined />} loading={loading} onClick={() => { submitActionRef.current = 'draft'; form.submit(); }}>
-            Save Draft
+          <Button
+            icon={<SaveOutlined />}
+            loading={loading}
+            disabled={contentStatus === 'pending'}
+            onClick={handleSave}
+          >
+            {savedContentId ? 'Update Draft' : 'Save Draft'}
           </Button>
-          <Button type="primary" icon={<SendOutlined />} loading={loading} onClick={() => { submitActionRef.current = 'submit'; form.submit(); }}>
-            Submit for Review
-          </Button>
+          <Tooltip title={
+            !savedContentId ? 'Please save the content first' :
+            contentStatus === 'pending' ? 'Already under review' : ''
+          }>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              loading={submitLoading}
+              disabled={!savedContentId || contentStatus === 'pending'}
+              onClick={handleSubmitForReview}
+            >
+              {contentStatus === 'pending' ? 'Under Review' : 'Submit for Review'}
+            </Button>
+          </Tooltip>
         </Space>
       </div>
 
-      <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ status: 'draft' }}>
-        <div style={{ maxWidth: editorMode === 'builder' ? 1400 : 1200, margin: '0 auto', padding: '32px 24px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      {draftSaved && contentStatus !== 'published' && contentStatus !== 'pending' && (
+        <div style={{
+          background: '#f6ffed', borderBottom: '1px solid #b7eb8f',
+          padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10
+        }}>
+          <span style={{ fontSize: 16 }}>✏️</span>
+          <span style={{ fontSize: 13, color: '#389e0d', fontWeight: 500 }}>
+            {contentStatus === 'changes_requested'
+              ? 'Admin has requested changes. Edit your content and save, then re-submit for review.'
+              : 'Draft saved! You can freely edit — change title, structure, images, or any field. Save again to update, then submit for review.'}
+          </span>
+        </div>
+      )}
+      {contentStatus === 'pending' && (
+        <div style={{
+          background: '#fffbe6', borderBottom: '1px solid #ffe58f',
+          padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10
+        }}>
+          <span style={{ fontSize: 16 }}>⏳</span>
+          <span style={{ fontSize: 13, color: '#d48806', fontWeight: 500 }}>
+            Content is under review. Editing is locked until admin responds.
+          </span>
+        </div>
+      )}
+
+      <Form form={form} layout="vertical" initialValues={{ status: 'draft' }}>
+
+        {/* Page-level Tabs */}
+        <div style={{ background: '#fff', borderBottom: '1px solid #e8e8e8' }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 0 }}>
+            {[
+              { key: 'standard', label: 'Standard Form', desc: 'Fill all fields directly' },
+              { key: 'builder', label: 'Drag & Drop Builder', desc: 'Build structure by dragging blocks' }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                style={{
+                  padding: '14px 24px', border: 'none', background: 'transparent',
+                  cursor: 'pointer', fontSize: 14, fontWeight: activeTab === tab.key ? 600 : 400,
+                  color: activeTab === tab.key ? '#4a7cff' : '#595959',
+                  borderBottom: activeTab === tab.key ? '2px solid #4a7cff' : '2px solid transparent',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ maxWidth: activeTab === 'builder' ? 1400 : 1200, margin: '0 auto', padding: '32px 24px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 
           {/* Main Content */}
           <div style={{ flex: 1, minWidth: 0 }}>
 
-            {/* Article Meta */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
-              <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</Text>
-              <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
-                <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                  <Select placeholder="Select type" size="large" onChange={val => {
-                    const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
-                    setSelectedTypeName(name);
-                  }}>
-                    {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
-                  </Select>
-                </Form.Item>
-                <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                  <Select placeholder="Select category" size="large">
-                    {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
-                  </Select>
-                </Form.Item>
-              </div>
-            </div>
-
-            {/* Title + Description */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
-              <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
-                <Input placeholder="Article title..." size="large"
-                  style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }} />
-              </Form.Item>
-              <Form.Item name="short_description"
-                label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
-                rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
-                <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} />
-              </Form.Item>
-            </div>
-
-            {/* Banner Image */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div>
-                  <Text strong style={{ fontSize: 14 }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image</Text>
-                  <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
-                </div>
-                <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
-                  <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
-                </Upload>
-              </div>
-              {bannerImageUrl ? (
-                <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
-                  <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
-                </div>
-              ) : (
-                <div style={{ border: '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: '#fafafa' }}>
-                  <PictureOutlined style={{ fontSize: 32, color: '#bfbfbf', marginBottom: 8, display: 'block' }} />
-                  <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No banner image</Text>
-                </div>
-              )}
-            </div>
-
-            {/* PDF Upload */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <div>
-                  <Text strong style={{ fontSize: 14 }}><FilePdfOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />PDF Attachment</Text>
-                  <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>This PDF will be downloaded when user submits the access form</div>
-                </div>
-                <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
-                  <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
-                </Upload>
-              </div>
-              {pdfList.length > 0 ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff2f0', borderRadius: 8, border: '1px solid #ffccc7' }}>
-                  <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
-                  <Text style={{ flex: 1, fontSize: 13 }}>{pdfList[0].name}</Text>
-                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
-                </div>
-              ) : (
-                <div style={{ border: '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: '#fff2f0' }}>
-                  <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
-                  <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
-                </div>
-              )}
-            </div>
-
-            {/* Content Editor */}
-            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 20 }}>
-              {/* Mode Tabs */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 28px', borderBottom: '1px solid #f0f0f0' }}>
-                <Text strong style={{ fontSize: 14 }}>Content</Text>
-                <div style={{ display: 'flex', gap: 0 }}>
-                  {[{ key: 'write', label: '✍️ Write' }, { key: 'builder', label: '🧩 Drag & Drop' }].map(tab => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setEditorMode(tab.key)}
-                      style={{
-                        padding: '14px 20px', border: 'none', background: 'transparent',
-                        cursor: 'pointer', fontSize: 13, fontWeight: editorMode === tab.key ? 600 : 400,
-                        color: editorMode === tab.key ? '#4a7cff' : '#8c8c8c',
-                        borderBottom: editorMode === tab.key ? '2px solid #4a7cff' : '2px solid transparent',
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Write Mode */}
-              {editorMode === 'write' && (
-                <div style={{ padding: '0 4px 4px' }}>
-                  {editorReady ? (
-                    <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing your article..." />
-                  ) : (
-                    <div style={{ padding: 40, textAlign: 'center', color: '#8c8c8c' }}>Loading editor...</div>
-                  )}
-                </div>
-              )}
-
-              {/* Drag & Drop Builder Mode */}
-              {editorMode === 'builder' && (
-                <div style={{ padding: 20 }}>
-                  <DragDropBuilder onChange={setContent} />
-                </div>
-              )}
-            </div>
-
-            {/* Builder mode mein Tags/SEO inline show karo */}
-            {editorMode === 'builder' && (
-              <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: 220, background: '#fff', borderRadius: 12, padding: 20, border: '1px solid #e8e8e8' }}>
-                  <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
-                    <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
-                  </Text>
-                  <Form.Item name="tags" style={{ marginBottom: 0 }}>
-                    <Select mode="tags" placeholder="Add tags..." style={{ width: '100%' }} tokenSeparators={[',']} />
-                  </Form.Item>
-                </div>
-                <div style={{ flex: 1, minWidth: 220, background: '#fff', borderRadius: 12, padding: 20, border: '1px solid #e8e8e8' }}>
-                  <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
-                    <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
-                  </Text>
-                  <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
-                    <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
-                  </Form.Item>
-                </div>
-                <div style={{ flex: 2, minWidth: 300, background: '#fff', borderRadius: 12, padding: 20, border: '1px solid #e8e8e8' }}>
-                  <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
-                    <SettingOutlined style={{ marginRight: 6, color: '#4a7cff' }} />SEO Settings
-                  </Text>
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                    <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12 }}>Meta Title</Text>} style={{ marginBottom: 0, flex: 1, minWidth: 160 }}>
-                      <Input placeholder="SEO title" size="small" />
+            {/* ── STANDARD FORM TAB ── */}
+            {activeTab === 'standard' && (() => {
+              const sectionMap = {
+                meta: (
+                  <div key="meta" style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                    <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</Text>
+                    <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                      <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                        <Select placeholder="Select type" size="large" onChange={val => {
+                          const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                          setSelectedTypeName(name);
+                        }}>
+                          {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+                        </Select>
+                      </Form.Item>
+                      <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                        <Select placeholder="Select category" size="large">
+                          {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                        </Select>
+                      </Form.Item>
+                    </div>
+                  </div>
+                ),
+                title: (
+                  <div key="title" style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                    <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
+                      <Input placeholder="Article title..." size="large"
+                        style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }} />
                     </Form.Item>
-                    <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12 }}>Keywords</Text>} style={{ marginBottom: 0, flex: 1, minWidth: 160 }}>
-                      <Select mode="tags" placeholder="Add keyword..." style={{ width: '100%' }} size="small" tokenSeparators={[',']} />
-                    </Form.Item>
-                    <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12 }}>Meta Description</Text>} style={{ marginBottom: 0, width: '100%' }}>
-                      <TextArea rows={2} placeholder="SEO description" style={{ resize: 'none', fontSize: 12 }} />
+                    <Form.Item name="short_description"
+                      label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                      rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
+                      <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} />
                     </Form.Item>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Custom Fields Builder — only for webinar/whitepaper/event */}
-            {showLandingFields && <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div>
-                  <Text strong style={{ fontSize: 14 }}>
-                    <MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields
-                  </Text>
-                  <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>
-                    Add all form fields with their label, API key, and type.
-                  </div>
-                </div>
-                <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
-              </div>
-
-              {customFields.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c', fontSize: 13, border: '2px dashed #e8e8e8', borderRadius: 8 }}>
-                  No fields added. Click "Add Field" to add form fields.
-                </div>
-              )}
-
-              {customFields.map((field, index) => (
-                <div
-                  key={field.id}
-                  draggable
-                  onDragStart={() => onDragStart(index)}
-                  onDragEnter={() => onDragEnter(index)}
-                  onDragEnd={onDragEnd}
-                  onDragOver={e => e.preventDefault()}
-                  style={{
-                    display: 'flex', gap: 10, alignItems: 'flex-start',
-                    padding: '12px 14px', marginBottom: 10,
-                    background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8',
-                    cursor: 'grab'
-                  }}
-                >
-                  <HolderOutlined style={{ color: '#bfbfbf', marginTop: 8, cursor: 'grab', flexShrink: 0 }} />
-                  <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Input
-                      placeholder="Field Label (e.g. First Name)"
-                      value={field.label}
-                      onChange={e => updateField(field.id, 'label', e.target.value)}
-                      style={{ flex: '1 1 140px' }}
-                      size="small"
-                    />
-                    <Input
-                      placeholder="API Key (e.g. firstname)"
-                      value={field.webhook_key || ''}
-                      onChange={e => updateField(field.id, 'webhook_key', e.target.value)}
-                      style={{ flex: '1 1 130px' }}
-                      size="small"
-                    />
-                    <Select
-                      value={field.type}
-                      onChange={v => updateField(field.id, 'type', v)}
-                      style={{ width: 110 }}
-                      size="small"
-                    >
-                      {FIELD_TYPES.map(t => <Option key={t.value} value={t.value}>{t.label}</Option>)}
-                    </Select>
-                    <Input
-                      placeholder="Placeholder text"
-                      value={field.placeholder}
-                      onChange={e => updateField(field.id, 'placeholder', e.target.value)}
-                      style={{ flex: '1 1 130px' }}
-                      size="small"
-                    />
-                    {field.type === 'select' && (
-                      <Input
-                        placeholder="Options (comma separated)"
-                        value={field.options}
-                        onChange={e => updateField(field.id, 'options', e.target.value)}
-                        style={{ flex: '1 1 180px' }}
-                        size="small"
-                      />
+                ),
+                banner: (
+                  <div key="banner" style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <div>
+                        <Text strong style={{ fontSize: 14 }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image</Text>
+                        <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
+                      </div>
+                      <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                        <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                      </Upload>
+                    </div>
+                    {bannerImageUrl ? (
+                      <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+                        <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
+                      </div>
+                    ) : (
+                      <div style={{ border: '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: '#fafafa' }}>
+                        <PictureOutlined style={{ fontSize: 32, color: '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                        <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No banner image</Text>
+                      </div>
                     )}
                   </div>
-                  <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => removeField(field.id)} style={{ flexShrink: 0 }} />
-                </div>
-              ))}
-            </div>}
+                ),
+                content: (
+                  <div key="content" style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 20 }}>
+                    <div style={{ padding: '14px 28px', borderBottom: '1px solid #f0f0f0' }}>
+                      <Text strong style={{ fontSize: 14 }}>Content</Text>
+                    </div>
+                    <div style={{ padding: '0 4px 4px' }}>
+                      {editorReady ? (
+                        <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing your article..." />
+                      ) : (
+                        <div style={{ padding: 40, textAlign: 'center', color: '#8c8c8c' }}>Loading editor...</div>
+                      )}
+                    </div>
+                  </div>
+                ),
+              };
 
-            {/* Webhook URL — only for webinar/whitepaper/event */}
-            {showLandingFields && <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginTop: 20 }}>
-              <div style={{ marginBottom: 16 }}>
-                <Text strong style={{ fontSize: 14 }}>
-                  <ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL
-                </Text>
-              </div>
-              <Form.Item name="webhook_url" style={{ marginBottom: 0 }}
-                rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
-                <Input
-                  placeholder="https://client-api.example.com/webhook"
-                  prefix={<ApiOutlined style={{ color: '#bfbfbf' }} />}
-                  allowClear
-                />
-              </Form.Item>
-            </div>}
+              return (
+                <>
+                  {standardLayout.map(key => sectionMap[key] || null)}
 
+                  {/* Fixed: PDF Attachment — always below reorderable sections */}
+                  <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div>
+                        <Text strong style={{ fontSize: 14 }}><FilePdfOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />PDF Attachment</Text>
+                        <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>This PDF will be downloaded when user submits the access form</div>
+                      </div>
+                      <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
+                        <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
+                      </Upload>
+                    </div>
+                    {pdfList.length > 0 ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff2f0', borderRadius: 8, border: '1px solid #ffccc7' }}>
+                        <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
+                        <Text style={{ flex: 1, fontSize: 13 }}>{pdfList[0].name}</Text>
+                        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
+                      </div>
+                    ) : (
+                      <div style={{ border: '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: '#fff2f0' }}>
+                        <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
+                        <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fixed: Landing + Webhook — only for webinar/whitepaper/event */}
+                  {showLandingFields && (
+                    <>
+                      <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginBottom: 20 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                          <div>
+                            <Text strong style={{ fontSize: 14 }}><MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields</Text>
+                            <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Add all form fields with their label, API key, and type.</div>
+                          </div>
+                          <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
+                        </div>
+                        {customFields.length === 0 && (
+                          <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c', fontSize: 13, border: '2px dashed #e8e8e8', borderRadius: 8 }}>
+                            No fields added. Click "Add Field" to add form fields.
+                          </div>
+                        )}
+                        {customFields.map((field, index) => (
+                          <div key={field.id} draggable
+                            onDragStart={() => onDragStart(index)} onDragEnter={() => onDragEnter(index)}
+                            onDragEnd={onDragEnd} onDragOver={e => e.preventDefault()}
+                            style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', marginBottom: 10, background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8', cursor: 'grab' }}
+                          >
+                            <HolderOutlined style={{ color: '#bfbfbf', marginTop: 8, flexShrink: 0 }} />
+                            <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <Input placeholder="Field Label (e.g. First Name)" value={field.label} onChange={e => updateField(field.id, 'label', e.target.value)} style={{ flex: '1 1 140px' }} size="small" />
+                              <Input placeholder="API Key (e.g. firstname)" value={field.webhook_key || ''} onChange={e => updateField(field.id, 'webhook_key', e.target.value)} style={{ flex: '1 1 130px' }} size="small" />
+                              <Select value={field.type} onChange={v => updateField(field.id, 'type', v)} style={{ width: 110 }} size="small">
+                                {FIELD_TYPES.map(t => <Option key={t.value} value={t.value}>{t.label}</Option>)}
+                              </Select>
+                              <Input placeholder="Placeholder text" value={field.placeholder} onChange={e => updateField(field.id, 'placeholder', e.target.value)} style={{ flex: '1 1 130px' }} size="small" />
+                              {field.type === 'select' && (
+                                <Input placeholder="Options (comma separated)" value={field.options} onChange={e => updateField(field.id, 'options', e.target.value)} style={{ flex: '1 1 180px' }} size="small" />
+                              )}
+                            </div>
+                            <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => removeField(field.id)} style={{ flexShrink: 0 }} />
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginBottom: 20 }}>
+                        <div style={{ marginBottom: 16 }}>
+                          <Text strong style={{ fontSize: 14 }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                        </div>
+                        <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                          <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: '#bfbfbf' }} />} allowClear />
+                        </Form.Item>
+                      </div>
+                    </>
+                  )}
+                </>
+              );
+            })()}
+
+            {/* ── DRAG & DROP BUILDER TAB ── */}
+            {activeTab === 'builder' && (
+              <DragDropBuilder
+                sectionProps={{
+                  form,
+                  categories,
+                  contentTypes,
+                  setSelectedTypeName,
+                  fileList,
+                  setFileList,
+                  pdfList,
+                  setPdfList,
+                  content: builderContent,
+                  setContent: setBuilderContent,
+                  initialContent,
+                  editorReady,
+                }}
+                selectedTypeName={selectedTypeName}
+                customFields={customFields}
+                setCustomFields={setCustomFields}
+                fieldTypes={FIELD_TYPES}
+                sections={builderSections}
+                onSectionsChange={setBuilderSections}
+              />
+            )}
           </div>
-          <div style={{ width: 300, flexShrink: 0, display: editorMode === 'builder' ? 'none' : 'block' }}>
 
+          {/* Sidebar — only for Standard Form tab */}
+          <div style={{ width: 300, flexShrink: 0, display: activeTab === 'builder' ? 'none' : 'block' }}>
+
+            {/* Layout Reorder Panel */}
+            <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: '1px solid #e8e8e8' }}>
+              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>
+                <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
+              </Text>
+              <Text style={{ fontSize: 11, color: '#8c8c8c', display: 'block', marginBottom: 12 }}>Drag sections to change order</Text>
+              {standardLayout.map((key, index) => {
+                const sec = STANDARD_SECTIONS.find(s => s.key === key);
+                if (!sec) return null;
+                // hide landing/webhook if not applicable
+                if ((key === 'landing' || key === 'webhook') && !showLandingFields) return null;
+                return (
+                  <div
+                    key={key}
+                    draggable
+                    onDragStart={() => onLayoutDragStart(index)}
+                    onDragEnter={() => onLayoutDragEnter(index)}
+                    onDragEnd={onLayoutDragEnd}
+                    onDragOver={e => e.preventDefault()}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '8px 10px', marginBottom: 6,
+                      background: '#fafafa', borderRadius: 8,
+                      border: '1px solid #e8e8e8', cursor: 'grab',
+                      userSelect: 'none'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = '#f0f4ff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = '#fafafa'; }}
+                  >
+                    <HolderOutlined style={{ color: '#bfbfbf', fontSize: 12 }} />
+                    <span style={{ fontSize: 14 }}>{sec.icon}</span>
+                    <span style={{ fontSize: 12, color: '#1a1a2e', flex: 1 }}>{sec.label}</span>
+                    <span style={{ fontSize: 10, color: '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
+                  </div>
+                );
+              })}
+            </div>
             {/* Tags */}
             <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: '1px solid #e8e8e8' }}>
               <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>

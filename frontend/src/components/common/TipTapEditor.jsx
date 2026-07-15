@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { Node } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -10,51 +10,59 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import TextAlign from '@tiptap/extension-text-align';
-import { Button, Space, Divider, Dropdown, Select, Modal, Input, Radio } from 'antd';
-
-// Custom TwoColumn Node
-const TwoColumnNode = Node.create({
-  name: 'twoColumn',
-  group: 'block',
-  content: 'block+ block+',
-  atom: false,
-  parseHTML() {
-    return [{ tag: 'div[data-two-col]' }];
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-two-col': 'true', style: 'display:flex;gap:24px;margin:16px 0;' }), 0];
-  },
-});
-
-const TwoColumnLeft = Node.create({
-  name: 'twoColumnLeft',
-  group: 'block',
-  content: 'block+',
-  parseHTML() { return [{ tag: 'div[data-col="left"]' }]; },
-  renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-col': 'left', style: 'flex:1;min-width:0;' }), 0];
-  },
-});
-
-const TwoColumnRight = Node.create({
-  name: 'twoColumnRight',
-  group: 'block',
-  content: 'block+',
-  parseHTML() { return [{ tag: 'div[data-col="right"]' }]; },
-  renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-col': 'right', style: 'flex:1;min-width:0;' }), 0];
-  },
-});
+import { Button, Space, Divider, Dropdown, Select, Modal, Input, Radio, Upload } from 'antd';
 import {
   BoldOutlined, ItalicOutlined, UnderlineOutlined, StrikethroughOutlined,
   OrderedListOutlined, UnorderedListOutlined, AlignLeftOutlined,
   AlignCenterOutlined, AlignRightOutlined, LinkOutlined, PictureOutlined,
   TableOutlined, CodeOutlined, UndoOutlined, RedoOutlined, ClearOutlined,
-  ColumnWidthOutlined, UploadOutlined,
+  LayoutOutlined, UploadOutlined,
 } from '@ant-design/icons';
 import './TipTapEditor.css';
 
 const { Option } = Select;
+
+// Custom extension to preserve raw HTML blocks (two-col layout)
+const RawHtmlBlock = Node.create({
+  name: 'rawHtmlBlock',
+  group: 'block',
+  atom: true,
+  parseHTML() {
+    return [{ tag: 'div.two-col-layout' }];
+  },
+  addAttributes() {
+    return {
+      innerHTML: { default: '' },
+    };
+  },
+  renderHTML({ node }) {
+    // Render as a div; actual innerHTML injected via NodeView
+    return ['div', {
+      class: 'two-col-layout',
+      style: 'display:flex;flex-direction:row;gap:24px;align-items:flex-start;margin:16px 0;',
+      'data-raw-html': node.attrs.innerHTML,
+    }];
+  },
+  addNodeView() {
+    return ({ node }) => {
+      const dom = document.createElement('div');
+      dom.className = 'two-col-layout';
+      dom.style.cssText = 'display:flex;flex-direction:row;gap:24px;align-items:flex-start;margin:16px 0;border:1px dashed #d0e8ff;border-radius:8px;padding:12px;background:#f8fbff;';
+      dom.innerHTML = node.attrs.innerHTML || '';
+      return { dom };
+    };
+  },
+  addCommands() {
+    return {
+      insertRawHtml: (html) => ({ commands }) => {
+        return commands.insertContent({
+          type: this.name,
+          attrs: { innerHTML: html },
+        });
+      },
+    };
+  },
+});
 
 const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here...', initialContent }) => {
   const editorContainerRef = useRef(null);
@@ -77,22 +85,22 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
   const [linkText, setLinkText] = useState('');
 
   // Two-column modal
-  const [colModal, setColModal] = useState(false);
-  const [colLayout, setColLayout] = useState('text-text');
-  const [colLeftText, setColLeftText] = useState('');
-  const [colRightText, setColRightText] = useState('');
-  const [colLeftImage, setColLeftImage] = useState(null);
-  const [colRightImage, setColRightImage] = useState(null);
+  const [twoColModal, setTwoColModal] = useState(false);
+  const [twoColText, setTwoColText] = useState('');
+  const [twoColImgSrc, setTwoColImgSrc] = useState('');
+  const [twoColImgPos, setTwoColImgPos] = useState('right'); // 'left' | 'right'
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ 
         heading: { levels: [1, 2, 3, 4, 5, 6] }, 
-        link: false 
+        link: false,
+        paragraph: { HTMLAttributes: {} },
       }),
       Image.configure({ 
         allowBase64: true, 
-        inline: false 
+        inline: true,
+        HTMLAttributes: { style: '' },
       }),
       Link.configure({ 
         openOnClick: false, 
@@ -105,7 +113,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
       Table.configure({ resizable: true }),
       TableRow, TableCell, TableHeader,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      TwoColumnNode, TwoColumnLeft, TwoColumnRight,
+      RawHtmlBlock,
     ],
     content: initialContent || value || '',
     onUpdate: ({ editor }) => { 
@@ -199,38 +207,32 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
     setTimeout(() => updateStates(editor), 10);
   };
 
-  const openColModal = () => {
-    setColLayout('text-text');
-    setColLeftText(''); 
-    setColRightText('');
-    setColLeftImage(null); 
-    setColRightImage(null);
-    setColModal(true);
+  const openTwoColModal = () => {
+    setTwoColText('');
+    setTwoColImgSrc('');
+    setTwoColImgPos('right');
+    setTwoColModal(true);
   };
 
-  const readImageAsBase64 = (file) => new Promise((res) => {
-    const r = new FileReader();
-    r.onload = (e) => res(e.target.result);
-    r.readAsDataURL(file);
-  });
+  const handleTwoColImage = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => setTwoColImgSrc(e.target.result);
+    reader.readAsDataURL(file);
+    return false; // prevent auto-upload
+  };
 
-  const insertTwoColumn = () => {
-    const isTextLeft = colLayout === 'text-text' || colLayout === 'text-image';
-    const isTextRight = colLayout === 'text-text' || colLayout === 'image-text';
-
-    const makeCol = (isText, text, imgSrc) => isText
-      ? [{ type: 'paragraph', content: [{ type: 'text', text: text || (isText ? 'Column content...' : '') }] }]
-      : [{ type: 'image', attrs: { src: imgSrc || '', alt: '' } }];
-
-    editor.chain().focus().insertContent({
-      type: 'twoColumn',
-      content: [
-        { type: 'twoColumnLeft',  content: makeCol(isTextLeft,  colLeftText,  colLeftImage)  },
-        { type: 'twoColumnRight', content: makeCol(isTextRight, colRightText, colRightImage) },
-      ],
-    }).run();
-
-    setColModal(false);
+  const insertTwoCol = () => {
+    if (!twoColText && !twoColImgSrc) return;
+    const colStyle = 'flex:1;min-width:0;';
+    const textHtml = `<div class="two-col-text" style="${colStyle}font-size:15px;line-height:1.75;"><p>${twoColText.replace(/\n/g, '</p><p>')}</p></div>`;
+    const imgHtml  = twoColImgSrc
+      ? `<div class="two-col-img" style="${colStyle}"><img src="${twoColImgSrc}" style="width:100%;height:auto;border-radius:8px;display:block;" /></div>`
+      : '';
+    const innerHTML = twoColImgPos === 'left'
+      ? `${imgHtml}${textHtml}`
+      : `${textHtml}${imgHtml}`;
+    editor.chain().focus().insertRawHtml(innerHTML).run();
+    setTwoColModal(false);
   };
 
   const insertTable = () => {
@@ -295,10 +297,6 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
             Image
           </Button>
 
-          <Button size="small" icon={<ColumnWidthOutlined />} onClick={openColModal} title="Insert 2-Column Layout">
-            2 Columns
-          </Button>
-
           <Dropdown menu={{ items: [
             { key: 'insert', label: 'Insert Table', onClick: insertTable },
             { key: 'add-col-before', label: 'Add Column Before', onClick: () => editor.chain().focus().addColumnBefore().run() },
@@ -320,10 +318,65 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
           <TB icon={<CodeOutlined />} onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={isCodeBlock} title="Code Block" />
           <TB icon={<span style={{ fontSize: 16 }}>—</span>} onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule" />
           <TB icon={<ClearOutlined />} onClick={() => editor.chain().focus().unsetAllMarks().run()} title="Clear Formatting" />
+
+          <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
+
+          <Button size="small" icon={<LayoutOutlined />} onClick={openTwoColModal} title="Insert Two-Column Layout">
+            2-Col
+          </Button>
         </Space>
       </div>
 
       <EditorContent editor={editor} className="tiptap-editor-content" />
+
+      {/* Two-Column Modal */}
+      <Modal
+        title="Insert Two-Column Layout"
+        open={twoColModal}
+        onOk={insertTwoCol}
+        onCancel={() => setTwoColModal(false)}
+        okText="Insert"
+        width={560}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
+          <div>
+            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Image Position</div>
+            <Radio.Group value={twoColImgPos} onChange={e => setTwoColImgPos(e.target.value)}>
+              <Radio value="right">Text Left, Image Right</Radio>
+              <Radio value="left">Image Left, Text Right</Radio>
+            </Radio.Group>
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Text Content *</div>
+            <Input.TextArea
+              rows={5}
+              placeholder="Enter paragraph text here..."
+              value={twoColText}
+              onChange={e => setTwoColText(e.target.value)}
+            />
+          </div>
+          <div>
+            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Image</div>
+            <Upload beforeUpload={handleTwoColImage} showUploadList={false} accept="image/*">
+              <Button icon={<UploadOutlined />}>Upload Image</Button>
+            </Upload>
+            {twoColImgSrc && (
+              <img src={twoColImgSrc} alt="preview" style={{ marginTop: 8, maxHeight: 120, borderRadius: 6, border: '1px solid #eee' }} />
+            )}
+          </div>
+          {/* Preview */}
+          {(twoColText || twoColImgSrc) && (
+            <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 12, background: '#fafafa' }}>
+              <div style={{ fontSize: 11, color: '#aaa', marginBottom: 6 }}>Preview</div>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                {twoColImgPos === 'left' && twoColImgSrc && <img src={twoColImgSrc} alt="" style={{ flex: 1, maxWidth: '50%', borderRadius: 6 }} />}
+                {twoColText && <p style={{ flex: 1, fontSize: 13, margin: 0, lineHeight: 1.6 }}>{twoColText}</p>}
+                {twoColImgPos === 'right' && twoColImgSrc && <img src={twoColImgSrc} alt="" style={{ flex: 1, maxWidth: '50%', borderRadius: 6 }} />}
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Link Modal */}
       <Modal title="Insert Link" open={linkModal} onOk={applyLink} onCancel={() => setLinkModal(false)}
@@ -347,99 +400,6 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
         </div>
       </Modal>
 
-      {/* Two-Column Modal */}
-      <Modal
-        title="Insert 2-Column Layout"
-        open={colModal}
-        onOk={insertTwoColumn}
-        onCancel={() => setColModal(false)}
-        okText="Insert"
-        width={700}
-        style={{ top: 20 }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 8 }}>
-          <div>
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 8 }}>Layout Type</div>
-            <Radio.Group value={colLayout} onChange={e => { 
-              setColLayout(e.target.value); 
-              setColLeftImage(null); 
-              setColRightImage(null); 
-            }}>
-              <Radio.Button value="text-text">📝 Text | Text</Radio.Button>
-              <Radio.Button value="text-image">📝 Text | 🖼 Image</Radio.Button>
-              <Radio.Button value="image-text">🖼 Image | 📝 Text</Radio.Button>
-            </Radio.Group>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-            {/* Left Column */}
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 6 }}>Left Column</div>
-              {(colLayout === 'text-text' || colLayout === 'text-image') ? (
-                <Input.TextArea rows={5} placeholder="Enter text for left column..." value={colLeftText}
-                  onChange={e => setColLeftText(e.target.value)} style={{ resize: 'none' }} />
-              ) : (
-                <div>
-                  <input type="file" accept="image/*" style={{ display: 'none' }} id="col-left-img"
-                    onChange={async (e) => { 
-                      if (e.target.files[0]) { 
-                        const b = await readImageAsBase64(e.target.files[0]); 
-                        setColLeftImage(b); 
-                        e.target.value = ''; 
-                      } 
-                    }} />
-                  {colLeftImage ? (
-                    <div style={{ position: 'relative' }}>
-                      <img src={colLeftImage} style={{ width: '100%', borderRadius: 6, maxHeight: 150, objectFit: 'cover' }} />
-                      <Button size="small" danger style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => setColLeftImage(null)}>✕</Button>
-                    </div>
-                  ) : (
-                    <label htmlFor="col-left-img" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed #d9d9d9', borderRadius: 8, padding: '24px 12px', cursor: 'pointer', background: '#fafafa' }}>
-                      <UploadOutlined style={{ fontSize: 24, color: '#bfbfbf', marginBottom: 6 }} />
-                      <span style={{ fontSize: 12, color: '#8c8c8c' }}>Click to upload image</span>
-                    </label>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Right Column */}
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 6 }}>Right Column</div>
-              {(colLayout === 'text-text' || colLayout === 'image-text') ? (
-                <Input.TextArea rows={5} placeholder="Enter text for right column..." value={colRightText}
-                  onChange={e => setColRightText(e.target.value)} style={{ resize: 'none' }} />
-              ) : (
-                <div>
-                  <input type="file" accept="image/*" style={{ display: 'none' }} id="col-right-img"
-                    onChange={async (e) => { 
-                      if (e.target.files[0]) { 
-                        const b = await readImageAsBase64(e.target.files[0]); 
-                        setColRightImage(b); 
-                        e.target.value = ''; 
-                      } 
-                    }} />
-                  {colRightImage ? (
-                    <div style={{ position: 'relative' }}>
-                      <img src={colRightImage} style={{ width: '100%', borderRadius: 6, maxHeight: 150, objectFit: 'cover' }} />
-                      <Button size="small" danger style={{ position: 'absolute', top: 4, right: 4 }} onClick={() => setColRightImage(null)}>✕</Button>
-                    </div>
-                  ) : (
-                    <label htmlFor="col-right-img" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed #d9d9d9', borderRadius: 8, padding: '24px 12px', cursor: 'pointer', background: '#fafafa' }}>
-                      <UploadOutlined style={{ fontSize: 24, color: '#bfbfbf', marginBottom: 6 }} />
-                      <span style={{ fontSize: 12, color: '#8c8c8c' }}>Click to upload image</span>
-                    </label>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ fontSize: 11, color: '#8c8c8c', background: '#f5f5f5', borderRadius: 6, padding: '8px 12px' }}>
-            💡 Content will appear side-by-side (left and right columns) with text and/or images.
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

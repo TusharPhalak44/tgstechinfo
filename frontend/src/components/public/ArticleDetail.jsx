@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import '../../prose-content.css';
+import ContentRenderer from '../common/ContentRenderer';
 
 const { Title, Text } = Typography;
 
@@ -142,6 +143,20 @@ const ArticleDetail = () => {
   }, [slug]);
 
   useEffect(() => {
+    if (!content) return;
+    document.title = content.seo_meta_title || content.title || 'Article';
+    const setMeta = (name, val) => {
+      if (!val) return;
+      let el = document.querySelector(`meta[name="${name}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el); }
+      el.setAttribute('content', val);
+    };
+    setMeta('description', content.seo_meta_description);
+    setMeta('keywords', content.seo_meta_keywords);
+    return () => { document.title = 'TGS Tech Info'; };
+  }, [content]);
+
+  useEffect(() => {
     if (content?.id) {
       const storedAccess = localStorage.getItem(`article-access-${content.id}`);
       setHasAccess(storedAccess === 'true');
@@ -232,7 +247,7 @@ const ArticleDetail = () => {
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} style={{ padding: 24 }} />;
   if (!content) return <Title level={3} style={{ padding: 24 }}>Content not found</Title>;
 
-  const LANDING_TYPES = ['webinar', 'whitepaper', 'white paper', 'white-paper', 'event'];
+  const LANDING_TYPES = ['webinar', 'whitepaper', 'white paper', 'white-paper', 'event', 'ebook', 'e-book'];
   const contentTypeName = (content?.content_type_name || content?.content_type || '').toLowerCase().trim();
   const requiresLanding = LANDING_TYPES.includes(contentTypeName);
 
@@ -275,13 +290,8 @@ const ArticleDetail = () => {
             {/* Category */}
             <Tag color="blue" style={{ marginBottom: 12 }}>{content.category_name}</Tag>
 
-            {/* Title */}
-            <Title level={1} style={{ fontSize: 32, fontWeight: 700, marginBottom: 16 }}>
-              {content.title}
-            </Title>
-
             {/* Meta */}
-            <div style={{ marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f0f0f0' }}>
               <Space size="middle" wrap>
                 <Space>
                   <Avatar icon={<UserOutlined />} size="small" />
@@ -297,12 +307,7 @@ const ArticleDetail = () => {
               </Space>
             </div>
 
-            {/* Hero Image */}
-            {content.banner_image && (
-              <BannerImage src={`/uploads/${content.banner_image}`} alt={content.title} />
-            )}
-
-            {/* Content */}
+            {/* Content rendered in saved layout order */}
             {requiresLanding && !hasAccess && (
               <div style={{ marginBottom: 20, padding: '14px 16px', background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8 }}>
                 <Text strong style={{ color: '#8c4b00' }}>
@@ -311,16 +316,17 @@ const ArticleDetail = () => {
               </div>
             )}
 
-            <div
-              className="prose-content"
-              dangerouslySetInnerHTML={{ __html: (requiresLanding && !hasAccess) ? previewContent : fullContent }}
+            <ContentRenderer
+              content={content}
+              renderBanner={(src, alt) => <BannerImage src={src} alt={alt} />}
+              contentHtml={(requiresLanding && !hasAccess) ? previewContent : fullContent}
+              extraAfter={
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f0f0f0', display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <Text strong>Share:</Text>
+                  <Button icon={<ShareAltOutlined />}>Share</Button>
+                </div>
+              }
             />
-
-            {/* Share */}
-            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0', display: 'flex', gap: 16, alignItems: 'center' }}>
-              <Text strong>Share:</Text>
-              <Button icon={<ShareAltOutlined />}>Share</Button>
-            </div>
           </div>
 
           {/* Comments */}
@@ -419,6 +425,37 @@ const ArticleDetail = () => {
                   )}
                 </div>
               </Card>
+            )}
+
+            {/* SEO Info Card — sidebar */}
+            {(content.seo_meta_title || content.seo_meta_description || content.seo_meta_keywords) && (
+              <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e8ecf4', padding: '16px 18px' }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#1a1a2e', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #f0f0f0' }}>
+                  🔍 SEO Info
+                </div>
+                {content.seo_meta_title && (
+                  <div style={{ marginBottom: 10 }}>
+                    <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meta Title</Text>
+                    <div style={{ fontSize: 13, color: '#374151', marginTop: 2 }}>{content.seo_meta_title}</div>
+                  </div>
+                )}
+                {content.seo_meta_description && (
+                  <div style={{ marginBottom: 10 }}>
+                    <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meta Description</Text>
+                    <div style={{ fontSize: 13, color: '#374151', marginTop: 2, lineHeight: 1.5 }}>{content.seo_meta_description}</div>
+                  </div>
+                )}
+                {content.seo_meta_keywords && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Keywords</Text>
+                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {content.seo_meta_keywords.split(',').map(k => k.trim()).filter(Boolean).map((k, i) => (
+                        <Tag key={i} style={{ fontSize: 11, borderRadius: 12 }}>{k}</Tag>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* ── Related Articles — below landing card ── */}

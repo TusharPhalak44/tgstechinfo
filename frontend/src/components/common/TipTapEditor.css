@@ -358,24 +358,63 @@
 }
 
 /* ── Two-Column Layout in Editor ── */
-.ProseMirror [data-two-col] {
+.ProseMirror .two-col-layout {
   display: flex !important;
   flex-direction: row !important;
   gap: 24px !important;
   margin: 16px 0 !important;
   align-items: flex-start;
+  border: 1px dashed #d0e8ff;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbff;
 }
 
-.ProseMirror [data-col="left"],
-.ProseMirror [data-col="right"] {
+.ProseMirror .two-col-text,
+.ProseMirror .two-col-img {
   flex: 1 !important;
   min-width: 0 !important;
 }
 
-.ProseMirror [data-two-col] img {
+.ProseMirror .two-col-layout img {
   width: 100% !important;
   height: auto !important;
   border-radius: 6px !important;
   margin: 0 !important;
   display: block !important;
+}
+
+/* ── Two-Column Layout in Public/Preview ── */
+.two-col-layout {
+  display: flex;
+  gap: 28px;
+  margin: 24px 0;
+  align-items: flex-start;
+}
+
+.two-col-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #334155;
+}
+
+.two-col-img {
+  flex: 1;
+  min-width: 0;
+}
+
+.two-col-img img {
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  display: block;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 640px) {
+  .two-col-layout {
+    flex-direction: column;
+  }
 }

@@ -20,6 +20,12 @@ const migrate = async () => {
             ADD COLUMN IF NOT EXISTS webhook_url VARCHAR(500) NULL AFTER custom_fields
         `).catch(() => {});
 
+        // Add builder_layout to contents
+        await pool.query(`
+            ALTER TABLE contents 
+            ADD COLUMN IF NOT EXISTS builder_layout JSON NULL AFTER webhook_url
+        `).catch(() => {});
+
         // Create landing_page_submissions if not exists
         await pool.query(`
             CREATE TABLE IF NOT EXISTS landing_page_submissions (

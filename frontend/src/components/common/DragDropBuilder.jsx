@@ -1,197 +1,158 @@
-import React, { useState, useCallback } from 'react';
+import React, { useRef } from 'react';
 import {
-  DndContext, closestCenter, DragOverlay,
-  PointerSensor, useSensor, useSensors,
-  useDroppable
-} from '@dnd-kit/core';
-import {
-  SortableContext, verticalListSortingStrategy,
-  useSortable, arrayMove
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { Input, Button, Tooltip } from 'antd';
+  Form, Input, Select, DatePicker, Upload, Button, Typography, Tooltip
+} from 'antd';
 import {
   HolderOutlined, DeleteOutlined, PlusOutlined,
-  FontSizeOutlined, AlignLeftOutlined, PictureOutlined,
-  MinusOutlined, CodeOutlined, MessageOutlined, AppstoreOutlined,
-  OrderedListOutlined, UnorderedListOutlined
+  AppstoreOutlined, TagOutlined, CalendarOutlined,
+  SettingOutlined, PictureOutlined, FilePdfOutlined,
+  FontSizeOutlined, AlignLeftOutlined, InfoCircleOutlined,
+  UploadOutlined, MenuOutlined, ApiOutlined
 } from '@ant-design/icons';
+import TipTapEditor from './TipTapEditor';
 
 const { TextArea } = Input;
+const { Text } = Typography;
+const { Option } = Select;
 
-// ── Block definitions ──────────────────────────────────────────────
-const BLOCK_TYPES = [
-  { type: 'heading',    icon: <FontSizeOutlined />,       label: 'Heading',      color: '#4a7cff' },
-  { type: 'paragraph', icon: <AlignLeftOutlined />,       label: 'Paragraph',    color: '#00b894' },
-  { type: 'image',     icon: <PictureOutlined />,         label: 'Image',        color: '#e17055' },
-  { type: 'quote',     icon: <MessageOutlined />,         label: 'Quote',        color: '#6c5ce7' },
-  { type: 'divider',   icon: <MinusOutlined />,           label: 'Divider',      color: '#636e72' },
-  { type: 'code',      icon: <CodeOutlined />,            label: 'Code Block',   color: '#fdcb6e' },
-  { type: 'columns',   icon: <AppstoreOutlined />,        label: 'Two Columns',  color: '#0984e3' },
-  { type: 'ul',        icon: <UnorderedListOutlined />,   label: 'Bullet List',  color: '#00cec9' },
-  { type: 'ol',        icon: <OrderedListOutlined />,     label: 'Numbered List',color: '#fd79a8' },
+const SECTION_TYPES = [
+  { type: 'content_type_category', label: 'Content Type & Category' },
+  { type: 'title_description',     label: 'Title & Description' },
+  { type: 'banner_image',          label: 'Banner Image' },
+  { type: 'pdf_attachment',        label: 'PDF Attachment' },
+  { type: 'content',               label: 'Content' },
+  { type: 'tags',                  label: 'Tags' },
+  { type: 'schedule',              label: 'Schedule' },
+  { type: 'seo',                   label: 'SEO Settings' },
 ];
 
-const defaultData = (type) => {
-  switch (type) {
-    case 'heading':   return { text: 'Your Heading', level: 2 };
-    case 'paragraph': return { text: 'Write your paragraph here...' };
-    case 'image':     return { src: '', alt: '', caption: '' };
-    case 'quote':     return { text: 'Your quote here...', author: '' };
-    case 'divider':   return {};
-    case 'code':      return { code: '// Your code here', language: 'javascript' };
-    case 'columns':   return { left: 'Left column content...', right: 'Right column content...' };
-    case 'ul':        return { items: ['Item 1', 'Item 2', 'Item 3'] };
-    case 'ol':        return { items: ['Item 1', 'Item 2', 'Item 3'] };
-    default:          return {};
-  }
-};
+const SectionRenderer = ({ type, props }) => {
+  const {
+    form, categories, contentTypes, setSelectedTypeName,
+    fileList, setFileList, pdfList, setPdfList,
+    content, setContent, initialContent, editorReady
+  } = props;
 
-// ── Block → HTML ───────────────────────────────────────────────────
-const blockToHtml = (block) => {
-  const { type, data } = block;
-  switch (type) {
-    case 'heading':
-      return `<h${data.level}>${data.text}</h${data.level}>`;
-    case 'paragraph':
-      return `<p>${data.text}</p>`;
-    case 'image':
-      return data.src
-        ? `<figure><img src="${data.src}" alt="${data.alt || ''}" style="max-width:100%;border-radius:8px;" />${data.caption ? `<figcaption>${data.caption}</figcaption>` : ''}</figure>`
-        : '';
-    case 'quote':
-      return `<blockquote><p>${data.text}</p>${data.author ? `<cite>— ${data.author}</cite>` : ''}</blockquote>`;
-    case 'divider':
-      return `<hr />`;
-    case 'code':
-      return `<pre><code class="language-${data.language}">${data.code}</code></pre>`;
-    case 'columns':
-      return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;"><div><p>${data.left}</p></div><div><p>${data.right}</p></div></div>`;
-    case 'ul':
-      return `<ul>${data.items.map(i => `<li>${i}</li>`).join('')}</ul>`;
-    case 'ol':
-      return `<ol>${data.items.map(i => `<li>${i}</li>`).join('')}</ol>`;
-    default: return '';
-  }
-};
-
-// ── Block Editor (inline editing per block) ────────────────────────
-const BlockEditor = ({ block, onChange }) => {
-  const { type, data } = block;
-
-  const update = (key, val) => onChange({ ...data, [key]: val });
-  const updateItem = (i, val) => {
-    const items = [...data.items];
-    items[i] = val;
-    onChange({ ...data, items });
-  };
-  const addItem = () => onChange({ ...data, items: [...data.items, 'New item'] });
-  const removeItem = (i) => onChange({ ...data, items: data.items.filter((_, idx) => idx !== i) });
-
-  const inputStyle = {
-    border: 'none', borderBottom: '1px dashed #d9d9d9', borderRadius: 0,
-    padding: '4px 0', background: 'transparent', boxShadow: 'none', width: '100%'
-  };
+  const inputStyle = { fontSize: 14 };
 
   switch (type) {
-    case 'heading':
+    case 'content_type_category':
       return (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <select
-            value={data.level}
-            onChange={e => update('level', parseInt(e.target.value))}
-            style={{ border: '1px solid #e8e8e8', borderRadius: 4, padding: '2px 6px', fontSize: 12, color: '#595959' }}
-          >
-            {[1,2,3,4].map(l => <option key={l} value={l}>H{l}</option>)}
-          </select>
-          <Input
-            value={data.text}
-            onChange={e => update('text', e.target.value)}
-            style={{ ...inputStyle, fontSize: data.level === 1 ? 28 : data.level === 2 ? 22 : data.level === 3 ? 18 : 15, fontWeight: 700 }}
-            placeholder="Heading text..."
-          />
+        <div style={{ display: 'flex', gap: 16 }}>
+          <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+            <Select placeholder="Select type" size="large" onChange={val => {
+              const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+              setSelectedTypeName(name);
+            }}>
+              {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+            </Select>
+          </Form.Item>
+          <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+            <Select placeholder="Select category" size="large">
+              {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+            </Select>
+          </Form.Item>
         </div>
       );
 
-    case 'paragraph':
-      return (
-        <TextArea
-          value={data.text}
-          onChange={e => update('text', e.target.value)}
-          autoSize={{ minRows: 2 }}
-          style={{ ...inputStyle, fontSize: 15, lineHeight: 1.7, resize: 'none' }}
-          placeholder="Paragraph text..."
-        />
-      );
-
-    case 'image':
-      return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <Input value={data.src} onChange={e => update('src', e.target.value)} placeholder="Image URL (https://...)" style={inputStyle} />
-          {data.src && (
-            <img src={data.src} alt={data.alt} style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 6, border: '1px solid #e8e8e8' }} />
-          )}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Input value={data.alt} onChange={e => update('alt', e.target.value)} placeholder="Alt text" style={{ ...inputStyle, flex: 1 }} />
-            <Input value={data.caption} onChange={e => update('caption', e.target.value)} placeholder="Caption (optional)" style={{ ...inputStyle, flex: 1 }} />
-          </div>
-        </div>
-      );
-
-    case 'quote':
-      return (
-        <div style={{ borderLeft: '3px solid #6c5ce7', paddingLeft: 16 }}>
-          <TextArea value={data.text} onChange={e => update('text', e.target.value)} autoSize={{ minRows: 2 }} style={{ ...inputStyle, fontStyle: 'italic', fontSize: 15 }} placeholder="Quote text..." />
-          <Input value={data.author} onChange={e => update('author', e.target.value)} style={{ ...inputStyle, fontSize: 12, color: '#8c8c8c', marginTop: 6 }} placeholder="Author name (optional)" />
-        </div>
-      );
-
-    case 'divider':
-      return <hr style={{ border: 'none', borderTop: '2px solid #e8e8e8', margin: '8px 0' }} />;
-
-    case 'code':
+    case 'title_description':
       return (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <select
-              value={data.language}
-              onChange={e => update('language', e.target.value)}
-              style={{ border: '1px solid #e8e8e8', borderRadius: 4, padding: '2px 6px', fontSize: 11, color: '#595959' }}
-            >
-              {['javascript','python','html','css','sql','bash','json','typescript'].map(l => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </div>
-          <TextArea
-            value={data.code}
-            onChange={e => update('code', e.target.value)}
-            autoSize={{ minRows: 3 }}
-            style={{ fontFamily: 'monospace', fontSize: 13, background: '#1e1e2e', color: '#cdd6f4', borderRadius: 6, padding: 12, resize: 'none', border: 'none' }}
-          />
+          <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
+            <Input placeholder="Article title..." size="large"
+              style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }} />
+          </Form.Item>
+          <Form.Item name="short_description"
+            label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+            rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
+            <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} />
+          </Form.Item>
         </div>
       );
 
-    case 'columns':
-      return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <TextArea value={data.left} onChange={e => update('left', e.target.value)} autoSize={{ minRows: 3 }} style={{ ...inputStyle, resize: 'none', padding: 8, border: '1px dashed #d9d9d9', borderRadius: 4 }} placeholder="Left column..." />
-          <TextArea value={data.right} onChange={e => update('right', e.target.value)} autoSize={{ minRows: 3 }} style={{ ...inputStyle, resize: 'none', padding: 8, border: '1px dashed #d9d9d9', borderRadius: 4 }} placeholder="Right column..." />
-        </div>
-      );
-
-    case 'ul':
-    case 'ol':
+    case 'banner_image': {
+      const bannerUrl = fileList.length > 0
+        ? (fileList[0].originFileObj ? URL.createObjectURL(fileList[0].originFileObj) : fileList[0].url)
+        : null;
       return (
         <div>
-          {data.items.map((item, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <span style={{ color: '#8c8c8c', fontSize: 12, minWidth: 20 }}>{type === 'ol' ? `${i + 1}.` : '•'}</span>
-              <Input value={item} onChange={e => updateItem(i, e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => removeItem(i)} style={{ flexShrink: 0 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 12, color: '#8c8c8c' }}>Recommended: 1200×630px</Text>
+            <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+              <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+            </Upload>
+          </div>
+          {bannerUrl ? (
+            <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+              <img src={bannerUrl} alt="Banner" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
             </div>
-          ))}
-          <Button type="dashed" size="small" icon={<PlusOutlined />} onClick={addItem} style={{ marginTop: 4, fontSize: 12 }}>Add item</Button>
+          ) : (
+            <div style={{ border: '2px dashed #d9d9d9', borderRadius: 8, padding: '32px 20px', textAlign: 'center', background: '#fafafa' }}>
+              <PictureOutlined style={{ fontSize: 28, color: '#bfbfbf', marginBottom: 6, display: 'block' }} />
+              <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No banner image</Text>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    case 'pdf_attachment':
+      return (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={{ fontSize: 12, color: '#8c8c8c' }}>PDF will be downloaded when user submits the access form</Text>
+            <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
+              <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
+            </Upload>
+          </div>
+          {pdfList.length > 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff2f0', borderRadius: 8, border: '1px solid #ffccc7' }}>
+              <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
+              <Text style={{ flex: 1, fontSize: 13 }}>{pdfList[0].name}</Text>
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
+            </div>
+          ) : (
+            <div style={{ border: '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: '#fff2f0' }}>
+              <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
+              <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
+            </div>
+          )}
+        </div>
+      );
+
+    case 'content':
+      return editorReady ? (
+        <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing your article..." />
+      ) : (
+        <div style={{ padding: 40, textAlign: 'center', color: '#8c8c8c' }}>Loading editor...</div>
+      );
+
+    case 'tags':
+      return (
+        <Form.Item name="tags" style={{ marginBottom: 0 }}>
+          <Select mode="tags" placeholder="Add tags and press Enter..." style={{ width: '100%' }} tokenSeparators={[',']} />
+        </Form.Item>
+      );
+
+    case 'schedule':
+      return (
+        <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
+          <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
+        </Form.Item>
+      );
+
+    case 'seo':
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12 }}>Meta Title</Text>} style={{ marginBottom: 0 }}>
+            <Input placeholder="SEO title" style={inputStyle} />
+          </Form.Item>
+          <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12 }}>Meta Description</Text>} style={{ marginBottom: 0 }}>
+            <TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', fontSize: 13 }} />
+          </Form.Item>
+          <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12 }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
+            <Select mode="tags" placeholder="Add keyword and press Enter..." style={{ width: '100%' }} tokenSeparators={[',']} />
+          </Form.Item>
         </div>
       );
 
@@ -199,225 +160,273 @@ const BlockEditor = ({ block, onChange }) => {
   }
 };
 
-// ── Sortable Block Card ────────────────────────────────────────────
-const SortableBlock = ({ block, onUpdate, onDelete, isDraggingOver }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
-  const meta = BLOCK_TYPES.find(b => b.type === block.type);
+const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook'];
+
+const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [], setCustomFields, fieldTypes = [], sections, onSectionsChange }) => {
+  const dragItem = useRef(null);
+  const dragOver = useRef(null);
+
+  const addedTypes = sections.map(s => s.type);
+  const availableSections = SECTION_TYPES.filter(s => !addedTypes.includes(s.type));
+
+  const addSection = (type) => {
+    onSectionsChange([...sections, { id: `sec-${Date.now()}`, type }]);
+  };
+
+  const removeSection = (id) => {
+    onSectionsChange(sections.filter(s => s.id !== id));
+  };
+
+  const onDragStart = (index) => { dragItem.current = index; };
+  const onDragEnter = (index) => { dragOver.current = index; };
+  const onDragEnd = () => {
+    const items = [...sections];
+    const dragged = items.splice(dragItem.current, 1)[0];
+    items.splice(dragOver.current, 0, dragged);
+    dragItem.current = null;
+    dragOver.current = null;
+    onSectionsChange(items);
+  };
+
+  const showLandingFields = LANDING_TYPES.includes((selectedTypeName || '').toLowerCase());
+
+  const addField = () => {
+    setCustomFields(prev => [...prev, {
+      id: Date.now(), name: `field_${Date.now()}`, label: '',
+      type: 'text', placeholder: '', options: '', required: true
+    }]);
+  };
+
+  const updateField = (id, key, value) => {
+    setCustomFields(prev => prev.map(f => {
+      if (f.id !== id) return f;
+      const updated = { ...f, [key]: value };
+      if (key === 'label') updated.name = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || `field_${id}`;
+      return updated;
+    }));
+  };
+
+  const removeField = (id) => setCustomFields(prev => prev.filter(f => f.id !== id));
+
+  const fieldDragItem = useRef(null);
+  const fieldDragOver = useRef(null);
+  const onFieldDragStart = (index) => { fieldDragItem.current = index; };
+  const onFieldDragEnter = (index) => { fieldDragOver.current = index; };
+  const onFieldDragEnd = () => {
+    const fields = [...customFields];
+    const dragged = fields.splice(fieldDragItem.current, 1)[0];
+    fields.splice(fieldDragOver.current, 0, dragged);
+    fieldDragItem.current = null;
+    fieldDragOver.current = null;
+    setCustomFields(fields);
+  };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.4 : 1,
+    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+      {/* Left Panel — Available Sections (Icons Removed) */}
+      <div style={{
+        width: 200, // Slightly reduced width since icons are removed
+        flexShrink: 0, 
         background: '#fff',
-        border: `1px solid ${isDragging ? '#4a7cff' : '#e8e8e8'}`,
-        borderRadius: 10,
-        marginBottom: 10,
-        overflow: 'hidden',
-        boxShadow: isDragging ? '0 4px 20px rgba(74,124,255,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
-      }}
-    >
-      {/* Block Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8,
-        padding: '8px 12px', background: '#fafafa',
-        borderBottom: '1px solid #f0f0f0'
+        borderRadius: 12, 
+        border: '1px solid #e8e8e8',
+        padding: '16px 14px', 
+        position: 'sticky', 
+        top: 72
       }}>
-        <span {...attributes} {...listeners} style={{ cursor: 'grab', color: '#bfbfbf', display: 'flex', alignItems: 'center' }}>
-          <HolderOutlined />
-        </span>
-        <span style={{
-          width: 22, height: 22, borderRadius: 5, background: meta?.color + '20',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: meta?.color, fontSize: 12
+        <div style={{ 
+          fontSize: 11, 
+          fontWeight: 700, 
+          color: '#8c8c8c', 
+          textTransform: 'uppercase', 
+          letterSpacing: '0.08em', 
+          marginBottom: 12,
+          paddingLeft: 4
         }}>
-          {meta?.icon}
-        </span>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#595959', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>
-          {meta?.label}
-        </span>
-        <Tooltip title="Delete block">
-          <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(block.id)} />
-        </Tooltip>
-      </div>
-
-      {/* Block Content */}
-      <div style={{ padding: '14px 16px' }}>
-        <BlockEditor block={block} onChange={(newData) => onUpdate(block.id, newData)} />
-      </div>
-    </div>
-  );
-};
-
-// ── Droppable Canvas ───────────────────────────────────────────────
-const DroppableCanvas = ({ children, isEmpty }) => {
-  const { setNodeRef, isOver } = useDroppable({ id: 'canvas' });
-  return (
-    <div
-      ref={setNodeRef}
-      style={{
-        minHeight: 400,
-        background: isOver ? '#f0f5ff' : '#fafafa',
-        border: `2px dashed ${isOver ? '#4a7cff' : '#e0e0e0'}`,
-        borderRadius: 12,
-        padding: isEmpty ? 0 : 16,
-        transition: 'all 0.2s',
-      }}
-    >
-      {isEmpty ? (
-        <div style={{
-          height: 400, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', gap: 12
-        }}>
-          <div style={{ fontSize: 40 }}>🧩</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#595959' }}>Drag blocks here to build your content</div>
-          <div style={{ fontSize: 13, color: '#8c8c8c' }}>Or click any block from the left panel</div>
+          Available Sections
         </div>
-      ) : children}
-    </div>
-  );
-};
-
-// ── Sidebar Block Pill ─────────────────────────────────────────────
-const SidebarBlock = ({ type, icon, label, color, onAdd }) => (
-  <div
-    onClick={() => onAdd(type)}
-    style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '10px 12px', borderRadius: 8, cursor: 'pointer',
-      border: '1px solid #e8e8e8', background: '#fff', marginBottom: 6,
-      transition: 'all 0.15s',
-    }}
-    onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.background = color + '08'; }}
-    onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = '#fff'; }}
-  >
-    <span style={{
-      width: 28, height: 28, borderRadius: 6, background: color + '18',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize: 14, flexShrink: 0
-    }}>
-      {icon}
-    </span>
-    <span style={{ fontSize: 13, color: '#1a1a2e', fontWeight: 500 }}>{label}</span>
-    <PlusOutlined style={{ marginLeft: 'auto', color: '#bfbfbf', fontSize: 11 }} />
-  </div>
-);
-
-// ── Main DragDropBuilder ───────────────────────────────────────────
-const DragDropBuilder = ({ onChange }) => {
-  const [blocks, setBlocks] = useState([]);
-  const [activeId, setActiveId] = useState(null);
-  const [activeSidebarType, setActiveSidebarType] = useState(null);
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
-  const generateHtml = useCallback((blockList) => {
-    return blockList.map(blockToHtml).filter(Boolean).join('\n');
-  }, []);
-
-  const addBlock = (type) => {
-    const newBlock = { id: `block-${Date.now()}`, type, data: defaultData(type) };
-    const updated = [...blocks, newBlock];
-    setBlocks(updated);
-    onChange(generateHtml(updated));
-  };
-
-  const updateBlock = (id, newData) => {
-    const updated = blocks.map(b => b.id === id ? { ...b, data: newData } : b);
-    setBlocks(updated);
-    onChange(generateHtml(updated));
-  };
-
-  const deleteBlock = (id) => {
-    const updated = blocks.filter(b => b.id !== id);
-    setBlocks(updated);
-    onChange(generateHtml(updated));
-  };
-
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    setActiveId(null);
-    setActiveSidebarType(null);
-
-    if (!over) return;
-
-    // Reorder existing blocks
-    if (active.id !== over.id && blocks.find(b => b.id === active.id)) {
-      const oldIndex = blocks.findIndex(b => b.id === active.id);
-      const newIndex = blocks.findIndex(b => b.id === over.id);
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const updated = arrayMove(blocks, oldIndex, newIndex);
-        setBlocks(updated);
-        onChange(generateHtml(updated));
-      }
-    }
-  };
-
-  const activeBlock = blocks.find(b => b.id === activeId);
-
-  return (
-    <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-
-      {/* Left Sidebar — Block Palette */}
-      <div style={{
-        width: 200, flexShrink: 0, background: '#fff',
-        borderRadius: 12, border: '1px solid #e8e8e8',
-        padding: 16, position: 'sticky', top: 80
-      }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-          Content Blocks
-        </div>
-        {BLOCK_TYPES.map(b => (
-          <SidebarBlock key={b.type} {...b} onAdd={addBlock} />
-        ))}
-        {blocks.length > 0 && (
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #f0f0f0' }}>
-            <div style={{ fontSize: 11, color: '#8c8c8c', marginBottom: 6 }}>{blocks.length} block{blocks.length !== 1 ? 's' : ''}</div>
-            <Button
-              size="small" danger type="text"
-              onClick={() => { setBlocks([]); onChange(''); }}
-              style={{ fontSize: 12, padding: '0 4px' }}
-            >
-              Clear all
-            </Button>
+        {availableSections.length === 0 ? (
+          <div style={{ fontSize: 12, color: '#bfbfbf', textAlign: 'center', padding: '12px 0' }}>All sections added</div>
+        ) : availableSections.map(s => (
+          <div
+            key={s.type}
+            onClick={() => addSection(s.type)}
+            draggable
+            onDragStart={() => {}}
+            style={{
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 10,
+              padding: '10px 14px', 
+              borderRadius: 8, 
+              cursor: 'pointer',
+              border: '1px solid #e8e8e8', 
+              background: '#fff', 
+              marginBottom: 6,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { 
+              e.currentTarget.style.borderColor = '#4a7cff'; 
+              e.currentTarget.style.background = '#f0f5ff'; 
+            }}
+            onMouseLeave={e => { 
+              e.currentTarget.style.borderColor = '#e8e8e8'; 
+              e.currentTarget.style.background = '#fff'; 
+            }}
+          >
+            <span style={{ 
+              fontSize: 13, 
+              color: '#1a1a2e', 
+              fontWeight: 500, 
+              flex: 1 
+            }}>
+              {s.label}
+            </span>
+            <PlusOutlined style={{ color: '#bfbfbf', fontSize: 11 }} />
           </div>
-        )}
+        ))}
       </div>
 
       {/* Canvas */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={({ active }) => setActiveId(active.id)}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext items={blocks.map(b => b.id)} strategy={verticalListSortingStrategy}>
-            <DroppableCanvas isEmpty={blocks.length === 0}>
-              {blocks.map(block => (
-                <SortableBlock
-                  key={block.id}
-                  block={block}
-                  onUpdate={updateBlock}
-                  onDelete={deleteBlock}
-                />
-              ))}
-            </DroppableCanvas>
-          </SortableContext>
+        {sections.length === 0 ? (
+          <div style={{
+            minHeight: 400, border: '2px dashed #e0e0e0', borderRadius: 12,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            justifyContent: 'center', gap: 10, background: '#fafafa'
+          }}>
+            <div style={{ fontSize: 36 }}>🧩</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#595959' }}>Click sections from the left panel to add them</div>
+            <div style={{ fontSize: 13, color: '#8c8c8c' }}>Drag to reorder after adding</div>
+          </div>
+        ) : (
+          sections.map((sec, index) => {
+            const meta = SECTION_TYPES.find(s => s.type === sec.type);
+            return (
+              <div
+                key={sec.id}
+                draggable
+                onDragStart={() => onDragStart(index)}
+                onDragEnter={() => onDragEnter(index)}
+                onDragEnd={onDragEnd}
+                onDragOver={e => e.preventDefault()}
+                style={{
+                  background: '#fff', borderRadius: 12,
+                  border: '1px solid #e8e8e8', marginBottom: 16,
+                  overflow: 'hidden', cursor: 'default',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.05)'
+                }}
+              >
+                {/* Section Header */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 16px', background: '#fafafa',
+                  borderBottom: '1px solid #f0f0f0', cursor: 'grab'
+                }}>
+                  <HolderOutlined style={{ color: '#bfbfbf' }} />
+                  <span style={{
+                    width: 24, height: 24, borderRadius: 5, background: '#4a7cff20',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#4a7cff', fontSize: 12
+                  }}>
+                    {meta?.icon}
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#595959', textTransform: 'uppercase', letterSpacing: '0.05em', flex: 1 }}>
+                    {meta?.label}
+                  </span>
+                  <Tooltip title="Remove section">
+                    <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => removeSection(sec.id)} />
+                  </Tooltip>
+                </div>
 
-          <DragOverlay>
-            {activeBlock && (
-              <div style={{
-                background: '#fff', border: '2px solid #4a7cff', borderRadius: 10,
-                padding: '10px 16px', boxShadow: '0 8px 24px rgba(74,124,255,0.2)',
-                fontSize: 13, fontWeight: 600, color: '#4a7cff'
-              }}>
-                {BLOCK_TYPES.find(b => b.type === activeBlock.type)?.label}
+                {/* Section Content */}
+                <div style={{ padding: '16px 20px' }}>
+                  <SectionRenderer type={sec.type} props={sectionProps} />
+                </div>
+              </div>
+            );
+          })
+        )}
+
+        {/* Landing Page Form Fields — auto shown for webinar/whitepaper/event */}
+        {showLandingFields && (
+          <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div>
+                <Text strong style={{ fontSize: 14 }}>
+                  <MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields
+                </Text>
+                <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Add all form fields with their label, API key, and type.</div>
+              </div>
+              <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
+            </div>
+
+            {customFields.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c', fontSize: 13, border: '2px dashed #e8e8e8', borderRadius: 8 }}>
+                No fields added. Click "Add Field" to add form fields.
               </div>
             )}
-          </DragOverlay>
-        </DndContext>
+
+            {customFields.map((field, index) => (
+              <div
+                key={field.id}
+                draggable
+                onDragStart={() => onFieldDragStart(index)}
+                onDragEnter={() => onFieldDragEnter(index)}
+                onDragEnd={onFieldDragEnd}
+                onDragOver={e => e.preventDefault()}
+                style={{
+                  display: 'flex', gap: 10, alignItems: 'flex-start',
+                  padding: '12px 14px', marginBottom: 10,
+                  background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8', cursor: 'grab'
+                }}
+              >
+                <HolderOutlined style={{ color: '#bfbfbf', marginTop: 8, cursor: 'grab', flexShrink: 0 }} />
+                <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Input placeholder="Field Label (e.g. First Name)" value={field.label}
+                    onChange={e => updateField(field.id, 'label', e.target.value)}
+                    style={{ flex: '1 1 140px' }} size="small" />
+                  <Input placeholder="API Key (e.g. firstname)" value={field.webhook_key || ''}
+                    onChange={e => updateField(field.id, 'webhook_key', e.target.value)}
+                    style={{ flex: '1 1 130px' }} size="small" />
+                  <Select value={field.type} onChange={v => updateField(field.id, 'type', v)}
+                    style={{ width: 110 }} size="small">
+                    {fieldTypes.map(t => <Option key={t.value} value={t.value}>{t.label}</Option>)}
+                  </Select>
+                  <Input placeholder="Placeholder text" value={field.placeholder}
+                    onChange={e => updateField(field.id, 'placeholder', e.target.value)}
+                    style={{ flex: '1 1 130px' }} size="small" />
+                  {field.type === 'select' && (
+                    <Input placeholder="Options (comma separated)" value={field.options}
+                      onChange={e => updateField(field.id, 'options', e.target.value)}
+                      style={{ flex: '1 1 180px' }} size="small" />
+                  )}
+                </div>
+                <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => removeField(field.id)} style={{ flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Client Webhook URL — auto shown for webinar/whitepaper/event */}
+        {showLandingFields && (
+          <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginTop: 16 }}>
+            <div style={{ marginBottom: 16 }}>
+              <Text strong style={{ fontSize: 14 }}>
+                <ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL
+              </Text>
+            </div>
+            <Form.Item name="webhook_url" style={{ marginBottom: 0 }}
+              rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+              <Input
+                placeholder="https://client-api.example.com/webhook"
+                prefix={<ApiOutlined style={{ color: '#bfbfbf' }} />}
+                allowClear
+              />
+            </Form.Item>
+          </div>
+        )}
       </div>
     </div>
   );

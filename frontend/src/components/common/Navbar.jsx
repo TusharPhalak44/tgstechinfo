@@ -21,9 +21,10 @@ const STATIC_NAV = [
   {
     key: 'insights', label: 'Insights',
     children: [
-      { label: '📰 Articles', to: '/articles' },
-      { label: '🎙️ Interviews', to: '/interviews' },
-      { label: '🌐 News', to: '/news' },
+      { label: 'Articles', to: '/articles' },
+      { label: 'Interviews', to: '/interviews' },
+      { label: 'News', to: '/news' },
+      { label: 'eBooks', to: '/ebooks' },
     ]
   },
   {

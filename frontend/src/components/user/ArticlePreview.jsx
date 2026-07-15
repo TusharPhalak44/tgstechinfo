@@ -7,6 +7,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
+import ContentRenderer from '../common/ContentRenderer';
 
 const { Title, Text } = Typography;
 
@@ -118,13 +119,8 @@ const ArticlePreview = () => {
           {content.content_type_name && <Tag color="purple">{content.content_type_name}</Tag>}
         </Space>
 
-        {/* Title */}
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
-          {content.title}
-        </h1>
-
         {/* Meta */}
-        <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6 pb-4 border-b border-gray-200">
+        <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-4 pb-4 border-b border-gray-200">
           <Space>
             <Avatar size="small" icon={<UserOutlined />} className="bg-primary-500" />
             <Text strong>{content.first_name} {content.last_name}</Text>
@@ -135,78 +131,8 @@ const ArticlePreview = () => {
           </Space>
         </div>
 
-        {/* Banner Image */}
-        {content.banner_image && (
-          <div className="mb-7 rounded-lg bg-gray-100" style={{ textAlign: 'center' }}>
-            <img
-              src={`/uploads/${content.banner_image}`}
-              alt={content.title}
-              style={{ maxWidth: '100%', height: 'auto', display: 'block', margin: '0 auto', borderRadius: 8 }}
-            />
-          </div>
-        )}
-
-        {/* Short Description */}
-        {content.short_description && (
-          <div className="mb-6 rounded border-l-4 border-primary-500 bg-gray-50 p-4">
-            <Text className="text-base text-gray-700 leading-relaxed">
-              {content.short_description}
-            </Text>
-          </div>
-        )}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mb-5">
-            <TagOutlined className="text-gray-400" />
-            {tags.map((tag, i) => (
-              <Tag key={i} color="geekblue" className="rounded-full">
-                {tag}
-              </Tag>
-            ))}
-          </div>
-        )}
-
-        {/* ✅ Content - Fixed with proper styles */}
-        <div className="article-content-preview">
-          <Divider orientation="left" plain>
-            <span className="text-gray-500 text-sm font-medium">Content</span>
-          </Divider>
-          <div 
-            className="article-content prose-content"
-            dangerouslySetInnerHTML={{ __html: content.content || '<p>No content available</p>' }}
-          />
-        </div>
-
-        {/* SEO */}
-        {(content.seo_meta_title || content.seo_meta_description || content.seo_meta_keywords) && (
-          <>
-            <Divider />
-            <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
-              <Text strong className="text-xs text-gray-400 uppercase tracking-wider">
-                SEO Settings
-              </Text>
-              {content.seo_meta_title && (
-                <div className="mt-2">
-                  <Text type="secondary" className="text-xs">Meta Title</Text>
-                  <div><Text>{content.seo_meta_title}</Text></div>
-                </div>
-              )}
-              {content.seo_meta_description && (
-                <div className="mt-2">
-                  <Text type="secondary" className="text-xs">Meta Description</Text>
-                  <div><Text>{content.seo_meta_description}</Text></div>
-                </div>
-              )}
-              {content.seo_meta_keywords && (
-                <div className="mt-2">
-                  <Text type="secondary" className="text-xs">Meta Keywords</Text>
-                  <div><Text>{content.seo_meta_keywords}</Text></div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+        {/* Content rendered in saved layout order */}
+        <ContentRenderer content={content} />
       </div>
 
       {/* ✅ Additional styles for content display */}

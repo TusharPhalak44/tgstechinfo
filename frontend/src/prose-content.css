@@ -190,33 +190,47 @@
 }
 
 /* ── Two-Column Layout ── */
-.prose-content [data-two-col] {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin: 20px 0;
-  align-items: start;
+.prose-content [data-two-col],
+.prose-content .two-col-layout {
+  display: flex !important;
+  flex-direction: row;
+  gap: 28px;
+  margin: 24px 0;
+  align-items: flex-start;
 }
 
+.prose-content .two-col-text,
 .prose-content [data-two-col] > div {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #334155;
+}
+
+.prose-content .two-col-img {
+  flex: 1;
   min-width: 0;
 }
 
+.prose-content .two-col-layout img,
 .prose-content [data-two-col] img {
   margin: 0 !important;
   width: 100%;
   height: auto;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
   display: block;
 }
 
+.prose-content .two-col-text p,
 .prose-content [data-two-col] p {
   margin: 0 0 0.6em 0;
 }
 
 @media (max-width: 640px) {
+  .prose-content .two-col-layout,
   .prose-content [data-two-col] {
-    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
   }
 }

@@ -24,6 +24,7 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [publishingId, setPublishingId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const pageSize = 15;
   const navigate = useNavigate();
 
@@ -109,6 +110,18 @@ const AdminDashboard = () => {
   const startIndex = (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(currentPage * pageSize, totalItems);
 
+  const filteredContent = searchQuery.trim()
+    ? allContent.filter(r => {
+        const q = searchQuery.toLowerCase();
+        return (
+          (r.title || '').toLowerCase().includes(q) ||
+          (`${r.first_name || ''} ${r.last_name || ''}`).toLowerCase().includes(q) ||
+          (r.content_type_name || '').toLowerCase().includes(q) ||
+          (statusTagMap[r.status]?.text || r.status || '').toLowerCase().includes(q)
+        );
+      })
+    : allContent;
+
   if (loading) {
     return (
       <div className="p-6">
@@ -149,9 +162,33 @@ const AdminDashboard = () => {
       </div>
 
       <div className="bg-white rounded-lg shadow-soft border border-gray-200 overflow-hidden">
-        <div className="p-4 md:p-6 border-b border-gray-200 flex justify-between items-center">
-          <h2 className="text-lg font-semibold text-gray-900">Content Submissions</h2>
-          <span className="text-sm text-gray-500">Total: {stats.totalContent} submissions</span>
+        <div className="p-4 md:p-6 border-b border-gray-200">
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Content Submissions</h2>
+              <span className="text-sm text-gray-500">Total: {stats.totalContent} submissions</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f7f8fa', border: '1px solid #e5e7eb', borderRadius: 8, padding: '6px 12px', minWidth: 260 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by title, author, type, status..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 13, color: '#1a1a2e', width: '100%', minWidth: 200 }}
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+              )}
+            </div>
+          </div>
+          {searchQuery && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>
+              Showing <strong style={{ color: '#1a1a2e' }}>{filteredContent.length}</strong> result{filteredContent.length !== 1 ? 's' : ''} for "<strong style={{ color: '#4a7cff' }}>{searchQuery}</strong>"
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200" style={{ display: 'block' }}>
@@ -165,12 +202,14 @@ const AdminDashboard = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200" style={{ display: 'block', maxHeight: '520px', overflowY: 'auto' }}>
-              {allContent.length === 0 ? (
+              {filteredContent.length === 0 ? (
                 <tr style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No content found</td>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    {searchQuery ? `No results found for "${searchQuery}"` : 'No content found'}
+                  </td>
                 </tr>
               ) : (
-                allContent.map((record) => (
+                filteredContent.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 transition-colors" style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">

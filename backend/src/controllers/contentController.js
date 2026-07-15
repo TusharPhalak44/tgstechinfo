@@ -28,7 +28,8 @@ exports.createContent = async (req, res) => {
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
             tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
             custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null,
-            webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null
+            webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null,
+            builder_layout: req.body.builder_layout || null
         });
 
         const content = await Content.create(contentData);
@@ -84,6 +85,7 @@ exports.updateContent = async (req, res) => {
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
+        if (req.body.builder_layout !== undefined) updateData.builder_layout = req.body.builder_layout;
         if (req.body.tags) updateData.tags = JSON.stringify(req.body.tags.split(',').map(t => t.trim()).filter(Boolean));
         updateData = stripEmDash(updateData);
 

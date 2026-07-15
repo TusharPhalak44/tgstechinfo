@@ -26,6 +26,7 @@ const TYPE_MAP = {
   interviews: { type: 'interview', title: 'Interviews', accent: '#e17055', leftImg: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80' },
   webinars:   { type: 'webinar',   title: 'Webinars',   accent: '#fd79a8', leftImg: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' },
   events:     { type: 'event',     title: 'Events',     accent: '#fdcb6e', leftImg: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80' },
+  ebooks:     { type: 'ebook',     title: 'eBooks',     accent: '#00cec9', leftImg: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80' },
 };
 
 // Category slug → hero images mapping
