@@ -9,6 +9,7 @@ const ScrollToTop = () => {
 import { Layout, ConfigProvider, App as AntApp } from 'antd'; // ✅ Import App from antd
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
+import CookieBanner from './components/common/CookieBanner';
 import Home from './components/public/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -24,6 +25,7 @@ import AcceptableUsePolicy from './pages/AcceptableUsePolicy';
 import SecurityStatement from './pages/SecurityStatement';
 import VendorList from './pages/VendorList';
 import ContactPrivacyOfficer from './pages/ContactPrivacyOfficer';
+import UserAccountPolicy from './pages/UserAccountPolicy';
 import ArticleDetail from './components/public/ArticleDetail';
 import CategoryList from './components/public/CategoryList';
 import Newsletter from './components/public/Newsletter';
@@ -98,8 +100,10 @@ const theme = {
 
 function AppContent() {
   const authRoutes = ['/login', '/register', '/forgot-password'];
+  const dashboardRoutes = ['/dashboard', '/create-content', '/edit-content', '/article-preview', '/my-content', '/my-submissions', '/admin', '/admin/review', '/admin/edit', '/admin/users', '/admin/submissions'];
   const location = useLocation();
   const isAuthRoute = authRoutes.includes(location.pathname);
+  const isDashboardRoute = dashboardRoutes.some(route => location.pathname.startsWith(route));
 
   return (
     <Layout className="app-layout" style={{ background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -141,6 +145,7 @@ function AppContent() {
           <Route path="/security" element={<SecurityStatement />} />
           <Route path="/vendor-list" element={<VendorList />} />
           <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
+          <Route path="/user-account-policy" element={<UserAccountPolicy />} />
 
           {/* User Routes */}
           <Route path="/dashboard" element={
@@ -202,7 +207,8 @@ function AppContent() {
           } />
         </Routes>
       </Content>
-      {!isAuthRoute && <Footer />}
+      {!isAuthRoute && <Footer simplified={isDashboardRoute} />}
+      <CookieBanner />
     </Layout>
   );
 }
