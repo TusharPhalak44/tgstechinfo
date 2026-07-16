@@ -294,7 +294,7 @@ const DataRequests = () => {
                 <div style={{ padding: '20px 24px', background: '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
                   <p style={{ margin: '0 0 6px', fontWeight: 700, color: '#1a1a2e' }}>TGS Tech Info — Privacy Officer</p>
                   <p style={{ margin: '0 0 4px', color: '#374151' }}>Email: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
-                  <p style={{ margin: 0, color: '#374151' }}>DPO: <a href="mailto:dpo@tgstechinfo.com" style={{ color: '#4a7cff' }}>dpo@tgstechinfo.com</a></p>
+                  <p style={{ margin: 0, color: '#374151' }}>DPO: <a href="mailto:sagar.machale@tgstechinfo.com" style={{ color: '#4a7cff' }}>sagar.machale@tgstechinfo.com</a></p>
                 </div>
               </Section>
             </>

@@ -116,6 +116,7 @@ const Footer = () => {
             <FooterLink to="/security">Security &amp; Data Retention</FooterLink>
             <FooterLink to="/vendor-list">Vendor List</FooterLink>
             <FooterLink to="/contact-privacy-officer">Contact Privacy Officer</FooterLink>
+            <FooterLink to="/user-account-policy">User Account &amp; Platform Usage</FooterLink>
           </div>
 
 

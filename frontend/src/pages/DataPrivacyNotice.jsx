@@ -63,7 +63,7 @@ const DataPrivacyNotice = () => {
                 <div style={{ marginTop: 16, padding: '16px 20px', background: '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
                   <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#1a1a2e' }}>TGS Tech Info</p>
                   <p style={{ margin: '0 0 4px', color: '#374151' }}>Email: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
-                  <p style={{ margin: 0, color: '#374151' }}>DPO Contact: <a href="mailto:dpo@tgstechinfo.com" style={{ color: '#4a7cff' }}>dpo@tgstechinfo.com</a></p>
+                  <p style={{ margin: 0, color: '#374151' }}>DPO Contact: <a href="mailto:sagar.machale@tgstechinfo.com" style={{ color: '#4a7cff' }}>sagar.machale@tgstechinfo.com</a></p>
                 </div>
               </Section>
 
@@ -140,11 +140,9 @@ const DataPrivacyNotice = () => {
               </Section>
 
               <Section title="7. Supervisory Authorities">
-                <p style={{ marginBottom: 12 }}>You have the right to lodge a complaint with your local supervisory authority:</p>
+                <p style={{ marginBottom: 12 }}>You have the right to lodge a complaint with the relevant supervisory authority:</p>
                 <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
-                  <Li><strong>EU:</strong> Your national Data Protection Authority (DPA)</Li>
-                  <Li><strong>UK:</strong> Information Commissioner's Office (ICO) — <a href="https://ico.org.uk" target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff' }}>ico.org.uk</a></Li>
-                  <Li><strong>Switzerland:</strong> Federal Data Protection and Information Commissioner (FDPIC)</Li>
+                  <Li><strong>India:</strong> Data Protection Board of India (DPBI) under the Digital Personal Data Protection Act, 2023 — <a href="https://www.meity.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff' }}>meity.gov.in</a></Li>
                 </ul>
               </Section>
             </>
@@ -253,7 +251,7 @@ const DataPrivacyNotice = () => {
           <div style={{ marginTop: 40, padding: '20px 24px', background: '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
             <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#1a1a2e' }}>Privacy Officer — TGS Tech Info</p>
             <p style={{ margin: '0 0 4px', color: '#374151' }}>Email: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
-            <p style={{ margin: '0 0 4px', color: '#374151' }}>DPO: <a href="mailto:dpo@tgstechinfo.com" style={{ color: '#4a7cff' }}>dpo@tgstechinfo.com</a></p>
+            <p style={{ margin: '0 0 4px', color: '#374151' }}>DPO: <a href="mailto:sagar.machale@tgstechinfo.com" style={{ color: '#4a7cff' }}>sagar.machale@tgstechinfo.com</a></p>
             <p style={{ margin: 0, color: '#374151' }}>
               Submit a request: <Link to="/data-requests" style={{ color: '#4a7cff' }}>Data Subject Request Form</Link>
             </p>

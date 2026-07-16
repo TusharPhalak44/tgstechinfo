@@ -55,7 +55,7 @@ const ContactPrivacyOfficer = () => {
             </div>
             {[
               { icon: '📧', label: 'Privacy Email', value: 'privacy@tgstechinfo.com', href: 'mailto:privacy@tgstechinfo.com' },
-              { icon: '🛡️', label: 'DPO Email', value: 'dpo@tgstechinfo.com', href: 'mailto:dpo@tgstechinfo.com' },
+              { icon: '🛡️', label: 'DPO Email', value: 'sagar.machale@tgstechinfo.com', href: 'mailto:sagar.machale@tgstechinfo.com' },
               { icon: '⚖️', label: 'Legal Email', value: 'legal@tgstechinfo.com', href: 'mailto:legal@tgstechinfo.com' },
               { icon: '🌐', label: 'Website', value: 'tgstechinfo.com', href: 'https://tgstechinfo.com' },
             ].map(({ icon, label, value, href }) => (

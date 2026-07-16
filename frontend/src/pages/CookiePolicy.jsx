@@ -207,7 +207,7 @@ const CookiePolicy = () => (
           <Li><strong>Safari:</strong> Preferences &gt; Privacy &gt; Manage Website Data</Li>
           <Li><strong>Microsoft Edge:</strong> Settings &gt; Cookies and site permissions</Li>
         </ul>
-        <p style={{ marginTop: 12 }}>You may also opt out of interest-based advertising through the <a href="https://optout.networkadvertising.org" target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff' }}>Network Advertising Initiative</a> or <a href="https://www.youronlinechoices.com" target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff' }}>Your Online Choices</a>.</p>
+        <p style={{ marginTop: 12 }}>You may also opt out of interest-based advertising through the Network Advertising Initiative or Your Online Choices.</p>
       </Section>
 
       <Section title="9. Consent and Withdrawal">
