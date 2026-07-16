@@ -10,6 +10,7 @@ import { Layout, ConfigProvider, App as AntApp } from 'antd'; // ✅ Import App 
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import Home from './components/public/Home';
+import CookieBanner from './components/common/CookieBanner';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -25,6 +26,8 @@ import SecurityStatement from './pages/SecurityStatement';
 import VendorList from './pages/VendorList';
 import ContactPrivacyOfficer from './pages/ContactPrivacyOfficer';
 import ArticleDetail from './components/public/ArticleDetail';
+import UserAccountPolicy from './pages/UserAccountPolicy';
+
 import CategoryList from './components/public/CategoryList';
 import Newsletter from './components/public/Newsletter';
 import Dashboard from './components/user/Dashboard';
@@ -41,6 +44,7 @@ import PrivateRoute from './components/common/PrivateRoute';
 import AdminRoute from './components/common/AdminRoute';
 import SearchResults from './components/public/SearchResults';
 import ContactUs from './pages/ContactUs';
+import StandaloneLandingPage from './pages/StandaloneLandingPage';
 
 const { Content } = Layout;
 
@@ -98,112 +102,134 @@ const theme = {
 
 function AppContent() {
   const authRoutes = ['/login', '/register', '/forgot-password'];
+  const standaloneRoutes = ['/content/:slug'];
   const location = useLocation();
   const isAuthRoute = authRoutes.includes(location.pathname);
+  const isStandaloneRoute = standaloneRoutes.some(route => {
+    if (route.includes(':slug')) {
+      return location.pathname.startsWith('/content/');
+    }
+    return location.pathname === route;
+  });
 
   return (
-    <Layout className="app-layout" style={{ background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <>
       <ScrollToTop />
-      {!isAuthRoute && <Navbar />}
-      <Content className="app-content" style={{ 
-        minHeight: isAuthRoute ? '100vh' : 'calc(100vh - 120px)',
-        background: isAuthRoute ? 'transparent' : '#f8f9fa',
-        flex: 1,
-        paddingTop: isAuthRoute ? 0 : 61
-      }}>
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-          <Route path="/category/:slug" element={<CategoryList />} />
-          <Route path="/articles" element={<CategoryList />} />
-          <Route path="/ebooks" element={<CategoryList />} />
-           <Route path="/blogs" element={<CategoryList />} />
-          <Route path="/news" element={<CategoryList />} />
-          <Route path="/interviews" element={<CategoryList />} />
-          <Route path="/webinars" element={<CategoryList />} />
-          <Route path="/events" element={<CategoryList />} />
-          <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
-          <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
-          <Route path="/contact" element={<ContactUs />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/terms-of-use" element={<TermsOfUse />} />
-          <Route path="/cookie-policy" element={<CookiePolicy />} />
-          <Route path="/data-privacy-notice" element={<DataPrivacyNotice />} />
-          <Route path="/data-requests" element={<DataRequests />} />
-          <Route path="/do-not-sell" element={<DataRequests />} />
-          <Route path="/disclaimer" element={<Disclaimer />} />
-          <Route path="/accessibility" element={<AccessibilityStatement />} />
-          <Route path="/acceptable-use" element={<AcceptableUsePolicy />} />
-          <Route path="/security" element={<SecurityStatement />} />
-          <Route path="/vendor-list" element={<VendorList />} />
-          <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
 
-          {/* User Routes */}
-          <Route path="/dashboard" element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          } />
-          <Route path="/create-content" element={
-            <PrivateRoute>
-              <CreateContent />
-            </PrivateRoute>
-          } />
-          <Route path="/edit-content/:id" element={
-            <PrivateRoute>
-              <CreateContent />
-            </PrivateRoute>
-          } />
-          <Route path="/article-preview/:id" element={
-            <PrivateRoute>
-              <ArticlePreview />
-            </PrivateRoute>
-          } />
-          <Route path="/my-content" element={
-            <PrivateRoute>
-              <MyContent />
-            </PrivateRoute>
-          } />
-          <Route path="/my-submissions" element={
-            <PrivateRoute>
-              <UserSubmissions />
-            </PrivateRoute>
-          } />
+      {/* Standalone landing page route - no Navbar/Footer */}
+      <Routes>
+        <Route path="/content/:slug" element={<StandaloneLandingPage />} />
+      </Routes>
 
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          } />
-          <Route path="/admin/review/:id" element={
-            <AdminRoute>
-              <ArticleReviewPage />
-            </AdminRoute>
-          } />
-          <Route path="/admin/edit/:id" element={
-            <AdminRoute>
-              <AdminEditContent />
-            </AdminRoute>
-          } />
-          <Route path="/admin/users" element={
-            <AdminRoute>
-              <UserManagement />
-            </AdminRoute>
-          } />
-          <Route path="/admin/submissions" element={
-            <AdminRoute>
-              <AdminSubmissions />
-            </AdminRoute>
-          } />
-        </Routes>
-      </Content>
-      {!isAuthRoute && <Footer />}
-    </Layout>
+      {/* Regular routes with Navbar/Footer */}
+      {!isStandaloneRoute && (
+        <Layout className="app-layout" style={{ background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          {!isAuthRoute && <Navbar />}
+          <Content className="app-content" style={{
+            minHeight: isAuthRoute ? '100vh' : 'calc(100vh - 120px)',
+            background: isAuthRoute ? 'transparent' : '#f8f9fa',
+            flex: 1,
+            paddingTop: isAuthRoute ? 0 : 61
+          }}>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/category/:slug" element={<CategoryList />} />
+              <Route path="/articles" element={<CategoryList />} />
+              <Route path="/ebooks" element={<CategoryList />} />
+              <Route path="/blogs" element={<CategoryList />} />
+              <Route path="/news" element={<CategoryList />} />
+              <Route path="/interviews" element={<CategoryList />} />
+               <Route path="/user-account-policy" element={<UserAccountPolicy />} />
+
+              <Route path="/webinars" element={<CategoryList />} />
+              <Route path="/events" element={<CategoryList />} />
+              <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
+              <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
+              <Route path="/contact" element={<ContactUs />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-use" element={<TermsOfUse />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/data-privacy-notice" element={<DataPrivacyNotice />} />
+              <Route path="/data-requests" element={<DataRequests />} />
+              <Route path="/do-not-sell" element={<DataRequests />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/accessibility" element={<AccessibilityStatement />} />
+              <Route path="/acceptable-use" element={<AcceptableUsePolicy />} />
+              <Route path="/security" element={<SecurityStatement />} />
+              <Route path="/vendor-list" element={<VendorList />} />
+              <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
+
+              {/* User Routes */}
+              <Route path="/dashboard" element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              } />
+              <Route path="/create-content" element={
+                <PrivateRoute>
+                  <CreateContent />
+                </PrivateRoute>
+              } />
+              <Route path="/edit-content/:id" element={
+                <PrivateRoute>
+                  <CreateContent />
+                </PrivateRoute>
+              } />
+              <Route path="/article-preview/:id" element={
+                <PrivateRoute>
+                  <ArticlePreview />
+                </PrivateRoute>
+              } />
+              <Route path="/my-content" element={
+                <PrivateRoute>
+                  <MyContent />
+                </PrivateRoute>
+              } />
+              <Route path="/my-submissions" element={
+                <PrivateRoute>
+                  <UserSubmissions />
+                </PrivateRoute>
+              } />
+
+              {/* Admin Routes */}
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } />
+              <Route path="/admin/review/:id" element={
+                <AdminRoute>
+                  <ArticleReviewPage />
+                </AdminRoute>
+              } />
+                {!isAuthRoute && <Footer simplified={isDashboardRoute} />}
+      <CookieBanner />
+              <Route path="/admin/edit/:id" element={
+                <AdminRoute>
+                  <AdminEditContent />
+                </AdminRoute>
+              } />
+              <Route path="/admin/users" element={
+                <AdminRoute>
+                  <UserManagement />
+                </AdminRoute>
+              } />
+              <Route path="/admin/submissions" element={
+                <AdminRoute>
+                  <AdminSubmissions />
+                </AdminRoute>
+              } />
+            </Routes>
+          </Content>
+          {!isAuthRoute && <Footer />}
+        </Layout>
+      )}
+    </>
   );
 }
 
