@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FacebookOutlined, TwitterOutlined, LinkedinOutlined, YoutubeOutlined,
   MailOutlined, PhoneOutlined, EnvironmentOutlined, ArrowRightOutlined,
   SendOutlined
 } from '@ant-design/icons';
+import CookiePreferencesModal from './CookieBanner';
 
 const FooterLink = ({ to, children }) => (
   <Link to={to} style={{
@@ -44,9 +45,56 @@ const ColHead = ({ children, accent = 'var(--color-accent)' }) => (
   </div>
 );
 
-const Footer = () => {
+const Footer = ({ simplified = false }) => {
   const year = new Date().getFullYear();
+  const [showCookiePreferences, setShowCookiePreferences] = useState(false);
 
+  // Simplified footer for dashboard pages
+  if (simplified) {
+    return (
+      <footer style={{ background: 'var(--color-primary)', marginTop: 0, borderTop: '1px solid var(--color-border)' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 13, color: 'var(--color-muted)' }}>
+            © {year} <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>TGS Tech Info</span>. All rights reserved.
+          </span>
+          <div style={{ display: 'flex', gap: 20 }}>
+            {[['Privacy', '/privacy-policy'], ['Terms', '/terms-of-use'], ['Cookies', '/cookie-policy']].map(([label, to]) => (
+              <Link key={label} to={to} style={{ fontSize: 13, color: 'var(--color-muted)', textDecoration: 'none', transition: 'color .2s' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+              >{label}</Link>
+            ))}
+            <button
+              onClick={() => setShowCookiePreferences(true)}
+              style={{
+                fontSize: 13,
+                color: 'var(--color-muted)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                transition: 'color .2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+            >
+              Cookie Preferences
+            </button>
+          </div>
+        </div>
+
+        {/* Cookie Preferences Modal */}
+        {showCookiePreferences && (
+          <CookiePreferencesModal
+            visible={showCookiePreferences}
+            onClose={() => setShowCookiePreferences(false)}
+          />
+        )}
+      </footer>
+    );
+  }
+
+  // Full footer for public pages
   return (
     <footer style={{ background: 'var(--color-primary)', marginTop: 0 }}>
 
@@ -181,8 +229,32 @@ const Footer = () => {
               onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
             >{label}</Link>
           ))}
+          <button
+            onClick={() => setShowCookiePreferences(true)}
+            style={{
+              fontSize: 13,
+              color: 'var(--color-muted)',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              transition: 'color .2s'
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+          >
+            Cookie Preferences
+          </button>
         </div>
       </div>
+
+      {/* Cookie Preferences Modal */}
+      {showCookiePreferences && (
+        <CookiePreferencesModal
+          visible={showCookiePreferences}
+          onClose={() => setShowCookiePreferences(false)}
+        />
+      )}
 
     </footer>
   );

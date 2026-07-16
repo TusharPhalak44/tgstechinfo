@@ -16,6 +16,9 @@ app.use(cors({
     credentials: true
 }));
 
+// Trust proxy for IP address detection
+app.set('trust proxy', true);
+
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
@@ -37,6 +40,7 @@ app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/user', require('./src/routes/userRoutes'));
 app.use('/api/public', require('./src/routes/publicRoutes'));
+app.use('/api/cookie-consent', require('./src/routes/cookieConsentRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

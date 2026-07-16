@@ -5,14 +5,17 @@ import { HelmetProvider } from 'react-helmet-async'
 import App from './App'
 import './index.css'
 import { AuthProvider } from './context/AuthContext'
+import { CookieProvider } from './context/CookieContext'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HelmetProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <CookieProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </CookieProvider>
       </BrowserRouter>
     </HelmetProvider>
   </React.StrictMode>
