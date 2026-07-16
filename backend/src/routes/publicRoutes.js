@@ -3,6 +3,7 @@ const router = express.Router();
 const publicController = require('../controllers/publicController');
 const adminController = require('../controllers/adminController');
 const notificationController = require('../controllers/notificationController');
+const { authenticate } = require('../middleware/auth');
 
 // Search
 router.get('/search', notificationController.searchContent);
@@ -29,5 +30,8 @@ router.post('/contact', publicController.submitContact);
 
 // Public submission API — no auth required
 router.get('/submission/:id', adminController.getSubmissionById);
+
+// Dynamic form submissions (requires authentication)
+router.get('/dynamic-form-submissions/:content_id', authenticate, publicController.getDynamicFormSubmissions);
 
 module.exports = router;

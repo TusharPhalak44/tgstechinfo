@@ -7,6 +7,7 @@ const ContactSubmission = require('../models/ContactSubmission');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate } = require('../config/email');
 const axios = require('axios');
+const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
 
 // Forward form data to client's external webhook URL
 const forwardToWebhook = async (webhookUrl, payload) => {
@@ -107,12 +108,46 @@ exports.getContentBySlug = async (req, res) => {
 
 exports.submitLandingPage = async (req, res) => {
     try {
-        const { content_id, extra_fields } = req.body;
+        const { content_id, extra_fields, ...rest } = req.body;
+        
         let normalizedContentId = content_id ? Number(content_id) : null;
         if (normalizedContentId && Number.isNaN(normalizedContentId)) normalizedContentId = null;
 
+        // If content_id is missing, try to resolve it from the Referer header slug
+        // Uses findBySlugAny so draft/pending pages also work (findBySlug is published-only)
+        if (!normalizedContentId) {
+            // Fallback 1: slug passed as a query param (?slug=my-page-slug)
+            const slugParam = req.query.slug;
+            if (slugParam) {
+                const c = await Content.findBySlugAny(slugParam);
+                if (c) normalizedContentId = c.id;
+            }
+        }
+
+        if (!normalizedContentId) {
+            // Fallback 2: parse slug from the Referer header URL path (/content/:slug)
+            const referer = req.headers.referer || req.headers.referrer;
+            if (referer) {
+                try {
+                    const url = new URL(referer);
+                    const pathParts = url.pathname.split('/');
+                    const slugIndex = pathParts.indexOf('content');
+                    if (slugIndex !== -1 && pathParts[slugIndex + 1]) {
+                        const slug = pathParts[slugIndex + 1];
+                        // findBySlugAny works for any status (draft, pending, published)
+                        const c = await Content.findBySlugAny(slug);
+                        if (c) normalizedContentId = c.id;
+                    }
+                } catch (e) {
+                    console.error('Error parsing Referer header for slug:', e);
+                }
+            }
+        }
+
         const content = normalizedContentId ? await Content.findById(normalizedContentId) : null;
-        if (!content) normalizedContentId = null;
+        if (!content) {
+            return res.status(404).json({ message: 'Content not found or invalid content ID' });
+        }
 
         // Parse custom fields definition from content
         let customFieldsDef = [];
@@ -124,42 +159,79 @@ exports.submitLandingPage = async (req, res) => {
         }
         console.log('customFieldsDef:', JSON.stringify(customFieldsDef));
 
-        const extraData = extra_fields ? (typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields) : {};
+        // Get extra data. If extra_fields is not provided, use rest of root-level request body as extra data.
+        let extraData = {};
+        if (extra_fields) {
+            extraData = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
+        } else {
+            extraData = rest;
+        }
+
+        // Normalize extraData keys to lowercase/sanitized form so lookup matches field name casing
+        const normalizedExtraData = {};
+        for (const [key, val] of Object.entries(extraData || {})) {
+            normalizedExtraData[sanitizeColumnName(key)] = val;
+        }
 
         // Validate required fields
         for (const field of customFieldsDef) {
-            if (field.required !== false && (!extraData[field.name] || String(extraData[field.name]).trim() === '')) {
+            const val = normalizedExtraData[field.name] ?? '';
+            if (field.required !== false && String(val).trim() === '') {
                 return res.status(400).json({ message: `Field "${field.label || field.name}" is required` });
             }
         }
 
-        // Find email field value for dedup check
+        // Find email field value for dedup check (use normalized names)
         const emailField = customFieldsDef.find(f => f.type === 'email' || f.name === 'email' || (f.webhook_key || '').toLowerCase() === 'email');
-        const emailValue = emailField ? extraData[emailField.name] : null;
+        const emailValue = emailField ? normalizedExtraData[emailField.name] : null;
 
         const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, normalizedContentId) : null;
         if (!existing) {
-            await LandingPage.create({ content_id: normalizedContentId, extra_fields: extraData });
+            // Store in dynamic table if it exists
+            try {
+                await insertIntoDynamicTable(normalizedContentId, {
+                    ...normalizedExtraData,
+                    ip_address: req.ip,
+                    user_agent: req.headers['user-agent']
+                });
+            } catch (dynamicTableError) {
+                console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
+                // Fallback to JSON storage
+                await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
+            }
         }
 
         if (normalizedContentId) await Content.incrementViewCount(normalizedContentId);
 
         // Always forward to webhook
         if (content?.webhook_url) {
+            // Build payload using webhook_key (original field name) when available,
+            // falling back to the normalized DB column name.
+            // We also spread the raw submitted keys first so any camelCase or
+            // original-casing fields the client wrote are preserved even when
+            // webhook_key is not explicitly set in custom_fields.
             const webhookPayload = {};
+
+            // Layer 1: include all raw submitted fields with their original keys
+            // This preserves camelCase / original casing from the form HTML.
+            const { content_id: _cid, extra_fields: _ef, ...rawSubmitted } = req.body;
+            Object.assign(webhookPayload, rawSubmitted);
+
+            // Layer 2: override / add using the custom_fields definition and webhook_key mapping
             customFieldsDef.forEach(field => {
                 const clientKey = (field.webhook_key || '').trim() || field.name;
-                // value field.name se dhundho, nahi mila to webhook_key se try karo
-                const value = extraData[field.name] ?? extraData[field.webhook_key] ?? extraData[clientKey] ?? '';
+                const value = normalizedExtraData[field.name] ?? normalizedExtraData[clientKey] ?? '';
                 webhookPayload[clientKey] = value;
             });
-            console.log('Webhook payload:', JSON.stringify(webhookPayload));
+
+            console.log('[Webhook] URL:', content.webhook_url);
+            console.log('[Webhook] Payload:', JSON.stringify(webhookPayload));
             await forwardToWebhook(content.webhook_url, webhookPayload);
         }
 
         // Find name/email for email template
         const nameField = customFieldsDef.find(f => f.name === 'first_name' || f.name === 'name' || (f.webhook_key || '').toLowerCase().includes('name'));
-        const fullName = nameField ? (extraData[nameField.name] || 'there') : 'there';
+        const fullName = nameField ? (normalizedExtraData[nameField.name] || 'there') : 'there';
         const contentTitle = content?.title || 'the requested article';
 
         try {
@@ -205,7 +277,19 @@ exports.subscribeContent = async (req, res) => {
 
         const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, Number(content_id)) : null;
         if (!existing) {
-            await LandingPage.create({ content_id: Number(content_id), extra_fields: { ...extraData, subscription: true } });
+            // Store in dynamic table if it exists
+            try {
+                await insertIntoDynamicTable(Number(content_id), {
+                    ...extraData,
+                    subscription: true,
+                    ip_address: req.ip,
+                    user_agent: req.headers['user-agent']
+                });
+            } catch (dynamicTableError) {
+                console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
+                // Fallback to JSON storage
+                await LandingPage.create({ content_id: Number(content_id), extra_fields: { ...extraData, subscription: true } });
+            }
         }
 
         // Forward to webhook using each field's webhook_key
@@ -518,6 +602,34 @@ exports.submitContact = async (req, res) => {
         });
     } catch (error) {
         console.error('Submit contact error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.getDynamicFormSubmissions = async (req, res) => {
+    try {
+        const { content_id } = req.params;
+        const { limit = 50, offset = 0 } = req.query;
+
+        if (!content_id) {
+            return res.status(400).json({ message: 'content_id is required' });
+        }
+
+        // Verify user has access to this content
+        const content = await Content.findById(Number(content_id));
+        if (!content) {
+            return res.status(404).json({ message: 'Content not found' });
+        }
+
+        // Check if user owns this content or is admin
+        if (content.user_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied' });
+        }
+
+        const { rows, total } = await getDynamicTableSubmissions(Number(content_id), { limit, offset });
+        res.json({ rows, total });
+    } catch (error) {
+        console.error('Get dynamic form submissions error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

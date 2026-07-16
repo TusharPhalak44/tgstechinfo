@@ -19,15 +19,6 @@ const parseTags = (value) => {
   return [];
 };
 
-const isHtmlBuilderContent = (item) => {
-  try {
-    const layout = item.builder_layout ? JSON.parse(item.builder_layout) : null;
-    return Array.isArray(layout) && layout[0] === 'html';
-  } catch {
-    return false;
-  }
-};
-
 const TYPE_MAP = {
   articles:   { type: 'article',   title: 'Articles',   accent: '#4a7cff', leftImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80' },
   blogs:      { type: 'blog',      title: 'Blogs',      accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80' },
@@ -90,7 +81,7 @@ const ListItem = ({ item, navigate, accent }) => (
     transition: 'background .15s', borderRadius: 4
   }}
     className="cat-list-item"
-    onClick={() => navigate(isHtmlBuilderContent(item) ? `/content/${item.slug}` : `/article/${item.slug}`)}
+    onClick={() => navigate(`/article/${item.slug}`)}
     onMouseEnter={e => e.currentTarget.style.background = '#fafbff'}
     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
   >
@@ -142,7 +133,7 @@ const ListItem = ({ item, navigate, accent }) => (
 // ── Sidebar recent post ──────────────────────────────────────────
 const SidebarPost = ({ item, navigate, accent }) => (
   <div style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: '12px 0', borderBottom: '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
-    onClick={() => navigate(isHtmlBuilderContent(item) ? `/content/${item.slug}` : `/article/${item.slug}`)}
+    onClick={() => navigate(`/article/${item.slug}`)}
   >
     {/* Thumbnail */}
     <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: '#f0f4ff' }}>

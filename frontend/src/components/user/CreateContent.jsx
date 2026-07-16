@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Input, Select, Button, message, DatePicker,
-  Upload, Space, Divider, Typography, Tooltip, Tag
+  Upload, Space, Divider, Typography, Tooltip, Tag, Modal
 } from 'antd';
 import {
   UploadOutlined, SaveOutlined, SendOutlined, EyeOutlined,
   CalendarOutlined, ClockCircleOutlined, UserOutlined, TagOutlined,
   PictureOutlined, SettingOutlined, InfoCircleOutlined, ArrowLeftOutlined,
-  FilePdfOutlined, PlusOutlined, DeleteOutlined, HolderOutlined, MenuOutlined, ApiOutlined
+  FilePdfOutlined, PlusOutlined, DeleteOutlined, HolderOutlined, MenuOutlined, ApiOutlined, CodeOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import TipTapEditor from '../common/TipTapEditor';
 import DragDropBuilder from '../common/DragDropBuilder';
+import HtmlEditor from '../editor/HtmlEditor';
 import '../../prose-content.css';
 
 const { Option } = Select;
@@ -62,8 +63,10 @@ const CreateContent = () => {
   const [customFields, setCustomFields] = useState([]);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewData, setPreviewData] = useState(null);
-  const [activeTab, setActiveTab] = useState('standard'); // 'standard' | 'builder'
+  const [htmlPreviewVisible, setHtmlPreviewVisible] = useState(false);
+  const [activeTab, setActiveTab] = useState('standard'); // 'standard' | 'builder' | 'html'
   const [builderContent, setBuilderContent] = useState('');
+  const [htmlContent, setHtmlContent] = useState('');
   const [builderSections, setBuilderSections] = useState([]);
   const [selectedTypeName, setSelectedTypeName] = useState('');
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
@@ -156,6 +159,39 @@ const CreateContent = () => {
     }
   };
 
+  const parseFormFieldsFromHtml = (html) => {
+    if (!html) return [];
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const formElements = doc.querySelectorAll('input, select, textarea');
+      const fields = [];
+      const seenNames = new Set();
+
+      formElements.forEach((el, index) => {
+        const name = el.getAttribute('name') || el.getAttribute('id');
+        if (name && !seenNames.has(name) && el.type !== 'submit' && el.type !== 'button') {
+          seenNames.add(name);
+          const label = el.getAttribute('placeholder') || el.getAttribute('name') || name;
+          // Normalize field name to match column name requirements (lowercase alphanumeric and underscore)
+          const normalizedName = name.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^([0-9])/, '_$1').substring(0, 64);
+          fields.push({
+            id: Date.now() + index,
+            name: normalizedName,
+            label: label,
+            type: el.tagName.toLowerCase() === 'textarea' ? 'textarea' : (el.getAttribute('type') || 'text'),
+            placeholder: el.getAttribute('placeholder') || '',
+            required: el.hasAttribute('required')
+          });
+        }
+      });
+      return fields;
+    } catch (e) {
+      console.error('Error parsing HTML form fields:', e);
+      return [];
+    }
+  };
+
   const buildFormData = (values) => {
     const formData = new FormData();
     const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file'];
@@ -168,15 +204,24 @@ const CreateContent = () => {
     if (values.tags?.length) formData.append('tags', values.tags.join(','));
     if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
     if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
-    formData.append('content', (activeTab === 'builder' ? builderContent : content) || '');
-    if (activeTab === 'builder' && builderSections.length > 0) {
+    formData.append('content', (activeTab === 'html' ? htmlContent : activeTab === 'builder' ? builderContent : content) || '');
+    if (activeTab === 'html') {
+      formData.append('builder_layout', JSON.stringify(['html']));
+    } else if (activeTab === 'builder' && builderSections.length > 0) {
       formData.append('builder_layout', JSON.stringify(builderSections));
     } else if (activeTab === 'standard') {
       formData.append('builder_layout', JSON.stringify(standardLayout));
     }
     if (fileList.length > 0 && fileList[0].originFileObj) formData.append('banner_image', fileList[0].originFileObj);
     if (pdfList.length > 0 && pdfList[0].originFileObj) formData.append('pdf_file', pdfList[0].originFileObj);
-    if (customFields.length > 0) formData.append('custom_fields', JSON.stringify(customFields));
+    
+    // Determine custom fields
+    let finalCustomFields = customFields;
+    if (activeTab === 'html') {
+      finalCustomFields = parseFormFieldsFromHtml(htmlContent);
+    }
+    if (finalCustomFields.length > 0) formData.append('custom_fields', JSON.stringify(finalCustomFields));
+    
     return formData;
   };
 
@@ -190,9 +235,10 @@ const CreateContent = () => {
       if (savedContentId) {
         const existing = (await axios.get(`/api/user/content/${savedContentId}`)).data;
         if (existing.status === 'published') {
+          const finalCustomFields = activeTab === 'html' ? parseFormFieldsFromHtml(htmlContent) : customFields;
           await axios.put(`/api/user/content/${savedContentId}/webhook`, {
             webhook_url: values.webhook_url || '',
-            ...(customFields.length > 0 ? { custom_fields: JSON.stringify(customFields) } : {})
+            ...(finalCustomFields.length > 0 ? { custom_fields: JSON.stringify(finalCustomFields) } : {})
           });
           message.success('Settings updated successfully!');
         } else {
@@ -397,7 +443,8 @@ const CreateContent = () => {
           <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 0 }}>
             {[
               { key: 'standard', label: 'Standard Form', desc: 'Fill all fields directly' },
-              { key: 'builder', label: 'Drag & Drop Builder', desc: 'Build structure by dragging blocks' }
+              { key: 'builder', label: 'Drag & Drop Builder', desc: 'Build structure by dragging blocks' },
+              { key: 'html', label: 'HTML Builder', desc: 'Create custom landing pages' }
             ].map(tab => (
               <button
                 key={tab.key}
@@ -603,9 +650,157 @@ const CreateContent = () => {
                 onSectionsChange={setBuilderSections}
               />
             )}
+
+            {/* ── HTML BUILDER TAB ── */}
+            {activeTab === 'html' && (
+              <>
+                {/* Meta Section */}
+                <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                  <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Landing Page Details</Text>
+                  <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                    <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                      <Select placeholder="Select type" size="large" onChange={val => {
+                        const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                        setSelectedTypeName(name);
+                      }}>
+                        {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+                      </Select>
+                    </Form.Item>
+                    <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                      <Select placeholder="Select category" size="large">
+                        {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                      </Select>
+                    </Form.Item>
+                  </div>
+                </div>
+
+                {/* Title & Description */}
+                <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                  <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
+                    <Input placeholder="Landing page title..." size="large"
+                      style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }} />
+                  </Form.Item>
+                  <Form.Item name="short_description"
+                    label={<span>Short Description <Tooltip title="Brief summary shown in listing cards"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                    rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
+                    <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} />
+                  </Form.Item>
+                </div>
+
+                {/* Banner Image */}
+                <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <div>
+                      <Text strong style={{ fontSize: 14 }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Thumbnail Image</Text>
+                      <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>This image will be displayed in the White Papers/Resources listing</div>
+                    </div>
+                    <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                      <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                    </Upload>
+                  </div>
+                  {bannerImageUrl ? (
+                    <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+                      <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
+                    </div>
+                  ) : (
+                    <div style={{ border: '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: '#fafafa' }}>
+                      <PictureOutlined style={{ fontSize: 32, color: '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                      <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No thumbnail image</Text>
+                    </div>
+                  )}
+                </div>
+
+                {/* HTML Editor */}
+                <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 20 }}>
+                  <div style={{ padding: '14px 28px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text strong style={{ fontSize: 14 }}><CodeOutlined style={{ marginRight: 8, color: '#4a7cff' }} />HTML Content</Text>
+                    <Button size="small" icon={<EyeOutlined />} onClick={() => setHtmlPreviewVisible(true)}>Preview</Button>
+                  </div>
+                  <div style={{ padding: '0 4px 4px' }}>
+                    <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" />
+                  </div>
+                </div>
+
+                {/* PDF Attachment */}
+                <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div>
+                      <Text strong style={{ fontSize: 14 }}><FilePdfOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />PDF Attachment (Optional)</Text>
+                      <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>This PDF will be available for download on the landing page</div>
+                    </div>
+                    <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
+                      <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
+                    </Upload>
+                  </div>
+                  {pdfList.length > 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff2f0', borderRadius: 8, border: '1px solid #ffccc7' }}>
+                      <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
+                      <Text style={{ flex: 1, fontSize: 13 }}>{pdfList[0].name}</Text>
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
+                    </div>
+                  ) : (
+                    <div style={{ border: '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: '#fff2f0' }}>
+                      <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
+                      <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
+                    </div>
+                  )}
+                </div>
+
+                {/* Landing Page Form Fields */}
+                {showLandingFields && (
+                  <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginBottom: 20 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <div>
+                        <Text strong style={{ fontSize: 14 }}><MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields</Text>
+                        <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Add form fields for lead capture</div>
+                      </div>
+                      <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
+                    </div>
+                    {customFields.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c', fontSize: 13, border: '2px dashed #e8e8e8', borderRadius: 8 }}>
+                        No fields added. Click "Add Field" to add form fields.
+                      </div>
+                    )}
+                    {customFields.map((field, index) => (
+                      <div key={field.id} draggable
+                        onDragStart={() => onDragStart(index)} onDragEnter={() => onDragEnter(index)}
+                        onDragEnd={onDragEnd} onDragOver={e => e.preventDefault()}
+                        style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', marginBottom: 10, background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8', cursor: 'grab' }}
+                      >
+                        <HolderOutlined style={{ color: '#bfbfbf', marginTop: 8, flexShrink: 0 }} />
+                        <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <Input placeholder="Field Label (e.g. First Name)" value={field.label} onChange={e => updateField(field.id, 'label', e.target.value)} style={{ flex: '1 1 140px' }} size="small" />
+                          <Input placeholder="API Key (e.g. firstname)" value={field.webhook_key || ''} onChange={e => updateField(field.id, 'webhook_key', e.target.value)} style={{ flex: '1 1 130px' }} size="small" />
+                          <Select value={field.type} onChange={v => updateField(field.id, 'type', v)} style={{ width: 110 }} size="small">
+                            {FIELD_TYPES.map(t => <Option key={t.value} value={t.value}>{t.label}</Option>)}
+                          </Select>
+                          <Input placeholder="Placeholder text" value={field.placeholder} onChange={e => updateField(field.id, 'placeholder', e.target.value)} style={{ flex: '1 1 130px' }} size="small" />
+                          {field.type === 'select' && (
+                            <Input placeholder="Options (comma separated)" value={field.options} onChange={e => updateField(field.id, 'options', e.target.value)} style={{ flex: '1 1 180px' }} size="small" />
+                          )}
+                        </div>
+                        <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => removeField(field.id)} style={{ flexShrink: 0 }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Webhook URL */}
+                {showLandingFields && (
+                  <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', border: '1px solid #e8e8e8', marginBottom: 20 }}>
+                    <div style={{ marginBottom: 16 }}>
+                      <Text strong style={{ fontSize: 14 }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                    </div>
+                    <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                      <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: '#bfbfbf' }} />} allowClear />
+                    </Form.Item>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
-          {/* Sidebar — only for Standard Form tab */}
+          {/* Sidebar — only for Standard Form and HTML Builder tabs */}
           <div style={{ width: 300, flexShrink: 0, display: activeTab === 'builder' ? 'none' : 'block' }}>
 
             {/* Layout Reorder Panel */}
@@ -746,6 +941,26 @@ const CreateContent = () => {
             )}
           </div>
         </div>
+      )}
+
+      {/* HTML Preview Modal */}
+      {htmlPreviewVisible && (
+        <Modal
+          title="HTML Landing Page Preview"
+          open={htmlPreviewVisible}
+          onCancel={() => setHtmlPreviewVisible(false)}
+          footer={[
+            <Button key="close" onClick={() => setHtmlPreviewVisible(false)}>Close</Button>
+          ]}
+          width="90%"
+          style={{ top: 20 }}
+        >
+          <div style={{ minHeight: '70vh', background: '#f5f5f5', padding: 20 }}>
+            <div style={{ background: '#fff', minHeight: '60vh', padding: 20, borderRadius: 8 }}>
+              <div dangerouslySetInnerHTML={{ __html: htmlContent || '<p>No HTML content</p>' }} />
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
