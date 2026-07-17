@@ -28,6 +28,7 @@ const FIELD_TYPES = [
   { value: 'number', label: 'Number' },
   { value: 'textarea', label: 'Textarea' },
   { value: 'select', label: 'Dropdown' },
+  { value: 'checkbox', label: 'Consent Checkbox' },
 ];
 
 // Only these 4 sections are reorderable
@@ -68,6 +69,7 @@ const CreateContent = () => {
   const [builderContent, setBuilderContent] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
   const [builderSections, setBuilderSections] = useState([]);
+  const [contentElements, setContentElements] = useState([]);
   const [selectedTypeName, setSelectedTypeName] = useState('');
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
 
@@ -204,7 +206,82 @@ const CreateContent = () => {
     if (values.tags?.length) formData.append('tags', values.tags.join(','));
     if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
     if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
-    formData.append('content', (activeTab === 'html' ? htmlContent : activeTab === 'builder' ? builderContent : content) || '');
+    
+    // Generate content from content elements if using drag-drop builder
+    let finalContent = content;
+    if (activeTab === 'builder' && contentElements.length > 0) {
+      finalContent = contentElements.map(element => {
+        switch (element.type) {
+          case 'heading':
+            const headingLevel = element.headingLevel || 'h2';
+            return `<${headingLevel}>${element.content}</${headingLevel}>`;
+          case 'paragraph':
+            // Handle paragraph with nested content (bullets, numbers, tables)
+            let paragraphContent = element.content;
+            // Convert markdown-like syntax to HTML
+            paragraphContent = paragraphContent.replace(/^• (.+)$/gm, '<li>$1</li>');
+            paragraphContent = paragraphContent.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+            // Wrap consecutive list items
+            paragraphContent = paragraphContent.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+              const hasNumbers = match.match(/^\d+\./);
+              const tag = hasNumbers ? 'ol' : 'ul';
+              return `<${tag}>${match}</${tag}>`;
+            });
+            // Handle table rows
+            const tableRows = paragraphContent.match(/^\| .+$/gm);
+            if (tableRows && tableRows.length > 0) {
+              const tableHtml = tableRows.map(row => {
+                const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+                return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+              }).join('');
+              return `<table>${tableHtml}</table>`;
+            }
+            // Handle section breaks
+            const sections = paragraphContent.split(/\n\n+/);
+            return sections.map(section => `<p>${section.trim()}</p>`).join('\n');
+          case 'bullet_list':
+            const bulletItems = element.content.split('\n').filter(Boolean);
+            return `<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`;
+          case 'numbered_list':
+            const numberedItems = element.content.split('\n').filter(Boolean);
+            return `<ol>${numberedItems.map(item => `<li>${item}</li>`).join('')}</ol>`;
+          case 'line_break':
+            return '<br>';
+          case 'image':
+            return `<img src="${element.content}" alt="Image" />`;
+          case 'divider':
+            return '<hr>';
+          case 'blockquote':
+            return `<blockquote>${element.content}</blockquote>`;
+          case 'code_block':
+            return `<pre><code>${element.content}</code></pre>`;
+          case 'table':
+            const rows = element.content.split('\n').filter(Boolean);
+            const tableHtml = rows.map(row => {
+              const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+              return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+            }).join('');
+            return `<table>${tableHtml}</table>`;
+          case 'section_break':
+            return '<br><br>';
+          case 'bullet_item':
+            return `<ul><li>${element.content}</li></ul>`;
+          case 'numbered_item':
+            return `<ol><li>${element.content}</li></ol>`;
+          case 'table_row':
+            const cells = element.content.split('|').map(cell => cell.trim()).filter(Boolean);
+            return `<table><tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr></table>`;
+          default:
+            return '';
+        }
+      }).join('\n');
+    } else if (activeTab === 'builder') {
+      finalContent = builderContent;
+    } else if (activeTab === 'html') {
+      finalContent = htmlContent;
+    }
+    
+    formData.append('content', finalContent || '');
     if (activeTab === 'html') {
       formData.append('builder_layout', JSON.stringify(['html']));
     } else if (activeTab === 'builder' && builderSections.length > 0) {
@@ -287,7 +364,9 @@ const CreateContent = () => {
       type: 'text',
       placeholder: '',
       options: '',
-      required: true
+      required: true,
+       consent_text: '',
+      redirect_link: ''
     }]);
   };
 
@@ -370,6 +449,76 @@ const CreateContent = () => {
           <Button icon={<EyeOutlined />} onClick={() => {
             const v = form.getFieldsValue();
             const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
+            
+            // Generate content from content elements if using drag-drop builder
+            let previewContent = content;
+            if (activeTab === 'builder' && contentElements.length > 0) {
+              previewContent = contentElements.map(element => {
+                switch (element.type) {
+                  case 'heading':
+                    const headingLevel = element.headingLevel || 'h2';
+                    return `<${headingLevel}>${element.content}</${headingLevel}>`;
+                  case 'paragraph':
+                    let paragraphContent = element.content;
+                    paragraphContent = paragraphContent.replace(/^• (.+)$/gm, '<li>$1</li>');
+                    paragraphContent = paragraphContent.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+                    paragraphContent = paragraphContent.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+                      const hasNumbers = match.match(/^\d+\./);
+                      const tag = hasNumbers ? 'ol' : 'ul';
+                      return `<${tag}>${match}</${tag}>`;
+                    });
+                    const tableRows = paragraphContent.match(/^\| .+$/gm);
+                    if (tableRows && tableRows.length > 0) {
+                      const tableHtml = tableRows.map(row => {
+                        const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+                        return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+                      }).join('');
+                      return `<table>${tableHtml}</table>`;
+                    }
+                    const sections = paragraphContent.split(/\n\n+/);
+                    return sections.map(section => `<p>${section.trim()}</p>`).join('\n');
+                  case 'bullet_list':
+                    const bulletItems = element.content.split('\n').filter(Boolean);
+                    return `<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`;
+                  case 'numbered_list':
+                    const numberedItems = element.content.split('\n').filter(Boolean);
+                    return `<ol>${numberedItems.map(item => `<li>${item}</li>`).join('')}</ol>`;
+                  case 'line_break':
+                    return '<br>';
+                  case 'image':
+                    return `<img src="${element.content}" alt="Image" />`;
+                  case 'divider':
+                    return '<hr>';
+                  case 'blockquote':
+                    return `<blockquote>${element.content}</blockquote>`;
+                  case 'code_block':
+                    return `<pre><code>${element.content}</code></pre>`;
+                  case 'table':
+                    const rows = element.content.split('\n').filter(Boolean);
+                    const tableHtml = rows.map(row => {
+                      const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+                      return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+                    }).join('');
+                    return `<table>${tableHtml}</table>`;
+                  case 'section_break':
+                    return '<br><br>';
+                  case 'bullet_item':
+                    return `<ul><li>${element.content}</li></ul>`;
+                  case 'numbered_item':
+                    return `<ol><li>${element.content}</li></ol>`;
+                  case 'table_row':
+                    const cells = element.content.split('|').map(cell => cell.trim()).filter(Boolean);
+                    return `<table><tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr></table>`;
+                  default:
+                    return '';
+                }
+              }).join('\n');
+            } else if (activeTab === 'builder') {
+              previewContent = builderContent;
+            } else if (activeTab === 'html') {
+              previewContent = htmlContent;
+            }
+            
             setPreviewData({
               content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || 'Article',
               category: categories.find(c => c.id === v.category_id)?.name || 'Category',
@@ -382,7 +531,7 @@ const CreateContent = () => {
               seo_meta_title: v.seo_meta_title || '',
               seo_meta_description: v.seo_meta_description || '',
               seo_meta_keywords: v.seo_meta_keywords || '',
-              content: activeTab === 'builder' ? builderContent : content,
+              content: previewContent,
             });
             setPreviewVisible(true);
           }}>Preview</Button>
@@ -648,6 +797,7 @@ const CreateContent = () => {
                 fieldTypes={FIELD_TYPES}
                 sections={builderSections}
                 onSectionsChange={setBuilderSections}
+                onContentElementsChange={setContentElements}
               />
             )}
 

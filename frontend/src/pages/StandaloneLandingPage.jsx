@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
 import { Spin, Result, Button } from 'antd';
+import { useCookieConsent } from '../context/CookieContext';
 
 const StandaloneLandingPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { consent, hasAnalyticsConsent } = useCookieConsent();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,6 +32,44 @@ const StandaloneLandingPage = () => {
 
       setContent(data);
       setError(null);
+      
+      console.log('Landing page loaded with consent:', consent, 'hasAnalyticsConsent:', hasAnalyticsConsent);
+      
+      // Set consent UUID globally if available
+      if (consent?.uuid) {
+        window.__CONSENT_UUID = consent.uuid;
+        console.log('Set CONSENT_UUID:', consent.uuid);
+      }
+      
+      // Initialize tracking session if analytics consent is granted and session doesn't exist
+      if (hasAnalyticsConsent && consent && !window.__SESSION_UUID) {
+        console.log('Initializing tracking session on landing page...');
+        const { trackingApi, generateSessionUuid, getDeviceInfo } = require('../lib/trackingUtils');
+        
+        const sessionData = {
+          consent_uuid: consent.uuid,
+          landing_page: window.location.href,
+          referrer: document.referrer,
+          ...getDeviceInfo()
+        };
+        
+        trackingApi.startSession(sessionData)
+          .then(response => {
+            window.__SESSION_UUID = response.session.session_uuid;
+            localStorage.setItem('tracking_session_uuid', response.session.session_uuid);
+            console.log('Tracking session initialized on landing page:', response.session.session_uuid);
+          })
+          .catch(err => {
+            console.error('Failed to initialize tracking on landing page:', err);
+          });
+      } else if (!window.__SESSION_UUID) {
+        // Try to get session from localStorage
+        const savedSession = localStorage.getItem('tracking_session_uuid');
+        if (savedSession) {
+          window.__SESSION_UUID = savedSession;
+          console.log('Restored session from localStorage:', savedSession);
+        }
+      }
     } catch (err) {
       console.error('Error fetching content:', err);
       setError(err.response?.data?.message || 'Content not found');
@@ -48,10 +88,18 @@ const StandaloneLandingPage = () => {
     globalsScript.textContent = `
       window.__CONTENT_ID   = ${JSON.stringify(content.id)};
       window.__CONTENT_SLUG = ${JSON.stringify(content.slug)};
+      window.__SESSION_UUID = ${JSON.stringify(window.__SESSION_UUID || null)};
+      window.__CONSENT_UUID = ${JSON.stringify(window.__CONSENT_UUID || null)};
+      
+      console.log('Landing page globals:', {
+        CONTENT_ID: window.__CONTENT_ID,
+        SESSION_UUID: window.__SESSION_UUID,
+        CONSENT_UUID: window.__CONSENT_UUID
+      });
 
       // Auto-patch fetch so ANY call to /api/public/landing-page automatically
-      // includes content_id in the JSON body — works even if the client's HTML
-      // doesn't include it explicitly.
+      // includes content_id, session_uuid, and consent_uuid in the JSON body
+      // works even if the client's HTML doesn't include it explicitly.
       (function() {
         const _originalFetch = window.fetch;
         window.fetch = function(url, options) {
@@ -60,8 +108,12 @@ const StandaloneLandingPage = () => {
             if (urlStr.includes('/api/public/landing-page') && options && options.body) {
               let body;
               try { body = JSON.parse(options.body); } catch(e) { body = null; }
-              if (body && typeof body === 'object' && !body.content_id) {
-                body.content_id = window.__CONTENT_ID;
+              if (body && typeof body === 'object') {
+                console.log('Before patch:', body);
+                if (!body.content_id) body.content_id = window.__CONTENT_ID;
+                if (!body.session_uuid) body.session_uuid = window.__SESSION_UUID;
+                if (!body.consent_uuid) body.consent_uuid = window.__CONSENT_UUID;
+                console.log('After patch:', body);
                 options = { ...options, body: JSON.stringify(body) };
               }
             }

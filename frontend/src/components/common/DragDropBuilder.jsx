@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Form, Input, Select, DatePicker, Upload, Button, Typography, Tooltip
 } from 'antd';
@@ -26,11 +26,221 @@ const SECTION_TYPES = [
   { type: 'seo',                   label: 'SEO Settings' },
 ];
 
+const CONTENT_ELEMENTS = [
+  { type: 'heading', label: 'Heading', tag: 'h', icon: 'H' },
+  { type: 'paragraph', label: 'Paragraph', tag: 'p', icon: '¶' },
+  { type: 'bullet_list', label: 'Bullet List', tag: 'ul', icon: '•' },
+  { type: 'numbered_list', label: 'Numbered List', tag: 'ol', icon: '1.' },
+  { type: 'line_break', label: 'Line Break', tag: 'br', icon: '↵' },
+  { type: 'image', label: 'Image', tag: 'img', icon: '🖼' },
+  { type: 'divider', label: 'Divider', tag: 'hr', icon: '—' },
+  { type: 'blockquote', label: 'Blockquote', tag: 'blockquote', icon: '"' },
+  { type: 'code_block', label: 'Code Block', tag: 'pre', icon: '</>' },
+  { type: 'table', label: 'Table', tag: 'table', icon: '▦' },
+  { type: 'section_break', label: 'Section Break', tag: 'br', icon: '⏎' },
+  { type: 'bullet_item', label: 'Bullet Item', tag: 'li', icon: '•' },
+  { type: 'numbered_item', label: 'Numbered Item', tag: 'li', icon: '1.' },
+  { type: 'table_row', label: 'Table Row', tag: 'tr', icon: '▦' },
+];
+
+const ContentElementEditor = ({ element, onUpdate }) => {
+  switch (element.type) {
+    case 'heading':
+      return (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Select
+            value={element.headingLevel || 'h2'}
+            onChange={(value) => onUpdate({ headingLevel: value })}
+            style={{ width: 80 }}
+            size="small"
+          >
+            <Option value="h1">H1</Option>
+            <Option value="h2">H2</Option>
+            <Option value="h3">H3</Option>
+            <Option value="h4">H4</Option>
+            <Option value="h5">H5</Option>
+            <Option value="h6">H6</Option>
+          </Select>
+          <Input
+            placeholder="Enter heading text"
+            value={element.content}
+            onChange={(e) => onUpdate({ content: e.target.value })}
+            style={{ 
+              fontSize: element.headingLevel === 'h1' ? 24 : element.headingLevel === 'h2' ? 20 : element.headingLevel === 'h3' ? 18 : 16, 
+              fontWeight: 600,
+              flex: 1
+            }}
+          />
+        </div>
+      );
+    case 'paragraph':
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <TextArea
+            placeholder="Enter paragraph text"
+            value={element.content}
+            onChange={(e) => onUpdate({ content: e.target.value })}
+            rows={3}
+            style={{ fontSize: 14, lineHeight: 1.6 }}
+          />
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <Button 
+              size="small" 
+              onClick={() => {
+                const newContent = (element.content || '') + '\n\n';
+                onUpdate({ content: newContent });
+              }}
+            >
+              Add Section Break
+            </Button>
+            <Button 
+              size="small" 
+              onClick={() => {
+                const newContent = (element.content || '') + '\n• ';
+                onUpdate({ content: newContent });
+              }}
+            >
+              Add Bullet
+            </Button>
+            <Button 
+              size="small" 
+              onClick={() => {
+                const newContent = (element.content || '') + '\n1. ';
+                onUpdate({ content: newContent });
+              }}
+            >
+              Add Number
+            </Button>
+            <Button 
+              size="small" 
+              onClick={() => {
+                const newContent = (element.content || '') + '\n| ';
+                onUpdate({ content: newContent });
+              }}
+            >
+              Add Table Row
+            </Button>
+          </div>
+        </div>
+      );
+    case 'bullet_list':
+    case 'numbered_list':
+      return (
+        <TextArea
+          placeholder={`Enter ${element.label} items (one per line)`}
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          rows={4}
+          style={{ fontSize: 14 }}
+        />
+      );
+    case 'line_break':
+      return (
+        <div style={{ fontSize: 12, color: '#8c8c8c', fontStyle: 'italic' }}>
+          Line break element - no content needed
+        </div>
+      );
+    case 'image':
+      return (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Input
+            placeholder="Image URL"
+            value={element.content}
+            onChange={(e) => onUpdate({ content: e.target.value })}
+            style={{ flex: 1 }}
+          />
+          <Upload beforeUpload={() => false} showUploadList={false}>
+            <Button size="small" icon={<UploadOutlined />}>Upload</Button>
+          </Upload>
+        </div>
+      );
+    case 'divider':
+      return (
+        <div style={{ fontSize: 12, color: '#8c8c8c', fontStyle: 'italic' }}>
+          Divider element - no content needed
+        </div>
+      );
+    case 'blockquote':
+      return (
+        <TextArea
+          placeholder="Enter quote text"
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          rows={2}
+          style={{ fontSize: 14, fontStyle: 'italic' }}
+        />
+      );
+    case 'code_block':
+      return (
+        <TextArea
+          placeholder="Enter code"
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          rows={4}
+          style={{ fontFamily: 'monospace', fontSize: 13 }}
+        />
+      );
+    case 'table':
+      return (
+        <TextArea
+          placeholder="Enter table data (format: | Cell1 | Cell2 | Cell3 |)"
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          rows={6}
+          style={{ fontFamily: 'monospace', fontSize: 13 }}
+          help="Use | to separate cells. Each line is a row."
+        />
+      );
+    case 'section_break':
+      return (
+        <div style={{ fontSize: 12, color: '#8c8c8c', fontStyle: 'italic' }}>
+          Section break - adds double line break
+        </div>
+      );
+    case 'bullet_item':
+      return (
+        <Input
+          placeholder="Enter bullet item text"
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          prefix="• "
+        />
+      );
+    case 'numbered_item':
+      return (
+        <Input
+          placeholder="Enter numbered item text"
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          prefix="1. "
+        />
+      );
+    case 'table_row':
+      return (
+        <Input
+          placeholder="Enter table row (| Cell1 | Cell2 |)"
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+          prefix="| "
+        />
+      );
+    default:
+      return (
+        <Input
+          placeholder="Enter content"
+          value={element.content}
+          onChange={(e) => onUpdate({ content: e.target.value })}
+        />
+      );
+  }
+};
+
 const SectionRenderer = ({ type, props }) => {
   const {
     form, categories, contentTypes, setSelectedTypeName,
     fileList, setFileList, pdfList, setPdfList,
-    content, setContent, initialContent, editorReady
+    content, setContent, initialContent, editorReady,
+    onAddContentElement, contentElements, onRemoveContentElement, onUpdateContentElement
   } = props;
 
   const inputStyle = { fontSize: 14 };
@@ -122,7 +332,133 @@ const SectionRenderer = ({ type, props }) => {
 
     case 'content':
       return editorReady ? (
-        <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing your article..." />
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+          {/* Left sidebar for content elements */}
+          <div style={{
+            width: 180,
+            flexShrink: 0,
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #e8e8e8',
+            padding: '12px 10px',
+            position: 'sticky',
+            top: 72
+          }}>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: '#8c8c8c',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+              marginBottom: 10,
+              paddingLeft: 4
+            }}>
+              Content Elements
+            </div>
+            {CONTENT_ELEMENTS.map(el => (
+              <div
+                key={el.type}
+                onClick={() => props.onAddContentElement?.(el.type)}
+                draggable
+                onDragStart={() => {}}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 10px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  border: '1px solid #e8e8e8',
+                  background: '#fff',
+                  marginBottom: 4,
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = '#4a7cff';
+                  e.currentTarget.style.background = '#f0f5ff';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = '#e8e8e8';
+                  e.currentTarget.style.background = '#fff';
+                }}
+              >
+                <span style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 4,
+                  background: '#4a7cff20',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#4a7cff',
+                  fontSize: 11,
+                  fontWeight: 600
+                }}>
+                  {el.icon}
+                </span>
+                <span style={{
+                  fontSize: 12,
+                  color: '#1a1a2e',
+                  fontWeight: 500,
+                  flex: 1
+                }}>
+                  {el.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Main content area */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {props.contentElements && props.contentElements.length > 0 ? (
+              <div style={{ minHeight: 200, border: '1px solid #e8e8e8', borderRadius: 8, padding: 16, background: '#fafafa' }}>
+                {props.contentElements.map((element, index) => (
+                  <div
+                    key={element.id}
+                    draggable
+                    onDragStart={() => props.onContentDragStart?.(index)}
+                    onDragEnter={() => props.onContentDragEnter?.(index)}
+                    onDragEnd={props.onContentDragEnd}
+                    onDragOver={e => e.preventDefault()}
+                    style={{
+                      marginBottom: 12,
+                      padding: 12,
+                      background: '#fff',
+                      border: '1px solid #e8e8e8',
+                      borderRadius: 6,
+                      cursor: 'grab'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <HolderOutlined style={{ color: '#bfbfbf' }} />
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase' }}>
+                        {element.label}
+                      </span>
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => props.onRemoveContentElement?.(element.id)} />
+                    </div>
+                    <ContentElementEditor element={element} onUpdate={(updates) => props.onUpdateContentElement?.(element.id, updates)} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                minHeight: 200,
+                border: '2px dashed #e0e0e0',
+                borderRadius: 8,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                background: '#fafafa'
+              }}>
+                <div style={{ fontSize: 36 }}>📝</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#595959' }}>Click elements from the left panel to add them</div>
+                <div style={{ fontSize: 13, color: '#8c8c8c' }}>Drag to reorder after adding</div>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
         <div style={{ padding: 40, textAlign: 'center', color: '#8c8c8c' }}>Loading editor...</div>
       );
@@ -162,9 +498,19 @@ const SectionRenderer = ({ type, props }) => {
 
 const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook'];
 
-const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [], setCustomFields, fieldTypes = [], sections, onSectionsChange }) => {
+const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [], setCustomFields, fieldTypes = [], sections, onSectionsChange, onContentElementsChange }) => {
   const dragItem = useRef(null);
   const dragOver = useRef(null);
+  const [contentElements, setContentElements] = useState([]);
+  const contentDragItem = useRef(null);
+  const contentDragOver = useRef(null);
+
+  // Update parent when content elements change
+  useEffect(() => {
+    if (onContentElementsChange) {
+      onContentElementsChange(contentElements);
+    }
+  }, [contentElements, onContentElementsChange]);
 
   const addedTypes = sections.map(s => s.type);
   const availableSections = SECTION_TYPES.filter(s => !addedTypes.includes(s.type));
@@ -193,7 +539,9 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
   const addField = () => {
     setCustomFields(prev => [...prev, {
       id: Date.now(), name: `field_${Date.now()}`, label: '',
-      type: 'text', placeholder: '', options: '', required: true
+      type: 'text', placeholder: '', options: '', required: true,
+      consent_text: '', redirect_link: ''
+ 
     }]);
   };
 
@@ -207,6 +555,114 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
   };
 
   const removeField = (id) => setCustomFields(prev => prev.filter(f => f.id !== id));
+
+  // Content element drag and drop handlers
+  const addContentElement = (elementType) => {
+    const element = CONTENT_ELEMENTS.find(e => e.type === elementType);
+    setContentElements(prev => [...prev, {
+      id: `el-${Date.now()}`,
+      type: elementType,
+      tag: element.tag,
+      label: element.label,
+      content: '',
+      headingLevel: elementType === 'heading' ? 'h2' : undefined
+    }]);
+  };
+
+  const removeContentElement = (id) => {
+    setContentElements(prev => prev.filter(e => e.id !== id));
+  };
+
+  const updateContentElement = (id, updates) => {
+    setContentElements(prev => prev.map(e => {
+      if (e.id !== id) return e;
+      // Handle both string content and object updates
+      if (typeof updates === 'string') {
+        return { ...e, content: updates };
+      }
+      return { ...e, ...updates };
+    }));
+  };
+
+  const onContentDragStart = (index) => { contentDragItem.current = index; };
+  const onContentDragEnter = (index) => { contentDragOver.current = index; };
+  const onContentDragEnd = () => {
+    const elements = [...contentElements];
+    const dragged = elements.splice(contentDragItem.current, 1)[0];
+    elements.splice(contentDragOver.current, 0, dragged);
+    contentDragItem.current = null;
+    contentDragOver.current = null;
+    setContentElements(elements);
+  };
+
+  // Convert content elements to HTML
+  const generateContentHtml = () => {
+    return contentElements.map(element => {
+      switch (element.type) {
+        case 'heading':
+          const headingLevel = element.headingLevel || 'h2';
+          return `<${headingLevel}>${element.content}</${headingLevel}>`;
+        case 'paragraph':
+          // Handle paragraph with nested content (bullets, numbers, tables)
+          let paragraphContent = element.content;
+          // Convert markdown-like syntax to HTML
+          paragraphContent = paragraphContent.replace(/^• (.+)$/gm, '<li>$1</li>');
+          paragraphContent = paragraphContent.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+          // Wrap consecutive list items
+          paragraphContent = paragraphContent.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+            const hasNumbers = match.match(/^\d+\./);
+            const tag = hasNumbers ? 'ol' : 'ul';
+            return `<${tag}>${match}</${tag}>`;
+          });
+          // Handle table rows
+          const tableRows = paragraphContent.match(/^\| .+$/gm);
+          if (tableRows && tableRows.length > 0) {
+            const tableHtml = tableRows.map(row => {
+              const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+              return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+            }).join('');
+            return `<table>${tableHtml}</table>`;
+          }
+          // Handle section breaks
+          const sections = paragraphContent.split(/\n\n+/);
+          return sections.map(section => `<p>${section.trim()}</p>`).join('\n');
+        case 'bullet_list':
+          const bulletItems = element.content.split('\n').filter(Boolean);
+          return `<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`;
+        case 'numbered_list':
+          const numberedItems = element.content.split('\n').filter(Boolean);
+          return `<ol>${numberedItems.map(item => `<li>${item}</li>`).join('')}</ol>`;
+        case 'line_break':
+          return '<br>';
+        case 'image':
+          return `<img src="${element.content}" alt="Image" />`;
+        case 'divider':
+          return '<hr>';
+        case 'blockquote':
+          return `<blockquote>${element.content}</blockquote>`;
+        case 'code_block':
+          return `<pre><code>${element.content}</code></pre>`;
+        case 'table':
+          const rows = element.content.split('\n').filter(Boolean);
+          const tableHtml = rows.map(row => {
+            const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+            return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+          }).join('');
+          return `<table>${tableHtml}</table>`;
+        case 'section_break':
+          return '<br><br>';
+        case 'bullet_item':
+          return `<ul><li>${element.content}</li></ul>`;
+        case 'numbered_item':
+          return `<ol><li>${element.content}</li></ol>`;
+        case 'table_row':
+          const cells = element.content.split('|').map(cell => cell.trim()).filter(Boolean);
+          return `<table><tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr></table>`;
+        default:
+          return '';
+      }
+    }).join('\n');
+  };
 
   const fieldDragItem = useRef(null);
   const fieldDragOver = useRef(null);
@@ -342,7 +798,19 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
 
                 {/* Section Content */}
                 <div style={{ padding: '16px 20px' }}>
-                  <SectionRenderer type={sec.type} props={sectionProps} />
+                  <SectionRenderer 
+                    type={sec.type} 
+                    props={{
+                      ...sectionProps,
+                      onAddContentElement: addContentElement,
+                      contentElements,
+                      onRemoveContentElement: removeContentElement,
+                      onUpdateContentElement: updateContentElement,
+                      onContentDragStart,
+                      onContentDragEnter,
+                      onContentDragEnd
+                    }} 
+                  />
                 </div>
               </div>
             );

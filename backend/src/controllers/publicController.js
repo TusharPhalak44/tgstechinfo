@@ -4,6 +4,7 @@ const ContentType = require('../models/ContentType');
 const LandingPage = require('../models/LandingPage');
 const DataRequest = require('../models/DataRequest');
 const ContactSubmission = require('../models/ContactSubmission');
+const Download = require('../models/Download');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate } = require('../config/email');
 const axios = require('axios');
@@ -240,6 +241,39 @@ exports.submitLandingPage = async (req, res) => {
             if (emailResult?.skipped) console.warn('Email skipped:', emailResult.reason);
         } catch (emailError) {
             console.warn('Email send skipped:', emailError.message);
+        }
+
+        // Track download if PDF file exists
+        if (content?.pdf_file) {
+            try {
+                const session_uuid = req.headers['x-session-uuid'] || req.body.session_uuid || null;
+                const consent_uuid = req.headers['x-consent-uuid'] || req.body.consent_uuid || null;
+                
+                console.log('Download tracking attempt:', { 
+                    session_uuid, 
+                    consent_uuid, 
+                    content_id: normalizedContentId,
+                    pdf_file: content.pdf_file 
+                });
+                
+                if (session_uuid && consent_uuid) {
+                    const download = await Download.create({
+                        session_uuid,
+                        consent_uuid,
+                        content_id: normalizedContentId,
+                        file_id: content.pdf_file,
+                        file_name: content.pdf_file,
+                        file_type: 'application/pdf',
+                        file_size: null
+                    });
+                    console.log('Download tracked successfully:', download);
+                } else {
+                    console.log('Download tracking skipped - missing session_uuid or consent_uuid');
+                }
+            } catch (downloadError) {
+                console.error('Download tracking failed:', downloadError);
+                // Don't fail the request if tracking fails
+            }
         }
 
         res.json({
