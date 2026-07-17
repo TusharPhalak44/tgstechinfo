@@ -10,10 +10,37 @@ dotenv.config();
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            scriptSrc: ["'self'"],
+            connectSrc: ["'self'", process.env.FRONTEND_URL],
+            frameSrc: ["'none'"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            manifestSrc: ["'self'"]
+        }
+    },
+    hsts: {
+        maxAge: 31536000, // 1 year
+        includeSubDomains: true,
+        preload: true
+    },
+    noSniff: true,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    xssFilter: true,
+    crossOriginEmbedderPolicy: false
+}));
+
 app.use(cors({
     origin: process.env.FRONTEND_URL,
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Trust proxy for IP address detection
@@ -41,6 +68,8 @@ app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/user', require('./src/routes/userRoutes'));
 app.use('/api/public', require('./src/routes/publicRoutes'));
 app.use('/api/cookie-consent', require('./src/routes/cookieConsentRoutes'));
+app.use('/api/tracking', require('./src/routes/trackingRoutes'));
+app.use('/api/analytics', require('./src/routes/analyticsRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

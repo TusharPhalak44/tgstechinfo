@@ -351,37 +351,187 @@ const ArticleDetail = () => {
 
             {/* ── Get Access Card — only for webinar/whitepaper/event ── */}
             {requiresLanding && (
-              <Card style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: 12, border: 'none' }}>
-                <div style={{ color: '#fff' }}>
-                  <Title level={4} style={{ color: '#fff', marginBottom: 16 }}>
-                    {hasAccess ? '✅ Access Granted' : 'Get Access'}
-                  </Title>
+              <Card 
+                style={{ 
+                  background: '#fff', 
+                  borderRadius: 16, 
+                  border: '2px solid #e8ecf4',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  overflow: 'hidden'
+                }}
+              >
+                <style>{`
+                  @keyframes shimmer {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                  }
+                  @keyframes pulse-ring {
+                    0% { transform: scale(0.8); opacity: 1; }
+                    100% { transform: scale(1.3); opacity: 0; }
+                  }
+                  @keyframes checkmark {
+                    0% { stroke-dashoffset: 100; }
+                    100% { stroke-dashoffset: 0; }
+                  }
+                  .submit-btn-loading {
+                    position: relative;
+                    overflow: hidden;
+                  }
+                  .submit-btn-loading::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                    background-size: 200% 100%;
+                    animation: shimmer 1.5s infinite;
+                  }
+                  .success-checkmark {
+                    animation: checkmark 0.5s ease-in-out forwards;
+                  }
+                `}</style>
+                {/* Header with accent background */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #4a7cff 0%, #6c5ce7 100%)',
+                  padding: '20px 24px',
+                  margin: '-1px -1px 0 -1px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    {hasAccess ? (
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 20
+                      }}>✅</div>
+                    ) : (
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.2)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 20
+                      }}>🔒</div>
+                    )}
+                    <div>
+                      <Title level={4} style={{ color: '#fff', marginBottom: 4, fontSize: 18, fontWeight: 700 }}>
+                        {hasAccess ? 'Access Granted' : 'Get Access'}
+                      </Title>
+                      <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13 }}>
+                        {hasAccess ? 'Your access is unlocked' : 'Unlock the full content'}
+                      </Text>
+                    </div>
+                  </div>
+                </div>
+                
+                <div style={{ padding: '24px' }}>
                   {/* BEFORE SUBMIT: show form */}
                   {!hasAccess && (
                     <>
-                      <Text style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: 16 }}>
-                        Fill in your details to unlock the full article.
+                      <Text style={{ color: '#64748b', display: 'block', marginBottom: 20, fontSize: 14, lineHeight: 1.6 }}>
+                        Fill in your details below to unlock the full article and get instant access.
                       </Text>
                       <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
                         {customFields.map(field => (
-                          <Form.Item key={field.name} name={field.name} rules={[{ required: field.required !== false, message: `${field.label || field.name} is required` }]} style={{ marginBottom: 10 }}>
+                          <Form.Item 
+                            key={field.name} 
+                            name={field.name} 
+                            rules={[{ required: field.required !== false, message: `${field.label || field.name} is required` }]} 
+                            style={{ marginBottom: 16 }}
+                          >
                             {field.type === 'textarea' ? (
-                              <Input.TextArea placeholder={field.placeholder || field.label} rows={3} style={{ background: 'rgba(255,255,255,0.95)' }} />
+                              <Input.TextArea 
+                                placeholder={field.placeholder || field.label} 
+                                rows={3} 
+                                style={{ 
+                                  borderRadius: 8,
+                                  border: '1px solid #e2e8f0',
+                                  padding: '10px 12px',
+                                  fontSize: 14,
+                                  transition: 'all 0.2s'
+                                }}
+                                onFocus={e => e.currentTarget.style.borderColor = '#4a7cff'}
+                                onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                              />
                             ) : field.type === 'select' ? (
-                              <Select placeholder={field.placeholder || field.label} style={{ width: '100%' }}>
+                              <Select 
+                                placeholder={field.placeholder || field.label} 
+                                style={{ 
+                                  width: '100%',
+                                  borderRadius: 8
+                                }}
+                              >
                                 {(field.options || '').split(',').map(o => o.trim()).filter(Boolean).map(o => (
                                   <Select.Option key={o} value={o}>{o}</Select.Option>
                                 ))}
                               </Select>
+                            ) : field.type === 'checkbox' ? (
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                <input 
+                                  type="checkbox" 
+                                  id={field.name}
+                                  required={field.required !== false}
+                                  style={{ marginTop: 4, width: 16, height: 16, cursor: 'pointer' }}
+                                />
+                                <label htmlFor={field.name} style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, cursor: 'pointer' }}>
+                                  {field.consent_text || field.label}
+                                  {field.redirect_link && (
+                                    <a href={field.redirect_link} target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff', marginLeft: 4 }}>
+                                      Learn more →
+                                    </a>
+                                  )}
+                                </label>
+                              </div>
                             ) : (
-                              <Input type={field.type || 'text'} placeholder={field.placeholder || field.label} style={{ background: 'rgba(255,255,255,0.95)' }} />
+                              <Input 
+                                type={field.type || 'text'} 
+                                placeholder={field.placeholder || field.label} 
+                                style={{ 
+                                  borderRadius: 8,
+                                  border: '1px solid #e2e8f0',
+                                  padding: '10px 12px',
+                                  fontSize: 14,
+                                  transition: 'all 0.2s'
+                                }}
+                                onFocus={e => e.currentTarget.style.borderColor = '#4a7cff'}
+                                onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                              />
                             )}
                           </Form.Item>
                         ))}
                         <Form.Item style={{ marginBottom: 0 }}>
-                          <Button type="primary" htmlType="submit" block loading={submitting}
-                            style={{ background: '#fff', color: '#667eea', fontWeight: 600 }}>
-                            Submit
+                          <Button 
+                            type="primary" 
+                            htmlType="submit" 
+                            block 
+                            loading={submitting}
+                            className={submitting ? 'submit-btn-loading' : ''}
+                            style={{
+                              background: submitting ? '#4a7cff' : 'linear-gradient(135deg, #4a7cff 0%, #6c5ce7 100%)',
+                              color: '#fff',
+                              fontWeight: 600,
+                              borderRadius: 8,
+                              height: 44,
+                              fontSize: 15,
+                              border: 'none',
+                              boxShadow: '0 4px 12px rgba(74, 124, 255, 0.3)',
+                              transition: 'all 0.3s ease'
+                            }}
+                            onMouseEnter={e => {
+                              if (!submitting) {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(74, 124, 255, 0.4)';
+                              }
+                            }}
+                            onMouseLeave={e => {
+                              if (!submitting) {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(74, 124, 255, 0.3)';
+                              }
+                            }}
+                          >
+                            {submitting ? 'Submitting...' : 'Get Access →'}
                           </Button>
                         </Form.Item>
                       </Form>
@@ -391,32 +541,136 @@ const ArticleDetail = () => {
                   {/* AFTER SUBMIT: show 2 options */}
                   {hasAccess && (
                     <>
-                      <Text style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: 16, fontSize: 13 }}>
-                        ✅ Details submitted! Choose an option below:
-                      </Text>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ 
+                        textAlign: 'center', 
+                        marginBottom: 24,
+                        padding: '16px',
+                        background: '#f0fdf4',
+                        borderRadius: 8,
+                        border: '1px solid #bbf7d0'
+                      }}>
+                        <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
+                        <Text style={{ color: '#166534', fontSize: 15, fontWeight: 600, display: 'block' }}>
+                          Access Unlocked!
+                        </Text>
+                        <Text style={{ color: '#15803d', fontSize: 13, display: 'block', marginTop: 4 }}>
+                          Your details have been submitted successfully.
+                        </Text>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {/* Option 1: Read full article (+ PDF if available) */}
-                        <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 8, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.25)' }}>
-                          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>📖 Option 1: Read Full Article</div>
-                          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, display: 'block', marginBottom: 10 }}>
-                            Full article is now unlocked above.{pdfFile ? ' PDF will also be downloaded.' : ''}
-                          </Text>
+                        <div style={{ 
+                          background: '#f8fafc', 
+                          borderRadius: 12, 
+                          padding: '16px', 
+                          border: '2px solid #e2e8f0',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = '#4a7cff';
+                          e.currentTarget.style.background = '#f0f9ff';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.background = '#f8fafc';
+                        }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                            <div style={{
+                              width: 36, height: 36, borderRadius: 8,
+                              background: '#dbeafe',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 18
+                            }}>📖</div>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>Read Full Article</div>
+                              <Text style={{ color: '#64748b', fontSize: 12 }}>
+                                Full article is now unlocked above
+                              </Text>
+                            </div>
+                          </div>
                           {pdfFile && (
-                            <Button block onClick={handleDownloadPdf}
-                              style={{ background: '#fff', color: '#667eea', fontWeight: 600, border: 'none' }}>
+                            <Button 
+                              block 
+                              onClick={handleDownloadPdf}
+                              style={{ 
+                                background: 'linear-gradient(135deg, #4a7cff 0%, #6c5ce7 100%)',
+                                color: '#fff', 
+                                fontWeight: 600, 
+                                border: 'none',
+                                borderRadius: 8,
+                                height: 40,
+                                boxShadow: '0 2px 8px rgba(74, 124, 255, 0.3)',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(74, 124, 255, 0.4)';
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(74, 124, 255, 0.3)';
+                              }}
+                            >
                               📄 Download PDF
                             </Button>
                           )}
                         </div>
 
                         {/* Option 2: Subscribe */}
-                        <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 8, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.25)' }}>
-                          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>📧 Option 2: Subscribe</div>
-                          <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, display: 'block', marginBottom: 10 }}>
-                            Get a subscription confirmation email with access details.
-                          </Text>
-                          <Button block loading={subscribing} onClick={handleSubscribe}
-                            style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', fontWeight: 600 }}>
+                        <div style={{ 
+                          background: '#f8fafc', 
+                          borderRadius: 12, 
+                          padding: '16px', 
+                          border: '2px solid #e2e8f0',
+                          transition: 'all 0.2s'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.borderColor = '#4a7cff';
+                          e.currentTarget.style.background = '#f0f9ff';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.borderColor = '#e2e8f0';
+                          e.currentTarget.style.background = '#f8fafc';
+                        }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                            <div style={{
+                              width: 36, height: 36, borderRadius: 8,
+                              background: '#dbeafe',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 18
+                            }}>📧</div>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>Subscribe for Updates</div>
+                              <Text style={{ color: '#64748b', fontSize: 12 }}>
+                                Get a confirmation email with access details
+                              </Text>
+                            </div>
+                          </div>
+                          <Button 
+                            block 
+                            loading={subscribing} 
+                            onClick={handleSubscribe}
+                            style={{ 
+                              background: '#fff',
+                              color: '#4a7cff', 
+                              border: '2px solid #4a7cff',
+                              fontWeight: 600,
+                              borderRadius: 8,
+                              height: 40,
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.background = '#4a7cff';
+                              e.currentTarget.style.color = '#fff';
+                            }}
+                            onMouseLeave={e => {
+                              e.currentTarget.style.background = '#fff';
+                              e.currentTarget.style.color = '#4a7cff';
+                            }}
+                          >
                             Subscribe & Get Email
                           </Button>
                         </div>

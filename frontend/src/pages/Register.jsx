@@ -39,10 +39,10 @@ const Register = () => {
     }
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'At least 6 characters';
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Must include uppercase, lowercase & number';
+    } else if (formData.password.length < 12) {
+      newErrors.password = 'At least 12 characters required';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(formData.password)) {
+      newErrors.password = 'Must include uppercase, lowercase, number & special character';
     }
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm password';
@@ -53,6 +53,29 @@ const Register = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const getPasswordStrength = (password) => {
+    let strength = 0;
+    if (password.length >= 12) strength += 1;
+    if (password.length >= 16) strength += 1;
+    if (/[a-z]/.test(password)) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/\d/.test(password)) strength += 1;
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength += 1;
+    return strength;
+  };
+
+  const getStrengthColor = (strength) => {
+    if (strength <= 2) return '#ef4444';
+    if (strength <= 4) return '#f59e0b';
+    return '#10b981';
+  };
+
+  const getStrengthLabel = (strength) => {
+    if (strength <= 2) return 'Weak';
+    if (strength <= 4) return 'Medium';
+    return 'Strong';
   };
 
   const handleSubmit = async (e) => {
@@ -239,6 +262,59 @@ const Register = () => {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
+              {formData.password && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full transition-all duration-300"
+                        style={{
+                          width: `${(getPasswordStrength(formData.password) / 6) * 100}%`,
+                          backgroundColor: getStrengthColor(getPasswordStrength(formData.password))
+                        }}
+                      />
+                    </div>
+                    <span 
+                      className="text-xs font-medium"
+                      style={{ color: getStrengthColor(getPasswordStrength(formData.password)) }}
+                    >
+                      {getStrengthLabel(getPasswordStrength(formData.password))}
+                    </span>
+                  </div>
+                  <div className="text-xs text-[var(--color-muted)] space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className={formData.password.length >= 12 ? 'text-green-500' : 'text-gray-400'}>
+                        {formData.password.length >= 12 ? '✓' : '○'}
+                      </span>
+                      <span>At least 12 characters</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={/[a-z]/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
+                        {/[a-z]/.test(formData.password) ? '✓' : '○'}
+                      </span>
+                      <span>Lowercase letter</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={/[A-Z]/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
+                        {/[A-Z]/.test(formData.password) ? '✓' : '○'}
+                      </span>
+                      <span>Uppercase letter</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={/\d/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
+                        {/\d/.test(formData.password) ? '✓' : '○'}
+                      </span>
+                      <span>Number</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
+                        {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? '✓' : '○'}
+                      </span>
+                      <span>Special character</span>
+                    </div>
+                  </div>
+                </div>
+              )}
               {errors.password && <p className="text-xs text-[var(--color-error)]">{errors.password}</p>}
             </div>
 

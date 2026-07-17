@@ -6,6 +6,17 @@ import axios from 'axios';
 
 const { Text } = Typography;
 
+// ── Helper function to determine route based on content type ─────────
+const getArticleRoute = (item) => {
+  try {
+    const layout = typeof item.builder_layout === 'string' ? JSON.parse(item.builder_layout) : item.builder_layout;
+    const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
+    return isHtmlBuilder ? `/content/${item.slug}` : `/article/${item.slug}`;
+  } catch {
+    return `/article/${item.slug}`;
+  }
+};
+
 const SearchResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -21,7 +32,7 @@ const SearchResults = () => {
     axios.get('/api/public/search', { params: { q: q.trim() } })
       .then(({ data }) => {
         if (data.length === 1) {
-          navigate(`/article/${data[0].slug}`, { replace: true });
+          navigate(getArticleRoute(data[0]), { replace: true });
         } else {
           setResults(data);
         }
@@ -62,7 +73,7 @@ const SearchResults = () => {
             {results.map(item => (
               <Link
                 key={item.id}
-                to={`/article/${item.slug}`}
+                to={getArticleRoute(item)}
                 style={{ textDecoration: 'none' }}
               >
                 <div style={{

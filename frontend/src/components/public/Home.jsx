@@ -460,9 +460,20 @@ const SectionHead = ({ icon, label, viewAllTo, accent = 'var(--color-primary)' }
   </div>
 );
 
+// ── Helper function to determine route based on content type ─────────
+const getArticleRoute = (article) => {
+  try {
+    const layout = typeof article.builder_layout === 'string' ? JSON.parse(article.builder_layout) : article.builder_layout;
+    const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
+    return isHtmlBuilder ? `/content/${article.slug}` : `/article/${article.slug}`;
+  } catch {
+    return `/article/${article.slug}`;
+  }
+};
+
 // ── Magazine HeroCard ────────────────────────────────────────────
 const HeroCard = ({ article, navigate, onImgClick, accent = 'var(--color-primary)' }) => (
-  <div onClick={() => navigate(`/article/${article.slug}`)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', borderRadius: 14, overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 2px 16px rgba(0,0,0,0.10)', border: '1px solid var(--color-border)', transition: 'transform .22s, box-shadow .22s' }}
+  <div onClick={() => navigate(getArticleRoute(article))} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', borderRadius: 14, overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 2px 16px rgba(0,0,0,0.10)', border: '1px solid var(--color-border)', transition: 'transform .22s, box-shadow .22s' }}
     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 14px 36px rgba(0,0,0,0.15)'; }}
     onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.10)'; }}
   >
@@ -490,7 +501,7 @@ const ListCard = ({ article, navigate, onImgClick, isLast }) => (
   <div style={{ display: 'flex', gap: 12, padding: '12px 0', flex: 1, borderBottom: isLast ? 'none' : '1px solid var(--color-border)', cursor: 'pointer', borderRadius: 8, transition: 'padding-left .18s', alignItems: 'center' }}
     onMouseEnter={e => e.currentTarget.style.paddingLeft = '6px'}
     onMouseLeave={e => e.currentTarget.style.paddingLeft = '0'}
-    onClick={() => navigate(`/article/${article.slug}`)}
+    onClick={() => navigate(getArticleRoute(article))}
   >
     <div style={{ width: 76, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', lineHeight: 0 }} onClick={e => { e.stopPropagation(); if (article.banner_image) onImgClick(`/uploads/${article.banner_image}`, article.title); }}>
       {article.banner_image
@@ -530,7 +541,7 @@ const LatestArticlesSection = ({ articles, blogs, navigate }) => {
       {/* Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }} className="latest-articles-grid">
         {combined.map((article, idx) => (
-          <div key={article.id || idx} onClick={() => navigate(`/article/${article.slug}`)}
+          <div key={article.id || idx} onClick={() => navigate(getArticleRoute(article))}
             style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(28px)', transition: `opacity .55s ease ${idx * 100}ms, transform .55s ease ${idx * 100}ms`, cursor: 'pointer' }}>
             <Card className="latest-article-card" style={{ height: '100%', border: '1px solid var(--color-border)', background: 'var(--color-surface)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.07)', transition: 'transform .25s ease, box-shadow .25s ease, border-color .25s ease' }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(11,31,77,0.16)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
@@ -581,7 +592,7 @@ const TrendingTopicsSection = ({ items, navigate }) => {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }} className="trending-grid">
         {items.map((item, idx) => (
-          <div key={item.id || idx} onClick={() => navigate(`/article/${item.slug}`)} style={{
+          <div key={item.id || idx} onClick={() => navigate(getArticleRoute(item))} style={{
             background: 'var(--color-surface)', borderRadius: 20, border: '1px solid var(--color-border)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', cursor: 'pointer',
             transition: 'transform .3s ease, box-shadow .3s ease, border-color .3s ease', overflow: 'hidden'
@@ -795,7 +806,7 @@ const Home = () => {
                             </div>
                             {/* Read More */}
                             <div style={{ marginTop: 'auto', paddingTop: 4 }}>
-                              <button onClick={() => navigate(`/article/${a.slug}`)}
+                              <button onClick={() => navigate(getArticleRoute(a))}
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 0', background: 'transparent', color: activeCat?.color || 'var(--color-primary)', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer', transition: 'transform .2s ease' }}
                                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(5px)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; }}
@@ -825,7 +836,7 @@ const Home = () => {
                   border: '1.5px solid var(--color-border)', boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
                   display: 'flex', flexDirection: 'column', transition: 'all .3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'pointer'
                 }}
-                  onClick={() => navigate(`/article/${a.slug}`)}
+                  onClick={() => navigate(getArticleRoute(a))}
                   onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)'; e.currentTarget.style.boxShadow = `0 24px 48px rgba(0,0,0,0.1), 0 12px 24px rgba(0,0,0,0.08)`; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
                   onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
                 >

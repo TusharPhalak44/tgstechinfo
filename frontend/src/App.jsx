@@ -1,5 +1,8 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { CookieProvider } from './context/CookieContext';
+import { TrackingProvider } from './context/TrackingContext';
+ 
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -103,11 +106,18 @@ const theme = {
 function AppContent() {
   const authRoutes = ['/login', '/register', '/forgot-password'];
   const standaloneRoutes = ['/content/:slug'];
+  const dashboardRoutes = ['/dashboard', '/create-content', '/my-content', '/my-submissions', '/admin', '/admin/users', '/admin/submissions'];
   const location = useLocation();
   const isAuthRoute = authRoutes.includes(location.pathname);
   const isStandaloneRoute = standaloneRoutes.some(route => {
     if (route.includes(':slug')) {
       return location.pathname.startsWith('/content/');
+    }
+    return location.pathname === route;
+  });
+  const isDashboardRoute = dashboardRoutes.some(route => {
+    if (route.includes(':')) {
+      return location.pathname.startsWith(route.split(':')[0]);
     }
     return location.pathname === route;
   });
@@ -207,8 +217,6 @@ function AppContent() {
                   <ArticleReviewPage />
                 </AdminRoute>
               } />
-                {!isAuthRoute && <Footer simplified={isDashboardRoute} />}
-      <CookieBanner />
               <Route path="/admin/edit/:id" element={
                 <AdminRoute>
                   <AdminEditContent />
@@ -226,7 +234,8 @@ function AppContent() {
               } />
             </Routes>
           </Content>
-          {!isAuthRoute && <Footer />}
+          {!isAuthRoute && <Footer simplified={isDashboardRoute} />}
+          <CookieBanner />
         </Layout>
       )}
     </>
@@ -234,11 +243,15 @@ function AppContent() {
 }
 
 function App() {
-  return (
+ return (
     <ConfigProvider theme={theme}>
-      <AntApp>
-        <AppContent />
-      </AntApp>
+      <CookieProvider>
+        <TrackingProvider>
+          <AntApp>
+            <AppContent />
+          </AntApp>
+        </TrackingProvider>
+      </CookieProvider>
     </ConfigProvider>
   );
 }
