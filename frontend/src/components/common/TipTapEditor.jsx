@@ -22,13 +22,13 @@ import './TipTapEditor.css';
 
 const { Option } = Select;
 
-// Custom extension to preserve raw HTML blocks (two-col layout)
+// Custom extension to preserve raw HTML blocks (multi-col layout)
 const RawHtmlBlock = Node.create({
   name: 'rawHtmlBlock',
   group: 'block',
   atom: true,
   parseHTML() {
-    return [{ tag: 'div.two-col-layout' }];
+    return [{ tag: 'div.multi-col-layout' }, { tag: 'div.two-col-layout' }];
   },
   addAttributes() {
     return {
@@ -38,7 +38,7 @@ const RawHtmlBlock = Node.create({
   renderHTML({ node }) {
     // Render as a div; actual innerHTML injected via NodeView
     return ['div', {
-      class: 'two-col-layout',
+      class: 'multi-col-layout',
       style: 'display:flex;flex-direction:row;gap:24px;align-items:flex-start;margin:16px 0;',
       'data-raw-html': node.attrs.innerHTML,
     }];
@@ -46,7 +46,7 @@ const RawHtmlBlock = Node.create({
   addNodeView() {
     return ({ node }) => {
       const dom = document.createElement('div');
-      dom.className = 'two-col-layout';
+      dom.className = 'multi-col-layout';
       dom.style.cssText = 'display:flex;flex-direction:row;gap:24px;align-items:flex-start;margin:16px 0;border:1px dashed #d0e8ff;border-radius:8px;padding:12px;background:#f8fbff;';
       dom.innerHTML = node.attrs.innerHTML || '';
       return { dom };
@@ -84,11 +84,23 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
 
-  // Two-column modal
-  const [twoColModal, setTwoColModal] = useState(false);
-  const [twoColText, setTwoColText] = useState('');
-  const [twoColImgSrc, setTwoColImgSrc] = useState('');
-  const [twoColImgPos, setTwoColImgPos] = useState('right'); // 'left' | 'right'
+  // Multi-column modal
+  const [multiColModal, setMultiColModal] = useState(false);
+  const [columnCount, setColumnCount] = useState(2); // 2, 3, 4, etc.
+  const [sections, setSections] = useState([
+    { id: 1, type: 'text', content: '', imageSrc: '' }
+  ]);
+
+  // Table dropdown
+  const [tableDropdownOpen, setTableDropdownOpen] = useState(false);
+  const [tableRowCount, setTableRowCount] = useState(2);
+  const [tableColCount, setTableColCount] = useState(2);
+  const [tableEditDropdownOpen, setTableEditDropdownOpen] = useState(false);
+  const [addTableRowCount, setAddTableRowCount] = useState(1);
+  const [addTableColCount, setAddTableColCount] = useState(1);
+  const [removeTableRowCount, setRemoveTableRowCount] = useState(1);
+  const [removeTableColCount, setRemoveTableColCount] = useState(1);
+  const [isInTable, setIsInTable] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -147,6 +159,14 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
     setIsBlockquote(ed.isActive('blockquote'));
     setIsCodeBlock(ed.isActive('codeBlock'));
     setIsLink(ed.isActive('link'));
+    
+    // Check if cursor is in a table
+    const inTable = ed.isActive('table') || 
+      (ed.state.selection.$from.node.parent?.type?.name === 'tableRow') ||
+      (ed.state.selection.$from.node.type?.name === 'tableCell') ||
+      (ed.state.selection.$to.node.parent?.type?.name === 'tableRow') ||
+      (ed.state.selection.$to.node.type?.name === 'tableCell');
+    setIsInTable(inTable);
   };
 
   useEffect(() => {
@@ -207,40 +227,93 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
     setTimeout(() => updateStates(editor), 10);
   };
 
-  const openTwoColModal = () => {
-    setTwoColText('');
-    setTwoColImgSrc('');
-    setTwoColImgPos('right');
-    setTwoColModal(true);
+  const openMultiColModal = () => {
+    setColumnCount(2);
+    setSections([
+      { id: 1, type: 'text', content: '', imageSrc: '' },
+      { id: 2, type: 'text', content: '', imageSrc: '' }
+    ]);
+    setMultiColModal(true);
   };
 
-  const handleTwoColImage = (file) => {
+  const handleSectionImage = (file, sectionId) => {
     const reader = new FileReader();
-    reader.onload = (e) => setTwoColImgSrc(e.target.result);
+    reader.onload = (e) => {
+      setSections(prev => prev.map(s => 
+        s.id === sectionId ? { ...s, imageSrc: e.target.result } : s
+      ));
+    };
     reader.readAsDataURL(file);
     return false; // prevent auto-upload
   };
 
-  const insertTwoCol = () => {
-    if (!twoColText && !twoColImgSrc) return;
+  const updateSection = (sectionId, updates) => {
+    setSections(prev => prev.map(s => 
+      s.id === sectionId ? { ...s, ...updates } : s
+    ));
+  };
+
+  const handleColumnCountChange = (count) => {
+    setColumnCount(count);
+    const currentSections = sections;
+    const newSections = [];
+    
+    for (let i = 0; i < count; i++) {
+      if (i < currentSections.length) {
+        newSections.push(currentSections[i]);
+      } else {
+        newSections.push({
+          id: Date.now() + i,
+          type: 'text',
+          content: '',
+          imageSrc: ''
+        });
+      }
+    }
+    
+    setSections(newSections);
+  };
+
+  const onSectionDragStart = (index) => {
+    window.draggedSectionIndex = index;
+  };
+
+  const onSectionDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const onSectionDrop = (e, dropIndex) => {
+    e.preventDefault();
+    const dragIndex = window.draggedSectionIndex;
+    if (dragIndex === null || dragIndex === dropIndex) return;
+    
+    const newSections = [...sections];
+    const [draggedSection] = newSections.splice(dragIndex, 1);
+    newSections.splice(dropIndex, 0, draggedSection);
+    
+    setSections(newSections);
+    window.draggedSectionIndex = null;
+  };
+
+  const insertMultiCol = () => {
     const colStyle = 'flex:1;min-width:0;';
-    const textHtml = `<div class="two-col-text" style="${colStyle}font-size:15px;line-height:1.75;"><p>${twoColText.replace(/\n/g, '</p><p>')}</p></div>`;
-    const imgHtml  = twoColImgSrc
-      ? `<div class="two-col-img" style="${colStyle}"><img src="${twoColImgSrc}" style="width:100%;height:auto;border-radius:8px;display:block;" /></div>`
-      : '';
-    const innerHTML = twoColImgPos === 'left'
-      ? `${imgHtml}${textHtml}`
-      : `${textHtml}${imgHtml}`;
+    const columnHtmls = sections.map(section => {
+      if (section.type === 'image' && section.imageSrc) {
+        return `<div class="multi-col-img" style="${colStyle}"><img src="${section.imageSrc}" style="width:100%;height:auto;border-radius:8px;display:block;" /></div>`;
+      } else {
+        const textContent = section.content || '';
+        return `<div class="multi-col-text" style="${colStyle}font-size:15px;line-height:1.75;"><p>${textContent.replace(/\n/g, '</p><p>')}</p></div>`;
+      }
+    });
+    
+    const innerHTML = columnHtmls.join('');
     editor.chain().focus().insertRawHtml(innerHTML).run();
-    setTwoColModal(false);
+    setMultiColModal(false);
   };
 
   const insertTable = () => {
-    const rows = prompt('Enter number of rows:', '3');
-    const cols = prompt('Enter number of columns:', '3');
-    if (rows && cols) {
-      editor.chain().focus().insertTable({ rows: parseInt(rows), cols: parseInt(cols) }).run();
-    }
+    editor.chain().focus().insertTable({ rows: tableRowCount, cols: tableColCount }).run();
+    setTableDropdownOpen(false);
   };
 
   return (
@@ -297,20 +370,161 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
             Image
           </Button>
 
-          <Dropdown menu={{ items: [
-            { key: 'insert', label: 'Insert Table', onClick: insertTable },
-            { key: 'add-col-before', label: 'Add Column Before', onClick: () => editor.chain().focus().addColumnBefore().run() },
-            { key: 'add-col-after', label: 'Add Column After', onClick: () => editor.chain().focus().addColumnAfter().run() },
-            { key: 'del-col', label: 'Delete Column', onClick: () => editor.chain().focus().deleteColumn().run(), danger: true },
-            { key: 'add-row-before', label: 'Add Row Before', onClick: () => editor.chain().focus().addRowBefore().run() },
-            { key: 'add-row-after', label: 'Add Row After', onClick: () => editor.chain().focus().addRowAfter().run() },
-            { key: 'del-row', label: 'Delete Row', onClick: () => editor.chain().focus().deleteRow().run(), danger: true },
-            { key: 'merge', label: 'Merge Cells', onClick: () => editor.chain().focus().mergeCells().run() },
-            { key: 'split', label: 'Split Cell', onClick: () => editor.chain().focus().splitCell().run() },
-            { key: 'del-table', label: 'Delete Table', onClick: () => editor.chain().focus().deleteTable().run(), danger: true },
-          ]}}>
+          <Dropdown 
+            open={tableDropdownOpen}
+            onOpenChange={setTableDropdownOpen}
+            dropdownRender={() => (
+              <div style={{ padding: 12, minWidth: 200 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Rows</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={tableRowCount}
+                    onChange={(e) => setTableRowCount(parseInt(e.target.value) || 1)}
+                    placeholder="Rows"
+                    size="small"
+                  />
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Columns</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={tableColCount}
+                    onChange={(e) => setTableColCount(parseInt(e.target.value) || 1)}
+                    placeholder="Columns"
+                    size="small"
+                  />
+                </div>
+                <Button type="primary" size="small" onClick={insertTable} style={{ width: '100%' }}>
+                  Insert Table
+                </Button>
+              </div>
+            )}
+            trigger={['click']}
+          >
             <Button size="small" icon={<TableOutlined />}>Table</Button>
           </Dropdown>
+
+          {editor && isInTable && (
+            <Dropdown 
+              open={tableEditDropdownOpen}
+              onOpenChange={setTableEditDropdownOpen}
+              dropdownRender={() => (
+                <div style={{ padding: 12, minWidth: 280 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Add Rows</div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={addTableRowCount}
+                      onChange={(e) => setAddTableRowCount(parseInt(e.target.value) || 1)}
+                      placeholder="Count"
+                      size="small"
+                      style={{ flex: 1 }}
+                    />
+                    <Button 
+                      size="small" 
+                      type="primary"
+                      onClick={() => {
+                        for (let i = 0; i < addTableRowCount; i++) {
+                          editor.chain().focus().addRowAfter().run();
+                        }
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Add Columns</div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={addTableColCount}
+                      onChange={(e) => setAddTableColCount(parseInt(e.target.value) || 1)}
+                      placeholder="Count"
+                      size="small"
+                      style={{ flex: 1 }}
+                    />
+                    <Button 
+                      size="small" 
+                      type="primary"
+                      onClick={() => {
+                        for (let i = 0; i < addTableColCount; i++) {
+                          editor.chain().focus().addColumnAfter().run();
+                        }
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Delete Rows</div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={removeTableRowCount}
+                      onChange={(e) => setRemoveTableRowCount(parseInt(e.target.value) || 1)}
+                      placeholder="Count"
+                      size="small"
+                      style={{ flex: 1 }}
+                    />
+                    <Button 
+                      size="small" 
+                      danger
+                      onClick={() => {
+                        for (let i = 0; i < removeTableRowCount; i++) {
+                          editor.chain().focus().deleteRow().run();
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Delete Columns</div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={removeTableColCount}
+                      onChange={(e) => setRemoveTableColCount(parseInt(e.target.value) || 1)}
+                      placeholder="Count"
+                      size="small"
+                      style={{ flex: 1 }}
+                    />
+                    <Button 
+                      size="small" 
+                      danger
+                      onClick={() => {
+                        for (let i = 0; i < removeTableColCount; i++) {
+                          editor.chain().focus().deleteColumn().run();
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+
+                  <Button size="small" danger block onClick={() => editor.chain().focus().deleteTable().run()}>
+                    Delete Table
+                  </Button>
+                </div>
+              )}
+              trigger={['click']}
+            >
+              <Button size="small" type="primary">Edit Table</Button>
+            </Dropdown>
+          )}
 
           <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
 
@@ -321,60 +535,128 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
 
           <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
 
-          <Button size="small" icon={<LayoutOutlined />} onClick={openTwoColModal} title="Insert Two-Column Layout">
-            2-Col
+          <Button size="small" icon={<LayoutOutlined />} onClick={openMultiColModal} title="Insert Multi-Column Layout">
+            Multi-Col
           </Button>
         </Space>
       </div>
 
       <EditorContent editor={editor} className="tiptap-editor-content" />
 
-      {/* Two-Column Modal */}
+      {/* Multi-Column Modal */}
       <Modal
-        title="Insert Two-Column Layout"
-        open={twoColModal}
-        onOk={insertTwoCol}
-        onCancel={() => setTwoColModal(false)}
+        title="Insert Multi-Column Layout"
+        open={multiColModal}
+        onOk={insertMultiCol}
+        onCancel={() => setMultiColModal(false)}
         okText="Insert"
-        width={560}
+        width={700}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
           <div>
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Image Position</div>
-            <Radio.Group value={twoColImgPos} onChange={e => setTwoColImgPos(e.target.value)}>
-              <Radio value="right">Text Left, Image Right</Radio>
-              <Radio value="left">Image Left, Text Right</Radio>
-            </Radio.Group>
+            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Number of Columns</div>
+            <Select 
+              value={columnCount} 
+              onChange={handleColumnCountChange}
+              style={{ width: '100%' }}
+            >
+              <Option value={2}>2 Columns</Option>
+              <Option value={3}>3 Columns</Option>
+              <Option value={4}>4 Columns</Option>
+              <Option value={5}>5 Columns</Option>
+              <Option value={6}>6 Columns</Option>
+            </Select>
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Text Content *</div>
-            <Input.TextArea
-              rows={5}
-              placeholder="Enter paragraph text here..."
-              value={twoColText}
-              onChange={e => setTwoColText(e.target.value)}
-            />
+
+          <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
+            Drag sections to reorder. Each section can be text or image.
           </div>
-          <div>
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Image</div>
-            <Upload beforeUpload={handleTwoColImage} showUploadList={false} accept="image/*">
-              <Button icon={<UploadOutlined />}>Upload Image</Button>
-            </Upload>
-            {twoColImgSrc && (
-              <img src={twoColImgSrc} alt="preview" style={{ marginTop: 8, maxHeight: 120, borderRadius: 6, border: '1px solid #eee' }} />
-            )}
-          </div>
-          {/* Preview */}
-          {(twoColText || twoColImgSrc) && (
-            <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 12, background: '#fafafa' }}>
-              <div style={{ fontSize: 11, color: '#aaa', marginBottom: 6 }}>Preview</div>
-              <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-                {twoColImgPos === 'left' && twoColImgSrc && <img src={twoColImgSrc} alt="" style={{ flex: 1, maxWidth: '50%', borderRadius: 6 }} />}
-                {twoColText && <p style={{ flex: 1, fontSize: 13, margin: 0, lineHeight: 1.6 }}>{twoColText}</p>}
-                {twoColImgPos === 'right' && twoColImgSrc && <img src={twoColImgSrc} alt="" style={{ flex: 1, maxWidth: '50%', borderRadius: 6 }} />}
+
+          {/* Sections */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {sections.map((section, index) => (
+              <div
+                key={section.id}
+                draggable
+                onDragStart={() => onSectionDragStart(index)}
+                onDragOver={onSectionDragOver}
+                onDrop={(e) => onSectionDrop(e, index)}
+                style={{
+                  padding: 12,
+                  background: '#fafafa',
+                  borderRadius: 8,
+                  border: '1px solid #e8e8e8',
+                  cursor: 'move',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#595959' }}>
+                    Column {index + 1}
+                  </span>
+                  <Radio.Group
+                    value={section.type}
+                    onChange={(e) => updateSection(section.id, { type: e.target.value })}
+                    size="small"
+                  >
+                    <Radio value="text">Text</Radio>
+                    <Radio value="image">Image</Radio>
+                  </Radio.Group>
+                </div>
+
+                {section.type === 'text' ? (
+                  <Input.TextArea
+                    rows={3}
+                    placeholder="Enter text content..."
+                    value={section.content}
+                    onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                    style={{ fontSize: 13 }}
+                  />
+                ) : (
+                  <div>
+                    <Upload
+                      beforeUpload={(file) => handleSectionImage(file, section.id)}
+                      showUploadList={false}
+                      accept="image/*"
+                    >
+                      <Button size="small" icon={<UploadOutlined />}>
+                        Upload Image
+                      </Button>
+                    </Upload>
+                    {section.imageSrc && (
+                      <img
+                        src={section.imageSrc}
+                        alt="preview"
+                        style={{ marginTop: 8, maxHeight: 100, borderRadius: 6, border: '1px solid #eee' }}
+                      />
+                    )}
+                  </div>
+                )}
               </div>
+            ))}
+          </div>
+
+          {/* Preview */}
+          <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 12, background: '#fafafa' }}>
+            <div style={{ fontSize: 11, color: '#aaa', marginBottom: 6 }}>Preview ({columnCount} columns)</div>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+              {sections.map((section, index) => (
+                <div key={section.id} style={{ flex: 1, minWidth: 0 }}>
+                  {section.type === 'image' && section.imageSrc ? (
+                    <img
+                      src={section.imageSrc}
+                      alt=""
+                      style={{ width: '100%', borderRadius: 6 }}
+                    />
+                  ) : (
+                    <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6, opacity: section.content ? 1 : 0.5 }}>
+                      {section.content || 'Empty text column'}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
       </Modal>
 

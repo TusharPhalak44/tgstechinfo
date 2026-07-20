@@ -192,6 +192,15 @@
   border-collapse: collapse;
   width: 100%;
   margin: 12px 0;
+  display: table !important;
+}
+
+.tiptap-editor-content table tbody {
+  display: table-row-group !important;
+}
+
+.tiptap-editor-content table tr {
+  display: table-row !important;
 }
 
 .tiptap-editor-content table td,
@@ -199,11 +208,59 @@
   border: 1px solid #d9d9d9;
   padding: 8px 12px;
   text-align: left;
+  display: table-cell !important;
+  min-width: 50px;
 }
 
 .tiptap-editor-content table th {
   background: #fafafa;
   font-weight: 600;
+}
+
+/* TipTap specific table classes */
+.ProseMirror table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  margin: 12px 0 !important;
+  display: table !important;
+}
+
+.ProseMirror table tbody {
+  display: table-row-group !important;
+}
+
+.ProseMirror table tr {
+  display: table-row !important;
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid #d9d9d9 !important;
+  padding: 8px 12px !important;
+  text-align: left !important;
+  display: table-cell !important;
+  min-width: 50px !important;
+}
+
+.ProseMirror table th {
+  background: #fafafa !important;
+  font-weight: 600 !important;
+}
+
+.ProseMirror table td.selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+.ProseMirror table p {
+  margin: 0 !important;
 }
 
 .tiptap-editor-content .is-editor-empty:before {

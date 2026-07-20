@@ -29,13 +29,24 @@ exports.createContent = async (req, res) => {
             tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
             custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null,
             webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null,
-            builder_layout: req.body.builder_layout || null
+            builder_layout: req.body.builder_layout || null,
+            builder_content_elements: req.body.builder_content_elements ? (() => {
+                try {
+                    return JSON.parse(req.body.builder_content_elements);
+                } catch (e) {
+                    console.error('Error parsing builder_content_elements:', e);
+                    return null;
+                }
+            })() : null
         });
 
         const content = await Content.create(contentData);
         res.status(201).json({ message: 'Content created successfully', content });
     } catch (error) {
-        console.error('Create content error:', error.message);
+        console.error('Create content error:', error);
+        console.error('Error stack:', error.stack);
+        console.error('Request body keys:', Object.keys(req.body));
+        console.error('builder_content_elements value:', req.body.builder_content_elements);
         res.status(500).json({ message: error.message || 'Server error' });
     }
 };
@@ -86,6 +97,7 @@ exports.updateContent = async (req, res) => {
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
         if (req.body.builder_layout !== undefined) updateData.builder_layout = req.body.builder_layout;
+        if (req.body.builder_content_elements !== undefined) updateData.builder_content_elements = req.body.builder_content_elements;
         if (req.body.tags) updateData.tags = JSON.stringify(req.body.tags.split(',').map(t => t.trim()).filter(Boolean));
         updateData = stripEmDash(updateData);
 

@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get('/api/auth/profile');
+      const response = await api.get('/api/auth/profile');
       setUser(response.data);
     } catch (error) {
       console.error('Fetch user error:', error);
@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await api.post('/api/auth/login', { email, password });
       const { user, csrfToken } = response.data;
       setUser(user);
       setCsrfToken(csrfToken);
@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('/api/auth/register', userData);
+      const response = await api.post('/api/auth/register', userData);
       const { user, csrfToken } = response.data;
       setUser(user);
       setCsrfToken(csrfToken);
@@ -61,7 +61,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('/api/auth/logout');
+      await api.post('/api/auth/logout');
       setUser(null);
       setCsrfToken(null);
       message.success('Logged out successfully');
@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await axios.post('/api/auth/refresh');
+      const response = await api.post('/api/auth/refresh');
       const { csrfToken } = response.data;
       setCsrfToken(csrfToken);
       return true;

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -8,9 +8,10 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  withCredentials: true,
 });
 
-// ✅ Request interceptor with retry logic
+// ✅ Response interceptor with retry logic
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

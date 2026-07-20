@@ -39,6 +39,18 @@ const STANDARD_SECTIONS = [
   { key: 'content', label: 'Content' },
 ];
 
+const SECTION_TYPES = [
+  { type: 'content_type_category', label: 'Content Type & Category' },
+  { type: 'title_description',     label: 'Title & Description' },
+  { type: 'banner_image',          label: 'Banner Image' },
+  { type: 'pdf_attachment',        label: 'PDF Attachment' },
+  { type: 'content',               label: 'Content' },
+  { type: 'tags',                  label: 'Tags' },
+  { type: 'schedule',              label: 'Schedule' },
+  { type: 'reorder_layout',        label: 'Reorder Layout' },
+  { type: 'seo',                   label: 'SEO Settings' },
+];
+
 const CreateContent = () => {
   const { id } = useParams();
   const isEditMode = !!id;
@@ -48,6 +60,8 @@ const CreateContent = () => {
   const dragOver = useRef(null);
   const layoutDragItem = useRef(null);
   const layoutDragOver = useRef(null);
+  const builderLayoutDragItem = useRef(null);
+  const builderLayoutDragOver = useRef(null);
 
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -68,8 +82,19 @@ const CreateContent = () => {
   const [activeTab, setActiveTab] = useState('standard'); // 'standard' | 'builder' | 'html'
   const [builderContent, setBuilderContent] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
-  const [builderSections, setBuilderSections] = useState([]);
+  const [builderSections, setBuilderSections] = useState([
+    { id: 'sec-1', type: 'content_type_category' },
+    { id: 'sec-2', type: 'title_description' },
+    { id: 'sec-3', type: 'banner_image' },
+    { id: 'sec-4', type: 'content' }
+  ]);
   const [contentElements, setContentElements] = useState([]);
+  const contentElementsRef = React.useRef([]);
+
+  // Keep ref in sync with state for use in closures (preview, save)
+  useEffect(() => {
+    contentElementsRef.current = contentElements;
+  }, [contentElements]);
   const [selectedTypeName, setSelectedTypeName] = useState('');
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
 
@@ -101,11 +126,9 @@ const CreateContent = () => {
           : [],
         scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null
       });
-      setInitialContent(data.content || '');
-      setContent(data.content || '');
-      setEditorReady(true);
       setContentStatus(data.status || 'draft');
-      // Restore layout
+      
+      // Restore layout first to determine which tab to use
       if (data.builder_layout) {
         try {
           const layout = typeof data.builder_layout === 'string' ? JSON.parse(data.builder_layout) : data.builder_layout;
@@ -113,14 +136,53 @@ const CreateContent = () => {
             // Standard layout: array of strings like ['meta','title',...]
             if (typeof layout[0] === 'string') {
               setStandardLayout(layout);
+              setActiveTab('standard');
+              setInitialContent(data.content || '');
+              setContent(data.content || '');
+              setEditorReady(true);
             } else {
               // Builder layout: array of objects with id/type
               setBuilderSections(layout);
               setBuilderContent(data.content || '');
               setActiveTab('builder');
+              // Restore contentElements if available
+              if (data.builder_content_elements) {
+                try {
+                  const elements = typeof data.builder_content_elements === 'string' 
+                    ? JSON.parse(data.builder_content_elements) 
+                    : data.builder_content_elements;
+                  console.log('Loaded builder_content_elements:', elements);
+                  if (Array.isArray(elements) && elements.length > 0) {
+                    setContentElements(elements);
+                    console.log('Set contentElements with', elements.length, 'elements');
+                  } else {
+                    console.log('builder_content_elements is empty or not an array');
+                  }
+                } catch (e) {
+                  console.error('Error parsing builder_content_elements:', e);
+                }
+              } else {
+                console.log('No builder_content_elements found in data');
+              }
+              // Don't set content for standard editor when in builder mode
+              setInitialContent('');
+              setContent('');
+              setEditorReady(true);
             }
           }
-        } catch { /* ignore */ }
+        } catch (e) { 
+          console.error('Error parsing builder_layout:', e);
+          setActiveTab('standard');
+          setInitialContent(data.content || '');
+          setContent(data.content || '');
+          setEditorReady(true);
+        }
+      } else {
+        // No builder_layout saved, default to standard
+        setActiveTab('standard');
+        setInitialContent(data.content || '');
+        setContent(data.content || '');
+        setEditorReady(true);
       }
       if (data.banner_image) {
         setFileList([{ uid: '-1', name: data.banner_image, status: 'done', url: `/uploads/${data.banner_image}` }]);
@@ -209,15 +271,17 @@ const CreateContent = () => {
     
     // Generate content from content elements if using drag-drop builder
     let finalContent = content;
-    if (activeTab === 'builder' && contentElements.length > 0) {
-      finalContent = contentElements.map(element => {
+    if (activeTab === 'builder' && contentElementsRef.current.length > 0) {
+      finalContent = contentElementsRef.current.map(element => {
         switch (element.type) {
           case 'heading':
             const headingLevel = element.headingLevel || 'h2';
-            return `<${headingLevel}>${element.content}</${headingLevel}>`;
+            const headingAlign = element.alignment || 'left';
+            return `<${headingLevel} style="text-align: ${headingAlign};">${element.content}</${headingLevel}>`;
           case 'paragraph':
             // Handle paragraph with nested content (bullets, numbers, tables)
             let paragraphContent = element.content;
+            const paragraphAlign = element.alignment || 'left';
             // Convert markdown-like syntax to HTML
             paragraphContent = paragraphContent.replace(/^• (.+)$/gm, '<li>$1</li>');
             paragraphContent = paragraphContent.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
@@ -238,7 +302,7 @@ const CreateContent = () => {
             }
             // Handle section breaks
             const sections = paragraphContent.split(/\n\n+/);
-            return sections.map(section => `<p>${section.trim()}</p>`).join('\n');
+            return sections.map(section => `<p style="text-align: ${paragraphAlign};">${section.trim()}</p>`).join('\n');
           case 'bullet_list':
             const bulletItems = element.content.split('\n').filter(Boolean);
             return `<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`;
@@ -256,12 +320,18 @@ const CreateContent = () => {
           case 'code_block':
             return `<pre><code>${element.content}</code></pre>`;
           case 'table':
-            const rows = element.content.split('\n').filter(Boolean);
-            const tableHtml = rows.map(row => {
-              const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
-              return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
-            }).join('');
-            return `<table>${tableHtml}</table>`;
+            try {
+              const tableData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+              if (tableData && tableData.data && Array.isArray(tableData.data)) {
+                const tableHtml = tableData.data.map(row => {
+                  return `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+                }).join('');
+                return `<table>${tableHtml}</table>`;
+              }
+            } catch (e) {
+              console.error('Error parsing table data:', e);
+            }
+            return '';
           case 'section_break':
             return '<br><br>';
           case 'bullet_item':
@@ -271,12 +341,213 @@ const CreateContent = () => {
           case 'table_row':
             const cells = element.content.split('|').map(cell => cell.trim()).filter(Boolean);
             return `<table><tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr></table>`;
+          case 'split_section':
+            try {
+              const splitData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+              if (splitData && splitData.sections && Array.isArray(splitData.sections)) {
+                let html = '<div style="display: flex; gap: 20px; margin: 20px 0; align-items: center; flex-wrap: wrap;">';
+                
+                splitData.sections.forEach(section => {
+                  const layoutClass = section.layout || 'image-left';
+                  const sectionAlign = section.alignment || 'left';
+                  
+                  if (layoutClass === 'image-left' || layoutClass === 'image-right') {
+                    html += '<div style="flex: 1; min-width: 200px; display: flex; gap: 20px; align-items: center;">';
+                    if (section.image) {
+                      html += `<div style="flex: 1;"><img src="${section.image}" alt="Section image" style="width: 100%; max-height: 300px; object-fit: contain;" /></div>`;
+                    }
+                    if (section.text) {
+                      html += `<div style="flex: 1; text-align: ${sectionAlign};">${section.text}</div>`;
+                    }
+                    html += '</div>';
+                  } else if (layoutClass === 'text-only' && section.text) {
+                    html += `<div style="flex: 1; min-width: 200px; text-align: ${sectionAlign};">${section.text}</div>`;
+                  } else if (layoutClass === 'image-only' && section.image) {
+                    html += `<div style="flex: 1; min-width: 200px;"><img src="${section.image}" alt="Section image" style="width: 100%; max-height: 300px; object-fit: contain;" /></div>`;
+                  }
+                });
+                
+                html += '</div>';
+                return html;
+              }
+            } catch (e) {
+              console.error('Error parsing split section:', e);
+            }
+            return '';
+          case 'button':
+            try {
+              const buttonData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+              if (buttonData) {
+                const actionAttr = buttonData.actionType === 'download' 
+                  ? `download href="${buttonData.url}"` 
+                  : `href="${buttonData.url}" target="_blank"`;
+                
+                return `<a ${actionAttr} style="
+                  display: inline-block;
+                  height: ${buttonData.height || '40px'};
+                  width: ${buttonData.width || 'auto'};
+                  background-color: ${buttonData.backgroundColor || '#4a7cff'};
+                  color: ${buttonData.textColor || '#ffffff'};
+                  border-radius: ${buttonData.borderRadius || '8px'};
+                  text-decoration: none;
+                  padding: 0 20px;
+                  line-height: ${buttonData.height || '40px'};
+                  text-align: center;
+                  font-size: 14px;
+                  font-weight: 500;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                ">${buttonData.text || 'Click Me'}</a>`;
+              }
+            } catch (e) {
+              console.error('Error parsing button:', e);
+            }
+            return '';
           default:
             return '';
         }
       }).join('\n');
     } else if (activeTab === 'builder') {
-      finalContent = builderContent;
+      // Convert contentElements to HTML for saving
+      if (contentElementsRef.current.length > 0) {
+        finalContent = contentElementsRef.current.map(element => {
+          switch (element.type) {
+            case 'heading':
+              const headingLevel = element.headingLevel || 'h2';
+              const headingAlign = element.alignment || 'left';
+              return `<${headingLevel} style="text-align: ${headingAlign};">${element.content}</${headingLevel}>`;
+            case 'paragraph':
+              let paragraphContent = element.content;
+              const paragraphAlign = element.alignment || 'left';
+              paragraphContent = paragraphContent.replace(/^• (.+)$/gm, '<li>$1</li>');
+              paragraphContent = paragraphContent.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+              paragraphContent = paragraphContent.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
+                const hasNumbers = match.match(/^\d+\./);
+                const tag = hasNumbers ? 'ol' : 'ul';
+                return `<${tag}>${match}</${tag}>`;
+              });
+              const tableRows = paragraphContent.match(/^\| .+$/gm);
+              if (tableRows && tableRows.length > 0) {
+                const tableHtml = tableRows.map(row => {
+                  const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
+                  return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+                }).join('');
+                return `<table>${tableHtml}</table>`;
+              }
+              const sections = paragraphContent.split(/\n\n+/);
+              return sections.map(section => `<p style="text-align: ${paragraphAlign};">${section.trim()}</p>`).join('\n');
+            case 'bullet_list':
+              const bulletItems = element.content.split('\n').filter(Boolean);
+              return `<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`;
+            case 'numbered_list':
+              const numberedItems = element.content.split('\n').filter(Boolean);
+              return `<ol>${numberedItems.map(item => `<li>${item}</li>`).join('')}</ol>`;
+            case 'line_break':
+              return '<br>';
+            case 'image':
+              return `<img src="${element.content}" alt="Image" />`;
+            case 'divider':
+              return '<hr>';
+            case 'blockquote':
+              return `<blockquote>${element.content}</blockquote>`;
+            case 'code_block':
+              return `<pre><code>${element.content}</code></pre>`;
+            case 'table':
+              try {
+                const tableData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+                if (tableData && tableData.data && Array.isArray(tableData.data)) {
+                  const tableHtml = tableData.data.map(row => {
+                    return `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+                  }).join('');
+                  return `<table>${tableHtml}</table>`;
+                }
+              } catch (e) {
+                console.error('Error parsing table data:', e);
+              }
+              return '';
+            case 'section_break':
+              return '<br><br>';
+            case 'bullet_item':
+              return `<ul><li>${element.content}</li></ul>`;
+            case 'numbered_item':
+              return `<ol><li>${element.content}</li></ol>`;
+            case 'table_row':
+              const cells = element.content.split('|').map(cell => cell.trim()).filter(Boolean);
+              return `<table><tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr></table>`;
+            case 'split_section':
+              try {
+                const splitData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+                if (splitData && splitData.sections && Array.isArray(splitData.sections)) {
+                  let html = '<div style="display: flex; gap: 20px; margin: 20px 0; align-items: center; flex-wrap: wrap;">';
+                  
+                  splitData.sections.forEach(section => {
+                    const layoutClass = section.layout || 'image-left';
+                    const alignStyle = section.alignment ? `text-align: ${section.alignment};` : '';
+                    
+                    if (layoutClass === 'image-left') {
+                      html += `
+                        <div style="flex: 1; min-width: 200px;">
+                          ${section.image ? `<img src="${section.image}" alt="${section.imageAlt || ''}" style="max-width: 100%; height: auto; border-radius: 8px;" />` : ''}
+                        </div>
+                        <div style="flex: 1; min-width: 200px; ${alignStyle}">
+                          ${section.text || ''}
+                        </div>
+                      `;
+                    } else {
+                      html += `
+                        <div style="flex: 1; min-width: 200px; ${alignStyle}">
+                          ${section.text || ''}
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                          ${section.image ? `<img src="${section.image}" alt="${section.imageAlt || ''}" style="max-width: 100%; height: auto; border-radius: 8px;" />` : ''}
+                        </div>
+                      `;
+                    }
+                  });
+                  
+                  html += '</div>';
+                  return html;
+                }
+              } catch (e) {
+                console.error('Error parsing split section:', e);
+              }
+              return '';
+            case 'button':
+              try {
+                const buttonData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+                if (buttonData) {
+                  const actionAttr = buttonData.actionType === 'download' 
+                    ? `download href="${buttonData.url}"` 
+                    : `href="${buttonData.url}" target="_blank"`;
+                  
+                  return `<a ${actionAttr} style="
+                    display: inline-block;
+                    height: ${buttonData.height || '40px'};
+                    width: ${buttonData.width || 'auto'};
+                    background-color: ${buttonData.backgroundColor || '#4a7cff'};
+                    color: ${buttonData.textColor || '#ffffff'};
+                    border-radius: ${buttonData.borderRadius || '8px'};
+                    text-decoration: none;
+                    padding: 0 20px;
+                    line-height: ${buttonData.height || '40px'};
+                    text-align: center;
+                    font-size: 14px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                  ">${buttonData.text || 'Click Me'}</a>`;
+                }
+              } catch (e) {
+                console.error('Error parsing button:', e);
+              }
+              return '';
+            default:
+              return '';
+          }
+        }).join('\n');
+      } else {
+        finalContent = builderContent;
+      }
     } else if (activeTab === 'html') {
       finalContent = htmlContent;
     }
@@ -286,6 +557,10 @@ const CreateContent = () => {
       formData.append('builder_layout', JSON.stringify(['html']));
     } else if (activeTab === 'builder' && builderSections.length > 0) {
       formData.append('builder_layout', JSON.stringify(builderSections));
+      // Save contentElements array for restoration when editing
+      if (contentElementsRef.current.length > 0) {
+        formData.append('builder_content_elements', JSON.stringify(contentElementsRef.current));
+      }
     } else if (activeTab === 'standard') {
       formData.append('builder_layout', JSON.stringify(standardLayout));
     }
@@ -410,6 +685,19 @@ const CreateContent = () => {
     setStandardLayout(items);
   };
 
+  // Builder layout drag handlers
+  const onBuilderLayoutDragStart = (index) => { builderLayoutDragItem.current = index; };
+  const onBuilderLayoutDragEnter = (index) => { builderLayoutDragOver.current = index; };
+  const onBuilderLayoutDragEnd = () => {
+    if (builderLayoutDragItem.current === null || builderLayoutDragOver.current === null) return;
+    const items = [...builderSections];
+    const dragged = items.splice(builderLayoutDragItem.current, 1)[0];
+    items.splice(builderLayoutDragOver.current, 0, dragged);
+    builderLayoutDragItem.current = null;
+    builderLayoutDragOver.current = null;
+    setBuilderSections(items);
+  };
+
   const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook'];
   const showLandingFields = LANDING_TYPES.includes(selectedTypeName.toLowerCase());
 
@@ -451,15 +739,18 @@ const CreateContent = () => {
             const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
             
             // Generate content from content elements if using drag-drop builder
+            const currentElements = contentElementsRef.current;
             let previewContent = content;
-            if (activeTab === 'builder' && contentElements.length > 0) {
-              previewContent = contentElements.map(element => {
+            if (activeTab === 'builder' && currentElements.length > 0) {
+              previewContent = currentElements.map(element => {
                 switch (element.type) {
                   case 'heading':
                     const headingLevel = element.headingLevel || 'h2';
-                    return `<${headingLevel}>${element.content}</${headingLevel}>`;
+                    const headingAlign = element.alignment || 'left';
+                    return `<${headingLevel} style="text-align: ${headingAlign};">${element.content}</${headingLevel}>`;
                   case 'paragraph':
                     let paragraphContent = element.content;
+                    const paragraphAlign = element.alignment || 'left';
                     paragraphContent = paragraphContent.replace(/^• (.+)$/gm, '<li>$1</li>');
                     paragraphContent = paragraphContent.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
                     paragraphContent = paragraphContent.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
@@ -476,7 +767,7 @@ const CreateContent = () => {
                       return `<table>${tableHtml}</table>`;
                     }
                     const sections = paragraphContent.split(/\n\n+/);
-                    return sections.map(section => `<p>${section.trim()}</p>`).join('\n');
+                    return sections.map(section => `<p style="text-align: ${paragraphAlign};">${section.trim()}</p>`).join('\n');
                   case 'bullet_list':
                     const bulletItems = element.content.split('\n').filter(Boolean);
                     return `<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`;
@@ -494,12 +785,18 @@ const CreateContent = () => {
                   case 'code_block':
                     return `<pre><code>${element.content}</code></pre>`;
                   case 'table':
-                    const rows = element.content.split('\n').filter(Boolean);
-                    const tableHtml = rows.map(row => {
-                      const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
-                      return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
-                    }).join('');
-                    return `<table>${tableHtml}</table>`;
+                    try {
+                      const tableData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+                      if (tableData && tableData.data && Array.isArray(tableData.data)) {
+                        const tableHtml = tableData.data.map(row => {
+                          return `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
+                        }).join('');
+                        return `<table>${tableHtml}</table>`;
+                      }
+                    } catch (e) {
+                      console.error('Error parsing table data:', e);
+                    }
+                    return '';
                   case 'section_break':
                     return '<br><br>';
                   case 'bullet_item':
@@ -509,6 +806,68 @@ const CreateContent = () => {
                   case 'table_row':
                     const cells = element.content.split('|').map(cell => cell.trim()).filter(Boolean);
                     return `<table><tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr></table>`;
+                  case 'split_section':
+                    try {
+                      const splitData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+                      if (splitData && splitData.sections && Array.isArray(splitData.sections)) {
+                        let html = '<div style="display: flex; gap: 20px; margin: 20px 0; align-items: center; flex-wrap: wrap;">';
+                        
+                        splitData.sections.forEach(section => {
+                          const layoutClass = section.layout || 'image-left';
+                          const sectionAlign = section.alignment || 'left';
+                          
+                          if (layoutClass === 'image-left' || layoutClass === 'image-right') {
+                            html += '<div style="flex: 1; min-width: 200px; display: flex; gap: 20px; align-items: center;">';
+                            if (section.image) {
+                              html += `<div style="flex: 1;"><img src="${section.image}" alt="Section image" style="width: 100%; max-height: 300px; object-fit: contain;" /></div>`;
+                            }
+                            if (section.text) {
+                              html += `<div style="flex: 1; text-align: ${sectionAlign};">${section.text}</div>`;
+                            }
+                            html += '</div>';
+                          } else if (layoutClass === 'text-only' && section.text) {
+                            html += `<div style="flex: 1; min-width: 200px; text-align: ${sectionAlign};">${section.text}</div>`;
+                          } else if (layoutClass === 'image-only' && section.image) {
+                            html += `<div style="flex: 1; min-width: 200px;"><img src="${section.image}" alt="Section image" style="width: 100%; max-height: 300px; object-fit: contain;" /></div>`;
+                          }
+                        });
+                        
+                        html += '</div>';
+                        return html;
+                      }
+                    } catch (e) {
+                      console.error('Error parsing split section:', e);
+                    }
+                    return '';
+                  case 'button':
+                    try {
+                      const buttonData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
+                      if (buttonData) {
+                        const actionAttr = buttonData.actionType === 'download' 
+                          ? `download href="${buttonData.url}"` 
+                          : `href="${buttonData.url}" target="_blank"`;
+                        
+                        return `<a ${actionAttr} style="
+                          display: inline-block;
+                          height: ${buttonData.height || '40px'};
+                          width: ${buttonData.width || 'auto'};
+                          background-color: ${buttonData.backgroundColor || '#4a7cff'};
+                          color: ${buttonData.textColor || '#ffffff'};
+                          border-radius: ${buttonData.borderRadius || '8px'};
+                          text-decoration: none;
+                          padding: 0 20px;
+                          line-height: ${buttonData.height || '40px'};
+                          text-align: center;
+                          font-size: 14px;
+                          font-weight: 500;
+                          cursor: pointer;
+                          transition: all 0.2s;
+                        ">${buttonData.text || 'Click Me'}</a>`;
+                      }
+                    } catch (e) {
+                      console.error('Error parsing button:', e);
+                    }
+                    return '';
                   default:
                     return '';
                 }
@@ -791,13 +1150,37 @@ const CreateContent = () => {
                   initialContent,
                   editorReady,
                 }}
+                contentElements={contentElements}
+                onAddContentElement={(type, label) => {
+                  const CONTENT_ELEMENTS_MAP = {
+                    heading: 'h', paragraph: 'p', bullet_list: 'ul', numbered_list: 'ol',
+                    line_break: 'br', image: 'img', divider: 'hr', blockquote: 'blockquote',
+                    code_block: 'pre', table: 'table', section_break: 'br', table_row: 'tr',
+                    split_section: 'div', button: 'button'
+                  };
+                  const newElement = {
+                    id: `el-${Date.now()}`,
+                    type,
+                    tag: CONTENT_ELEMENTS_MAP[type] || 'div',
+                    label,
+                    content: '',
+                    headingLevel: type === 'heading' ? 'h2' : undefined
+                  };
+                  setContentElements(prev => [...prev, newElement]);
+                }}
+                onRemoveContentElement={(id) => {
+                  setContentElements(prev => prev.filter(el => el.id !== id));
+                }}
+                onUpdateContentElement={(id, updates) => {
+                  setContentElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
+                }}
+                onContentElementsChange={setContentElements}
                 selectedTypeName={selectedTypeName}
                 customFields={customFields}
                 setCustomFields={setCustomFields}
                 fieldTypes={FIELD_TYPES}
                 sections={builderSections}
                 onSectionsChange={setBuilderSections}
-                onContentElementsChange={setContentElements}
               />
             )}
 
@@ -950,8 +1333,8 @@ const CreateContent = () => {
             )}
           </div>
 
-          {/* Sidebar — only for Standard Form and HTML Builder tabs */}
-          <div style={{ width: 300, flexShrink: 0, display: activeTab === 'builder' ? 'none' : 'block' }}>
+          {/* Sidebar — for all tabs */}
+          <div style={{ width: 300, flexShrink: 0 }}>
 
             {/* Layout Reorder Panel */}
             <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: '1px solid #e8e8e8' }}>
@@ -959,18 +1342,21 @@ const CreateContent = () => {
                 <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
               </Text>
               <Text style={{ fontSize: 11, color: '#8c8c8c', display: 'block', marginBottom: 12 }}>Drag sections to change order</Text>
-              {standardLayout.map((key, index) => {
-                const sec = STANDARD_SECTIONS.find(s => s.key === key);
+              {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
+                const sec = activeTab === 'builder' 
+                  ? SECTION_TYPES.find(s => s.type === item.type)
+                  : STANDARD_SECTIONS.find(s => s.key === item);
                 if (!sec) return null;
+                const key = activeTab === 'builder' ? item.id : item;
                 // hide landing/webhook if not applicable
-                if ((key === 'landing' || key === 'webhook') && !showLandingFields) return null;
+                if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
                 return (
                   <div
                     key={key}
                     draggable
-                    onDragStart={() => onLayoutDragStart(index)}
-                    onDragEnter={() => onLayoutDragEnter(index)}
-                    onDragEnd={onLayoutDragEnd}
+                    onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
+                    onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
+                    onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
                     onDragOver={e => e.preventDefault()}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
@@ -983,7 +1369,6 @@ const CreateContent = () => {
                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = '#fafafa'; }}
                   >
                     <HolderOutlined style={{ color: '#bfbfbf', fontSize: 12 }} />
-                    <span style={{ fontSize: 14 }}>{sec.icon}</span>
                     <span style={{ fontSize: 12, color: '#1a1a2e', flex: 1 }}>{sec.label}</span>
                     <span style={{ fontSize: 10, color: '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
                   </div>

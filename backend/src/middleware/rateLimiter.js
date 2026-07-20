@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 
 // Rate limiter for login endpoint - stricter limits
 exports.loginLimiter = rateLimit({
@@ -47,8 +48,8 @@ exports.apiLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => {
-        // Use user ID if authenticated, otherwise IP
-        return req.user?.id || req.ip;
+        // Use user ID if authenticated, otherwise IP (with IPv6 support)
+        return req.user?.id || ipKeyGenerator(req);
     }
 });
 

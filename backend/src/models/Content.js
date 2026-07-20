@@ -110,7 +110,7 @@ class Content {
         let {
             user_id, content_type_id, category_id, title, short_description,
             tags, banner_image, pdf_file, custom_fields, content, webhook_url,
-            webhook_field_mapping, builder_layout,
+            webhook_field_mapping, builder_layout, builder_content_elements,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
             scheduled_publish_date, status = 'draft'
         } = contentData;
@@ -144,10 +144,10 @@ class Content {
             INSERT INTO contents (
                 user_id, content_type_id, category_id, title, slug,
                 short_description, tags, banner_image, pdf_file, custom_fields, content, webhook_url,
-                webhook_field_mapping, builder_layout,
+                webhook_field_mapping, builder_layout, builder_content_elements,
                 seo_meta_title, seo_meta_description, seo_meta_keywords,
                 scheduled_publish_date, reading_time, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             user_id, content_type_id, category_id, title, slug,
@@ -157,7 +157,8 @@ class Content {
             content,
             webhook_url || null,
             webhook_field_mapping ? JSON.stringify(webhook_field_mapping) : null,
-            builder_layout || null,
+            builder_layout ? (typeof builder_layout === 'string' ? builder_layout : JSON.stringify(builder_layout)) : null,
+            builder_content_elements ? (typeof builder_content_elements === 'string' ? builder_content_elements : JSON.stringify(builder_content_elements)) : null,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
             scheduled_publish_date, reading_time, status
         ];
@@ -301,7 +302,7 @@ class Content {
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
-            'webhook_field_mapping', 'builder_layout'
+            'webhook_field_mapping', 'builder_layout', 'builder_content_elements'
         ];
 
         const updates = [];
