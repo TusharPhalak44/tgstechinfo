@@ -111,8 +111,9 @@ class Content {
             user_id, content_type_id, category_id, title, short_description,
             tags, banner_image, pdf_file, custom_fields, content, webhook_url,
             webhook_field_mapping, builder_layout, builder_content_elements,
-            seo_meta_title, seo_meta_description, seo_meta_keywords,
-            scheduled_publish_date, status = 'draft'
+            seo_meta_title, seo_meta_description, seo_meta_keywords,         
+            scheduled_publish_date, status = 'draft',
+            email_subject, email_template, case_study_headline, case_study_summary
         } = contentData;
 
         // ── Auto-process HTML builder content ────────────────────────────────
@@ -140,14 +141,15 @@ class Content {
         const wordCount = (content || '').split(/\s+/).length;
         const reading_time = Math.ceil(wordCount / 200);
 
-        const query = `
+       const query = `
             INSERT INTO contents (
                 user_id, content_type_id, category_id, title, slug,
                 short_description, tags, banner_image, pdf_file, custom_fields, content, webhook_url,
-                webhook_field_mapping, builder_layout, builder_content_elements,
+                webhook_field_mapping, builder_layout,
                 seo_meta_title, seo_meta_description, seo_meta_keywords,
-                scheduled_publish_date, reading_time, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                scheduled_publish_date, reading_time, status,
+                email_subject, email_template, case_study_headline, case_study_summary
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             user_id, content_type_id, category_id, title, slug,
@@ -160,7 +162,12 @@ class Content {
             builder_layout ? (typeof builder_layout === 'string' ? builder_layout : JSON.stringify(builder_layout)) : null,
             builder_content_elements ? (typeof builder_content_elements === 'string' ? builder_content_elements : JSON.stringify(builder_content_elements)) : null,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
-            scheduled_publish_date, reading_time, status
+            scheduled_publish_date, reading_time, status,
+            email_subject || null,
+            email_template || null,
+            case_study_headline || null,
+            case_study_summary || null
+ 
         ];
         const [result] = await pool.query(query, values);
         const newContent = await Content.findById(result.insertId);
@@ -183,6 +190,7 @@ class Content {
             SELECT c.*, 
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
+                   ct.slug as content_type,
                    cat.name as category_name, cat.slug as category_slug
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
@@ -199,6 +207,7 @@ class Content {
             SELECT c.*, 
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
+                   ct.slug as content_type,
                    cat.name as category_name, cat.slug as category_slug
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
@@ -220,6 +229,7 @@ class Content {
             SELECT c.*, 
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
+                   ct.slug as content_type,
                    cat.name as category_name, cat.slug as category_slug
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
@@ -249,6 +259,7 @@ class Content {
             SELECT c.*, 
                    u.first_name, u.last_name,
                    ct.name as content_type_name,
+                   ct.slug as content_type,
                    cat.name as category_name
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
@@ -302,7 +313,8 @@ class Content {
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
-            'webhook_field_mapping', 'builder_layout', 'builder_content_elements'
+            'webhook_field_mapping', 'builder_layout', 'builder_content_elements',
+            'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];
 
         const updates = [];
@@ -370,9 +382,10 @@ class Content {
 
     static async getRelatedArticles(contentId, categoryId, limit = 3) {
         const query = `
-            SELECT c.*, u.first_name, u.last_name
+            SELECT c.*, u.first_name, u.last_name, ct.slug as content_type
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
+            LEFT JOIN content_types ct ON c.content_type_id = ct.id
             WHERE c.category_id = ? AND c.id != ? AND c.status = 'published'
             ORDER BY c.published_date DESC
             LIMIT ?

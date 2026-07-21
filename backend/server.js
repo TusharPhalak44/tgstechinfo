@@ -19,7 +19,7 @@ app.use(helmet({
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:"],
             scriptSrc: ["'self'"],
-            connectSrc: ["'self'", process.env.FRONTEND_URL],
+             connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "http://localhost:5174"],
             frameSrc: ["'none'"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
@@ -38,7 +38,14 @@ app.use(helmet({
 }));
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function(origin, callback) {
+        const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',').map(url => url.trim());
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS not allowed'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
@@ -72,6 +79,11 @@ app.use('/api/public', require('./src/routes/publicRoutes'));
 app.use('/api/cookie-consent', require('./src/routes/cookieConsentRoutes'));
 app.use('/api/tracking', require('./src/routes/trackingRoutes'));
 app.use('/api/analytics', require('./src/routes/analyticsRoutes'));
+app.use('/api/chatbot', require('./src/routes/chatbotRoutes'));
+app.use('/api/admin/chatbot/analytics', require('./src/routes/chatbotAnalyticsRoutes'));
+app.use('/api/rbac', require('./src/routes/rbacRoutes'));
+app.use('/api/media', require('./src/routes/mediaRoutes'));
+ 
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -85,4 +97,12 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+});
+
+// Catch unhandled promise rejections and exceptions so nodemon doesn't silently crash
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught Exception:', err.message, err.stack);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('❌ Unhandled Rejection:', reason);
 });
