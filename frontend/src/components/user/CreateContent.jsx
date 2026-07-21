@@ -118,6 +118,9 @@ const CreateContent = () => {
         category_id: data.category_id,
         title: data.title,
         short_description: data.short_description,
+        case_study_headline: data.case_study_headline || '',
+        case_study_summary: data.case_study_summary || '',
+        email_template: data.email_template || '',
         tags,
         seo_meta_title: data.seo_meta_title,
         seo_meta_description: data.seo_meta_description,
@@ -698,8 +701,9 @@ const CreateContent = () => {
     setBuilderSections(items);
   };
 
-  const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook'];
+ const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook', 'case study', 'case-study'];
   const showLandingFields = LANDING_TYPES.includes(selectedTypeName.toLowerCase());
+  const isCaseStudy = ['case study', 'case-study'].includes(selectedTypeName.toLowerCase());
 
   const getImageUrl = (file) => {
     if (!file) return null;
@@ -1080,6 +1084,67 @@ const CreateContent = () => {
                       </div>
                     )}
                   </div>
+
+                  {isCaseStudy && (
+                    <>
+                      {/* Case Study: Headline */}
+                      <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                        <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>Case Study Details</Text>
+                        <Form.Item
+                          name="case_study_headline"
+                          label={<span>Headline <Tooltip title="Bold headline shown on the case study card"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                          rules={[{ required: true, message: 'Headline is required for case studies' }]}
+                          style={{ marginBottom: 16 }}
+                        >
+                          <Input placeholder="e.g. How Acme Corp reduced churn by 40%" size="large" />
+                        </Form.Item>
+                        <Form.Item
+                          name="case_study_summary"
+                          label={<span>One-line Summary <Tooltip title="Single sentence shown under the headline on the card"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                          rules={[{ required: true, message: 'Summary is required for case studies' }]}
+                          style={{ marginBottom: 16 }}
+                        >
+                          <Input placeholder="e.g. A B2B SaaS company cuts customer churn in half within 6 months." size="large" />
+                        </Form.Item>
+                        {/* Auto slug preview derived from the title field */}
+                        <Form.Item noStyle shouldUpdate={(prev, cur) => prev.title !== cur.title}>
+                          {({ getFieldValue }) => {
+                            const title = getFieldValue('title') || '';
+                            const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                            return slug ? (
+                              <div style={{ padding: '10px 14px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8, fontSize: 13 }}>
+                                <span style={{ color: '#8c8c8c', fontWeight: 500 }}>Auto slug: </span>
+                                <span style={{ color: '#389e0d', fontWeight: 700 }}>/case-study/{slug}</span>
+                              </div>
+                            ) : null;
+                          }}
+                        </Form.Item>
+                      </div>
+ 
+                      {/* Case Study: Email Template */}
+                      <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+                        <div style={{ marginBottom: 12 }}>
+                          <Text strong style={{ fontSize: 14 }}>
+                            <span style={{ marginRight: 8 }}>✉️</span>Email Template
+                          </Text>
+                          <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                            HTML email sent to the user after gate form submission. Use{' '}
+                            {['{{name}}', '{{title}}', '{{email}}', '{{contact}}', '{{slug}}'].map(p => (
+                              <code key={p} style={{ background: '#f0f4ff', padding: '1px 5px', borderRadius: 4, fontSize: 11, marginRight: 4 }}>{p}</code>
+                            ))} as placeholders. Leave blank to use the default template.
+                          </div>
+                        </div>
+                        <Form.Item name="email_template" style={{ marginBottom: 0 }}>
+                          <TextArea
+                            rows={14}
+                            placeholder={`<!DOCTYPE html>\n<html>\n<body>\n  <h2>Hi {{name}},</h2>\n  <p>Thank you for downloading <strong>{{title}}</strong>.</p>\n  <p>Your case study is ready. Click below to view it.</p>\n  <p>— TGS Tech Info Team</p>\n</body>\n</html>`}
+                            style={{ fontFamily: 'monospace', fontSize: 12, lineHeight: 1.6, resize: 'vertical' }}
+                          />
+                        </Form.Item>
+                      </div>
+                    </>
+                  )}
+ 
 
                   {/* Fixed: Landing + Webhook — only for webinar/whitepaper/event */}
                   {showLandingFields && (
