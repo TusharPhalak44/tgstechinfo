@@ -134,7 +134,7 @@ export const TrackingProvider = ({ children }) => {
           exit_page: window.location.href
         })], { type: 'application/json' });
         
-        navigator.sendBeacon(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/tracking/session/end`, data);
+        navigator.sendBeacon(`/api/tracking/session/end`, data);
       }
     };
 
@@ -161,7 +161,7 @@ export const TrackingProvider = ({ children }) => {
           is_bounce: timeSpent < 10
         })], { type: 'application/json' });
         
-        navigator.sendBeacon(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/tracking/page-view/update`, data);
+        navigator.sendBeacon(`/api/tracking/page-view/update`, data);
       }
       
       // End session only on actual page unload (leaving the site)
