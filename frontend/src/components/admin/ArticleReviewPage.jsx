@@ -213,7 +213,10 @@ const ArticleReviewPage = () => {
                     block 
                     size="large"
                     className="border-blue-500 text-blue-500 hover:border-blue-600 hover:text-blue-600"
-                    onClick={() => window.open(`/article/${content.slug}`, '_blank')}
+                    onClick={() => {
+                      const contentType = content.content_type || 'article';
+                      window.open(`/${contentType}/${content.slug}`, '_blank');
+                    }}
                   >
                     View on Site
                   </Button>

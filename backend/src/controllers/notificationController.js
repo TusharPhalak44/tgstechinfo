@@ -57,8 +57,14 @@ exports.searchContent = async (req, res) => {
         if (!q || q.trim().length < 2) return res.json([]);
 
         const term = `%${q.trim()}%`;
-        let where = `c.status = 'published' AND (c.title LIKE ? OR c.short_description LIKE ?)`;
-        const values = [term, term];
+        let where = `c.status = 'published' AND (
+            c.title LIKE ? OR
+            c.short_description LIKE ? OR
+            c.tags LIKE ? OR
+            cat.name LIKE ? OR
+            ct.name LIKE ?
+        )`;
+        const values = [term, term, term, term, term];
 
         if (category) { where += ` AND cat.slug = ?`; values.push(category); }
         if (content_type) { where += ` AND LOWER(ct.name) = ?`; values.push(content_type.toLowerCase()); }

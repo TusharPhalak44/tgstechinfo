@@ -77,6 +77,56 @@ const SplitContentEditor = ({ section, onUpdate }) => {
     }
   };
 
+  const handlePaste = (e) => {
+    // Remove hyperlinks and clean HTML artifacts from pasted content
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    const html = e.clipboardData.getData('text/html');
+    
+    // Remove all <a> tags from HTML, keeping only the text
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    
+    // Remove all anchor tags
+    const links = tempDiv.querySelectorAll('a');
+    links.forEach(link => {
+      const linkText = link.textContent;
+      link.replaceWith(document.createTextNode(linkText));
+    });
+    
+    // Remove inline styles from all elements
+    const allElements = tempDiv.querySelectorAll('*');
+    allElements.forEach(el => {
+      el.removeAttribute('style');
+      el.removeAttribute('class');
+      el.removeAttribute('font-family');
+      el.removeAttribute('font-size');
+      el.removeAttribute('color');
+    });
+    
+    // Remove HTML comments (StartFragment, EndFragment)
+    tempDiv.innerHTML = tempDiv.innerHTML.replace(/<!--[\s\S]*?-->/g, '');
+    
+    // Remove &nbsp; and replace with regular space
+    tempDiv.innerHTML = tempDiv.innerHTML.replace(/&nbsp;/g, ' ');
+    
+    // Remove unnecessary span tags (keeping only text content)
+    const spans = tempDiv.querySelectorAll('span');
+    spans.forEach(span => {
+      const parent = span.parentNode;
+      while (span.firstChild) {
+        parent.insertBefore(span.firstChild, span);
+      }
+      parent.removeChild(span);
+    });
+    
+    const cleanHtml = tempDiv.innerHTML;
+    
+    // Insert cleaned content
+    document.execCommand('insertHTML', false, cleanHtml || text);
+    onUpdate({ text: ref.current?.innerHTML || '' });
+  };
+
   const btnStyle = (active) => ({ minWidth: 32, height: 28, borderRadius: 4, border: active ? '2px solid #4a7cff' : '1px solid #d9d9d9', background: '#fff', paddingLeft: 8 });
 
   return (
@@ -106,6 +156,7 @@ const SplitContentEditor = ({ section, onUpdate }) => {
         contentEditable
         suppressContentEditableWarning
         onInput={() => onUpdate({ text: ref.current?.innerHTML || '' })}
+        onPaste={handlePaste}
         style={{
           minHeight: 80, padding: '8px 11px', fontSize: 13, lineHeight: 1.6,
           textAlign: align, border: '1px solid #d9d9d9', borderRadius: 6,
@@ -241,6 +292,56 @@ const ContentElementEditor = ({ element, onUpdate }) => {
         }
       };
 
+      const handlePaste = (e) => {
+        // Remove hyperlinks and clean HTML artifacts from pasted content
+        e.preventDefault();
+        const text = e.clipboardData.getData('text/plain');
+        const html = e.clipboardData.getData('text/html');
+        
+        // Remove all <a> tags from HTML, keeping only the text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Remove all anchor tags
+        const links = tempDiv.querySelectorAll('a');
+        links.forEach(link => {
+          const linkText = link.textContent;
+          link.replaceWith(document.createTextNode(linkText));
+        });
+        
+        // Remove inline styles from all elements
+        const allElements = tempDiv.querySelectorAll('*');
+        allElements.forEach(el => {
+          el.removeAttribute('style');
+          el.removeAttribute('class');
+          el.removeAttribute('font-family');
+          el.removeAttribute('font-size');
+          el.removeAttribute('color');
+        });
+        
+        // Remove HTML comments (StartFragment, EndFragment)
+        tempDiv.innerHTML = tempDiv.innerHTML.replace(/<!--[\s\S]*?-->/g, '');
+        
+        // Remove &nbsp; and replace with regular space
+        tempDiv.innerHTML = tempDiv.innerHTML.replace(/&nbsp;/g, ' ');
+        
+        // Remove unnecessary span tags (keeping only text content)
+        const spans = tempDiv.querySelectorAll('span');
+        spans.forEach(span => {
+          const parent = span.parentNode;
+          while (span.firstChild) {
+            parent.insertBefore(span.firstChild, span);
+          }
+          parent.removeChild(span);
+        });
+        
+        const cleanHtml = tempDiv.innerHTML;
+        
+        // Insert cleaned content
+        document.execCommand('insertHTML', false, cleanHtml || text);
+        onUpdate({ content: paraRef.current?.innerHTML || '' });
+      };
+
       const insertList = (tag) => {
         paraRef.current?.focus();
         document.execCommand(tag === 'ul' ? 'insertUnorderedList' : 'insertOrderedList', false, null);
@@ -291,6 +392,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
             contentEditable
             suppressContentEditableWarning
             onInput={() => onUpdate({ content: paraRef.current?.innerHTML || '' })}
+            onPaste={handlePaste}
             style={{
               minHeight: 80, padding: '8px 11px', fontSize: 13, lineHeight: 1.6,
               textAlign: alignment, border: '1px solid #d9d9d9', borderRadius: 6,

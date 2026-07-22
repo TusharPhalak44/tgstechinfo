@@ -80,8 +80,8 @@ app.use('/api/public', require('./src/routes/publicRoutes'));
 app.use('/api/cookie-consent', require('./src/routes/cookieConsentRoutes'));
 app.use('/api/tracking', require('./src/routes/trackingRoutes'));
 app.use('/api/analytics', require('./src/routes/analyticsRoutes'));
-// app.use('/api/chatbot', require('./src/routes/chatbotRoutes'));
-// app.use('/api/admin/chatbot/analytics', require('./src/routes/chatbotAnalyticsRoutes'));
+app.use('/api/chatbot', require('./src/routes/chatbotRoutes'));
+app.use('/api/admin/chatbot/analytics', require('./src/routes/chatbotAnalyticsRoutes'));
 app.use('/api/rbac', require('./src/routes/rbacRoutes'));
 app.use('/api/media', require('./src/routes/mediaRoutes'));
  

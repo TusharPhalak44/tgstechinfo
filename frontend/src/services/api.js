@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || '';
+// In development, use Vite proxy (empty baseURL)
+// In production, use the API_URL from environment
+const API_URL = import.meta.env.MODE === 'production' ? (import.meta.env.VITE_API_URL || '') : '';
+
+console.log('API Configuration:', { MODE: import.meta.env.MODE, API_URL });
 
 const api = axios.create({
   baseURL: API_URL,
@@ -10,6 +14,18 @@ const api = axios.create({
   timeout: 10000,
   withCredentials: true,
 });
+
+// Request interceptor for debugging
+api.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
+    return config;
+  },
+  (error) => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
 
 // ✅ Response interceptor with retry logic
 api.interceptors.response.use(

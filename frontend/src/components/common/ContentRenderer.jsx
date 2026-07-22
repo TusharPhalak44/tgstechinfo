@@ -27,6 +27,7 @@ const getSectionOrder = (builderLayout) => {
       title_description: 'title',
       banner_image: 'banner',
       content: 'content',
+      tags: 'tags',
     };
     return layout.map(s => typeMap[s.type]).filter(Boolean);
   } catch { return null; }
@@ -61,8 +62,13 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter }) => 
   const order = getSectionOrder(content.builder_layout);
 
   // Default order if no layout saved
-  const defaultOrder = ['meta', 'title', 'banner', 'content'];
+  const defaultOrder = ['meta', 'title', 'banner', 'tags', 'content'];
   const sectionOrder = order || defaultOrder;
+
+  // Ensure tags are always included in the order (after banner, before content)
+  const finalSectionOrder = sectionOrder.includes('tags') 
+    ? sectionOrder 
+    : [...sectionOrder.slice(0, sectionOrder.indexOf('content') !== -1 ? sectionOrder.indexOf('content') : sectionOrder.length), 'tags', ...sectionOrder.slice(sectionOrder.indexOf('content') !== -1 ? sectionOrder.indexOf('content') : sectionOrder.length)];
 
   const sections = {
     meta: content.category_name || content.content_type_name ? (
@@ -102,6 +108,15 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter }) => 
       </div>
     ) : null,
 
+    tags: tags.length > 0 ? (
+      <div key="tags" style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+        <TagOutlined style={{ color: '#8c8c8c' }} />
+        {tags.map((tag, i) => (
+          <Tag key={i} color="geekblue" style={{ borderRadius: 20, fontSize: 12 }}>{tag}</Tag>
+        ))}
+      </div>
+    ) : null,
+
     content: (
       <div key="content">
         <div
@@ -114,17 +129,7 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter }) => 
 
   return (
     <>
-      {sectionOrder.map(key => sections[key] || null)}
-
-      {/* Tags — always after main sections */}
-      {tags.length > 0 && (
-        <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f0f0f0', display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-          <TagOutlined style={{ color: '#8c8c8c' }} />
-          {tags.map((tag, i) => (
-            <Tag key={i} color="geekblue" style={{ borderRadius: 20, fontSize: 12 }}>{tag}</Tag>
-          ))}
-        </div>
-      )}
+      {finalSectionOrder.map(key => sections[key] || null)}
 
       {extraAfter}
     </>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Input, Tag, Spin, Empty, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -7,19 +7,20 @@ import axios from 'axios';
 const { Text } = Typography;
 
 // ── Helper function to determine route based on content type ─────────
+const TYPE_ROUTE_MAP = {
+  article: 'article', blog: 'blog', news: 'news', interview: 'interview',
+  webinar: 'webinar', event: 'event', ebook: 'ebook', whitepaper: 'whitepaper',
+  report: 'report'
+};
+
 const getArticleRoute = (item) => {
-  try {
-    const layout = typeof item.builder_layout === 'string' ? JSON.parse(item.builder_layout) : item.builder_layout;
-    const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-    return isHtmlBuilder ? `/content/${item.slug}` : `/article/${item.slug}`;
-  } catch {
-    return `/article/${item.slug}`;
-  }
+  const typeName = (item.content_type_name || '').toLowerCase().trim();
+  const routePrefix = TYPE_ROUTE_MAP[typeName] || 'article';
+  return `/${routePrefix}/${item.slug}`;
 };
 
 const SearchResults = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const q = searchParams.get('q') || '';
   const [query, setQuery] = useState(q);
   const [results, setResults] = useState([]);
@@ -30,13 +31,7 @@ const SearchResults = () => {
     if (q.trim().length < 2) { setResults([]); return; }
     setLoading(true);
     axios.get('/api/public/search', { params: { q: q.trim() } })
-      .then(({ data }) => {
-        if (data.length === 1) {
-          navigate(getArticleRoute(data[0]), { replace: true });
-        } else {
-          setResults(data);
-        }
-      })
+      .then(({ data }) => setResults(data))
       .catch(() => setResults([]))
       .finally(() => setLoading(false));
   }, [q]);

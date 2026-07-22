@@ -135,7 +135,56 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
     onSelectionUpdate: ({ editor }) => updateStates(editor),
     onTransaction: ({ editor }) => updateStates(editor),
     editorProps: { 
-      attributes: { class: 'tiptap-editor-content' } 
+      attributes: { class: 'tiptap-editor-content' },
+      handlePaste: (view, event) => {
+        // Remove hyperlinks and clean HTML artifacts from pasted content
+        event.preventDefault();
+        const text = event.clipboardData.getData('text/plain');
+        const html = event.clipboardData.getData('text/html');
+        
+        // Remove all <a> tags from HTML, keeping only the text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        
+        // Remove all anchor tags
+        const links = tempDiv.querySelectorAll('a');
+        links.forEach(link => {
+          const linkText = link.textContent;
+          link.replaceWith(document.createTextNode(linkText));
+        });
+        
+        // Remove inline styles from all elements
+        const allElements = tempDiv.querySelectorAll('*');
+        allElements.forEach(el => {
+          el.removeAttribute('style');
+          el.removeAttribute('class');
+          el.removeAttribute('font-family');
+          el.removeAttribute('font-size');
+          el.removeAttribute('color');
+        });
+        
+        // Remove HTML comments (StartFragment, EndFragment)
+        tempDiv.innerHTML = tempDiv.innerHTML.replace(/<!--[\s\S]*?-->/g, '');
+        
+        // Remove &nbsp; and replace with regular space
+        tempDiv.innerHTML = tempDiv.innerHTML.replace(/&nbsp;/g, ' ');
+        
+        // Remove unnecessary span tags (keeping only text content)
+        const spans = tempDiv.querySelectorAll('span');
+        spans.forEach(span => {
+          const parent = span.parentNode;
+          while (span.firstChild) {
+            parent.insertBefore(span.firstChild, span);
+          }
+          parent.removeChild(span);
+        });
+        
+        const cleanHtml = tempDiv.innerHTML;
+        
+        // Insert cleaned content
+        editor.commands.insertContent(cleanHtml || text);
+        return true;
+      }
     },
   });
 

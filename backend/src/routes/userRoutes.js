@@ -14,8 +14,8 @@ router.get('/notifications', hasPermission('settings.read'), notificationControl
 router.put('/notifications/:id/read', hasPermission('settings.update'), notificationController.markAsRead);
 
 // Content creation — any authenticated user can create content
-router.post('/content', 
-    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), 
+router.post('/content',
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]),
     contentController.createContent
 );
 

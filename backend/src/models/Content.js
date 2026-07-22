@@ -145,11 +145,10 @@ class Content {
             INSERT INTO contents (
                 user_id, content_type_id, category_id, title, slug,
                 short_description, tags, banner_image, pdf_file, custom_fields, content, webhook_url,
-                webhook_field_mapping, builder_layout,
+                webhook_field_mapping, builder_layout, builder_content_elements,
                 seo_meta_title, seo_meta_description, seo_meta_keywords,
-                scheduled_publish_date, reading_time, status,
-                email_subject, email_template, case_study_headline, case_study_summary
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                scheduled_publish_date, reading_time, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             user_id, content_type_id, category_id, title, slug,
@@ -162,12 +161,7 @@ class Content {
             builder_layout ? (typeof builder_layout === 'string' ? builder_layout : JSON.stringify(builder_layout)) : null,
             builder_content_elements ? (typeof builder_content_elements === 'string' ? builder_content_elements : JSON.stringify(builder_content_elements)) : null,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
-            scheduled_publish_date, reading_time, status,
-            email_subject || null,
-            email_template || null,
-            case_study_headline || null,
-            case_study_summary || null
- 
+            scheduled_publish_date, reading_time, status
         ];
         const [result] = await pool.query(query, values);
         const newContent = await Content.findById(result.insertId);
@@ -313,8 +307,7 @@ class Content {
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
-            'webhook_field_mapping', 'builder_layout', 'builder_content_elements',
-            'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
+            'webhook_field_mapping', 'builder_layout', 'builder_content_elements'
         ];
 
         const updates = [];
@@ -404,6 +397,28 @@ class Content {
         }
         
         await pool.query('DELETE FROM contents WHERE id = ?', [id]);
+    }
+
+    static async getPopularTags(limit = 20) {
+        const query = `
+            SELECT 
+                TRIM(BOTH ',' FROM SUBSTRING_INDEX(SUBSTRING_INDEX(tags, ',', n), ',', -1)) as tag,
+                COUNT(*) as count
+            FROM contents
+            CROSS JOIN (
+                SELECT 1 as n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+                UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
+            ) numbers
+            WHERE tags IS NOT NULL 
+            AND tags != ''
+            AND TRIM(BOTH ',' FROM SUBSTRING_INDEX(SUBSTRING_INDEX(tags, ',', n), ',', -1)) != ''
+            AND status = 'published'
+            GROUP BY tag
+            ORDER BY count DESC
+            LIMIT ?
+        `;
+        const [rows] = await pool.query(query, [limit]);
+        return rows;
     }
 }
 

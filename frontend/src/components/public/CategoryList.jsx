@@ -19,12 +19,16 @@ const parseTags = (value) => {
   return [];
 };
 
-const isHtmlBuilderContent = (item) => {
+const getContentRoute = (item) => {
   try {
     const layout = item.builder_layout ? JSON.parse(item.builder_layout) : null;
-    return Array.isArray(layout) && layout[0] === 'html';
+    const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
+    if (isHtmlBuilder) return `/content/${item.slug}`;
+    const contentType = item.content_type || 'article';
+    return `/${contentType}/${item.slug}`;
   } catch {
-    return false;
+    const contentType = item.content_type || 'article';
+    return `/${contentType}/${item.slug}`;
   }
 };
 
@@ -36,6 +40,7 @@ const TYPE_MAP = {
   webinars:   { type: 'webinar',   title: 'Webinars',   accent: '#fd79a8', leftImg: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' },
   events:     { type: 'event',     title: 'Events',     accent: '#fdcb6e', leftImg: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80' },
   ebooks:     { type: 'ebook',     title: 'eBooks',     accent: '#00cec9', leftImg: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80' },
+  whitepapers: { type: 'whitepaper', title: 'Whitepapers', accent: '#e84393', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
 };
 
 // Category slug → hero images mapping
@@ -90,7 +95,7 @@ const ListItem = ({ item, navigate, accent }) => (
     transition: 'background .15s', borderRadius: 4
   }}
     className="cat-list-item"
-    onClick={() => navigate(isHtmlBuilderContent(item) ? `/content/${item.slug}` : `/article/${item.slug}`)}
+    onClick={() => navigate(getContentRoute(item))}
     onMouseEnter={e => e.currentTarget.style.background = '#fafbff'}
     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
   >
@@ -142,7 +147,7 @@ const ListItem = ({ item, navigate, accent }) => (
 // ── Sidebar recent post ──────────────────────────────────────────
 const SidebarPost = ({ item, navigate, accent }) => (
   <div style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: '12px 0', borderBottom: '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
-    onClick={() => navigate(isHtmlBuilderContent(item) ? `/content/${item.slug}` : `/article/${item.slug}`)}
+    onClick={() => navigate(getContentRoute(item))}
   >
     {/* Thumbnail */}
     <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: '#f0f4ff' }}>
