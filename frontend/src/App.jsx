@@ -71,8 +71,8 @@ import ContactUs from './pages/ContactUs';
 import StandaloneLandingPage from './pages/StandaloneLandingPage';
 import CaseStudyPage from './pages/CaseStudyPage';
 import Unsubscribe from './components/public/Unsubscribe';
-import { ChatProvider } from './context/ChatContext';
-import ChatWidget from './components/common/chatbot/ChatWidget';
+// import { ChatProvider } from './context/ChatContext';
+// import ChatWidget from './components/common/chatbot/ChatWidget';
 
 const { Content } = Layout;
 
@@ -310,12 +310,9 @@ function App() {
         <ThemeProvider>
           <CookieProvider>
             <TrackingProvider>
-            <ChatProvider>
               <AntApp>
                 <AppContent />
-                <ChatWidget />
               </AntApp>
-              </ChatProvider>
             </TrackingProvider>
           </CookieProvider>
         </ThemeProvider>
