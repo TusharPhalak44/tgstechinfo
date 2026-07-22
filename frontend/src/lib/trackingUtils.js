@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+// Always use relative URL so it works on any host (dev proxy or production nginx)
+const API_BASE_URL = '/api';
 
 // Generate session UUID
 export const generateSessionUuid = () => {
@@ -22,12 +23,12 @@ export const parseUtmParams = () => {
 // Get device information
 export const getDeviceInfo = () => {
   const userAgent = navigator.userAgent;
-  
+
   let deviceType = 'desktop';
   if (/Mobile|Android|iPhone|iPad/i.test(userAgent)) {
     deviceType = /iPad/i.test(userAgent) ? 'tablet' : 'mobile';
   }
-  
+
   return {
     device_type: deviceType,
     screen_resolution: `${window.screen.width}x${window.screen.height}`,
@@ -49,7 +50,6 @@ export const getPageType = (pathname) => {
 
 // Extract content ID from URL
 export const extractContentId = (pathname) => {
-  // Match /article/123 or /content/123 patterns
   const articleMatch = pathname.match(/\/article\/(\d+)/);
   const contentMatch = pathname.match(/\/content\/(\d+)/);
   if (articleMatch) return articleMatch[1];
@@ -73,11 +73,11 @@ export const debounce = (func, wait) => {
 // Throttle function for performance
 export const throttle = (func, limit) => {
   let inThrottle;
-  return function(...args) {
+  return function (...args) {
     if (!inThrottle) {
       func.apply(this, args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => (inThrottle = false), limit);
     }
   };
 };
@@ -98,7 +98,6 @@ export const estimateReadingTime = (text) => {
 
 // Tracking API calls
 export const trackingApi = {
-  // Start visitor session
   startSession: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/session/start`, data);
@@ -109,7 +108,6 @@ export const trackingApi = {
     }
   },
 
-  // End visitor session
   endSession: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/session/end`, data);
@@ -120,7 +118,6 @@ export const trackingApi = {
     }
   },
 
-  // Track page view
   trackPageView: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/page-view`, data);
@@ -131,10 +128,8 @@ export const trackingApi = {
     }
   },
 
-  // Update page view (exit tracking)
   updatePageView: async (data) => {
     try {
-      console.log('Updating page view with data:', data);
       const response = await axios.put(`${API_BASE_URL}/tracking/page-view`, data);
       return response.data;
     } catch (error) {
@@ -143,7 +138,6 @@ export const trackingApi = {
     }
   },
 
-  // Track content engagement
   trackEngagement: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/engagement`, data);
@@ -154,7 +148,6 @@ export const trackingApi = {
     }
   },
 
-  // Track download
   trackDownload: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/download`, data);
@@ -165,7 +158,6 @@ export const trackingApi = {
     }
   },
 
-  // Track search
   trackSearch: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/search`, data);
@@ -176,7 +168,6 @@ export const trackingApi = {
     }
   },
 
-  // Track video progress
   trackVideo: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/video`, data);
@@ -187,7 +178,6 @@ export const trackingApi = {
     }
   },
 
-  // Track CTA click
   trackCta: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/cta`, data);
@@ -198,7 +188,6 @@ export const trackingApi = {
     }
   },
 
-  // Track newsletter event
   trackNewsletter: async (data) => {
     try {
       const response = await axios.post(`${API_BASE_URL}/tracking/newsletter`, data);
