@@ -168,6 +168,18 @@ const ArticleDetail = () => {
     try {
       const response = await axios.get(`/api/public/content/${slug}`);
       const c = response.data.content;
+
+      // If this is an HTML builder page, redirect to the standalone route
+      try {
+        const layout = typeof c.builder_layout === 'string'
+          ? JSON.parse(c.builder_layout)
+          : c.builder_layout;
+        if (Array.isArray(layout) && layout[0] === 'html') {
+          navigate(`/content/${c.slug}`, { replace: true });
+          return;
+        }
+      } catch { /* not an html builder page, continue */ }
+
       setContent(c);
       setRelatedArticles(response.data.relatedArticles || []);
       // Parse custom fields
@@ -721,7 +733,18 @@ const ArticleDetail = () => {
                 {relatedArticles.map(article => (
                   <div
                     key={article.id}
-                    onClick={() => navigate(`/article/${article.slug}`)}
+                    onClick={() => {
+                      try {
+                        const layout = typeof article.builder_layout === 'string'
+                          ? JSON.parse(article.builder_layout)
+                          : article.builder_layout;
+                        if (Array.isArray(layout) && layout[0] === 'html') {
+                          navigate(`/content/${article.slug}`);
+                          return;
+                        }
+                      } catch { /* fall through */ }
+                      navigate(`/article/${article.slug}`);
+                    }}
                     style={{ background: '#fff', borderRadius: 10, border: '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
                     onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
                     onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}

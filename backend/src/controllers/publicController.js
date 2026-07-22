@@ -381,7 +381,9 @@ exports.subscribeNewsletter = async (req, res) => {
 
         // Send confirmation email
         try {
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            // Use SITE_URL if set, otherwise take the first value from FRONTEND_URL
+            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+            const frontendUrl = rawFrontend.split(',')[0].trim();
             const emailHtml = `
                 <!DOCTYPE html>
                 <html>

@@ -41,6 +41,13 @@ export const getDeviceInfo = () => {
 export const getPageType = (pathname) => {
   if (pathname === '/') return 'home';
   if (pathname.startsWith('/article/')) return 'article';
+  if (pathname.startsWith('/blog/')) return 'blog';
+  if (pathname.startsWith('/news/')) return 'news';
+  if (pathname.startsWith('/interview/')) return 'interview';
+  if (pathname.startsWith('/webinar/')) return 'webinar';
+  if (pathname.startsWith('/event/')) return 'event';
+  if (pathname.startsWith('/ebook/')) return 'ebook';
+  if (pathname.startsWith('/whitepaper/')) return 'whitepaper';
   if (pathname.startsWith('/category/')) return 'category';
   if (pathname === '/search') return 'search';
   if (pathname === '/contact') return 'contact';
