@@ -405,7 +405,7 @@ const Navbar = () => {
               </Dropdown>
             ) : !isMobile ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => navigate('/login')} style={{
+                <button onClick={() => window.open('/login', '_blank')} style={{
                   padding: '7px 18px', borderRadius: 24, border: '1.5px solid var(--color-primary)',
                   background: 'transparent', color: 'var(--color-primary)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   transition: 'all .2s'
@@ -476,7 +476,7 @@ const Navbar = () => {
           ))}
           {!isAuthenticated && (
             <div style={{ display: 'flex', gap: 10, marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
-              <button onClick={() => { navigate('/login'); setMobileOpen(false); }} style={{
+              <button onClick={() => { window.open('/login', '_blank'); setMobileOpen(false); }} style={{
                 flex: 1, padding: '10px', borderRadius: 24, border: '1.5px solid var(--color-primary)',
                 background: 'transparent', color: 'var(--color-primary)', fontSize: 14, fontWeight: 600, cursor: 'pointer'
               }}>Login</button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, Globe, CheckCircle } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, Globe, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const FEATURES = [
   { icon: Sparkles, text: 'AI & Machine Learning insights' },
@@ -16,28 +16,53 @@ const Login = () => {
   const [remember, setRemember] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated) navigate(user?.role === 'admin' ? '/admin' : '/dashboard');
+    const rememberedEmail = localStorage.getItem('rememberedEmail');
+    if (rememberedEmail) {
+      setEmail(rememberedEmail);
+      setRemember(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setSuccess(true);
+      setTimeout(() => {
+        navigate(user?.role === 'admin' ? '/admin' : '/dashboard');
+      }, 500);
+    }
   }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
+    
     try {
       const result = await login(email, password);
       if (result.success) {
         if (remember) localStorage.setItem('rememberedEmail', email);
         else localStorage.removeItem('rememberedEmail');
-        navigate(result.user.role === 'admin' ? '/admin' : '/dashboard');
+        setSuccess(true);
+      } else {
+        setError(result.message || 'Login failed. Please try again.');
       }
     } catch (error) {
+      setError(error.response?.data?.message || 'An error occurred. Please try again.');
       console.error(error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSocialLogin = (provider) => {
+    // Placeholder for social login
+    console.log(`${provider} login clicked`);
   };
 
   return (
@@ -99,6 +124,23 @@ const Login = () => {
             <p className="text-sm text-[var(--color-muted)]">Enter your credentials to access your account</p>
           </div>
           
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-red-800 font-medium">Login Failed</p>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+              <p className="text-sm text-green-800 font-medium">Login successful! Redirecting...</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-[var(--color-body)]">Email Address</label>
@@ -109,8 +151,9 @@ const Login = () => {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className={`pl-10 h-11 w-full rounded-md border bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-[var(--color-border)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]'}`}
                   required
+                  disabled={loading || success}
                 />
               </div>
             </div>
@@ -124,14 +167,16 @@ const Login = () => {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className={`pl-10 pr-10 h-11 w-full rounded-md border bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-[var(--color-border)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]'}`}
                   required
+                  disabled={loading || success}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-body)] transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  disabled={loading || success}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -146,6 +191,7 @@ const Login = () => {
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
                   className="h-4 w-4 rounded-sm border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                  disabled={loading || success}
                 />
                 <label htmlFor="remember" className="text-sm text-[var(--color-body)] cursor-pointer hover:text-[var(--color-primary)] transition-colors">
                   Remember me
@@ -158,10 +204,20 @@ const Login = () => {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full h-11 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-lg shadow-[var(--color-primary)]/20 transition-all duration-200 hover:shadow-xl hover:shadow-[var(--color-primary)]/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || success}
+              className="w-full h-11 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-lg shadow-[var(--color-primary)]/20 transition-all duration-200 hover:shadow-xl hover:shadow-[var(--color-primary)]/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:translate-y-0"
             >
-              {loading ? 'Signing in...' : (
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : success ? (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Success!</span>
+                </>
+              ) : (
                 <>
                   <span>Sign In</span>
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -169,6 +225,34 @@ const Login = () => {
               )}
             </button>
           </form>
+
+          {/* Social Login Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[var(--color-border)]"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-[var(--color-bg-alt)] text-[var(--color-muted)]">Or continue with</span>
+            </div>
+          </div>
+
+          {/* Social Login Buttons */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => handleSocialLogin('google')}
+              className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md border border-[var(--color-border)] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <span>Google</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSocialLogin('github')}
+              className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md border border-[var(--color-border)] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <span>GitHub</span>
+            </button>
+          </div>
 
           <div className="flex flex-col space-y-4">
             <div className="text-center text-sm">

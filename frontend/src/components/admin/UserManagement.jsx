@@ -1,21 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Tag, Switch, Button, Space, Typography, message, Modal, Form, Input, Select } from 'antd';
-import { UserOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { UserOutlined, EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
+import PermissionWrapper from '../common/PermissionWrapper';
 
 const { Title } = Typography;
 const { Option } = Select;
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userRoles, setUserRoles] = useState([]);
   const [form] = Form.useForm();
+  const [roleForm] = Form.useForm();
 
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, []);
 
   const fetchUsers = async () => {
@@ -28,6 +35,26 @@ const UserManagement = () => {
       message.error('Failed to load users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRoles = async () => {
+    try {
+      const response = await axios.get('/api/rbac/roles');
+      setRoles(response.data.roles);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      message.error('Failed to load roles');
+    }
+  };
+
+  const fetchUserRoles = async (userId) => {
+    try {
+      const response = await axios.get(`/api/rbac/users/${userId}/roles`);
+      setUserRoles(response.data.roles.map(r => r.id));
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+      message.error('Failed to load user roles');
     }
   };
 
@@ -59,6 +86,27 @@ const UserManagement = () => {
     } catch (error) {
       console.error('Error updating user:', error);
       message.error('Failed to update user');
+    }
+  };
+
+  const handleManageRoles = (user) => {
+    setSelectedUser(user);
+    fetchUserRoles(user.id);
+    roleForm.setFieldsValue({ roles: [] });
+    setRoleModalVisible(true);
+  };
+
+  const handleAssignRoles = async (values) => {
+    try {
+      await axios.put(`/api/rbac/users/${selectedUser.id}/roles`, { roleIds: values.roles });
+      message.success('User roles updated successfully');
+      setRoleModalVisible(false);
+      setSelectedUser(null);
+      roleForm.resetFields();
+      fetchUsers();
+    } catch (error) {
+      console.error('Error assigning roles:', error);
+      message.error('Failed to assign roles');
     }
   };
 
@@ -107,12 +155,22 @@ const UserManagement = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
-            icon={<EditOutlined />} 
-            onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+          <PermissionWrapper permissions="user.update">
+            <Button 
+              icon={<EditOutlined />} 
+              onClick={() => handleEdit(record)}
+            >
+              Edit
+            </Button>
+          </PermissionWrapper>
+          <PermissionWrapper permissions="user.manage_roles">
+            <Button 
+              icon={<TeamOutlined />}
+              onClick={() => handleManageRoles(record)}
+            >
+              Roles
+            </Button>
+          </PermissionWrapper>
         </Space>
       )
     }
@@ -207,6 +265,39 @@ const UserManagement = () => {
                 Cancel
               </Button>
             </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Role Assignment Modal */}
+      <Modal
+        title={`Manage Roles: ${selectedUser?.first_name} ${selectedUser?.last_name}`}
+        open={roleModalVisible}
+        onCancel={() => {
+          setRoleModalVisible(false);
+          setSelectedUser(null);
+          roleForm.resetFields();
+        }}
+        onOk={() => roleForm.submit()}
+      >
+        <Form
+          form={roleForm}
+          layout="vertical"
+          onFinish={handleAssignRoles}
+        >
+          <Form.Item
+            name="roles"
+            label="Assign Roles"
+            rules={[{ required: true, message: 'Please select at least one role' }]}
+          >
+            <Select
+              mode="multiple"
+              placeholder="Select roles"
+              options={roles.map(role => ({
+                label: `${role.name} (Level: ${role.level})`,
+                value: role.id
+              }))}
+            />
           </Form.Item>
         </Form>
       </Modal>

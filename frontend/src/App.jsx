@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { CookieProvider } from './context/CookieContext';
 import { TrackingProvider } from './context/TrackingContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
  
 
 const ScrollToTop = () => {
@@ -38,6 +40,7 @@ import CreateContent from './components/user/CreateContent';
 import MyContent from './components/user/MyContent';
 import UserSubmissions from './components/user/UserSubmissions';
 import ArticlePreview from './components/user/ArticlePreview';
+import UserProfile from './components/user/UserProfile';
 import AdminDashboard from './components/admin/AdminDashboard';
 import UserManagement from './components/admin/UserManagement';
 import ArticleReviewPage from './components/admin/ArticleReviewPage';
@@ -45,9 +48,31 @@ import AdminEditContent from './components/admin/AdminEditContent';
 import AdminSubmissions from './components/admin/AdminSubmissions';
 import PrivateRoute from './components/common/PrivateRoute';
 import AdminRoute from './components/common/AdminRoute';
+import DashboardLayout from './components/admin/DashboardLayout';
+import UserDashboardLayout from './components/user/UserDashboardLayout';
+import DashboardHome from './components/admin/DashboardHome';
+import Analytics from './components/admin/Analytics';
+import ContentListing from './components/admin/ContentListing';
+import AdminContent from './components/admin/AdminContent';
+import ContentReview from './components/admin/ContentReview';
+import MediaLibrary from './components/admin/MediaLibrary';
+import Uploads from './components/admin/Uploads';
+import Categories from './components/admin/Categories';
+import Integrations from './components/admin/Integrations';
+import AuditLogs from './components/admin/AuditLogs';
+import Menus from './components/admin/Menus';
+import Navigation from './components/admin/Navigation';
+import Forms from './components/admin/Forms';
+import SEO from './components/admin/SEO';
+import Roles from './components/admin/Roles';
+import SessionManagement from './components/admin/SessionManagement';
 import SearchResults from './components/public/SearchResults';
 import ContactUs from './pages/ContactUs';
 import StandaloneLandingPage from './pages/StandaloneLandingPage';
+import CaseStudyPage from './pages/CaseStudyPage';
+import Unsubscribe from './components/public/Unsubscribe';
+import { ChatProvider } from './context/ChatContext';
+import ChatWidget from './components/common/chatbot/ChatWidget';
 
 const { Content } = Layout;
 
@@ -106,7 +131,7 @@ const theme = {
 function AppContent() {
   const authRoutes = ['/login', '/register', '/forgot-password'];
   const standaloneRoutes = ['/content/:slug'];
-  const dashboardRoutes = ['/dashboard', '/create-content', '/my-content', '/my-submissions', '/admin', '/admin/users', '/admin/submissions'];
+  const dashboardRoutes = ['/dashboard', '/create-content', '/my-content', '/my-submissions', '/admin', '/admin/users', '/admin/submissions', '/dashboard/analytics', '/dashboard/create-post', '/dashboard/drafts', '/dashboard/scheduled', '/dashboard/categories', '/dashboard/profile', '/dashboard/settings'];
   const location = useLocation();
   const isAuthRoute = authRoutes.includes(location.pathname);
   const isStandaloneRoute = standaloneRoutes.some(route => {
@@ -119,7 +144,7 @@ function AppContent() {
     if (route.includes(':')) {
       return location.pathname.startsWith(route.split(':')[0]);
     }
-    return location.pathname === route;
+    return location.pathname === route || location.pathname.startsWith(route + '/');
   });
 
   return (
@@ -134,12 +159,12 @@ function AppContent() {
       {/* Regular routes with Navbar/Footer */}
       {!isStandaloneRoute && (
         <Layout className="app-layout" style={{ background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-          {!isAuthRoute && <Navbar />}
+          {!isAuthRoute && !isDashboardRoute && <Navbar />}
           <Content className="app-content" style={{
-            minHeight: isAuthRoute ? '100vh' : 'calc(100vh - 120px)',
-            background: isAuthRoute ? 'transparent' : '#f8f9fa',
+            minHeight: isAuthRoute || isDashboardRoute ? '100vh' : 'calc(100vh - 120px)',
+            background: isAuthRoute || isDashboardRoute ? 'transparent' : '#f8f9fa',
             flex: 1,
-            paddingTop: isAuthRoute ? 0 : 61
+            paddingTop: isAuthRoute || isDashboardRoute ? 0 : 61
           }}>
             <Routes>
               {/* Public Routes */}
@@ -148,6 +173,15 @@ function AppContent() {
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/blog/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/news/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/interview/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/webinar/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/event/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/ebook/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/whitepaper/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/report/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+              <Route path="/whitepapers" element={<CategoryList />} />
               <Route path="/category/:slug" element={<CategoryList />} />
               <Route path="/articles" element={<CategoryList />} />
               <Route path="/ebooks" element={<CategoryList />} />
@@ -160,7 +194,9 @@ function AppContent() {
               <Route path="/events" element={<CategoryList />} />
               <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
               <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/contact" element={<ContactUs />} />
+              <Route path="/case-study/:slug" element={<CaseStudyPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-use" element={<TermsOfUse />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -174,12 +210,51 @@ function AppContent() {
               <Route path="/vendor-list" element={<VendorList />} />
               <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
 
+              {/* Admin Routes - must come first to match before User Routes */}
+              <Route path="/dashboard" element={
+                <AdminRoute>
+                  <DashboardLayout />
+                </AdminRoute>
+              }>
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="content" element={<AdminContent />} />
+                <Route path="pending-review" element={<ContentReview />} />
+                <Route path="drafts" element={<ContentListing />} />
+                <Route path="create-post" element={<CreateContent />} />
+                <Route path="tags" element={<Categories />} />
+                <Route path="media-library" element={<MediaLibrary />} />
+                <Route path="uploads" element={<Uploads />} />
+                <Route path="categories" element={<Categories />} />
+                <Route path="menus" element={<Menus />} />
+                <Route path="navigation" element={<Navigation />} />
+                <Route path="forms" element={<Forms />} />
+                <Route path="seo" element={<SEO />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="roles" element={<Roles />} />
+                <Route path="permissions" element={<Roles />} />
+                <Route path="audit-logs" element={<AuditLogs />} />
+                <Route path="integrations" element={<Integrations />} />
+                <Route path="sessions" element={<SessionManagement />} />
+                <Route path="profile" element={<UserProfile />} />
+                <Route path="settings" element={<UserProfile />} />
+              </Route>
+
               {/* User Routes */}
               <Route path="/dashboard" element={
                 <PrivateRoute>
-                  <Dashboard />
+                  <UserDashboardLayout />
                 </PrivateRoute>
-              } />
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="my-content" element={<MyContent />} />
+                <Route path="drafts" element={<MyContent />} />
+                <Route path="scheduled" element={<MyContent />} />
+                <Route path="create-post" element={<CreateContent />} />
+                <Route path="profile" element={<UserProfile />} />
+                <Route path="settings" element={<UserProfile />} />
+              </Route>
+
+              {/* Legacy routes for backward compatibility */}
               <Route path="/create-content" element={
                 <PrivateRoute>
                   <CreateContent />
@@ -209,32 +284,18 @@ function AppContent() {
               {/* Admin Routes */}
               <Route path="/admin" element={
                 <AdminRoute>
-                  <AdminDashboard />
+                  <DashboardLayout />
                 </AdminRoute>
-              } />
-              <Route path="/admin/review/:id" element={
-                <AdminRoute>
-                  <ArticleReviewPage />
-                </AdminRoute>
-              } />
-              <Route path="/admin/edit/:id" element={
-                <AdminRoute>
-                  <AdminEditContent />
-                </AdminRoute>
-              } />
-              <Route path="/admin/users" element={
-                <AdminRoute>
-                  <UserManagement />
-                </AdminRoute>
-              } />
-              <Route path="/admin/submissions" element={
-                <AdminRoute>
-                  <AdminSubmissions />
-                </AdminRoute>
-              } />
+              }>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="submissions" element={<AdminSubmissions />} />
+                <Route path="review/:id" element={<ArticleReviewPage />} />
+                <Route path="edit/:id" element={<AdminEditContent />} />
+              </Route>
             </Routes>
           </Content>
-          {!isAuthRoute && <Footer simplified={isDashboardRoute} />}
+          {!isAuthRoute && !isDashboardRoute && <Footer />}
           <CookieBanner />
         </Layout>
       )}
@@ -245,13 +306,20 @@ function AppContent() {
 function App() {
  return (
     <ConfigProvider theme={theme}>
-      <CookieProvider>
-        <TrackingProvider>
-          <AntApp>
-            <AppContent />
-          </AntApp>
-        </TrackingProvider>
-      </CookieProvider>
+      <AuthProvider>
+        <ThemeProvider>
+          <CookieProvider>
+            <TrackingProvider>
+            <ChatProvider>
+              <AntApp>
+                <AppContent />
+                <ChatWidget />
+              </AntApp>
+              </ChatProvider>
+            </TrackingProvider>
+          </CookieProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </ConfigProvider>
   );
 }

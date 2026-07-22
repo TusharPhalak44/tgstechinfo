@@ -6,7 +6,7 @@ const DataRequest = require('../models/DataRequest');
 const ContactSubmission = require('../models/ContactSubmission');
 const Download = require('../models/Download');
 const { pool } = require('../config/database');
-const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate } = require('../config/email');
+const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail } = require('../config/email');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
 
@@ -39,7 +39,12 @@ const normalizeContentTypeSlug = (value) => {
         whitepaper: 'whitepaper',
         'white-paper': 'whitepaper',
         'white paper': 'whitepaper',
-        whitepapers: 'whitepaper'
+        whitepapers: 'whitepaper',
+        'case-study': 'case-study',
+        'case study': 'case-study',
+        casestudy: 'case-study',
+        'case-studies': 'case-study',
+        'case studies': 'case-study',
     };
 
     return slugMap[String(value || '').toLowerCase().trim()] || String(value || '').toLowerCase().trim();
@@ -354,21 +359,99 @@ exports.subscribeContent = async (req, res) => {
 exports.subscribeNewsletter = async (req, res) => {
     try {
         const { email } = req.body;
-        
+
         // Check if already subscribed
-        const query = 'SELECT * FROM newsletter_subscribers WHERE email = $1';
-        const existing = await pool.query(query, [email]);
-        
-        if (existing.rows.length > 0) {
+        const [existing] = await pool.query(
+            'SELECT * FROM newsletter_subscribers WHERE email = ?',
+            [email]
+        );
+
+        if (existing.length > 0) {
             return res.status(400).json({ message: 'Email already subscribed' });
         }
 
-        const insertQuery = 'INSERT INTO newsletter_subscribers (email) VALUES ($1) RETURNING *';
-        const result = await pool.query(insertQuery, [email]);
-        
+        // Generate unsubscribe token
+        const crypto = require('crypto');
+        const unsubscribeToken = crypto.randomBytes(32).toString('hex');
+
+        await pool.query(
+            'INSERT INTO newsletter_subscribers (email, unsubscribe_token) VALUES (?, ?)',
+            [email, unsubscribeToken]
+        );
+
+        // Send confirmation email
+        try {
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const emailHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                        .header { background: #1a237e; color: white; padding: 20px; text-align: center; }
+                        .content { padding: 30px; background: #f5f5f5; }
+                        .footer { padding: 20px; text-align: center; background: #e0e0e0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header"><h2>Newsletter Subscription Confirmed</h2></div>
+                        <div class="content">
+                            <h3>Welcome!</h3>
+                            <p>Thank you for subscribing to the TGS Tech Info newsletter.</p>
+                            <p>You'll receive the latest insights, case studies, and industry updates directly in your inbox.</p>
+                            <p>If you have any questions, feel free to contact us at <a href="mailto:info@tgstechinfo.com">info@tgstechinfo.com</a></p>
+                            <br>
+                            <p>To unsubscribe, click <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}">here</a></p>
+                            <br>
+                            <p>Regards,</p>
+                            <p><strong>TGS Tech Info Team</strong></p>
+                        </div>
+                        <div class="footer"><p>© 2024 TGS Tech Info. All rights reserved.</p></div>
+                    </div>
+                </body>
+                </html>
+            `;
+            await sendEmail(email, 'Newsletter Subscription Confirmed - TGS Tech Info', emailHtml);
+        } catch (emailError) {
+            console.warn('Newsletter confirmation email failed:', emailError.message);
+        }
+
         res.json({ message: 'Subscribed to newsletter successfully' });
     } catch (error) {
         console.error('Newsletter subscription error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.unsubscribeNewsletter = async (req, res) => {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            return res.status(400).json({ message: 'Unsubscribe token is required' });
+        }
+
+        // Find subscriber by token
+        const [subscribers] = await pool.query(
+            'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ? AND is_active = 1',
+            [token]
+        );
+
+        if (subscribers.length === 0) {
+            return res.status(404).json({ message: 'Invalid or expired unsubscribe link' });
+        }
+
+        // Mark as unsubscribed
+        await pool.query(
+            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW() WHERE unsubscribe_token = ?',
+            [token]
+        );
+
+        res.json({ message: 'Successfully unsubscribed from newsletter' });
+    } catch (error) {
+        console.error('Newsletter unsubscribe error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -664,6 +747,164 @@ exports.getDynamicFormSubmissions = async (req, res) => {
         res.json({ rows, total });
     } catch (error) {
         console.error('Get dynamic form submissions error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CASE STUDIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/public/case-studies
+ * Returns up to `limit` published case-study content items.
+ * Includes case_study_headline, case_study_summary, pdf_file, and slug.
+ */
+exports.getCaseStudies = async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit, 10) || 2, 50);
+        const offset = parseInt(req.query.offset, 10) || 0;
+
+        const [rows] = await pool.query(
+            `SELECT c.id, c.title, c.slug, c.short_description,
+                    c.case_study_headline, c.case_study_summary,
+                    c.banner_image, c.pdf_file, c.created_at, c.published_date,
+                    ct.name AS content_type_name
+             FROM contents c
+             LEFT JOIN content_types ct ON ct.id = c.content_type_id
+             WHERE c.status = 'published'
+               AND ct.slug = 'case-study'
+             ORDER BY c.published_date DESC, c.created_at DESC
+             LIMIT ? OFFSET ?`,
+            [limit, offset]
+        );
+
+        res.json({ data: rows, total: rows.length });
+    } catch (error) {
+        console.error('getCaseStudies error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * GET /api/public/case-study/:slug
+ * Returns a single published case study by slug (no PDF url exposed until gate is passed).
+ */
+exports.getCaseStudyBySlug = async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const [rows] = await pool.query(
+            `SELECT c.id, c.title, c.slug, c.short_description,
+                    c.case_study_headline, c.case_study_summary,
+                    c.banner_image, c.pdf_file, c.created_at, c.published_date,
+                    ct.name AS content_type_name
+             FROM contents c
+             LEFT JOIN content_types ct ON ct.id = c.content_type_id
+             WHERE c.slug = ?
+               AND c.status = 'published'
+               AND ct.slug = 'case-study'
+             LIMIT 1`,
+            [slug]
+        );
+        if (!rows.length) return res.status(404).json({ message: 'Case study not found' });
+        res.json({ data: rows[0] });
+    } catch (error) {
+        console.error('getCaseStudyBySlug error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+/**
+ * POST /api/public/case-study-gate
+ * Body: { slug, name, email, contact }
+ *
+ * 1. Validates the case study exists and is published
+ * 2. Stores the lead in case_study_submissions
+ * 3. Sends the custom email template (or fallback) to the submitted email
+ * 4. Returns the pdf_file path so the frontend can open the PDF
+ */
+exports.submitCaseStudyGate = async (req, res) => {
+    try {
+        const { slug, name, email, contact } = req.body;
+
+        if (!slug || !name || !email || !contact) {
+            return res.status(400).json({ message: 'slug, name, email, and contact are required.' });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Invalid email address.' });
+        }
+
+        // Fetch case study (any status so staging previews also work)
+        const [rows] = await pool.query(
+            `SELECT c.id, c.title, c.slug, c.pdf_file, c.email_subject, c.email_template
+             FROM contents c
+             LEFT JOIN content_types ct ON ct.id = c.content_type_id
+             WHERE c.slug = ?
+               AND ct.slug = 'case-study'
+             LIMIT 1`,
+            [slug]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ message: 'Case study not found.' });
+        }
+
+        const caseStudy = rows[0];
+
+        // Store lead
+        await pool.query(
+            `INSERT INTO case_study_submissions
+                (content_id, name, email, contact, ip_address, user_agent)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [
+                caseStudy.id,
+                name.trim(),
+                email.trim().toLowerCase(),
+                contact.trim(),
+                req.ip || null,
+                req.headers['user-agent'] || null,
+            ]
+        );
+
+        // Send email using custom template or fallback
+        try {
+            const emailHtml = renderCaseStudyEmail(caseStudy.email_template, {
+                name,
+                title: caseStudy.title,
+                email,
+                contact,
+                slug: caseStudy.slug,
+            });
+            // Use custom subject if provided, otherwise use fallback
+            const emailSubject = caseStudy.email_subject 
+                ? renderCaseStudyEmail(caseStudy.email_subject, {
+                    name,
+                    title: caseStudy.title,
+                    email,
+                    contact,
+                    slug: caseStudy.slug,
+                })
+                : `Your Case Study: ${caseStudy.title}`;
+            const result = await sendEmail(
+                email.trim().toLowerCase(),
+                emailSubject,
+                emailHtml
+            );
+            if (result?.skipped) console.warn('Case study email skipped:', result.reason);
+        } catch (emailErr) {
+            console.warn('Case study email failed (non-fatal):', emailErr.message);
+        }
+
+        res.json({
+            message: 'Access granted.',
+            pdf_file: caseStudy.pdf_file || null,
+            slug: caseStudy.slug,
+        });
+    } catch (error) {
+        console.error('submitCaseStudyGate error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

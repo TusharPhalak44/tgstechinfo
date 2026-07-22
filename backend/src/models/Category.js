@@ -26,6 +26,32 @@ class Category {
         );
         return rows[0];
     }
+
+    static async create(categoryData) {
+        const { name, slug, type, parent_id } = categoryData;
+        const query = `
+            INSERT INTO categories (name, slug, type, parent_id)
+            VALUES (?, ?, ?, ?)
+        `;
+        const [result] = await pool.query(query, [name, slug, type || null, parent_id || null]);
+        return await Category.findById(result.insertId);
+    }
+
+    static async update(id, categoryData) {
+        const { name, slug, type, parent_id } = categoryData;
+        const query = `
+            UPDATE categories 
+            SET name = ?, slug = ?, type = ?, parent_id = ?
+            WHERE id = ?
+        `;
+        await pool.query(query, [name, slug, type || null, parent_id || null, id]);
+        return await Category.findById(id);
+    }
+
+    static async delete(id) {
+        const [result] = await pool.query('DELETE FROM categories WHERE id = ?', [id]);
+        return result.affectedRows > 0;
+    }
 }
 
 module.exports = Category;

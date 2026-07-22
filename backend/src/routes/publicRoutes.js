@@ -21,6 +21,15 @@ router.get('/content-types', publicController.getContentTypes);
 // Public stats
 router.get('/stats', publicController.getPublicStats);
 
+// Case studies
+router.get('/case-studies', publicController.getCaseStudies);
+router.get('/case-study/:slug', publicController.getCaseStudyBySlug);
+router.post('/case-study-gate', publicController.submitCaseStudyGate);
+
+// Newsletter
+router.post('/newsletter', publicController.subscribeNewsletter);
+router.get('/newsletter/unsubscribe', publicController.unsubscribeNewsletter);
+
 // Data requests (DSAR + Do Not Sell)
 router.post('/data-request/dsar', publicController.submitDataRequest);
 router.post('/data-request/do-not-sell', publicController.submitDoNotSell);

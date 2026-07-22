@@ -2,34 +2,63 @@ const express = require('express');
 const router = express.Router();
 const contentController = require('../controllers/contentController');
 const notificationController = require('../controllers/notificationController');
-const { authenticate, isContentCreator } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
+const { hasPermission, hasAnyPermission, isOwnerOrHasPermission } = require('../middleware/permissions');
 const { upload, uploadWithPdf } = require('../middleware/upload');
 
-// ✅ All user routes require authentication
+// All user routes require authentication
 router.use(authenticate);
 
 // Notifications
-router.get('/notifications', notificationController.getNotifications);
-router.put('/notifications/:id/read', notificationController.markAsRead);
+router.get('/notifications', hasPermission('settings.read'), notificationController.getNotifications);
+router.put('/notifications/:id/read', hasPermission('settings.update'), notificationController.markAsRead);
 
-// ✅ Content creation - Only users can create, not admin
-router.post('/content', isContentCreator, uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), contentController.createContent);
-router.put('/content/:id', isContentCreator, uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), contentController.updateContent);
-router.put('/content/:id/webhook', isContentCreator, contentController.updateWebhookSettings);
-router.post('/content/:id/submit', isContentCreator, contentController.submitForReview);
+// Content creation — any authenticated user can create content
+router.post('/content', 
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), 
+    contentController.createContent
+);
 
-// ✅ View content - Both users and admin can view
+// Content update - owner or has permission
+router.put('/content/:id', 
+    isOwnerOrHasPermission('content.update', async (req) => {
+        const Content = require('../models/Content');
+        const content = await Content.findById(req.params.id);
+        return content ? content.user_id : null;
+    }),
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), 
+    contentController.updateContent
+);
+
+router.put('/content/:id/webhook', 
+    isOwnerOrHasPermission('content.update', async (req) => {
+        const Content = require('../models/Content');
+        const content = await Content.findById(req.params.id);
+        return content ? content.user_id : null;
+    }),
+    contentController.updateWebhookSettings
+);
+
+router.post('/content/:id/submit', 
+    isOwnerOrHasPermission('content.publish', async (req) => {
+        const Content = require('../models/Content');
+        const content = await Content.findById(req.params.id);
+        return content ? content.user_id : null;
+    }),
+    contentController.submitForReview
+);
+
+// View content — any authenticated user
 router.get('/content', contentController.getUserContent);
 router.get('/content/:id', contentController.getUserContentById);
 
-// ✅ User's article submissions (landing page form data)
+// User's article submissions (landing page form data)
 router.get('/submissions', async (req, res) => {
     try {
         const LandingPage = require('../models/LandingPage');
         const { limit = 50, offset = 0, content_id } = req.query;
         let result;
         if (content_id) {
-            // filter by specific article (must belong to this user)
             const Content = require('../models/Content');
             const content = await Content.findById(content_id);
             if (!content || content.user_id !== req.user.id)

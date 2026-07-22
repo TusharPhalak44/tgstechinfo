@@ -6,7 +6,7 @@ import {
 import {
   UploadOutlined, SaveOutlined, ArrowLeftOutlined,
   PictureOutlined, SettingOutlined, InfoCircleOutlined,
-  TagOutlined, CalendarOutlined
+  TagOutlined, CalendarOutlined, MailOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -31,6 +31,7 @@ const AdminEditContent = () => {
   const [initialContent, setInitialContent] = useState('');
   const [editorReady, setEditorReady] = useState(false);
   const [fileList, setFileList] = useState([]);
+  const [selectedContentType, setSelectedContentType] = useState(null);
 
   useEffect(() => {
     Promise.all([fetchMeta(), fetchContent()]);
@@ -47,6 +48,10 @@ const AdminEditContent = () => {
     } catch {
       message.error('Failed to load categories/types');
     }
+  };
+
+  const handleContentTypeChange = (value) => {
+    setSelectedContentType(value);
   };
 
   const fetchContent = async () => {
@@ -168,7 +173,7 @@ const AdminEditContent = () => {
               </Text>
               <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
                 <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true }]} style={{ flex: 1, marginBottom: 0 }}>
-                  <Select placeholder="Select type" size="large">
+                  <Select placeholder="Select type" size="large" onChange={handleContentTypeChange}>
                     {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
                   </Select>
                 </Form.Item>
@@ -286,6 +291,41 @@ const AdminEditContent = () => {
                 <Input placeholder="keyword1, keyword2, ..." size="small" />
               </Form.Item>
             </div>
+
+            {/* Email Template - only for case studies */}
+            {selectedContentType && (() => {
+              const contentType = contentTypes.find(t => t.id === selectedContentType);
+              return contentType && contentType.slug === 'case-study';
+            })() && (
+              <div style={{ background: '#fff', borderRadius: 12, padding: 20, border: '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+                  <MailOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Email Template
+                </Text>
+                <Form.Item
+                  name="email_subject"
+                  label={<Text style={{ fontSize: 12 }}>Email Subject</Text>}
+                  style={{ marginBottom: 12 }}
+                  tooltip="Subject line for the email sent to users who fill the case study form. Use placeholders: {{name}}, {{title}}"
+                >
+                  <Input
+                    placeholder="Enter email subject..."
+                    size="small"
+                  />
+                </Form.Item>
+                <Form.Item
+                  name="email_template"
+                  label={<Text style={{ fontSize: 12 }}>Email Body (HTML)</Text>}
+                  style={{ marginBottom: 0 }}
+                  tooltip="Custom HTML email body sent to users who fill the case study form. Use placeholders: {{name}}, {{title}}, {{email}}, {{contact}}, {{slug}}"
+                >
+                  <TextArea
+                    rows={10}
+                    placeholder="Enter custom HTML email body..."
+                    style={{ resize: 'none', fontSize: 12, fontFamily: 'monospace' }}
+                  />
+                </Form.Item>
+              </div>
+            )}
 
           </div>
         </div>

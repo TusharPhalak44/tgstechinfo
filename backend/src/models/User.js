@@ -1,4 +1,5 @@
 const { pool } = require('../config/database');
+const Role = require('./Role');
 
 class User {
     static async create(userData) {
@@ -8,7 +9,18 @@ class User {
             VALUES (?, ?, ?, ?, ?)
         `;
         const [result] = await pool.query(query, [first_name, last_name, email, password_hash, role]);
-        return await User.findById(result.insertId);
+        
+        // Assign default role based on role string
+        const user = await User.findById(result.insertId);
+        if (user) {
+            const roleName = role === 'admin' ? 'Admin' : role === 'user' ? 'Contributor' : 'Contributor';
+            const defaultRole = await Role.findByName(roleName);
+            if (defaultRole) {
+                await Role.assignToUser(user.id, defaultRole.id);
+            }
+        }
+        
+        return user;
     }
 
     static async findByEmail(email) {
@@ -33,6 +45,34 @@ class User {
         `;
         await pool.query(query, [first_name, last_name, email, is_active, id]);
         return await User.findById(id);
+    }
+
+    static async getRoles(userId) {
+        return await Role.getUserRoles(userId);
+    }
+
+    static async getPermissions(userId) {
+        const Permission = require('./Permission');
+        return await Permission.getPermissionsByUser(userId);
+    }
+
+    static async hasPermission(userId, permissionName) {
+        const Permission = require('./Permission');
+        return await Permission.hasPermission(userId, permissionName);
+    }
+
+    static async hasAnyPermission(userId, resource, action) {
+        const Permission = require('./Permission');
+        return await Permission.hasAnyPermission(userId, resource, action);
+    }
+
+    static async getHighestRole(userId) {
+        return await Role.getUserHighestRole(userId);
+    }
+
+    static async getRoleLevel(userId) {
+        const role = await Role.getUserHighestRole(userId);
+        return role ? role.level : 0;
     }
 
     // Account lockout methods

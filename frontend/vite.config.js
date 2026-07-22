@@ -14,11 +14,16 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:5000',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err) => console.log('proxy error', err));
+        }
       },
       '/uploads': {
         target: 'http://localhost:5000',
-        changeOrigin: true
+        changeOrigin: true,
+        secure: false
       }
     }
   },

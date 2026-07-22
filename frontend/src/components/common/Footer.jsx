@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { message } from 'antd';
 import {
   FacebookOutlined, TwitterOutlined, LinkedinOutlined, YoutubeOutlined,
   MailOutlined, PhoneOutlined, EnvironmentOutlined, ArrowRightOutlined,
   SendOutlined
 } from '@ant-design/icons';
 import CookiePreferencesModal from './CookieBanner';
+import axios from 'axios';
 
 const FooterLink = ({ to, children }) => (
   <Link to={to} style={{
@@ -48,6 +50,31 @@ const ColHead = ({ children, accent = 'var(--color-accent)' }) => (
 const Footer = ({ simplified = false }) => {
   const year = new Date().getFullYear();
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterLoading, setNewsletterLoading] = useState(false);
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      message.error('Please enter a valid email address');
+      return;
+    }
+
+    setNewsletterLoading(true);
+    try {
+      await axios.post('/api/public/newsletter', { email: newsletterEmail });
+      message.success('Successfully subscribed to newsletter!');
+      setNewsletterEmail('');
+    } catch (error) {
+      if (error.response?.status === 400) {
+        message.error(error.response.data.message || 'Email already subscribed');
+      } else {
+        message.error('Failed to subscribe. Please try again.');
+      }
+    } finally {
+      setNewsletterLoading(false);
+    }
+  };
 
   // Simplified footer for dashboard pages
   if (simplified) {
@@ -196,18 +223,30 @@ const Footer = ({ simplified = false }) => {
             <div style={{ background: 'var(--color-primary-light)', border: '1px solid var(--color-border)', borderRadius: 12, padding: '16px' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Newsletter</div>
               <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 10 }}>Weekly tech digest, free.</div>
-              <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
-                <input placeholder="your@email.com" style={{
-                  flex: 1, padding: '9px 12px', border: 'none', fontSize: 12,
-                  outline: 'none', background: 'var(--color-surface)', color: 'var(--color-heading)'
-                }} />
-                <button style={{
-                  padding: '9px 14px', background: 'var(--color-accent)',
-                  border: 'none', color: '#fff', fontSize: 14, cursor: 'pointer'
-                }}>
-                  <SendOutlined />
+              <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+                <input
+                  type="email"
+                  placeholder="your@email.com"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  disabled={newsletterLoading}
+                  style={{
+                    flex: 1, padding: '9px 12px', border: 'none', fontSize: 12,
+                    outline: 'none', background: 'var(--color-surface)', color: 'var(--color-heading)'
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={newsletterLoading}
+                  style={{
+                    padding: '9px 14px', background: 'var(--color-accent)',
+                    border: 'none', color: '#fff', fontSize: 14, cursor: newsletterLoading ? 'not-allowed' : 'pointer',
+                    opacity: newsletterLoading ? 0.7 : 1
+                  }}
+                >
+                  {newsletterLoading ? '...' : <SendOutlined />}
                 </button>
-              </div>
+              </form>
             </div>
           </div>
 

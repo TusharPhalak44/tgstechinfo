@@ -6,7 +6,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-dotenv.config();
+// Load .env but do NOT override variables already set by Docker/OS environment
+dotenv.config({ override: false });
 
 const app = express();
 
@@ -79,8 +80,8 @@ app.use('/api/public', require('./src/routes/publicRoutes'));
 app.use('/api/cookie-consent', require('./src/routes/cookieConsentRoutes'));
 app.use('/api/tracking', require('./src/routes/trackingRoutes'));
 app.use('/api/analytics', require('./src/routes/analyticsRoutes'));
-app.use('/api/chatbot', require('./src/routes/chatbotRoutes'));
-app.use('/api/admin/chatbot/analytics', require('./src/routes/chatbotAnalyticsRoutes'));
+// app.use('/api/chatbot', require('./src/routes/chatbotRoutes'));
+// app.use('/api/admin/chatbot/analytics', require('./src/routes/chatbotAnalyticsRoutes'));
 app.use('/api/rbac', require('./src/routes/rbacRoutes'));
 app.use('/api/media', require('./src/routes/mediaRoutes'));
  

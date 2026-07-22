@@ -27,5 +27,9 @@ router.post('/logout', authController.logout);
 router.post('/refresh', authController.refreshToken);
 router.get('/profile', authenticate, authController.getProfile);
 router.put('/profile', authenticate, authController.updateProfile);
+router.get('/sessions', authenticate, authController.getSessions);
+router.delete('/sessions/:sessionId', authenticate, authController.revokeSession);
+router.delete('/sessions', authenticate, authController.revokeAllSessions);
+router.get('/login-history', authenticate, authController.getLoginHistory);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 // Home.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Row, Col, Tag, Skeleton } from 'antd';
+import { Row, Col, Tag, Skeleton, message } from 'antd';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   CalendarOutlined, EyeOutlined, ArrowRightOutlined,
@@ -11,6 +11,76 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { Card, CardContent } from '@/components/ui/card';
+
+// Newsletter Subscribe Form Component
+const NewsletterSubscribeForm = ({ darkMode = false }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || !email.includes('@')) {
+      message.error('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await axios.post('/api/public/newsletter', { email });
+      message.success('Successfully subscribed to newsletter!');
+      setEmail('');
+    } catch (error) {
+      if (error.response?.status === 400) {
+        message.error(error.response.data.message || 'Email already subscribed');
+      } else {
+        message.error('Failed to subscribe. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, maxWidth: 440, margin: '0 auto', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <input
+        type="email"
+        placeholder="Enter your email address"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        disabled={loading}
+        style={{
+          flex: 1,
+          minWidth: 220,
+          padding: '12px 18px',
+          borderRadius: 10,
+          border: 'none',
+          fontSize: 14,
+          outline: 'none',
+          background: darkMode ? 'rgba(255,255,255,.95)' : 'var(--color-surface)',
+          color: darkMode ? '#333' : 'var(--color-heading)'
+        }}
+      />
+      <button
+        type="submit"
+        disabled={loading}
+        style={{
+          padding: '12px 24px',
+          borderRadius: 10,
+          border: 'none',
+          background: darkMode ? 'var(--color-heading)' : 'var(--color-accent)',
+          color: '#fff',
+          fontWeight: 600,
+          fontSize: 14,
+          cursor: loading ? 'not-allowed' : 'pointer',
+          whiteSpace: 'nowrap',
+          opacity: loading ? 0.7 : 1
+        }}
+      >
+        {loading ? 'Subscribing...' : 'Subscribe Free'}
+      </button>
+    </form>
+  );
+};
 
 // ── Scroll-reveal hook ──────────────────────────────────────────
 const useReveal = () => {
@@ -214,6 +284,243 @@ const CategoryNav = ({ activeTab, setActiveTab }) => (
   </div>
 );
 
+// ── Case Studies Section ─────────────────────────────────────────
+const CaseStudiesSection = ({ navigate }) => {
+  const [ref, visible] = useReveal();
+  const [caseStudies, setCaseStudies] = useState([]);
+  const [loading, setCsLoading] = useState(true);
+  const [gateVisible, setGateVisible] = useState(false);
+  const [selectedCs, setSelectedCs] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [formValues, setFormValues] = useState({ name: '', email: '', contact: '' });
+  const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    axios.get('/api/public/case-studies?limit=2')
+      .then(r => setCaseStudies(r.data?.data || []))
+      .catch(() => setCaseStudies([]))
+      .finally(() => setCsLoading(false));
+  }, []);
+
+  if (!loading && caseStudies.length === 0) return null;
+
+  const openGate = (cs) => {
+    setSelectedCs(cs);
+    setFormValues({ name: '', email: '', contact: '' });
+    setFormErrors({});
+    setGateVisible(true);
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!formValues.name.trim()) errs.name = 'Name is required';
+    if (!formValues.email.trim()) errs.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email)) errs.email = 'Invalid email';
+    if (!formValues.contact.trim()) errs.contact = 'Contact is required';
+    return errs;
+  };
+
+  const handleSubmit = async () => {
+    const errs = validate();
+    if (Object.keys(errs).length) { setFormErrors(errs); return; }
+    setSubmitting(true);
+    try {
+      const res = await axios.post('/api/public/case-study-gate', {
+        slug: selectedCs.slug,
+        ...formValues,
+      });
+      setGateVisible(false);
+      // Navigate to the case study page (PDF viewer)
+      navigate(`/case-study/${selectedCs.slug}`);
+    } catch (err) {
+      setFormErrors({ submit: err.response?.data?.message || 'Submission failed. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div ref={ref} style={{ margin: '56px 0', opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(32px)', transition: 'opacity .6s ease, transform .6s ease' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 4, height: 24, background: 'var(--color-primary)', borderRadius: 4, display: 'inline-block' }} />
+          <span style={{ fontSize: 20, color: 'var(--color-primary)', lineHeight: 1 }}>📋</span>
+          <span style={{ fontWeight: 800, fontSize: 20, color: 'var(--color-heading)' }}>Case Studies</span>
+          <span style={{ background: 'var(--color-primary-light)', color: 'var(--color-primary)', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 12, marginLeft: 4 }}>FREE</span>
+        </div>
+        <a href="/case-studies" style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', padding: '5px 16px', borderRadius: 20, border: '1px solid var(--color-border)', background: 'var(--color-primary-light)' }}>
+          View All <ArrowRightOutlined style={{ fontSize: 11 }} />
+        </a>
+      </div>
+
+      {/* Cards */}
+      {loading ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+          {[1, 2].map(i => (
+            <div key={i} style={{ height: 260, background: 'var(--color-surface)', borderRadius: 16, border: '1px solid var(--color-border)', padding: 28 }}>
+              <div style={{ height: 20, background: '#f0f0f0', borderRadius: 6, marginBottom: 14, width: '60%' }} />
+              <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, marginBottom: 8, width: '90%' }} />
+              <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, width: '75%' }} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }} className="case-studies-grid">
+          {caseStudies.map((cs, idx) => (
+            <div
+              key={cs.id}
+              onClick={() => openGate(cs)}
+              style={{
+                background: 'var(--color-surface)', borderRadius: 16, overflow: 'hidden',
+                border: '1.5px solid var(--color-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                display: 'flex', flexDirection: 'column', cursor: 'pointer',
+                transition: 'all .3s cubic-bezier(0.4,0,0.2,1)',
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(28px)',
+                transitionDelay: `${idx * 120}ms`,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)';
+                e.currentTarget.style.boxShadow = '0 24px 48px rgba(11,31,77,0.10)';
+                e.currentTarget.style.borderColor = 'var(--color-primary)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.05)';
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+              }}
+            >
+              {/* Banner */}
+              <div style={{ position: 'relative', overflow: 'hidden', height: 180, background: 'linear-gradient(135deg, #0b2a5e 0%, #0AAEEF 100%)' }}>
+                {cs.banner_image ? (
+                  <img src={`/uploads/${cs.banner_image}`} alt={cs.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: 48, opacity: 0.4 }}>📋</span>
+                  </div>
+                )}
+                {/* PDF badge */}
+                <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(255,255,255,0.95)', borderRadius: 8, padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontSize: 13 }}>📄</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#c92a2a' }}>PDF</span>
+                </div>
+                {/* Free badge */}
+                <div style={{ position: 'absolute', top: 12, left: 12, background: 'var(--color-primary)', borderRadius: 8, padding: '4px 10px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 }}>Free Download</span>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: '22px 24px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <h3 style={{ fontWeight: 800, fontSize: 18, lineHeight: 1.4, color: 'var(--color-heading)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {cs.case_study_headline || cs.title}
+                </h3>
+                <p style={{ fontSize: 14, color: 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {cs.case_study_summary || cs.short_description}
+                </p>
+                <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <CalendarOutlined style={{ fontSize: 11 }} />
+                    {moment(cs.published_date || cs.created_at).format('MMM D, YYYY')}
+                  </span>
+                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: 'var(--color-primary)', color: '#fff', fontWeight: 700, fontSize: 13, border: 'none', borderRadius: 20, cursor: 'pointer', transition: 'opacity .2s' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    Download <ArrowRightOutlined style={{ fontSize: 11 }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Gate Modal */}
+      {gateVisible && selectedCs && (
+        <div
+          onClick={() => setGateVisible(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 460, padding: 36, position: 'relative', boxShadow: '0 32px 80px rgba(0,0,0,0.2)' }}
+          >
+            {/* Close */}
+            <button onClick={() => setGateVisible(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#8c8c8c', lineHeight: 1 }}>✕</button>
+
+            {/* Icon + Title */}
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 56, height: 56, background: 'var(--color-primary-light)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: 26 }}>📋</div>
+              <h3 style={{ fontWeight: 800, fontSize: 20, color: 'var(--color-heading)', margin: '0 0 6px' }}>Download Case Study</h3>
+              <p style={{ fontSize: 13, color: 'var(--color-muted)', margin: 0, lineHeight: 1.5 }}>
+                {selectedCs.case_study_headline || selectedCs.title}
+              </p>
+            </div>
+
+            {/* Form */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {/* Name */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Full Name *</label>
+                <input
+                  type="text"
+                  placeholder="Your full name"
+                  value={formValues.name}
+                  onChange={e => { setFormValues(p => ({ ...p, name: e.target.value })); setFormErrors(p => ({ ...p, name: '' })); }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.name ? '#ff4d4f' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                />
+                {formErrors.name && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.name}</span>}
+              </div>
+              {/* Email */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Work Email *</label>
+                <input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={formValues.email}
+                  onChange={e => { setFormValues(p => ({ ...p, email: e.target.value })); setFormErrors(p => ({ ...p, email: '' })); }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.email ? '#ff4d4f' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                />
+                {formErrors.email && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.email}</span>}
+              </div>
+              {/* Contact */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Phone / Contact *</label>
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={formValues.contact}
+                  onChange={e => { setFormValues(p => ({ ...p, contact: e.target.value })); setFormErrors(p => ({ ...p, contact: '' })); }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                />
+                {formErrors.contact && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.contact}</span>}
+              </div>
+
+              {formErrors.submit && (
+                <div style={{ padding: '10px 14px', background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 8, fontSize: 13, color: '#cf1322' }}>{formErrors.submit}</div>
+              )}
+
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                style={{ width: '100%', padding: '12px', background: submitting ? '#bfbfbf' : 'var(--color-primary)', color: '#fff', fontWeight: 700, fontSize: 15, border: 'none', borderRadius: 10, cursor: submitting ? 'not-allowed' : 'pointer', marginTop: 4, transition: 'opacity .2s' }}
+              >
+                {submitting ? 'Submitting…' : 'Get Free Access →'}
+              </button>
+
+              <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-muted)', margin: 0 }}>
+                By submitting, you agree to our Privacy Policy. No spam, ever.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Why Publish With Us ─────────────────────────────────────────
 const WHY_ITEMS = [
   { title: 'Targeted B2B Audience', desc: 'Reach 200,000+ verified IT decision-makers, CXOs, and tech buyers across industries.' },
@@ -325,10 +632,7 @@ const NewsletterBox = () => {
       <p style={{ color: 'rgba(255,255,255,.8)', fontSize: 15, margin: '0 0 28px', maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
         Join 50,000+ tech professionals. Weekly digest of AI, cloud, cybersecurity & more.
       </p>
-      <div style={{ display: 'flex', gap: 10, maxWidth: 440, margin: '0 auto', flexWrap: 'wrap', justifyContent: 'center' }}>
-        <input placeholder="Enter your email address" style={{ flex: 1, minWidth: 220, padding: '12px 18px', borderRadius: 10, border: 'none', fontSize: 14, outline: 'none', background: 'rgba(255,255,255,.95)' }} />
-        <button style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: 'var(--color-heading)', color: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer', whiteSpace: 'nowrap' }}>Subscribe Free</button>
-      </div>
+      <NewsletterSubscribeForm darkMode={true} />
     </div>
   );
 };
@@ -849,7 +1153,8 @@ const Home = () => {
                   <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                     <h3 style={{ fontWeight: 800, fontSize: 20, lineHeight: 1.4, color: 'var(--color-heading)', margin: '0 0 16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</h3>
                     <div style={{ marginTop: 'auto' }}>
-                      <button onClick={(e) => { e.stopPropagation(); navigate(`/article/${a.slug}`); }}
+                      {/* <button onClick={(e) => { e.stopPropagation(); navigate(`/article/${a.slug}`); }} */}
+                        <button onClick={(e) => { e.stopPropagation(); navigate(getArticleRoute(a)); }}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 0', background: 'transparent', color: 'var(--color-primary)', fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer', transition: 'transform .2s ease' }}
                         onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(5px)'; }}
                         onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; }}
@@ -867,6 +1172,8 @@ const Home = () => {
         <StatsBar stats={stats} />
 
         <TrendingTopicsSection items={trendingTopics} navigate={navigate} />
+
+        <CaseStudiesSection navigate={navigate} />
 
         <WhyPublishSection />
         <PublishingSolutions />

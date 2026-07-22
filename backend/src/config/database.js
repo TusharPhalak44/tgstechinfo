@@ -1,7 +1,8 @@
     const mysql = require('mysql2/promise');
     const dotenv = require('dotenv');
 
-    dotenv.config();
+    // Do NOT override env vars already set by Docker
+    dotenv.config({ override: false });
 
     const pool = mysql.createPool({
         host: process.env.DB_HOST || 'localhost',
@@ -14,7 +15,7 @@
         queueLimit: 0
     });
 
-    const testConnection = async (retries = 5, delay = 2000) => {
+    const testConnection = async (retries = 15, delay = 3000) => {
         for (let i = 0; i < retries; i++) {
             try {
                 const conn = await pool.getConnection();
@@ -30,8 +31,8 @@
             }
         }
         console.error('❌ All connection attempts failed. Please check:');
-        console.error('1. XAMPP MySQL service is running');
-        console.error('2. Connection details in .env file');
+        console.error('1. DB_HOST, DB_USER, DB_PASSWORD, DB_NAME in environment');
+        console.error('2. MySQL container is healthy');
         console.error('3. Database exists');
         return false;
     };

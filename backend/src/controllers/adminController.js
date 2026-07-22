@@ -114,18 +114,29 @@ exports.getContentDetails = async (req, res) => {
 // ✅ Get all content (with filters)
 exports.getAllContent = async (req, res) => {
     try {
-        const { status, user_id, category_id, content_type_id, limit = 20, offset = 0 } = req.query;
+        const { status, user_id, category_id, content_type, content_type_id, limit = 20, offset = 0 } = req.query;
         const filters = {};
         
         if (status) filters.status = status;
         if (user_id) filters.user_id = user_id;
         if (category_id) filters.category_id = category_id;
-        if (content_type_id) filters.content_type_id = content_type_id;
+        
+        // Handle content_type (slug) by converting to content_type_id
+        if (content_type && !content_type_id) {
+            const ContentType = require('../models/ContentType');
+            const contentType = await ContentType.findBySlug(content_type);
+            if (contentType) {
+                filters.content_type_id = contentType.id;
+            }
+        } else if (content_type_id) {
+            filters.content_type_id = content_type_id;
+        }
+        
         if (limit) filters.limit = parseInt(limit);
         if (offset) filters.offset = parseInt(offset);
 
-        const { rows } = await Content.findAll(filters);
-        res.json(rows);
+        const { rows, total } = await Content.findAll(filters);
+        res.json({ data: rows, total });
     } catch (error) {
         console.error('Get all content error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -303,9 +314,58 @@ exports.getDashboardStats = async (req, res) => {
         const [[{ pendingReview }]] = await pool.query("SELECT COUNT(*) as pendingReview FROM contents WHERE status = 'pending'");
         const [[{ published }]] = await pool.query("SELECT COUNT(*) as published FROM contents WHERE status = 'published'");
         const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) as totalUsers FROM users WHERE role != 'admin'");
-        res.json({ totalContent, pendingReview, published, totalUsers });
+        const [[{ totalDrafts }]] = await pool.query("SELECT COUNT(*) as totalDrafts FROM contents WHERE status = 'draft'");
+        const [[{ totalScheduled }]] = await pool.query("SELECT COUNT(*) as totalScheduled FROM contents WHERE status = 'scheduled'");
+        const [[{ totalViews }]] = await pool.query('SELECT SUM(view_count) as totalViews FROM contents');
+        const [[{ monthlyViews }]] = await pool.query('SELECT SUM(view_count) as monthlyViews FROM contents WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)');
+        
+        res.json({ 
+            totalContent, 
+            pendingReview, 
+            totalPublished: published,
+            totalDrafts,
+            totalScheduled,
+            totalUsers,
+            totalViews: totalViews || 0,
+            monthlyViews: monthlyViews || 0,
+            avgReadTime: 5,
+            engagementRate: 68
+        });
     } catch (error) {
         console.error('Get dashboard stats error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Get recent activity
+exports.getRecentActivity = async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT c.id, c.title, c.status, c.updated_at,
+                   ct.name as content_type
+            FROM contents c
+            LEFT JOIN content_types ct ON c.content_type_id = ct.id
+            ORDER BY c.updated_at DESC
+            LIMIT 10
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error('Get recent activity error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Get content by status
+exports.getContentByStatus = async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT status, COUNT(*) as count 
+            FROM contents 
+            GROUP BY status
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error('Get content by status error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

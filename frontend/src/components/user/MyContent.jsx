@@ -7,7 +7,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const { Text } = Typography;
 
@@ -38,19 +38,35 @@ const CONTENT_TABS = [
 ];
 
 const MyContent = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  useEffect(() => { fetchContents(); }, []);
+  useEffect(() => {
+    // Determine status filter based on route
+    const path = location.pathname;
+    if (path.includes('/drafts')) {
+      setStatusFilter('draft');
+    } else {
+      setStatusFilter('published');
+    }
+  }, [location.pathname]);
+
+  useEffect(() => { fetchContents(); }, [statusFilter]);
 
   const fetchContents = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/user/content');
-      setContents(res.data);
+      const params = {};
+      if (statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      const res = await axios.get('/api/user/content', { params });
+      setContents(res.data || []);
     } catch {
       message.error('Failed to load your content');
     } finally {
