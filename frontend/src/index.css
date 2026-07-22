@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Responsive design system */
+@import './styles/responsive.css';
+
 /* ── Global Font ── */
 * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 

@@ -662,7 +662,7 @@ const HeroSection = ({ searchVal, setSearchVal, handleSearch }) => {
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, alignItems: 'center', minHeight: 520 }} className="hero-grid">
         {/* LEFT */}
-        <div style={{ padding: '60px 0', position: 'relative', zIndex: 2 }}>
+        <div style={{ padding: '40px 0', position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 24, padding: '6px 16px', marginBottom: 24 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-accent)', display: 'inline-block', boxShadow: '0 0 0 4px rgba(247,148,29,0.2)' }} />
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,.9)', fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Live Tech Intelligence</span>
@@ -674,15 +674,15 @@ const HeroSection = ({ searchVal, setSearchVal, handleSearch }) => {
           <p style={{ color: 'rgba(255,255,255,.75)', fontSize: 16, lineHeight: 1.8, margin: '0 0 36px', maxWidth: 480 }}>
             In-depth articles, expert interviews, breaking news and research across AI, Cloud, Cybersecurity, DevOps and more.
           </p>
-          <div style={{ display: 'flex', borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,.35)', maxWidth: 500 }}>
+          <div className="hero-search-bar" style={{ display: 'flex', borderRadius: 16, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,.35)', maxWidth: 500 }}>
             <input value={searchVal} onChange={e => setSearchVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSearch()} placeholder="Search articles, news, resources..."
-              style={{ flex: 1, padding: '15px 20px', border: 'none', fontSize: 15, outline: 'none', background: 'rgba(255,255,255,.95)', color: 'var(--color-heading)' }} />
+              style={{ flex: 1, padding: '15px 20px', border: 'none', fontSize: 15, outline: 'none', background: 'rgba(255,255,255,.95)', color: 'var(--color-heading)', minWidth: 0 }} />
             <button onClick={handleSearch} style={{ padding: '0 22px', background: 'var(--color-accent)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}
               onMouseEnter={e => e.currentTarget.style.background = '#e67e00'}
               onMouseLeave={e => e.currentTarget.style.background = 'var(--color-accent)'}
             ><SearchOutlined /></button>
           </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
+          <div className="hero-tag-pills" style={{ display: 'flex', gap: 10, marginTop: 26, flexWrap: 'wrap' }}>
             {['AI & ML', 'Cybersecurity', 'Cloud', 'DevOps'].map(t => (
               <span key={t} style={{ fontSize: 12.5, color: 'rgba(255,255,255,.85)', background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.18)', borderRadius: 22, padding: '6px 16px', cursor: 'pointer', transition: 'all .25s' }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
@@ -1232,8 +1232,18 @@ const Home = () => {
         }
         @media (max-width: 640px) { .cat-cards-grid { grid-template-columns: 1fr; } }
         @media (max-width: 480px) { 
-          .solutions-grid, .latest-articles-grid, .why-grid, .glass-stats-grid, .trending-grid { grid-template-columns: 1fr; } 
+          .solutions-grid, .latest-articles-grid, .why-grid, .glass-stats-grid, .trending-grid, .case-studies-grid { grid-template-columns: 1fr; } 
           .glass-stat-card { transform: translateY(0) !important; }
+        }
+        @media (max-width: 640px) {
+          .case-studies-grid { grid-template-columns: 1fr; }
+          .hero-search-bar { flex-direction: column !important; border-radius: 14px !important; }
+          .hero-search-bar input { border-radius: 12px 12px 0 0 !important; }
+          .hero-search-bar button { border-radius: 0 0 12px 12px !important; width: 100% !important; padding: 12px !important; }
+          .hero-tag-pills { display: none !important; }
+        }
+        @media (max-width: 900px) {
+          .case-studies-grid { grid-template-columns: 1fr; }
         }
       `}</style>
     </div>

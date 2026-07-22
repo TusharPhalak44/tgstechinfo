@@ -344,7 +344,7 @@ const Navbar = () => {
                     onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
                     placeholder="Search..."
-                    style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, padding: '7px 8px', width: 180, color: 'var(--color-heading)' }}
+                    style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, padding: '7px 8px', width: isMobile ? 120 : 180, color: 'var(--color-heading)' }}
                   />
                   <CloseOutlined style={{ color: 'var(--color-muted)', fontSize: 11, cursor: 'pointer' }} onClick={() => { setSearchVisible(false); setSearchQuery(''); }} />
                 </div>

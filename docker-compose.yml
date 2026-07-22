@@ -1,26 +1,26 @@
 services:
-  # MySQL Database
-  # mysql:
-  #   image: mysql:8.0
-  #   container_name: tgstechinfo_mysql
-  #   restart: unless-stopped
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-  #     MYSQL_DATABASE: ${DB_NAME}
-  #     MYSQL_USER: ${DB_USER}
-  #     MYSQL_PASSWORD: ${DB_PASSWORD}
-  #   ports:
-  #     - "3307:3306"
-  #   volumes:
-  #     - mysql_data:/var/lib/mysql
-  #   networks:
-  #     - tgstechinfo_network
-  #   healthcheck:
-  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 10
-  #     start_period: 30s
+  # MySQL Database (running on VPS via Docker)
+  mysql:
+    image: mysql:8.0
+    container_name: tgstechinfo_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - tgstechinfo_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   # Backend API
   backend:
@@ -46,9 +46,9 @@ services:
       EMAIL_PASSWORD: ${EMAIL_PASSWORD}
       EMAIL_FROM: ${EMAIL_FROM}
       FRONTEND_URL: ${FRONTEND_URL}
-    # depends_on:
-    #   mysql:
-    #     condition: service_healthy
+    depends_on:
+      mysql:
+        condition: service_healthy
     volumes:
       - ./backend/uploads:/app/uploads
     networks:
@@ -75,13 +75,25 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - frontend
       - backend
     networks:
       - tgstechinfo_network
+
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: tgstechinfo_certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 volumes:
   mysql_data:

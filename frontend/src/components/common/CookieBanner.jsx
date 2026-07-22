@@ -424,26 +424,53 @@ const CookieBanner = () => {
           zIndex: 9999,
           background: 'linear-gradient(135deg, #0B1F4D 0%, #123A8C 50%, #0B1F4D 100%)',
           boxShadow: '0 -8px 32px rgba(11,31,77,0.25)',
-          padding: '24px 32px',
+          padding: '16px 20px',
         }}
       >
+        <style>{`
+          @media (max-width: 767px) {
+            .cookie-banner-content {
+              flex-direction: column !important;
+              gap: 16px !important;
+              align-items: flex-start !important;
+            }
+            .cookie-banner-icon { display: none !important; }
+            .cookie-banner-actions {
+              flex-wrap: wrap !important;
+              width: 100% !important;
+              justify-content: stretch !important;
+            }
+            .cookie-banner-actions .ant-btn {
+              flex: 1 !important;
+              min-width: 80px !important;
+            }
+            .cookie-banner-links {
+              flex-wrap: wrap !important;
+              gap: 12px !important;
+            }
+          }
+          @media (min-width: 768px) {
+            .cookie-banner-content { padding: 4px 12px; }
+          }
+        `}</style>
         <div
           style={{
             maxWidth: 1200,
             margin: '0 auto',
             display: 'flex',
             alignItems: 'center',
-            gap: 32,
+            gap: 24,
           }}
           className="cookie-banner-content"
         >
           {/* Icon Section */}
           <div
+            className="cookie-banner-icon"
             style={{
               flexShrink: 0,
-              width: 56,
-              height: 56,
-              borderRadius: 16,
+              width: 48,
+              height: 48,
+              borderRadius: 14,
               background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
               display: 'flex',
               alignItems: 'center',
@@ -452,8 +479,8 @@ const CookieBanner = () => {
             }}
           >
             <svg
-              width="28"
-              height="28"
+              width="24"
+              height="24"
               viewBox="0 0 24 24"
               fill="none"
               stroke="white"
@@ -468,59 +495,34 @@ const CookieBanner = () => {
           </div>
 
           {/* Content Section */}
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
+          <div style={{ flex: 1, minWidth: 0 }}>
             <Text
               id="cookie-banner-title"
-              style={{
-                fontSize: 18,
-                fontWeight: 700,
-                color: '#FFFFFF',
-                letterSpacing: 0.5,
-              }}
+              style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', letterSpacing: 0.3, display: 'block', marginBottom: 4 }}
             >
               Your Privacy Matters
             </Text>
             <Paragraph
               id="cookie-banner-description"
-              style={{
-                fontSize: 13,
-                color: 'rgba(255,255,255,0.85)',
-                margin: 0,
-                lineHeight: 1.6,
-              }}
+              style={{ fontSize: 12, color: 'rgba(255,255,255,0.80)', margin: 0, lineHeight: 1.5 }}
             >
-              We use cookies to personalize your experience and analyze traffic. Your data stays secure with us.
+              We use cookies to personalize your experience and analyze traffic.{' '}
+              <span style={{ display: 'none' }} className="hide-mobile-text">Your data stays secure with us.</span>
             </Paragraph>
           </div>
 
           {/* Actions Section */}
           <div
-            style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'center',
-              flexShrink: 0,
-            }}
+            className="cookie-banner-actions"
+            style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}
           >
             <Button
               onClick={handleRejectAll}
+              size="small"
               style={{
-                borderRadius: 8,
-                height: 40,
-                padding: '0 20px',
-                fontSize: 13,
-                fontWeight: 600,
-                borderColor: 'rgba(255,255,255,0.3)',
-                color: '#FFFFFF',
-                background: 'rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(10px)',
+                borderRadius: 8, height: 38, padding: '0 16px', fontSize: 13, fontWeight: 600,
+                borderColor: 'rgba(255,255,255,0.3)', color: '#FFFFFF',
+                background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)',
               }}
             >
               Reject
@@ -528,30 +530,21 @@ const CookieBanner = () => {
             <Button
               type="primary"
               onClick={handleAcceptAll}
+              size="small"
               style={{
-                borderRadius: 8,
-                height: 40,
-                padding: '0 24px',
-                fontSize: 13,
-                fontWeight: 600,
+                borderRadius: 8, height: 38, padding: '0 16px', fontSize: 13, fontWeight: 600,
                 background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
-                borderColor: 'transparent',
-                boxShadow: '0 4px 16px rgba(247,148,29,0.4)',
+                borderColor: 'transparent', boxShadow: '0 4px 16px rgba(247,148,29,0.4)',
               }}
             >
               Accept All
             </Button>
             <Button
               onClick={handleCustomize}
+              size="small"
               style={{
-                borderRadius: 8,
-                height: 40,
-                padding: '0 16px',
-                fontSize: 13,
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.9)',
-                background: 'transparent',
-                border: 'none',
+                borderRadius: 8, height: 38, padding: '0 12px', fontSize: 13, fontWeight: 600,
+                color: 'rgba(255,255,255,0.9)', background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
               }}
             >
               Customize
@@ -561,14 +554,11 @@ const CookieBanner = () => {
 
         {/* Footer Links */}
         <div
+          className="cookie-banner-links"
           style={{
-            maxWidth: 1200,
-            margin: '16px auto 0',
-            display: 'flex',
-            gap: 24,
-            alignItems: 'center',
-            borderTop: '1px solid rgba(255,255,255,0.1)',
-            paddingTop: 16,
+            maxWidth: 1200, margin: '12px auto 0',
+            display: 'flex', gap: 20, alignItems: 'center',
+            borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: 12,
           }}
         >
           <Link

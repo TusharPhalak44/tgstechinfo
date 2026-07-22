@@ -127,7 +127,26 @@ const Footer = ({ simplified = false }) => {
 
       {/* ── Main footer ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 44px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr 1fr 1.4fr', gap: '40px 32px', flexWrap: 'wrap' }} className="footer-grid">
+        <style>{`
+          .footer-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr 1fr 1fr 1.4fr;
+            gap: 40px 32px;
+          }
+          @media (max-width: 1024px) {
+            .footer-grid {
+              grid-template-columns: repeat(2, 1fr);
+              gap: 40px 24px;
+            }
+          }
+          @media (max-width: 640px) {
+            .footer-grid {
+              grid-template-columns: 1fr;
+              gap: 32px;
+            }
+          }
+        `}</style>
+        <div className="footer-grid">
 
           {/* Brand */}
           <div>
@@ -258,10 +277,18 @@ const Footer = ({ simplified = false }) => {
 
       {/* ── Bottom bar ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 13, color: 'var(--color-muted)' }}>
+        <span style={{ fontSize: 13, color: 'var(--color-muted)', textAlign: 'center', width: '100%', display: 'block' }} className="footer-copyright">
           © {year} <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>TGS Tech Info</span>. All rights reserved.
         </span>
-        <div style={{ display: 'flex', gap: 20 }}>
+        <style>{`
+          @media (min-width: 640px) {
+            .footer-copyright { width: auto !important; display: inline !important; text-align: left !important; }
+            .footer-bottom-links { justify-content: flex-end !important; }
+          }
+          .footer-bottom-links { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; width: 100%; }
+          @media (min-width: 640px) { .footer-bottom-links { width: auto; } }
+        `}</style>
+        <div className="footer-bottom-links">
           {[['Privacy', '/privacy-policy'], ['Terms', '/terms-of-use'], ['Cookies', '/cookie-policy']].map(([label, to]) => (
             <Link key={label} to={to} style={{ fontSize: 13, color: 'var(--color-muted)', textDecoration: 'none', transition: 'color .2s' }}
               onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
@@ -270,15 +297,7 @@ const Footer = ({ simplified = false }) => {
           ))}
           <button
             onClick={() => setShowCookiePreferences(true)}
-            style={{
-              fontSize: 13,
-              color: 'var(--color-muted)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              transition: 'color .2s'
-            }}
+            style={{ fontSize: 13, color: 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color .2s' }}
             onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
           >
