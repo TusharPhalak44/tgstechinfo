@@ -150,27 +150,27 @@ const SecurityDashboard = () => {
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Title level={3} style={{ marginBottom: 24 }}>
+    <div style={{ padding: window.innerWidth < 768 ? 0 : 'clamp(16px, 2vw, 24px)' }}>
+      <Title level={3} style={{ marginBottom: 'clamp(20px, 2.5vw, 24px)', fontSize: 'clamp(18px, 2.2vw, 24px)' }}>
         <SafetyOutlined /> Security Dashboard
       </Title>
 
       {/* Security Score */}
-      <Card style={{ marginBottom: 24 }}>
+      <Card style={{ marginBottom: 'clamp(20px, 2.5vw, 24px)' }} className="security-score-card">
         <Row gutter={16} align="middle">
-          <Col span={8}>
-            <div style={{ textAlign: 'center' }}>
+          <Col xs={24} sm={24} md={8} lg={8}>
+            <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 2vw, 0)' }}>
               <Progress
                 type="circle"
                 percent={securityScore}
                 strokeColor={getScoreColor(securityScore)}
-                size={120}
+                size={window.innerWidth < 768 ? 100 : 120}
                 format={(percent) => (
                   <div>
-                    <div style={{ fontSize: 32, fontWeight: 'bold', color: getScoreColor(securityScore) }}>
+                    <div style={{ fontSize: 'clamp(24px, 3vw, 32px)', fontWeight: 'bold', color: getScoreColor(securityScore) }}>
                       {percent}
                     </div>
-                    <div style={{ fontSize: 12, color: '#666' }}>
+                    <div style={{ fontSize: 'clamp(11px, 0.85vw, 12px)', color: '#666' }}>
                       {getScoreStatus(securityScore)}
                     </div>
                   </div>
@@ -178,18 +178,18 @@ const SecurityDashboard = () => {
               />
             </div>
           </Col>
-          <Col span={16}>
-            <Title level={4}>Security Status</Title>
+          <Col xs={24} sm={24} md={16} lg={16}>
+            <Title level={4} style={{ fontSize: 'clamp(16px, 1.3vw, 18px)' }}>Security Status</Title>
             <List
               dataSource={securityChecks}
               renderItem={(check) => (
-                <List.Item>
-                  <Space>
-                    {check.status === 'success' && <CheckCircleOutlined style={{ color: '#52c41a' }} />}
-                    {check.status === 'warning' && <WarningOutlined style={{ color: '#faad14' }} />}
-                    {check.status === 'danger' && <WarningOutlined style={{ color: '#ff4d4f' }} />}
-                    {check.status === 'info' && <ClockCircleOutlined style={{ color: '#1890ff' }} />}
-                    <Text>{check.message}</Text>
+                <List.Item style={{ padding: 'clamp(8px, 1vw, 12px) 0' }}>
+                  <Space size={window.innerWidth < 768 ? 'small' : 'middle'}>
+                    {check.status === 'success' && <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 'clamp(14px, 1.2vw, 16px)' }} />}
+                    {check.status === 'warning' && <WarningOutlined style={{ color: '#faad14', fontSize: 'clamp(14px, 1.2vw, 16px)' }} />}
+                    {check.status === 'danger' && <WarningOutlined style={{ color: '#ff4d4f', fontSize: 'clamp(14px, 1.2vw, 16px)' }} />}
+                    {check.status === 'info' && <ClockCircleOutlined style={{ color: '#1890ff', fontSize: 'clamp(14px, 1.2vw, 16px)' }} />}
+                    <Text style={{ fontSize: 'clamp(12px, 0.9vw, 14px)' }}>{check.message}</Text>
                   </Space>
                 </List.Item>
               )}
@@ -198,17 +198,18 @@ const SecurityDashboard = () => {
         </Row>
       </Card>
 
-      <Row gutter={16} style={{ marginBottom: 24 }}>
+      <Row gutter={16} style={{ marginBottom: 'clamp(20px, 2.5vw, 24px)' }}>
         {/* Active Sessions */}
-        <Col span={12}>
+        <Col xs={24} sm={24} md={12} lg={12}>
           <Card 
             title={
-              <Space>
-                <DesktopOutlined />
-                Active Sessions
+              <Space size={window.innerWidth < 768 ? 'small' : 'middle'}>
+                <DesktopOutlined style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }} />
+                <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>Active Sessions</span>
               </Space>
             }
             extra={<Badge count={sessions.filter(s => s.is_active).length} />}
+            className="session-card"
           >
             {sessions.length === 0 ? (
               <Text type="secondary">No active sessions</Text>
@@ -245,14 +246,15 @@ const SecurityDashboard = () => {
         </Col>
 
         {/* Recent Login Activity */}
-        <Col span={12}>
+        <Col xs={24} sm={24} md={12} lg={12}>
           <Card 
             title={
-              <Space>
-                <ClockCircleOutlined />
-                Recent Activity
+              <Space size={window.innerWidth < 768 ? 'small' : 'middle'}>
+                <ClockCircleOutlined style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }} />
+                <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>Recent Activity</span>
               </Space>
             }
+            className="activity-card"
           >
             {loginHistory.length === 0 ? (
               <Text type="secondary">No recent activity</Text>
@@ -288,11 +290,12 @@ const SecurityDashboard = () => {
       {/* Security Recommendations */}
       <Card 
         title={
-          <Space>
-            <SafetyOutlined />
-            Security Recommendations
+          <Space size={window.innerWidth < 768 ? 'small' : 'middle'}>
+            <SafetyOutlined style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }} />
+            <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>Security Recommendations</span>
           </Space>
         }
+        className="recommendations-card"
       >
         <List
           dataSource={[
@@ -318,20 +321,68 @@ const SecurityDashboard = () => {
           renderItem={(item) => (
             <List.Item
               actions={[
-                <Button type="link" size="small">
+                <Button type="link" size={window.innerWidth < 768 ? 'small' : 'middle'} style={{ fontSize: 'clamp(12px, 0.85vw, 14px)' }}>
                   {item.action}
                 </Button>
               ]}
+              style={{ padding: 'clamp(12px, 1.5vw, 16px) 0' }}
             >
               <List.Item.Meta
                 avatar={item.icon}
-                title={item.title}
-                description={item.description}
+                title={<span style={{ fontSize: 'clamp(13px, 1vw, 14px)' }}>{item.title}</span>}
+                description={<span style={{ fontSize: 'clamp(12px, 0.85vw, 13px)' }}>{item.description}</span>}
               />
             </List.Item>
           )}
         />
       </Card>
+      <style>{`
+        @media (max-width: 768px) {
+          .security-score-card {
+            margin-bottom: 16px !important;
+          }
+          .security-score-card .ant-card-body {
+            padding: 16px !important;
+          }
+          .session-card, .activity-card, .recommendations-card {
+            margin-bottom: 16px !important;
+          }
+          .session-card .ant-card-body,
+          .activity-card .ant-card-body,
+          .recommendations-card .ant-card-body {
+            padding: 16px !important;
+          }
+          .ant-list-item {
+            padding: 12px 0 !important;
+          }
+          .ant-timeline-item-content {
+            font-size: 12px !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .security-score-card .ant-card-body {
+            padding: 12px !important;
+          }
+          .session-card .ant-card-body,
+          .activity-card .ant-card-body,
+          .recommendations-card .ant-card-body {
+            padding: 12px !important;
+          }
+          .ant-list-item {
+            padding: 10px 0 !important;
+          }
+          .ant-timeline-item-content {
+            font-size: 11px !important;
+          }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .security-score-card .ant-card-body {
+            padding: 20px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

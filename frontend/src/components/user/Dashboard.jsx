@@ -289,32 +289,32 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button icon={<FormOutlined />} onClick={() => navigate('/my-submissions')}>
+    <div className="p-6" style={{ padding: window.innerWidth < 768 ? 0 : 'clamp(16px, 2vw, 24px)' }}>
+      <div className="mb-6 flex items-center justify-between" style={{ marginBottom: 'clamp(20px, 2.5vw, 24px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <Title level={2} style={{ margin: 0, fontSize: 'clamp(20px, 2.5vw, 24px)' }}>Dashboard</Title>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button icon={<FormOutlined />} onClick={() => navigate('/my-submissions')} size={window.innerWidth < 768 ? 'small' : 'middle'}>
             My Submissions
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/create-content')}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/create-content')} size={window.innerWidth < 768 ? 'small' : 'middle'}>
             Create Content
           </Button>
         </div>
       </div>
 
       {/* Stats */}
-      <Row gutter={[16, 16]} className="mb-8">
+      <Row gutter={[16, 16]} className="mb-8" style={{ marginBottom: 'clamp(24px, 3vw, 32px)' }}>
         <Col xs={24} sm={12} lg={6}>
-          <Card><Statistic title="Total Content" value={stats.total} prefix={<FileTextOutlined />} /></Card>
+          <Card className="stat-card"><Statistic title="Total Content" value={stats.total} prefix={<FileTextOutlined />} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card><Statistic title="Drafts" value={stats.draft} prefix={<FileTextOutlined />} styles={{ content: { color: '#8c8c8c' } }} /></Card>
+          <Card className="stat-card"><Statistic title="Drafts" value={stats.draft} prefix={<FileTextOutlined />} styles={{ content: { color: '#8c8c8c' } }} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card><Statistic title="Pending Review" value={stats.pending} prefix={<ClockCircleOutlined />} styles={{ content: { color: '#faad14' } }} /></Card>
+          <Card className="stat-card"><Statistic title="Pending Review" value={stats.pending} prefix={<ClockCircleOutlined />} styles={{ content: { color: '#faad14' } }} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
         </Col>
         <Col xs={24} sm={12} lg={6}>
-          <Card><Statistic title="Published" value={stats.published} prefix={<CheckCircleOutlined />} styles={{ content: { color: '#52c41a' } }} /></Card>
+          <Card className="stat-card"><Statistic title="Published" value={stats.published} prefix={<CheckCircleOutlined />} styles={{ content: { color: '#52c41a' } }} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
         </Col>
       </Row>
 
@@ -324,15 +324,17 @@ const Dashboard = () => {
         onChange={setActiveTab}
         items={tabItems}
         style={{ marginBottom: 20 }}
+        className="dashboard-tabs"
       />
 
       {/* Content Grid */}
       {loading ? (
-        <div className="py-12 text-center"><Spin size="large" /></div>
+        <div className="py-12 text-center" style={{ padding: 'clamp(32px, 4vw, 48px) 0', textAlign: 'center' }}><Spin size="large" /></div>
       ) : filteredContents.length === 0 ? (
         <Empty
           description={activeTab === 'all' ? 'No content yet' : `No ${CONTENT_TABS.find(t => t.key === activeTab)?.label.toLowerCase() || 'content'} yet`}
           className="py-12"
+          style={{ padding: 'clamp(32px, 4vw, 48px) 0' }}
         >
           <Button type="primary" onClick={() => navigate('/create-content')}>
             Create Your First {activeTab === 'all' ? 'Content' : CONTENT_TABS.find(t => t.key === activeTab)?.label.slice(0, -1) || 'Content'}
@@ -340,7 +342,7 @@ const Dashboard = () => {
         </Empty>
       ) : (
         <>
-          <Row gutter={[20, 20]}>
+          <Row gutter={[20, 20]} className="content-grid">
             {visibleItems.map(article => (
               <ArticleCard
                 key={article.id}
@@ -357,8 +359,8 @@ const Dashboard = () => {
             display: 'flex', 
             flexDirection: 'column',
             alignItems: 'center', 
-            marginTop: 32,
-            padding: '16px 0',
+            marginTop: 'clamp(24px, 3vw, 32px)',
+            padding: 'clamp(12px, 1.5vw, 16px) 0',
             gap: 16
           }}>
             {/* Show More Button - Only show if there are more items in current page */}
@@ -369,9 +371,10 @@ const Dashboard = () => {
                 onClick={handleShowMore}
                 style={{
                   borderRadius: 24,
-                  padding: '8px 32px',
+                  padding: 'clamp(6px, 0.8vw, 8px) clamp(20px, 2.5vw, 32px)',
                   height: 'auto',
-                  minWidth: 200
+                  minWidth: 'clamp(160px, 20vw, 200px)',
+                  fontSize: 'clamp(13px, 0.9vw, 14px)'
                 }}
               >
                 Show More ({visibleCount}/{currentPageItems.length})
@@ -438,7 +441,7 @@ const Dashboard = () => {
             {/* Show total items info */}
             {totalItems > 0 && (
               <div style={{ 
-                fontSize: 13, 
+                fontSize: 'clamp(12px, 0.85vw, 13px)', 
                 color: '#8c8c8c',
                 textAlign: 'center'
               }}>
@@ -449,6 +452,56 @@ const Dashboard = () => {
           </div>
         </>
       )}
+      <style>{`
+        @media (max-width: 768px) {
+          .dashboard-tabs .ant-tabs-nav {
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .dashboard-tabs .ant-tabs-tab {
+            flex-shrink: 0 !important;
+            padding: 8px 12px !important;
+            font-size: 12px !important;
+          }
+          .stat-card {
+            margin-bottom: 12px !important;
+          }
+          .stat-card .ant-statistic-title {
+            font-size: 12px !important;
+          }
+          .content-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+          }
+          .content-grid > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 auto !important;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .dashboard-tabs .ant-tabs-tab {
+            padding: 6px 10px !important;
+            font-size: 11px !important;
+          }
+          .stat-card {
+            margin-bottom: 10px !important;
+          }
+          .content-grid {
+            gap: 12px !important;
+          }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .content-grid > div {
+            width: 50% !important;
+            max-width: 50% !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -123,7 +123,7 @@ const AdminEditContent = () => {
   const bannerImageUrl = fileList.length > 0 ? getImageUrl(fileList[0]) : null;
 
   if (fetching) return (
-    <div style={{ padding: 40, textAlign: 'center', color: '#8c8c8c' }}>Loading content...</div>
+    <div style={{ padding: window.innerWidth < 768 ? 20 : 40, textAlign: 'center', color: '#8c8c8c' }}>Loading content...</div>
   );
 
   return (
@@ -133,45 +133,50 @@ const AdminEditContent = () => {
       <div style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: '#fff', borderBottom: '1px solid #e8e8e8',
-        padding: '0 24px', height: 56,
+        padding: window.innerWidth < 768 ? '0 16px' : '0 24px', height: 56,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: window.innerWidth < 768 ? 8 : 16 }}>
           <Button
             type="text"
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate(`/admin/review/${id}`)}
-            style={{ color: '#595959' }}
+            style={{ color: '#595959', padding: window.innerWidth < 768 ? '4px 8px' : '5px 15px' }}
           >
-            Back to Review
+            {window.innerWidth < 768 ? '' : 'Back to Review'}
           </Button>
-          <Divider orientation="vertical" style={{ margin: 0 }} />
-          <Text style={{ color: '#8c8c8c', fontSize: 13 }}>Admin Edit</Text>
+          {window.innerWidth >= 768 && (
+            <>
+              <Divider orientation="vertical" style={{ margin: 0 }} />
+              <Text style={{ color: '#8c8c8c', fontSize: 13 }}>Admin Edit</Text>
+            </>
+          )}
         </div>
-        <Space size={8}>
+        <Space size={window.innerWidth < 768 ? 4 : 8}>
           <Button
             type="primary"
             icon={<SaveOutlined />}
             loading={loading}
             onClick={() => form.submit()}
+            size={window.innerWidth < 768 ? 'small' : 'default'}
           >
-            Save Changes
+            {window.innerWidth < 768 ? 'Save' : 'Save Changes'}
           </Button>
         </Space>
       </div>
 
       <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: window.innerWidth < 768 ? '16px' : '32px 24px', display: 'flex', gap: window.innerWidth < 768 ? 0 : 24, alignItems: 'flex-start', flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
 
           {/* Main Content Area */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, width: window.innerWidth < 768 ? '100%' : 'auto' }}>
 
             {/* Article Meta */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: '1px solid #e8e8e8' }}>
               <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Article Details
               </Text>
-              <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+              <div style={{ display: 'flex', gap: window.innerWidth < 768 ? 12 : 16, marginTop: 16, flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
                 <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true }]} style={{ flex: 1, marginBottom: 0 }}>
                   <Select placeholder="Select type" size="large" onChange={handleContentTypeChange}>
                     {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
@@ -186,12 +191,12 @@ const AdminEditContent = () => {
             </div>
 
             {/* Title + Description */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: '1px solid #e8e8e8' }}>
               <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Article title..."
-                  size="large"
-                  style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }}
+                  size={window.innerWidth < 768 ? 'default' : 'large'}
+                  style={{ fontSize: window.innerWidth < 768 ? 20 : 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }}
                 />
               </Form.Item>
               <Form.Item
@@ -211,8 +216,8 @@ const AdminEditContent = () => {
             </div>
 
             {/* Banner Image */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: '1px solid #e8e8e8' }}>
+              <div style={{ display: 'flex', alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 16, flexDirection: window.innerWidth < 768 ? 'column' : 'row', gap: window.innerWidth < 768 ? 12 : 0 }}>
                 <div>
                   <Text strong style={{ fontSize: 14 }}>
                     <PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image
@@ -227,7 +232,7 @@ const AdminEditContent = () => {
               </div>
               {bannerImageUrl ? (
                 <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
-                  <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
+                  <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: window.innerWidth < 768 ? 240 : 360, objectFit: 'contain', display: 'block' }} />
                 </div>
               ) : (
                 <div style={{ border: '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: '#fafafa' }}>
@@ -238,8 +243,8 @@ const AdminEditContent = () => {
             </div>
 
             {/* Content Editor */}
-            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 20 }}>
-              <div style={{ padding: '16px 28px', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: window.innerWidth < 768 ? 16 : 20 }}>
+              <div style={{ padding: window.innerWidth < 768 ? '12px 20px' : '16px 28px', borderBottom: '1px solid #f0f0f0' }}>
                 <Text strong style={{ fontSize: 14 }}>Content</Text>
               </div>
               <div style={{ padding: '0 4px 4px' }}>
@@ -254,10 +259,10 @@ const AdminEditContent = () => {
           </div>
 
           {/* Right Sidebar */}
-          <div style={{ width: 300, flexShrink: 0 }}>
+          <div style={{ width: window.innerWidth < 768 ? '100%' : 300, flexShrink: 0 }}>
 
             {/* Tags */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: '1px solid #e8e8e8' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, marginBottom: window.innerWidth < 768 ? 16 : 16, border: '1px solid #e8e8e8' }}>
               <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
                 <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
               </Text>
@@ -267,7 +272,7 @@ const AdminEditContent = () => {
             </div>
 
             {/* Schedule */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: '1px solid #e8e8e8' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, marginBottom: window.innerWidth < 768 ? 16 : 16, border: '1px solid #e8e8e8' }}>
               <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
                 <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
               </Text>
@@ -277,7 +282,7 @@ const AdminEditContent = () => {
             </div>
 
             {/* SEO */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: 20, border: '1px solid #e8e8e8' }}>
+            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, border: '1px solid #e8e8e8' }}>
               <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
                 <SettingOutlined style={{ marginRight: 6, color: '#4a7cff' }} />SEO Settings
               </Text>
@@ -297,7 +302,7 @@ const AdminEditContent = () => {
               const contentType = contentTypes.find(t => t.id === selectedContentType);
               return contentType && contentType.slug === 'case-study';
             })() && (
-              <div style={{ background: '#fff', borderRadius: 12, padding: 20, border: '1px solid #e8e8e8' }}>
+              <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, border: '1px solid #e8e8e8' }}>
                 <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
                   <MailOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Email Template
                 </Text>

@@ -701,10 +701,17 @@ const CreateContent = () => {
     setBuilderSections(items);
   };
 
- const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook', 'case study', 'case-study'];
+ const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook', 'case study', 'case-study', 'landing page', 'landing-page'];
   const showLandingFields = LANDING_TYPES.includes(selectedTypeName.toLowerCase());
   const isCaseStudy = ['case study', 'case-study'].includes(selectedTypeName.toLowerCase());
-
+const isLandingPageType = ['landing page', 'landing-page'].includes(selectedTypeName.toLowerCase());
+ 
+  // Auto-switch to HTML Builder tab when Landing Page type is selected (new content only)
+  useEffect(() => {
+    if (isLandingPageType && !isEditMode) {
+      setActiveTab('html');
+    }
+  }, [isLandingPageType]);
   const getImageUrl = (file) => {
     if (!file) return null;
     if (file.originFileObj) return URL.createObjectURL(file.originFileObj);
@@ -727,17 +734,17 @@ const CreateContent = () => {
       <div style={{
         position: 'sticky', top: 0, zIndex: 100,
         background: '#fff', borderBottom: '1px solid #e8e8e8',
-        padding: '0 24px', height: 56,
+        padding: '0 clamp(12px, 2vw, 24px)', height: 'clamp(48px, 6vw, 56px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} style={{ color: '#595959' }}>
-            Dashboard
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 16px)' }}>
+          <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} style={{ color: '#595959', fontSize: 'clamp(12px, 0.9vw, 13px)' }} size={window.innerWidth < 768 ? 'small' : 'middle'}>
+            {window.innerWidth < 768 ? '' : 'Dashboard'}
           </Button>
-          <Divider orientation="vertical" style={{ margin: 0 }} />
-          <Text style={{ color: '#8c8c8c', fontSize: 13 }}>{isEditMode ? 'Edit Article' : 'New Article'}</Text>
+          {window.innerWidth >= 768 && <Divider orientation="vertical" style={{ margin: 0 }} />}
+          <Text style={{ color: '#8c8c8c', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>{isEditMode ? 'Edit Article' : 'New Article'}</Text>
         </div>
-        <Space size={8}>
+        <Space size={window.innerWidth < 768 ? 4 : 8} wrap style={{ display: 'flex', alignItems: 'center' }}>
           <Button icon={<EyeOutlined />} onClick={() => {
             const v = form.getFieldsValue();
             const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
@@ -897,14 +904,15 @@ const CreateContent = () => {
               content: previewContent,
             });
             setPreviewVisible(true);
-          }}>Preview</Button>
+          }} size={window.innerWidth < 768 ? 'small' : 'middle'}>Preview</Button>
           <Button
             icon={<SaveOutlined />}
             loading={loading}
             disabled={contentStatus === 'pending'}
             onClick={handleSave}
+            size={window.innerWidth < 768 ? 'small' : 'middle'}
           >
-            {savedContentId ? 'Update Draft' : 'Save Draft'}
+            {window.innerWidth < 768 ? (savedContentId ? 'Update' : 'Save') : (savedContentId ? 'Update Draft' : 'Save Draft')}
           </Button>
           <Tooltip title={
             !savedContentId ? 'Please save the content first' :
@@ -916,8 +924,9 @@ const CreateContent = () => {
               loading={submitLoading}
               disabled={!savedContentId || contentStatus === 'pending'}
               onClick={handleSubmitForReview}
+              size={window.innerWidth < 768 ? 'small' : 'middle'}
             >
-              {contentStatus === 'pending' ? 'Under Review' : 'Submit for Review'}
+              {window.innerWidth < 768 ? (contentStatus === 'pending' ? 'Review' : 'Submit') : (contentStatus === 'pending' ? 'Under Review' : 'Submit for Review')}
             </Button>
           </Tooltip>
         </Space>
@@ -926,10 +935,10 @@ const CreateContent = () => {
       {draftSaved && contentStatus !== 'published' && contentStatus !== 'pending' && (
         <div style={{
           background: '#f6ffed', borderBottom: '1px solid #b7eb8f',
-          padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10
+          padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 24px)', display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 10px)'
         }}>
-          <span style={{ fontSize: 16 }}>✏️</span>
-          <span style={{ fontSize: 13, color: '#389e0d', fontWeight: 500 }}>
+          <span style={{ fontSize: 'clamp(14px, 1.8vw, 16px)' }}>✏️</span>
+          <span style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: '#389e0d', fontWeight: 500 }}>
             {contentStatus === 'changes_requested'
               ? 'Admin has requested changes. Edit your content and save, then re-submit for review.'
               : 'Draft saved! You can freely edit — change title, structure, images, or any field. Save again to update, then submit for review.'}
@@ -939,10 +948,10 @@ const CreateContent = () => {
       {contentStatus === 'pending' && (
         <div style={{
           background: '#fffbe6', borderBottom: '1px solid #ffe58f',
-          padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 10
+          padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 24px)', display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 10px)'
         }}>
-          <span style={{ fontSize: 16 }}>⏳</span>
-          <span style={{ fontSize: 13, color: '#d48806', fontWeight: 500 }}>
+          <span style={{ fontSize: 'clamp(14px, 1.8vw, 16px)' }}>⏳</span>
+          <span style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: '#d48806', fontWeight: 500 }}>
             Content is under review. Editing is locked until admin responds.
           </span>
         </div>
@@ -952,7 +961,7 @@ const CreateContent = () => {
 
         {/* Page-level Tabs */}
         <div style={{ background: '#fff', borderBottom: '1px solid #e8e8e8' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', gap: 0 }}>
+          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(12px, 2vw, 24px)', display: 'flex', gap: 0, overflowX: 'auto' }} className="create-content-tabs">
             {[
               { key: 'standard', label: 'Standard Form', desc: 'Fill all fields directly' },
               { key: 'builder', label: 'Drag & Drop Builder', desc: 'Build structure by dragging blocks' },
@@ -963,23 +972,76 @@ const CreateContent = () => {
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
                 style={{
-                  padding: '14px 24px', border: 'none', background: 'transparent',
-                  cursor: 'pointer', fontSize: 14, fontWeight: activeTab === tab.key ? 600 : 400,
+                  padding: 'clamp(10px, 1.5vw, 14px) clamp(16px, 2.5vw, 24px)', border: 'none', background: 'transparent',
+                  cursor: 'pointer', fontSize: 'clamp(12px, 0.9vw, 14px)', fontWeight: activeTab === tab.key ? 600 : 400,
                   color: activeTab === tab.key ? '#4a7cff' : '#595959',
                   borderBottom: activeTab === tab.key ? '2px solid #4a7cff' : '2px solid transparent',
-                  transition: 'all 0.15s',
+                   transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 {tab.label}
+                {/* Pulse badge when Landing Page type forces HTML builder */}
+                {tab.key === 'html' && isLandingPageType && activeTab !== 'html' && (
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#6c5ce7', display: 'inline-block' }} />
+                )}
+                {tab.key === 'html' && isLandingPageType && (
+                  <span style={{ fontSize: 10, fontWeight: 700, color: '#6c5ce7', background: '#f0ecff', padding: '1px 6px', borderRadius: 10 }}>
+                    ACTIVE
+                  </span>
+                )}
+ 
               </button>
             ))}
           </div>
         </div>
 
-        <div style={{ maxWidth: activeTab === 'builder' ? 1400 : 1200, margin: '0 auto', padding: '32px 24px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: 'clamp(16px, 2vw, 32px) clamp(12px, 2vw, 24px)', display: 'flex', gap: 'clamp(16px, 2vw, 24px)', alignItems: 'flex-start', flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
 
           {/* Main Content */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, width: window.innerWidth < 768 ? '100%' : 'auto' }}>
+
+            {/* Mobile Reorder Layout - Top on mobile */}
+            {window.innerWidth < 768 && (
+              <div style={{ background: '#fff', borderRadius: 12, padding: 'clamp(16px, 2vw, 20px)', marginBottom: 'clamp(12px, 2vw, 16px)', border: '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', display: 'block', marginBottom: 'clamp(4px, 0.5vw, 4px)' }}>
+                  <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
+                </Text>
+                <Text style={{ fontSize: 'clamp(10px, 0.8vw, 11px)', color: '#8c8c8c', display: 'block', marginBottom: 'clamp(8px, 1vw, 12px)' }}>Drag sections to change order</Text>
+                {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
+                  const sec = activeTab === 'builder' 
+                    ? SECTION_TYPES.find(s => s.type === item.type)
+                    : STANDARD_SECTIONS.find(s => s.key === item);
+                  if (!sec) return null;
+                  const key = activeTab === 'builder' ? item.id : item;
+                  if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
+                  return (
+                    <div
+                      key={key}
+                      draggable
+                      onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
+                      onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
+                      onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
+                      onDragOver={e => e.preventDefault()}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)',
+                        padding: 'clamp(6px, 1vw, 8px) clamp(8px, 1vw, 10px)', marginBottom: 'clamp(4px, 0.5vw, 6px)',
+                        background: '#fafafa', borderRadius: 8,
+                        border: '1px solid #e8e8e8', cursor: 'grab',
+                        userSelect: 'none'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = '#f0f4ff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = '#fafafa'; }}
+                    >
+                      <HolderOutlined style={{ color: '#bfbfbf', fontSize: 'clamp(10px, 0.8vw, 12px)' }} />
+                      <span style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: '#1a1a2e', flex: 1 }}>{sec.label}</span>
+                      <span style={{ fontSize: 'clamp(9px, 0.7vw, 10px)', color: '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* ── STANDARD FORM TAB ── */}
             {activeTab === 'standard' && (() => {
@@ -1252,7 +1314,19 @@ const CreateContent = () => {
             {/* ── HTML BUILDER TAB ── */}
             {activeTab === 'html' && (
               <>
-                {/* Meta Section */}
+{/* Landing Page type hint banner */}
+                {isLandingPageType && (
+                  <div style={{ background: '#f0f4ff', border: '1px solid #4a7cff33', borderRadius: 12, padding: '14px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 20 }}>🚀</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: '#4a7cff' }}>HTML Builder mode active</div>
+                      <div style={{ fontSize: 12, color: '#595959', marginTop: 2 }}>
+                        Your landing page will be published at <code style={{ background: '#e8eeff', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>/content/<em>your-title-slug</em></code> — no Navbar or Footer, just your HTML.
+                      </div>
+                    </div>
+                  </div>
+                )}         
+                       {/* Meta Section */}
                 <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
                   <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Landing Page Details</Text>
                   <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
@@ -1261,7 +1335,16 @@ const CreateContent = () => {
                         const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
                         setSelectedTypeName(name);
                       }}>
-                        {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+                       {contentTypes.map(t => (
+                          <Option key={t.id} value={t.id}>
+                            {t.name}
+                            {['landing page', 'landing-page'].includes(t.name.toLowerCase()) && (
+                              <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#6c5ce7', background: '#f0ecff', padding: '1px 7px', borderRadius: 10, textTransform: 'uppercase' }}>
+                                HTML
+                              </span>
+                            )}
+                          </Option>
+                        ))}
                       </Select>
                     </Form.Item>
                     <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
@@ -1280,8 +1363,21 @@ const CreateContent = () => {
                   </Form.Item>
                   <Form.Item name="short_description"
                     label={<span>Short Description <Tooltip title="Brief summary shown in listing cards"><InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
-                    rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
+                    rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 16 }}>
                     <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} />
+                  </Form.Item>
+                  {/* Auto slug preview */}
+                  <Form.Item noStyle shouldUpdate={(prev, cur) => prev.title !== cur.title}>
+                    {({ getFieldValue }) => {
+                      const title = getFieldValue('title') || '';
+                      const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                      return slug ? (
+                        <div style={{ padding: '10px 14px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 8, fontSize: 13 }}>
+                          <span style={{ color: '#8c8c8c', fontWeight: 500 }}>Public URL: </span>
+                          <span style={{ color: '#389e0d', fontWeight: 700 }}>/content/{slug}</span>
+                        </div>
+                      ) : null;
+                    }}
                   </Form.Item>
                 </div>
 
@@ -1398,8 +1494,9 @@ const CreateContent = () => {
             )}
           </div>
 
-          {/* Sidebar — for all tabs */}
-          <div style={{ width: 300, flexShrink: 0 }}>
+          {/* Sidebar — for desktop only */}
+          {window.innerWidth >= 768 && (
+            <div style={{ width: 300, flexShrink: 0 }}>
 
             {/* Layout Reorder Panel */}
             <div style={{ background: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: '1px solid #e8e8e8' }}>
@@ -1477,28 +1574,29 @@ const CreateContent = () => {
             </div>
 
             <Form.Item name="status" hidden><Input /></Form.Item>
-          </div>
+            </div>
+          )}
         </div>
       </Form>
 
       {/* Preview Modal */}
       {previewVisible && previewData && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '40px 20px', overflowY: 'auto' }}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'clamp(16px, 2vw, 40px) clamp(12px, 2vw, 20px)', overflowY: 'auto' }}
           onClick={() => setPreviewVisible(false)}>
-          <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 860, padding: 40, position: 'relative' }}
+          <div style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 860, padding: 'clamp(20px, 3vw, 40px)', position: 'relative' }}
             onClick={e => e.stopPropagation()}>
-            <Button type="text" onClick={() => setPreviewVisible(false)} style={{ position: 'absolute', top: 16, right: 16, color: '#8c8c8c' }}>✕ Close</Button>
-            <Tag color="blue">{previewData.category}</Tag>
-            <Tag color="purple">{previewData.content_type}</Tag>
-            <h1 style={{ fontSize: 32, fontWeight: 700, color: '#1a1a1a', margin: '16px 0', lineHeight: 1.3 }}>{previewData.title}</h1>
+            <Button type="text" onClick={() => setPreviewVisible(false)} style={{ position: 'absolute', top: 'clamp(12px, 1.5vw, 16px)', right: 'clamp(12px, 1.5vw, 16px)', color: '#8c8c8c', fontSize: 'clamp(14px, 1.2vw, 16px)' }}>✕ Close</Button>
+            <Tag color="blue" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.category}</Tag>
+            <Tag color="purple" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.content_type}</Tag>
+            <h1 style={{ fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 700, color: '#1a1a1a', margin: 'clamp(12px, 1.5vw, 16px) 0', lineHeight: 1.3 }}>{previewData.title}</h1>
             {previewData.banner_image && (
-              <div style={{ marginBottom: 24, borderRadius: 10, overflow: 'hidden' }}>
-                <img src={previewData.banner_image} alt={previewData.title} style={{ width: '100%', maxHeight: 420, objectFit: 'contain', display: 'block' }} />
+              <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden' }}>
+                <img src={previewData.banner_image} alt={previewData.title} style={{ width: '100%', maxHeight: 'clamp(280px, 35vw, 420px)', objectFit: 'contain', display: 'block' }} />
               </div>
             )}
             {previewData.short_description && (
-              <div style={{ marginBottom: 20, padding: '12px 16px', background: '#f8f9fa', borderLeft: '4px solid #4a7cff', borderRadius: '0 8px 8px 0' }}>
-                <Text style={{ fontSize: 15, color: '#495057', lineHeight: 1.7 }}>{previewData.short_description}</Text>
+              <div style={{ marginBottom: 'clamp(16px, 2vw, 20px)', padding: 'clamp(10px, 1.5vw, 12px) clamp(12px, 1.5vw, 16px)', background: '#f8f9fa', borderLeft: '4px solid #4a7cff', borderRadius: '0 8px 8px 0' }}>
+                <Text style={{ fontSize: 'clamp(13px, 0.9vw, 15px)', color: '#495057', lineHeight: 1.7 }}>{previewData.short_description}</Text>
               </div>
             )}
             {previewData.tags?.length > 0 && (
@@ -1510,31 +1608,31 @@ const CreateContent = () => {
               </div>
             )}
             {previewData.scheduled_publish_date && (
-              <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, color: '#595959', fontSize: 13 }}>
-                <CalendarOutlined style={{ color: '#4a7cff' }} />
-                <Text>Scheduled: <strong>{previewData.scheduled_publish_date}</strong></Text>
+              <div style={{ marginBottom: 'clamp(16px, 2vw, 20px)', display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)', color: '#595959', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
+                <CalendarOutlined style={{ color: '#4a7cff', fontSize: 'clamp(12px, 1vw, 14px)' }} />
+                <Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)' }}>Scheduled: <strong>{previewData.scheduled_publish_date}</strong></Text>
               </div>
             )}
             <div className="prose-content" dangerouslySetInnerHTML={{ __html: previewData.content || '<p>No content</p>' }} />
             {(previewData.seo_meta_title || previewData.seo_meta_description || previewData.seo_meta_keywords) && (
-              <div style={{ marginTop: 32, padding: '16px 20px', background: '#f6f8fa', borderRadius: 10, border: '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 12, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 12 }}>SEO Settings</Text>
+              <div style={{ marginTop: 'clamp(24px, 3vw, 32px)', padding: 'clamp(12px, 1.5vw, 16px) clamp(16px, 2vw, 20px)', background: '#f6f8fa', borderRadius: 10, border: '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 'clamp(10px, 1.5vw, 12px)' }}>SEO Settings</Text>
                 {previewData.seo_meta_title && (
-                  <div style={{ marginBottom: 8 }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Meta Title</Text>
-                    <div><Text>{previewData.seo_meta_title}</Text></div>
+                  <div style={{ marginBottom: 'clamp(6px, 1vw, 8px)' }}>
+                    <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)' }}>Meta Title</Text>
+                    <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)' }}>{previewData.seo_meta_title}</Text></div>
                   </div>
                 )}
                 {previewData.seo_meta_description && (
-                  <div style={{ marginBottom: 8 }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Meta Description</Text>
-                    <div><Text>{previewData.seo_meta_description}</Text></div>
+                  <div style={{ marginBottom: 'clamp(6px, 1vw, 8px)' }}>
+                    <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)' }}>Meta Description</Text>
+                    <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)' }}>{previewData.seo_meta_description}</Text></div>
                   </div>
                 )}
                 {previewData.seo_meta_keywords && (
                   <div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>Keywords</Text>
-                    <div><Text>{previewData.seo_meta_keywords}</Text></div>
+                    <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)' }}>Keywords</Text>
+                    <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)' }}>{previewData.seo_meta_keywords}</Text></div>
                   </div>
                 )}
               </div>
@@ -1552,16 +1650,38 @@ const CreateContent = () => {
           footer={[
             <Button key="close" onClick={() => setHtmlPreviewVisible(false)}>Close</Button>
           ]}
-          width="90%"
+          width={window.innerWidth < 768 ? '95%' : '90%'}
           style={{ top: 20 }}
         >
-          <div style={{ minHeight: '70vh', background: '#f5f5f5', padding: 20 }}>
-            <div style={{ background: '#fff', minHeight: '60vh', padding: 20, borderRadius: 8 }}>
+          <div style={{ minHeight: 'clamp(50vh, 70vh, 70vh)', background: '#f5f5f5', padding: 'clamp(12px, 2vw, 20px)' }}>
+            <div style={{ background: '#fff', minHeight: 'clamp(40vh, 60vh, 60vh)', padding: 'clamp(12px, 2vw, 20px)', borderRadius: 8 }}>
               <div dangerouslySetInnerHTML={{ __html: htmlContent || '<p>No HTML content</p>' }} />
             </div>
           </div>
         </Modal>
       )}
+      <style>{`
+        @media (max-width: 768px) {
+          .create-content-tabs {
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            -webkit-overflow-scrolling: touch;
+          }
+          .create-content-tabs::-webkit-scrollbar {
+            display: none;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .ant-space-item {
+            margin-right: 4px !important;
+          }
+          .ant-btn {
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

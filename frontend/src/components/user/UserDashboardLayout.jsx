@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, Typography, Input, Badge, Tooltip } from 'antd';
 import {
   DashboardOutlined,
@@ -15,6 +15,7 @@ import {
   MoonOutlined,
   SunOutlined,
   AppstoreOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -26,10 +27,24 @@ const { Search } = Input;
 
 const UserDashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const getMenuItems = () => {
     const items = [
@@ -88,6 +103,9 @@ const UserDashboardLayout = () => {
   const handleMenuClick = ({ key }) => {
     if (key.includes('-section')) return;
     navigate(key);
+    if (isMobile) {
+      setMobileMenuOpen(false);
+    }
   };
 
   const handleLogout = () => {
@@ -134,17 +152,19 @@ const UserDashboardLayout = () => {
         collapsible
         collapsed={collapsed}
         width={280}
-        collapsedWidth={80}
+        collapsedWidth={isMobile ? 0 : 80}
         style={{
           background: darkMode ? '#1E293B' : '#FFFFFF',
           overflow: 'auto',
           height: '100vh',
-          position: 'fixed',
-          left: 0,
+          position: isMobile ? 'fixed' : 'fixed',
+          left: isMobile && !mobileMenuOpen ? -280 : 0,
           top: 0,
           bottom: 0,
           borderRight: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
           boxShadow: collapsed ? 'none' : '4px 0 24px rgba(0,0,0,0.02)',
+          zIndex: isMobile ? 1000 : 1,
+          transition: isMobile ? 'left 0.3s ease' : 'all 0.2s',
         }}
       >
         <div
@@ -152,8 +172,8 @@ const UserDashboardLayout = () => {
             height: 64,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            padding: collapsed ? 0 : '0 24px',
+            justifyContent: isMobile && mobileMenuOpen ? 'space-between' : (collapsed ? 'center' : 'flex-start'),
+            padding: isMobile && mobileMenuOpen ? '0 16px' : (collapsed ? 0 : '0 24px'),
             borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
             color: darkMode ? '#F8FAFC' : '#111827',
             fontSize: collapsed ? 16 : 18,
@@ -168,6 +188,17 @@ const UserDashboardLayout = () => {
               <AppstoreOutlined style={{ fontSize: 24, color: '#0AAEEF' }} />
               <span>TgsTechInfo</span>
             </span>
+          )}
+          {isMobile && mobileMenuOpen && (
+            <Button
+              type="text"
+              icon={<CloseOutlined />}
+              onClick={() => setMobileMenuOpen(false)}
+              style={{
+                fontSize: '18px',
+                color: darkMode ? '#94A3B8' : '#6B7280',
+              }}
+            />
           )}
         </div>
         <Menu
@@ -184,10 +215,10 @@ const UserDashboardLayout = () => {
           inlineIndent={collapsed ? 0 : 16}
         />
       </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 280, transition: 'margin-left 0.2s', background: darkMode ? '#0F172A' : '#F8FAFC' }}>
+      <Layout style={{ marginLeft: isMobile ? 0 : (collapsed ? 80 : 280), transition: isMobile ? 'none' : 'margin-left 0.2s', background: darkMode ? '#0F172A' : '#F8FAFC' }}>
         <Header
           style={{
-            padding: '0 32px',
+            padding: isMobile ? '0 16px' : '0 32px',
             height: 64,
             background: darkMode ? '#1E293B' : '#FFFFFF',
             display: 'flex',
@@ -196,55 +227,90 @@ const UserDashboardLayout = () => {
             borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
             position: 'sticky',
             top: 0,
-            zIndex: 10,
+            zIndex: isMobile ? 999 : 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{
-                fontSize: '16px',
-                color: darkMode ? '#94A3B8' : '#6B7280',
-              }}
-            />
-            <Text style={{ fontSize: 16, fontWeight: 500, color: darkMode ? '#F8FAFC' : '#111827' }}>
-              {getGreeting()}, {user?.first_name || 'User'}!
-            </Text>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16 }}>
+            {isMobile ? (
+              <>
+                {mobileMenuOpen ? (
+                  <Button
+                    type="text"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{
+                      fontSize: '14px',
+                      color: darkMode ? '#94A3B8' : '#6B7280',
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                ) : (
+                  <Button
+                    type="text"
+                    icon={<MenuUnfoldOutlined />}
+                    onClick={() => setMobileMenuOpen(true)}
+                    style={{
+                      fontSize: '18px',
+                      color: darkMode ? '#94A3B8' : '#6B7280',
+                    }}
+                  />
+                )}
+              </>
+            ) : (
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{
+                  fontSize: '16px',
+                  color: darkMode ? '#94A3B8' : '#6B7280',
+                }}
+              />
+            )}
+            {!isMobile && (
+              <Text style={{ fontSize: 16, fontWeight: 500, color: darkMode ? '#F8FAFC' : '#111827' }}>
+                {getGreeting()}, {user?.first_name || 'User'}!
+              </Text>
+            )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Tooltip title="Toggle Theme">
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
+            {!isMobile && (
+              <Tooltip title="Toggle Theme">
+                <Button
+                  type="text"
+                  icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
+                  onClick={toggleTheme}
+                  style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
+                />
+              </Tooltip>
+            )}
+            {!isMobile && (
+              <Badge count={3} size="small">
+                <Button
+                  type="text"
+                  icon={<BellOutlined />}
+                  style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
+                />
+              </Badge>
+            )}
+            {!isMobile && (
               <Button
-                type="text"
-                icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
-                onClick={toggleTheme}
-                style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
-              />
-            </Tooltip>
-            <Badge count={3} size="small">
-              <Button
-                type="text"
-                icon={<BellOutlined />}
-                style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
-              />
-            </Badge>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => navigate('/dashboard/create-post')}
-              style={{
-                background: '#0AAEEF',
-                borderColor: '#0AAEEF',
-                borderRadius: 8,
-                fontWeight: 500,
-              }}
-            >
-              Create
-            </Button>
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => navigate('/dashboard/create-post')}
+                style={{
+                  background: '#0AAEEF',
+                  borderColor: '#0AAEEF',
+                  borderRadius: 8,
+                  fontWeight: 500,
+                }}
+              >
+                Create
+              </Button>
+            )}
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Avatar
-                size={36}
+                size={isMobile ? 32 : 36}
                 icon={<UserOutlined />}
                 style={{ 
                   background: '#0AAEEF', 
@@ -258,7 +324,7 @@ const UserDashboardLayout = () => {
         <Content
           style={{
             margin: 0,
-            padding: '32px',
+            padding: isMobile ? 0 : '32px',
             minHeight: 'calc(100vh - 64px)',
             background: darkMode ? '#0F172A' : '#F8FAFC',
           }}
@@ -266,6 +332,19 @@ const UserDashboardLayout = () => {
           <Outlet />
         </Content>
       </Layout>
+      
+      {/* Mobile overlay */}
+      {isMobile && mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 998,
+          }}
+        />
+      )}
     </Layout>
   );
 };

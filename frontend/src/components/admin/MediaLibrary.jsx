@@ -14,6 +14,7 @@ import {
   Checkbox,
   Upload,
   message,
+  Pagination,
 } from 'antd';
 import {
   SearchOutlined,
@@ -45,10 +46,17 @@ const MediaLibrary = () => {
     search: '',
   });
   const [uploadModalVisible, setUploadModalVisible] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCards, setVisibleCards] = useState(24);
+  const pageSize = 36;
 
   useEffect(() => {
     fetchMedia();
   }, [filters]);
+
+  useEffect(() => {
+    setVisibleCards(24);
+  }, [currentPage]);
 
   const fetchMedia = async () => {
     try {
@@ -116,6 +124,15 @@ const MediaLibrary = () => {
     message.success('Media deleted successfully');
   };
 
+  const handleShowMore = () => {
+    setVisibleCards(prev => Math.min(prev + 6, pageSize));
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelect = (id) => {
     if (selectedItems.includes(id)) {
       setSelectedItems(selectedItems.filter(item => item !== id));
@@ -174,17 +191,17 @@ const MediaLibrary = () => {
   });
 
   return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={2} style={{ fontSize: 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
+    <div style={{ padding: window.innerWidth < 768 ? '16px' : '24px' }}>
+      <div style={{ marginBottom: window.innerWidth < 768 ? 16 : 24 }}>
+        <Title level={2} style={{ fontSize: window.innerWidth < 768 ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
           Media Library
         </Title>
-        <Text style={{ fontSize: 15, color: '#6B7280' }}>
+        <Text style={{ fontSize: window.innerWidth < 768 ? 13 : 15, color: '#6B7280' }}>
           Manage all your images, videos, and documents
         </Text>
       </div>
 
-      <Row gutter={[24, 24]}>
+      <Row gutter={[window.innerWidth < 768 ? 16 : 24, window.innerWidth < 768 ? 16 : 24]}>
         {/* Sidebar */}
         <Col xs={24} lg={4}>
           <Card
@@ -193,20 +210,21 @@ const MediaLibrary = () => {
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
             }}
-            bodyStyle={{ padding: '16px' }}
+            bodyStyle={{ padding: window.innerWidth < 768 ? '12px' : '16px' }}
           >
             <Button
               type="primary"
               icon={<CloudUploadOutlined />}
               block
-              style={{ marginBottom: 16, borderRadius: 8 }}
+              style={{ marginBottom: window.innerWidth < 768 ? 12 : 16, borderRadius: 8 }}
               onClick={() => setUploadModalVisible(true)}
+              size={window.innerWidth < 768 ? 'middle' : 'default'}
             >
               Upload Media
             </Button>
             
-            <div style={{ marginBottom: 16 }}>
-              <Text strong style={{ fontSize: 13, color: '#6B7280', display: 'block', marginBottom: 12 }}>
+            <div style={{ marginBottom: window.innerWidth < 768 ? 12 : 16 }}>
+              <Text strong style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: '#6B7280', display: 'block', marginBottom: window.innerWidth < 768 ? 8 : 12 }}>
                 Folders
               </Text>
               {folders.map((folder, index) => (
@@ -216,7 +234,7 @@ const MediaLibrary = () => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '8px 12px',
+                    padding: window.innerWidth < 768 ? '6px 10px' : '8px 12px',
                     borderRadius: 8,
                     cursor: 'pointer',
                     marginBottom: 4,
@@ -237,21 +255,22 @@ const MediaLibrary = () => {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {folder.icon}
-                    <Text style={{ fontSize: 13, color: '#111827' }}>{folder.name}</Text>
+                    <Text style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: '#111827' }}>{folder.name}</Text>
                   </div>
-                  <Text style={{ fontSize: 12, color: '#6B7280' }}>{folder.count}</Text>
+                  <Text style={{ fontSize: window.innerWidth < 768 ? 11 : 12, color: '#6B7280' }}>{folder.count}</Text>
                 </div>
               ))}
             </div>
 
             <div>
-              <Text strong style={{ fontSize: 13, color: '#6B7280', display: 'block', marginBottom: 12 }}>
+              <Text strong style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: '#6B7280', display: 'block', marginBottom: window.innerWidth < 768 ? 8 : 12 }}>
                 Filter by Type
               </Text>
               <Select
                 style={{ width: '100%', borderRadius: 8 }}
                 value={filters.type}
                 onChange={(value) => setFilters({ ...filters, type: value })}
+                size={window.innerWidth < 768 ? 'middle' : 'default'}
               >
                 <Option value="all">All Types</Option>
                 <Option value="image">Images</Option>
@@ -267,7 +286,7 @@ const MediaLibrary = () => {
           {/* Search and Actions */}
           <div style={{
             marginBottom: 16,
-            padding: '16px 20px',
+            padding: window.innerWidth < 768 ? '12px 16px' : '16px 20px',
             background: '#FFFFFF',
             borderRadius: 12,
             border: '1px solid #E5E7EB',
@@ -275,27 +294,28 @@ const MediaLibrary = () => {
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: 16,
+            gap: window.innerWidth < 768 ? 12 : 16,
           }}>
-            <Space size={12}>
+            <Space size={window.innerWidth < 768 ? 8 : 12} style={{ width: window.innerWidth < 768 ? '100%' : 'auto', flexDirection: window.innerWidth < 768 ? 'column' : 'row', alignItems: window.innerWidth < 768 ? 'stretch' : 'center' }}>
               <Input
                 placeholder="Search media..."
                 prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
-                style={{ width: 280, borderRadius: 8 }}
+                style={{ width: window.innerWidth < 768 ? '100%' : 280, borderRadius: 8 }}
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                size={window.innerWidth < 768 ? 'middle' : 'default'}
               />
-              <Text style={{ fontSize: 13, color: '#6B7280' }}>
+              <Text style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: '#6B7280' }}>
                 {media.length} items
               </Text>
             </Space>
-            <Space size={12}>
+            <Space size={window.innerWidth < 768 ? 8 : 12} style={{ width: window.innerWidth < 768 ? '100%' : 'auto', justifyContent: window.innerWidth < 768 ? 'flex-start' : 'flex-end' }}>
               {selectedItems.length > 0 && (
-                <Button danger icon={<DeleteOutlined />}>
+                <Button danger icon={<DeleteOutlined />} size={window.innerWidth < 768 ? 'middle' : 'default'}>
                   Delete ({selectedItems.length})
                 </Button>
               )}
-              <Button icon={<PlusOutlined />}>
+              <Button icon={<PlusOutlined />} size={window.innerWidth < 768 ? 'middle' : 'default'}>
                 New Folder
               </Button>
             </Space>
@@ -310,21 +330,21 @@ const MediaLibrary = () => {
                 border: '2px dashed #E5E7EB',
                 background: '#F8FAFC',
               }}
-              bodyStyle={{ padding: '32px' }}
+              bodyStyle={{ padding: window.innerWidth < 768 ? '20px' : '32px' }}
             >
               <Dragger {...uploadProps} style={{ background: 'transparent' }}>
                 <p className="ant-upload-drag-icon">
-                  <CloudUploadOutlined style={{ fontSize: 48, color: '#0AAEEF' }} />
+                  <CloudUploadOutlined style={{ fontSize: window.innerWidth < 768 ? 36 : 48, color: '#0AAEEF' }} />
                 </p>
-                <p style={{ fontSize: 16, color: '#111827', marginBottom: 8 }}>
+                <p style={{ fontSize: window.innerWidth < 768 ? 14 : 16, color: '#111827', marginBottom: 8 }}>
                   Click or drag files to upload
                 </p>
-                <p style={{ fontSize: 13, color: '#6B7280' }}>
+                <p style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: '#6B7280' }}>
                   Support for images, videos, and documents
                 </p>
               </Dragger>
-              <div style={{ textAlign: 'center', marginTop: 16 }}>
-                <Button onClick={() => setUploadModalVisible(false)}>
+              <div style={{ textAlign: 'center', marginTop: window.innerWidth < 768 ? 12 : 16 }}>
+                <Button onClick={() => setUploadModalVisible(false)} size={window.innerWidth < 768 ? 'middle' : 'default'}>
                   Cancel
                 </Button>
               </div>
@@ -336,35 +356,38 @@ const MediaLibrary = () => {
             background: '#FFFFFF',
             borderRadius: 12,
             border: '1px solid #E5E7EB',
-            padding: '20px',
+            padding: window.innerWidth < 768 ? '0 16px 16px 16px' : '20px',
+            paddingTop: window.innerWidth < 768 ? '16px' : '20px',
             minHeight: 400,
           }}>
             {loading ? (
-              <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <Text style={{ color: '#6B7280' }}>Loading media...</Text>
+              <div style={{ textAlign: 'center', padding: window.innerWidth < 768 ? '40px 0' : '60px 0' }}>
+                <Text style={{ color: '#6B7280', fontSize: window.innerWidth < 768 ? 12 : 14 }}>Loading media...</Text>
               </div>
             ) : media.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <PictureOutlined style={{ fontSize: 48, color: '#E5E7EB', marginBottom: 16 }} />
-                <Title level={4} style={{ color: '#6B7280', marginBottom: 8 }}>
+              <div style={{ textAlign: 'center', padding: window.innerWidth < 768 ? '40px 0' : '60px 0' }}>
+                <PictureOutlined style={{ fontSize: window.innerWidth < 768 ? 36 : 48, color: '#E5E7EB', marginBottom: window.innerWidth < 768 ? 12 : 16 }} />
+                <Title level={4} style={{ color: '#6B7280', marginBottom: 8, fontSize: window.innerWidth < 768 ? 16 : 20 }}>
                   No media found
                 </Title>
-                <Text style={{ color: '#9CA3AF' }}>
+                <Text style={{ color: '#9CA3AF', fontSize: window.innerWidth < 768 ? 12 : 14 }}>
                   Upload your first media file to get started
                 </Text>
               </div>
             ) : (
-              <Row gutter={[16, 16]}>
-                {media.map((item) => (
+              <>
+              <Row gutter={[window.innerWidth < 768 ? 0 : 24, window.innerWidth < 768 ? 0 : 24]}>
+                {media.slice(0, visibleCards).map((item) => (
                   <Col xs={12} sm={8} md={6} lg={4} xl={4} key={item.id}>
-                    <Card
-                      hoverable
-                      style={{
-                        borderRadius: 8,
-                        border: selectedItems.includes(item.id) ? '2px solid #0AAEEF' : '1px solid #E5E7EB',
-                        overflow: 'hidden',
-                        cursor: 'pointer',
-                      }}
+                    <div style={{ padding: window.innerWidth < 768 ? '0 10px 16px 10px' : 0 }}>
+                      <Card
+                        hoverable
+                        style={{
+                          borderRadius: 8,
+                          border: selectedItems.includes(item.id) ? '2px solid #0AAEEF' : '1px solid #E5E7EB',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                        }}
                       bodyStyle={{ padding: 0 }}
                       onClick={() => handleSelect(item.id)}
                     >
@@ -372,7 +395,7 @@ const MediaLibrary = () => {
                         <div
                           style={{
                             width: '100%',
-                            height: 120,
+                            height: window.innerWidth < 768 ? 100 : 120,
                             background: '#F1F5F9',
                             display: 'flex',
                             alignItems: 'center',
@@ -390,7 +413,7 @@ const MediaLibrary = () => {
                           ) : (
                             <div style={{ textAlign: 'center' }}>
                               {getTypeIcon(item.type)}
-                              <div style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>
+                              <div style={{ fontSize: window.innerWidth < 768 ? 10 : 11, color: '#6B7280', marginTop: 4 }}>
                                 {item.type.toUpperCase()}
                               </div>
                             </div>
@@ -429,14 +452,15 @@ const MediaLibrary = () => {
                               opacity: selectedItems.includes(item.id) ? 0 : 1,
                             }}
                             onClick={(e) => e.stopPropagation()}
+                            size={window.innerWidth < 768 ? 'small' : 'default'}
                           />
                         </Dropdown>
                       </div>
-                      <div style={{ padding: '12px' }}>
+                      <div style={{ padding: window.innerWidth < 768 ? '10px' : '12px' }}>
                         <Text
                           strong
                           style={{
-                            fontSize: 13,
+                            fontSize: window.innerWidth < 768 ? 12 : 13,
                             color: '#111827',
                             display: 'block',
                             overflow: 'hidden',
@@ -447,18 +471,41 @@ const MediaLibrary = () => {
                           {item.name}
                         </Text>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                          <Text style={{ fontSize: 11, color: '#6B7280' }}>
+                          <Text style={{ fontSize: window.innerWidth < 768 ? 10 : 11, color: '#6B7280' }}>
                             {formatFileSize(item.size)}
                           </Text>
-                          <Text style={{ fontSize: 11, color: '#6B7280' }}>
+                          <Text style={{ fontSize: window.innerWidth < 768 ? 10 : 11, color: '#6B7280' }}>
                             {item.usageCount} uses
                           </Text>
                         </div>
                       </div>
                     </Card>
+                    </div>
                   </Col>
                 ))}
               </Row>
+              <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+                {visibleCards < pageSize && visibleCards < media.length && (
+                  <Button
+                    type="default"
+                    onClick={handleShowMore}
+                    style={{ borderRadius: 8 }}
+                  >
+                    Show More ({Math.min(pageSize - visibleCards, media.length - visibleCards)} more)
+                  </Button>
+                )}
+                {visibleCards >= pageSize && (
+                  <Pagination
+                    current={currentPage}
+                    pageSize={pageSize}
+                    total={media.length}
+                    showSizeChanger={false}
+                    showTotal={(total) => `${total} items`}
+                    onChange={handlePageChange}
+                  />
+                )}
+              </div>
+              </>
             )}
           </div>
         </Col>

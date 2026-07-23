@@ -3,7 +3,7 @@ import {
   Card, Form, Input, Button, Avatar, Upload, 
   Typography, Space, Divider, Row, Col, 
   message, Modal, Tabs, Tag, Alert, Switch,
-  Descriptions, Statistic
+  Descriptions, Statistic, Grid
 } from 'antd';
 import { 
   UserOutlined, 
@@ -23,8 +23,14 @@ import LoginHistory from './LoginHistory';
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
+const { useBreakpoint } = Grid;
 
 const UserProfile = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -174,19 +180,19 @@ const UserProfile = () => {
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Title level={3} style={{ marginBottom: 24 }}>
+    <div style={{ padding: isMobile ? '16px' : '24px' }}>
+      <Title level={isMobile ? 4 : 3} style={{ marginBottom: isMobile ? 16 : 24, fontSize: isMobile ? 20 : 24 }}>
         <UserOutlined /> User Profile
       </Title>
 
-      <Row gutter={16}>
-        <Col span={8}>
+      <Row gutter={[isMobile ? 16 : 24, isMobile ? 16 : 24]}>
+        <Col xs={24} sm={24} md={8} lg={8}>
           <Card>
             <div style={{ textAlign: 'center' }}>
               <Upload {...uploadProps} showUploadList={false}>
                 <div style={{ position: 'relative', display: 'inline-block' }}>
                   <Avatar 
-                    size={120} 
+                    size={isMobile ? 80 : 120} 
                     src={avatarUrl} 
                     icon={<UserOutlined />}
                     style={{ cursor: 'pointer' }}
@@ -198,63 +204,64 @@ const UserProfile = () => {
                       right: 0,
                       background: '#1890ff',
                       borderRadius: '50%',
-                      width: 32,
-                      height: 32,
+                      width: isMobile ? 24 : 32,
+                      height: isMobile ? 24 : 32,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer'
                     }}
                   >
-                    <CameraOutlined style={{ color: '#fff' }} />
+                    <CameraOutlined style={{ color: '#fff', fontSize: isMobile ? 12 : 14 }} />
                   </div>
                 </div>
               </Upload>
               
-              <Title level={4} style={{ marginTop: 16 }}>
+              <Title level={isMobile ? 5 : 4} style={{ marginTop: isMobile ? 12 : 16, fontSize: isMobile ? 16 : 18 }}>
                 {user?.first_name} {user?.last_name}
               </Title>
-              <Text type="secondary">{user?.email}</Text>
+              <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14 }}>{user?.email}</Text>
               
               <Divider />
               
-              <Descriptions column={1} size="small">
+              <Descriptions column={1} size={isMobile ? 'small' : 'middle'}>
                 <Descriptions.Item label="Role">
-                  <Tag color="blue">{user?.role || 'User'}</Tag>
+                  <Tag color="blue" style={{ fontSize: isMobile ? 11 : 14 }}>{user?.role || 'User'}</Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Status">
-                  <Tag color={user?.is_active ? 'green' : 'red'}>
+                  <Tag color={user?.is_active ? 'green' : 'red'} style={{ fontSize: isMobile ? 11 : 14 }}>
                     {user?.is_active ? 'Active' : 'Inactive'}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Member Since">
-                  {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
+                  <Text style={{ fontSize: isMobile ? 11 : 14 }}>{user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</Text>
                 </Descriptions.Item>
               </Descriptions>
             </div>
           </Card>
 
           <Card title="Quick Stats" style={{ marginTop: 16 }}>
-            <Row gutter={16}>
+            <Row gutter={isMobile ? 12 : 16}>
               <Col span={12}>
-                <Statistic title="Content Created" value={0} />
+                <Statistic title="Content Created" value={0} valueStyle={{ fontSize: isMobile ? 20 : 24 }} />
               </Col>
               <Col span={12}>
-                <Statistic title="Total Views" value={0} />
+                <Statistic title="Total Views" value={0} valueStyle={{ fontSize: isMobile ? 20 : 24 }} />
               </Col>
             </Row>
           </Card>
         </Col>
 
-        <Col span={16}>
+        <Col xs={24} sm={24} md={16} lg={16}>
           <Card>
             <Tabs activeKey={activeTab} onChange={setActiveTab}>
               <TabPane tab={<span><UserOutlined /> Profile</span>} key="profile">
-                <div style={{ marginBottom: 16 }}>
+                <div style={{ marginBottom: isMobile ? 12 : 16 }}>
                   <Button 
                     type="primary" 
                     icon={<EditOutlined />}
                     onClick={() => setEditMode(!editMode)}
+                    style={{ width: isMobile ? '100%' : 'auto' }}
                   >
                     {editMode ? 'Cancel' : 'Edit Profile'}
                   </Button>
@@ -266,8 +273,8 @@ const UserProfile = () => {
                   onFinish={handleProfileUpdate}
                   disabled={!editMode}
                 >
-                  <Row gutter={16}>
-                    <Col span={12}>
+                  <Row gutter={isMobile ? 12 : 16}>
+                    <Col xs={24} sm={24} md={12}>
                       <Form.Item
                         name="first_name"
                         label="First Name"
@@ -276,7 +283,7 @@ const UserProfile = () => {
                         <Input prefix={<UserOutlined />} />
                       </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={24} sm={24} md={12}>
                       <Form.Item
                         name="last_name"
                         label="Last Name"
@@ -307,7 +314,7 @@ const UserProfile = () => {
 
                   {editMode && (
                     <Form.Item>
-                      <Button type="primary" htmlType="submit" loading={loading}>
+                      <Button type="primary" htmlType="submit" loading={loading} style={{ width: isMobile ? '100%' : 'auto' }}>
                         Save Changes
                       </Button>
                     </Form.Item>
@@ -321,7 +328,7 @@ const UserProfile = () => {
                   description="Your password must be at least 12 characters long and include uppercase, lowercase, numbers, and special characters."
                   type="info"
                   showIcon
-                  style={{ marginBottom: 24 }}
+                  style={{ marginBottom: isMobile ? 16 : 24 }}
                 />
 
                 <Form
@@ -350,11 +357,11 @@ const UserProfile = () => {
                   </Form.Item>
 
                   {passwordStrength > 0 && (
-                    <div style={{ marginBottom: 16 }}>
+                    <div style={{ marginBottom: isMobile ? 12 : 16 }}>
                       <Space direction="vertical" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Text>Password Strength:</Text>
-                          <Text strong style={{ color: getStrengthColor(passwordStrength) }}>
+                          <Text style={{ fontSize: isMobile ? 12 : 14 }}>Password Strength:</Text>
+                          <Text strong style={{ color: getStrengthColor(passwordStrength), fontSize: isMobile ? 12 : 14 }}>
                             {getStrengthLabel(passwordStrength)}
                           </Text>
                         </div>
@@ -369,7 +376,7 @@ const UserProfile = () => {
                           />
                         </div>
                         {passwordStrength < 100 && (
-                          <Text type="secondary" style={{ fontSize: 12 }}>
+                          <Text type="secondary" style={{ fontSize: isMobile ? 11 : 12 }}>
                             Missing: {passwordStrengthText}
                           </Text>
                         )}
@@ -397,7 +404,7 @@ const UserProfile = () => {
                   </Form.Item>
 
                   <Form.Item>
-                    <Button type="primary" htmlType="submit" loading={loading}>
+                    <Button type="primary" htmlType="submit" loading={loading} style={{ width: isMobile ? '100%' : 'auto' }}>
                       Change Password
                     </Button>
                   </Form.Item>
@@ -420,7 +427,7 @@ const UserProfile = () => {
                   description="Manage your active sessions across devices. Revoking a session will log you out from that device."
                   type="info"
                   showIcon
-                  style={{ marginBottom: 24 }}
+                  style={{ marginBottom: isMobile ? 16 : 24 }}
                 />
                 <SessionManagement />
               </TabPane>
@@ -431,7 +438,7 @@ const UserProfile = () => {
                   description="View your recent login and account activity."
                   type="info"
                   showIcon
-                  style={{ marginBottom: 24 }}
+                  style={{ marginBottom: isMobile ? 16 : 24 }}
                 />
                 <LoginHistory />
               </TabPane>

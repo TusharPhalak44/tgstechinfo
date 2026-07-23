@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Typography, Button, Switch, Tag, Space, Divider, Alert, List, Avatar } from 'antd';
+import { Card, Row, Col, Typography, Button, Switch, Tag, Space, Divider, Alert, List, Avatar, Grid } from 'antd';
 import {
   ApiOutlined,
   CheckCircleOutlined,
@@ -10,8 +10,14 @@ import {
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
+const { useBreakpoint } = Grid;
 
 const Integrations = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
   const [integrations, setIntegrations] = useState([
     {
       id: 1,
@@ -72,12 +78,12 @@ const Integrations = () => {
   const categories = [...new Set(integrations.map(int => int.category))];
 
   return (
-    <div>
-      <div style={{ marginBottom: 32 }}>
-        <Title level={2} style={{ fontSize: 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
+    <div className="p-4 md:p-6 lg:p-8">
+      <div style={{ marginBottom: isMobile ? 16 : 32 }}>
+        <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
           <ApiOutlined /> Integrations
         </Title>
-        <Text style={{ fontSize: 15, color: '#6B7280' }}>
+        <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
           Connect third-party services to extend your CMS functionality
         </Text>
       </div>
@@ -87,15 +93,15 @@ const Integrations = () => {
         description="Configure third-party services to enhance your website capabilities. Click on any integration to connect or disconnect it."
         type="info"
         showIcon
-        style={{ marginBottom: 24 }}
+        style={{ marginBottom: isMobile ? 16 : 24 }}
       />
 
       {categories.map(category => (
-        <div key={category} style={{ marginBottom: 32 }}>
-          <Title level={4} style={{ marginBottom: 16, color: '#111827' }}>
+        <div key={category} style={{ marginBottom: isMobile ? 16 : 32 }}>
+          <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
             {category}
           </Title>
-          <Row gutter={[16, 16]}>
+          <Row gutter={[isMobile ? 16 : 24, isMobile ? 16 : 24]}>
             {integrations
               .filter(int => int.category === category)
               .map(integration => (
@@ -106,28 +112,31 @@ const Integrations = () => {
                       borderRadius: 12,
                       border: '1px solid #E5E7EB',
                       boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      height: '100%',
                     }}
-                    bodyStyle={{ padding: '20px' }}
+                    bodyStyle={{ padding: isMobile ? '16px' : '20px' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div style={{ fontSize: 32 }}>{integration.icon}</div>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: isMobile ? 8 : 12 }}>
+                      <div style={{ fontSize: isMobile ? 28 : 32 }}>{integration.icon}</div>
                       <Switch
                         checked={integration.connected}
                         onChange={() => handleToggle(integration.id)}
                         checkedChildren={<CheckCircleOutlined />}
                         unCheckedChildren={<CloseCircleOutlined />}
+                        size={isMobile ? 'small' : 'default'}
                       />
                     </div>
-                    <Title level={5} style={{ marginBottom: 8, color: '#111827' }}>
+                    <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 8 : 12, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
                       {integration.name}
                     </Title>
-                    <Paragraph style={{ fontSize: 13, color: '#6B7280', marginBottom: 16 }}>
+                    <Paragraph style={{ fontSize: isMobile ? 12 : 13, color: '#6B7280', marginBottom: isMobile ? 12 : 16 }}>
                       {integration.description}
                     </Paragraph>
                     <Button
                       type={integration.connected ? 'default' : 'primary'}
                       icon={integration.connected ? <SettingOutlined /> : <LinkOutlined />}
                       block
+                      size={isMobile ? 'small' : 'middle'}
                       style={{
                         borderRadius: 8,
                         background: integration.connected ? 'transparent' : '#0AAEEF',
@@ -148,18 +157,18 @@ const Integrations = () => {
           borderRadius: 12,
           border: '1px dashed #D1D5DB',
           background: '#F9FAFB',
-          marginTop: 24,
+          marginTop: isMobile ? 16 : 24,
         }}
-        bodyStyle={{ padding: '32px', textAlign: 'center' }}
+        bodyStyle={{ padding: isMobile ? '24px' : '32px', textAlign: 'center' }}
       >
-        <PlusOutlined style={{ fontSize: 48, color: '#9CA3AF', marginBottom: 16 }} />
-        <Title level={4} style={{ color: '#6B7280', marginBottom: 8 }}>
+        <PlusOutlined style={{ fontSize: isMobile ? 40 : 48, color: '#9CA3AF', marginBottom: isMobile ? 12 : 16 }} />
+        <Title level={isMobile ? 5 : 4} style={{ color: '#6B7280', marginBottom: isMobile ? 8 : 12, fontSize: isMobile ? 16 : 18 }}>
           Need a custom integration?
         </Title>
-        <Text style={{ color: '#9CA3AF', marginBottom: 16, display: 'block' }}>
+        <Text style={{ color: '#9CA3AF', marginBottom: isMobile ?   12 : 16, display: 'block', fontSize: isMobile ? 12 : 14 }}>
           Contact our team to build a custom integration for your specific needs
         </Text>
-        <Button type="primary" icon={<LinkOutlined />}>
+        <Button type="primary" icon={<LinkOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>
           Request Integration
         </Button>
       </Card>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Statistic } from 'antd';
+import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Statistic, Grid } from 'antd';
 import {
   FormOutlined,
   PlusOutlined,
@@ -11,8 +11,14 @@ import {
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 const Forms = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
   const [forms, setForms] = useState([
     {
       id: 1,
@@ -99,38 +105,46 @@ const Forms = () => {
       title: 'Form Name',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <Text strong>{text}</Text>,
+      width: isMobile ? 120 : 150,
+      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{text}</Text>,
     },
     {
       title: 'Type',
       dataIndex: 'type',
       key: 'type',
-      render: (type) => <Tag color="blue">{type}</Tag>,
+      width: isMobile ? 80 : 100,
+      render: (type) => <Tag color="blue" style={{ fontSize: isMobile ? 11 : 14 }}>{type}</Tag>,
     },
     {
       title: 'Fields',
       dataIndex: 'fields',
       key: 'fields',
-      render: (count) => <Text>{count} fields</Text>,
+      width: isMobile ? 60 : 80,
+      responsive: ['md'],
+      render: (count) => <Text style={{ fontSize: isMobile ? 12 : 14 }}>{count} fields</Text>,
     },
     {
       title: 'Submissions',
       dataIndex: 'submissions',
       key: 'submissions',
-      render: (count) => <Text strong>{count.toLocaleString()}</Text>,
+      width: isMobile ? 90 : 110,
+      render: (count) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{count.toLocaleString()}</Text>,
     },
     {
       title: 'Last Submission',
       dataIndex: 'lastSubmission',
       key: 'lastSubmission',
-      render: (date) => <Text type="secondary">{date || 'N/A'}</Text>,
+      width: isMobile ? 90 : 120,
+      responsive: ['lg'],
+      render: (date) => <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14 }}>{date || 'N/A'}</Text>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: isMobile ? 70 : 90,
       render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
+        <Tag color={status === 'active' ? 'green' : 'red'} style={{ fontSize: isMobile ? 11 : 14 }}>
           {status.toUpperCase()}
         </Tag>
       ),
@@ -138,40 +152,96 @@ const Forms = () => {
     {
       title: 'Actions',
       key: 'actions',
+      width: isMobile ? 120 : 150,
       render: (_, record) => (
-        <Space>
-          <Button type="text" icon={<EyeOutlined />} title="View Submissions" />
-          <Button type="text" icon={<CopyOutlined />} onClick={() => handleDuplicate(record)} title="Duplicate" />
-          <Button type="text" icon={<EditOutlined />} onClick={() => handleEdit(record)} title="Edit" />
+        <div style={{ 
+          display: 'flex', 
+          gap: isMobile ? '2px' : '8px',
+          alignItems: 'center',
+          justifyContent: 'flex-start',
+          flexWrap: 'nowrap'
+        }}>
+          <Button 
+            type="text" 
+            icon={<EyeOutlined />} 
+            title="View Submissions"
+            style={{ 
+              padding: isMobile ? '0 4px' : '0 8px',
+              flex: isMobile ? '1' : 'none',
+              minWidth: isMobile ? '24px' : 'auto',
+              fontSize: isMobile ? '12px' : '14px'
+            }}
+          />
+          <Button 
+            type="text" 
+            icon={<CopyOutlined />} 
+            onClick={() => handleDuplicate(record)} 
+            title="Duplicate"
+            style={{ 
+              padding: isMobile ? '0 4px' : '0 8px',
+              flex: isMobile ? '1' : 'none',
+              minWidth: isMobile ? '24px' : 'auto',
+              fontSize: isMobile ? '12px' : '14px'
+            }}
+          />
+          <Button 
+            type="text" 
+            icon={<EditOutlined />} 
+            onClick={() => handleEdit(record)} 
+            title="Edit"
+            style={{ 
+              padding: isMobile ? '0 4px' : '0 8px',
+              flex: isMobile ? '1' : 'none',
+              minWidth: isMobile ? '24px' : 'auto',
+              fontSize: isMobile ? '12px' : '14px'
+            }}
+          />
           <Popconfirm
             title="Are you sure you want to delete this form?"
             onConfirm={() => handleDelete(record.id)}
             okText="Yes"
             cancelText="No"
           >
-            <Button type="text" icon={<DeleteOutlined />} danger title="Delete" />
+            <Button 
+              type="text" 
+              icon={<DeleteOutlined />} 
+              danger 
+              title="Delete"
+              style={{ 
+                padding: isMobile ? '0 4px' : '0 8px',
+                flex: isMobile ? '1' : 'none',
+                minWidth: isMobile ? '24px' : 'auto',
+                fontSize: isMobile ? '12px' : '14px'
+              }}
+            />
           </Popconfirm>
-        </Space>
+        </div>
       ),
     },
   ];
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div>
-          <Title level={2} style={{ fontSize: 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
+    <div className="p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="w-full sm:w-auto">
+          <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
             <FormOutlined /> Forms
           </Title>
-          <Text style={{ fontSize: 15, color: '#6B7280' }}>
+          <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
             Create and manage website forms
           </Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />} 
+          onClick={handleAdd}
+          style={{ width: isMobile ? '100%' : 'auto' }}
+        >
           Create Form
         </Button>
       </div>
 
+      {/* Stats Cards - Fixed gap issue */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} sm={12} md={6}>
           <Card
@@ -179,13 +249,15 @@ const Forms = () => {
               borderRadius: 12,
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              margin: isMobile ? '0 4px' : '0',
             }}
-            bodyStyle={{ padding: '20px' }}
+            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>Total Forms</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Total Forms</Text>}
               value={forms.length}
-              valueStyle={{ fontSize: 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
             />
           </Card>
         </Col>
@@ -195,13 +267,15 @@ const Forms = () => {
               borderRadius: 12,
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              margin: isMobile ? '0 4px' : '0',
             }}
-            bodyStyle={{ padding: '20px' }}
+            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>Total Submissions</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Total Submissions</Text>}
               value={forms.reduce((acc, f) => acc + f.submissions, 0)}
-              valueStyle={{ fontSize: 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
             />
           </Card>
         </Col>
@@ -211,13 +285,15 @@ const Forms = () => {
               borderRadius: 12,
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              margin: isMobile ? '0 4px' : '0',
             }}
-            bodyStyle={{ padding: '20px' }}
+            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>Active Forms</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Active Forms</Text>}
               value={forms.filter(f => f.status === 'active').length}
-              valueStyle={{ fontSize: 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
             />
           </Card>
         </Col>
@@ -227,13 +303,15 @@ const Forms = () => {
               borderRadius: 12,
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              margin: isMobile ? '0 4px' : '0',
             }}
-            bodyStyle={{ padding: '20px' }}
+            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>Avg Fields</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Avg Fields</Text>}
               value={Math.round(forms.reduce((acc, f) => acc + f.fields, 0) / forms.length) || 0}
-              valueStyle={{ fontSize: 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
             />
           </Card>
         </Col>
@@ -245,17 +323,23 @@ const Forms = () => {
           border: '1px solid #E5E7EB',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
-        bodyStyle={{ padding: '24px' }}
+        bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
       >
         <Table
           columns={columns}
           dataSource={forms}
           rowKey="id"
+          scroll={{ x: isMobile ? 800 : 1000 }}
           pagination={{
             pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} forms`,
+            showSizeChanger: !isMobile,
+            showQuickJumper: !isMobile,
+            showTotal: !isMobile ? (total) => `Total ${total} forms` : false,
+            simple: isMobile,
+            size: isMobile ? 'small' : 'default',
           }}
+          size={isMobile ? 'small' : 'middle'}
+          style={{ fontSize: isMobile ? 12 : 14 }}
         />
       </Card>
 
@@ -264,7 +348,9 @@ const Forms = () => {
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
-        width={500}
+        width={isMobile ? '100%' : 500}
+        style={{ top: isMobile ? 0 : 20 }}
+        bodyStyle={{ padding: isMobile ? 16 : 24 }}
       >
         <Form form={form} layout="vertical">
           <Form.Item

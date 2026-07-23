@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Tree, Button, Typography, Modal, Form, Input, Select, Space, Popconfirm, message } from 'antd';
+import { Card, Tree, Button, Typography, Modal, Form, Input, Select, Space, Popconfirm, message, Grid } from 'antd';
 import {
   MenuUnfoldOutlined,
   PlusOutlined,
@@ -10,8 +10,14 @@ import {
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 const Menus = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
   const [treeData, setTreeData] = useState([
     {
       title: 'Home',
@@ -119,17 +125,22 @@ const Menus = () => {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div>
-          <Title level={2} style={{ fontSize: 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
+    <div className="p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="w-full sm:w-auto">
+          <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
             <MenuUnfoldOutlined /> Menus
           </Title>
-          <Text style={{ fontSize: 15, color: '#6B7280' }}>
+          <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
             Manage your website navigation menus
           </Text>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />} 
+          onClick={() => handleAdd()}
+          style={{ width: isMobile ? '100%' : 'auto' }}
+        >
           Add Menu Item
         </Button>
       </div>
@@ -140,29 +151,38 @@ const Menus = () => {
           border: '1px solid #E5E7EB',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
-        bodyStyle={{ padding: '24px' }}
+        bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
       >
         <Tree
           showLine
           draggable
           blockNode
+          style={{ fontSize: isMobile ? 14 : 16 }}
           treeData={treeData.map(node => ({
             ...node,
             title: (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingRight: 8 }}>
-                <span>{node.title}</span>
-                <Space size="small">
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                paddingRight: isMobile ? 4 : 8,
+                gap: isMobile ? 8 : 0
+              }}>
+                <span style={{ fontSize: isMobile ? 14 : 16 }}>{node.title}</span>
+                <Space size={isMobile ? 2 : 'small'}>
                   <Button
                     type="text"
                     icon={<PlusOutlined />}
-                    size="small"
+                    size={isMobile ? 'small' : 'small'}
                     onClick={(e) => { e.stopPropagation(); handleAdd(node.key); }}
+                    style={{ padding: isMobile ? '0 4px' : '0 8px' }}
                   />
                   <Button
                     type="text"
                     icon={<EditOutlined />}
-                    size="small"
+                    size={isMobile ? 'small' : 'small'}
                     onClick={(e) => { e.stopPropagation(); handleEdit(node); }}
+                    style={{ padding: isMobile ? '0 4px' : '0 8px' }}
                   />
                   <Popconfirm
                     title="Are you sure you want to delete this menu item?"
@@ -173,9 +193,10 @@ const Menus = () => {
                     <Button
                       type="text"
                       icon={<DeleteOutlined />}
-                      size="small"
+                      size={isMobile ? 'small' : 'small'}
                       danger
                       onClick={(e) => e.stopPropagation()}
+                      style={{ padding: isMobile ? '0 4px' : '0 8px' }}
                     />
                   </Popconfirm>
                 </Space>
@@ -235,7 +256,9 @@ const Menus = () => {
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
-        width={500}
+        width={isMobile ? '100%' : 500}
+        style={{ top: isMobile ? 0 : 20 }}
+        bodyStyle={{ padding: isMobile ? 16 : 24 }}
       >
         <Form form={form} layout="vertical">
           <Form.Item

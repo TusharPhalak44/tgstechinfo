@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Space, Tag, Badge, message, Popconfirm, Typography, Tabs, Empty, Spin, Avatar } from 'antd';
+import { Row, Col, Card, Button, Space, Tag, Badge, message, Popconfirm, Typography, Tabs, Empty, Spin, Avatar, Pagination } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
   CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined,
@@ -46,9 +46,16 @@ const AdminContent = () => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCards, setVisibleCards] = useState(9);
+  const pageSize = 15;
   const navigate = useNavigate();
 
   useEffect(() => { fetchContents(); }, [activeTab]);
+
+  useEffect(() => {
+    setVisibleCards(9);
+  }, [currentPage]);
 
   const fetchContents = async () => {
     setLoading(true);
@@ -88,6 +95,15 @@ const AdminContent = () => {
     } catch {
       message.error('Failed to delete');
     }
+  };
+
+  const handleShowMore = () => {
+    setVisibleCards(prev => Math.min(prev + 3, pageSize));
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const filteredContents = activeTab === 'all'
@@ -143,8 +159,9 @@ const AdminContent = () => {
           className="py-16"
         />
       ) : (
-        <Row gutter={[20, 20]}>
-          {filteredContents.map(item => {
+        <>
+          <Row gutter={[20, 20]}>
+            {filteredContents.slice(0, visibleCards).map(item => {
             const status = statusConfig[item.status] || { color: 'default', text: item.status };
             const tags = parseTags(item.tags);
             const canEdit = item.status === 'draft' || item.status === 'changes_requested';
@@ -162,7 +179,7 @@ const AdminContent = () => {
                   {item.banner_image ? (
                     <div style={{ position: 'relative', lineHeight: 0 }}>
                       <img src={`/uploads/${item.banner_image}`} alt={item.title}
-                        style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px 8px 0 0', verticalAlign: 'bottom' }} />
+                        style={{ width: '100%', height: 200, objectFit: 'cover', display: 'block', borderRadius: '8px 8px 0 0' }} />
                       <div style={{ position: 'absolute', top: 8, left: 8 }}>
                         <span style={{
                           display: 'inline-flex', alignItems: 'center', gap: 5,
@@ -303,6 +320,28 @@ const AdminContent = () => {
             );
           })}
         </Row>
+        <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+          {visibleCards < pageSize && visibleCards < filteredContents.length && (
+            <Button
+              type="default"
+              onClick={handleShowMore}
+              style={{ borderRadius: 8 }}
+            >
+              Show More ({pageSize - visibleCards} more)
+            </Button>
+          )}
+          {visibleCards >= pageSize && (
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={filteredContents.length}
+              showSizeChanger={false}
+              showTotal={(total) => `${total} items`}
+              onChange={handlePageChange}
+            />
+          )}
+        </div>
+        </>
       )}
     </div>
   );

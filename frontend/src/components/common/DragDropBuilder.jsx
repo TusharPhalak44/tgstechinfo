@@ -1247,43 +1247,54 @@ const SectionRenderer = ({ type, props }) => {
     case 'content':
       console.log('SectionRenderer content - contentElements:', contentElements);
       console.log('SectionRenderer content - props.contentElements:', props.contentElements);
+      const isMobile = window.innerWidth < 768;
       return (
         <div style={sectionStyle}>
           <div style={{ padding: '14px 28px', borderBottom: '1px solid #f0f0f0' }}>
             <span style={{ fontSize: 14, fontWeight: 600 }}>Content</span>
           </div>
-          <div style={{ display: 'flex', gap: 16, padding: '16px 28px' }}>
+          <div style={{ display: 'flex', gap: 16, padding: '16px 28px', flexDirection: isMobile ? 'column' : 'row' }}>
             {/* Left sidebar for content elements */}
-            <div style={{ width: 180, flexShrink: 0 }}>
+            <div style={{ width: isMobile ? '100%' : 180, flexShrink: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                 Content Blocks
               </div>
-              {CONTENT_ELEMENTS.map(el => (
-                <div
-                  key={el.type}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('elementType', el.type);
-                    e.dataTransfer.setData('elementLabel', el.label);
-                  }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '8px 10px', marginBottom: 6,
-                    background: '#fff', borderRadius: 8,
-                    border: '1px solid #e8e8e8', cursor: 'grab',
-                    transition: 'all 0.15s'
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = '#f0f4ff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = '#fff'; }}
-                >
-                  <span style={{ width: 24, height: 24, borderRadius: 6, background: '#e6f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7cff', fontSize: 11, fontWeight: 600 }}>
-                    {el.icon}
-                  </span>
-                  <span style={{ fontSize: 12, color: '#1a1a2e', fontWeight: 500, flex: 1 }}>
-                    {el.label}
-                  </span>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : '1fr', gap: isMobile ? 8 : 0 }}>
+                {CONTENT_ELEMENTS.map(el => (
+                  <div
+                    key={el.type}
+                    draggable={!isMobile}
+                    onClick={() => isMobile && props.onAddContentElement?.(el.type, el.label)}
+                    onDragStart={(e) => {
+                      if (!isMobile) {
+                        e.dataTransfer.setData('elementType', el.type);
+                        e.dataTransfer.setData('elementLabel', el.label);
+                      }
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '8px 10px', marginBottom: 6,
+                      background: '#fff', borderRadius: 8,
+                      border: '1px solid #e8e8e8', cursor: isMobile ? 'pointer' : 'grab',
+                      transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = '#f0f4ff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = '#fff'; }}
+                  >
+                    <span style={{ width: 24, height: 24, borderRadius: 6, background: '#e6f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7cff', fontSize: 11, fontWeight: 600 }}>
+                      {el.icon}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#1a1a2e', fontWeight: 500, flex: 1 }}>
+                      {el.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {isMobile && (
+                <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 8, fontStyle: 'italic' }}>
+                  Tap blocks to add them
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Main content area (canvas) */}
@@ -1291,8 +1302,9 @@ const SectionRenderer = ({ type, props }) => {
               {props.contentElements && props.contentElements.length > 0 ? (
                 <div 
                   style={{ minHeight: 200, border: '1px solid #e8e8e8', borderRadius: 8, padding: 16, background: '#fafafa' }}
-                  onDragOver={e => e.preventDefault()}
+                  onDragOver={e => !isMobile && e.preventDefault()}
                   onDrop={(e) => {
+                    if (isMobile) return;
                     e.preventDefault();
                     const elementType = e.dataTransfer.getData('elementType');
                     const elementLabel = e.dataTransfer.getData('elementLabel');
@@ -1304,20 +1316,20 @@ const SectionRenderer = ({ type, props }) => {
                   {props.contentElements.map((element, index) => (
                     <div
                       key={element.id}
-                      onDragEnter={() => props.onContentDragEnter?.(index)}
-                      onDragEnd={props.onContentDragEnd}
-                      onDragOver={e => e.preventDefault()}
+                      onDragEnter={() => !isMobile && props.onContentDragEnter?.(index)}
+                      onDragEnd={!isMobile ? props.onContentDragEnd : undefined}
+                      onDragOver={e => !isMobile && e.preventDefault()}
                       style={{
                         marginBottom: 12, padding: 12, background: '#fff',
                         borderRadius: 8, border: '1px solid #e8e8e8', cursor: 'default'
                       }}
                     >
                       <div
-                        draggable
-                        onDragStart={() => props.onContentDragStart?.(index)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'grab' }}
+                        draggable={!isMobile}
+                        onDragStart={() => !isMobile && props.onContentDragStart?.(index)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: isMobile ? 'default' : 'grab' }}
                       >
-                        <GripVertical style={{ color: '#bfbfbf', width: 16, height: 16 }} />
+                        {!isMobile && <GripVertical style={{ color: '#bfbfbf', width: 16, height: 16 }} />}
                         <span style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                           {element.label}
                         </span>
@@ -1341,8 +1353,9 @@ const SectionRenderer = ({ type, props }) => {
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                     gap: 8, background: '#fafafa'
                   }}
-                  onDragOver={e => e.preventDefault()}
+                  onDragOver={e => !isMobile && e.preventDefault()}
                   onDrop={(e) => {
+                    if (isMobile) return;
                     e.preventDefault();
                     const elementType = e.dataTransfer.getData('elementType');
                     const elementLabel = e.dataTransfer.getData('elementLabel');
@@ -1353,10 +1366,10 @@ const SectionRenderer = ({ type, props }) => {
                 >
                   <div style={{ fontSize: 32 }}>📝</div>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#595959' }}>
-                    Drag blocks from the left panel to add them
+                    {isMobile ? 'Tap blocks above to add them' : 'Drag blocks from the left panel to add them'}
                   </div>
                   <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                    Drag to reorder after adding
+                    {isMobile ? 'Use desktop to drag and reorder' : 'Drag to reorder after adding'}
                   </div>
                 </div>
               )}

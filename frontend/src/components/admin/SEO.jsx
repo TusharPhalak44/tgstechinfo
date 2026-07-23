@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Form, Input, Button, Space, Tag, Alert, Table, Progress } from 'antd';
+import { Card, Row, Col, Typography, Form, Input, Button, Space, Tag, Alert, Table, Progress, Grid } from 'antd';
 import {
   LineChartOutlined,
   SaveOutlined,
@@ -10,8 +10,14 @@ import {
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+const { useBreakpoint } = Grid;
 
 const SEO = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
   const [form] = Form.useForm();
   const [seoScore, setSeoScore] = useState(75);
 
@@ -36,20 +42,24 @@ const SEO = () => {
       title: 'Page',
       dataIndex: 'page',
       key: 'page',
-      render: (text) => <Text strong>{text}</Text>,
+      width: isMobile ? 80 : 100,
+      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{text}</Text>,
     },
     {
       title: 'Title Tag',
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
+      width: isMobile ? 120 : 200,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: isMobile ? 70 : 90,
       render: (status) => (
-        <Tag color={status === 'Good' ? 'green' : 'orange'} icon={status === 'Good' ? <CheckCircleOutlined /> : <WarningOutlined />}>
+        <Tag color={status === 'Good' ? 'green' : 'orange'} icon={status === 'Good' ? <CheckCircleOutlined /> : <WarningOutlined />} style={{ fontSize: isMobile ? 11 : 14 }}>
           {status}
         </Tag>
       ),
@@ -58,8 +68,9 @@ const SEO = () => {
       title: 'SEO Score',
       dataIndex: 'score',
       key: 'score',
+      width: isMobile ? 80 : 100,
       render: (score) => (
-        <div style={{ width: 100 }}>
+        <div style={{ width: isMobile ? 80 : 100 }}>
           <Progress percent={score} size="small" strokeColor={score >= 70 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444'} />
         </div>
       ),
@@ -73,34 +84,35 @@ const SEO = () => {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 32 }}>
-        <Title level={2} style={{ fontSize: 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
+    <div className="p-4 md:p-6 lg:p-8">
+      <div style={{ marginBottom: isMobile ? 16 : 32 }}>
+        <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
           <LineChartOutlined /> SEO Settings
         </Title>
-        <Text style={{ fontSize: 15, color: '#6B7280' }}>
+        <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
           Manage search engine optimization settings for your website
         </Text>
       </div>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12} md={8}>
+      <Row gutter={[isMobile ? 16 : 24, isMobile ? 16 : 24]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} md={8} style={{ padding: isMobile ? '0 6px' : '0' }}>
           <Card
             style={{
               borderRadius: 12,
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
             }}
-            bodyStyle={{ padding: '20px' }}
+            bodyStyle={{ padding: isMobile ? '16px' : '20px' }}
           >
-            <Title level={4} style={{ marginBottom: 16, color: '#111827' }}>
+            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
               Overall SEO Score
             </Title>
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ fontSize: 64, fontWeight: 600, color: seoScore >= 70 ? '#10B981' : seoScore >= 50 ? '#F59E0B' : '#EF4444' }}>
+            <div style={{ textAlign: 'center', padding: isMobile ? '12px 0' : '20px 0' }}>
+              <div style={{ fontSize: isMobile ? 48 : 64, fontWeight: 600, color: seoScore >= 70 ? '#10B981' : seoScore >= 50 ? '#F59E0B' : '#EF4444' }}>
                 {seoScore}
               </div>
-              <Text type="secondary">out of 100</Text>
+              <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14 }}>out of 100</Text>
             </div>
           </Card>
         </Col>
@@ -110,46 +122,48 @@ const SEO = () => {
               borderRadius: 12,
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
             }}
-            bodyStyle={{ padding: '20px' }}
+            bodyStyle={{ padding: isMobile ? '16px' : '20px' }}
           >
-            <Title level={4} style={{ marginBottom: 16, color: '#111827' }}>
+            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
               SEO Issues
             </Title>
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space direction="vertical" style={{ width: '100%' }} size={isMobile ? 4 : 8}>
               {seoIssues.map((issue, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <div key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: isMobile ? 6 : 8 }}>
                   {issue.type === 'success' ? (
-                    <CheckCircleOutlined style={{ color: '#10B981', marginTop: 4 }} />
+                    <CheckCircleOutlined style={{ color: '#10B981', marginTop: 4, fontSize: isMobile ? 12 : 14 }} />
                   ) : (
-                    <WarningOutlined style={{ color: '#F59E0B', marginTop: 4 }} />
+                    <WarningOutlined style={{ color: '#F59E0B', marginTop: 4, fontSize: isMobile ? 12 : 14 }} />
                   )}
-                  <Text style={{ fontSize: 13 }}>{issue.message}</Text>
+                  <Text style={{ fontSize: isMobile ? 11 : 13 }}>{issue.message}</Text>
                 </div>
               ))}
             </Space>
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={8}>
+        <Col xs={24} sm={12} md={8} style={{ padding: isMobile ? '0 6px' : '0' }}>
           <Card
             style={{
               borderRadius: 12,
               border: '1px solid #E5E7EB',
               boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
             }}
-            bodyStyle={{ padding: '20px' }}
+            bodyStyle={{ padding: isMobile ? '16px' : '20px' }}
           >
-            <Title level={4} style={{ marginBottom: 16, color: '#111827' }}>
+            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
               Quick Actions
             </Title>
-            <Space direction="vertical" style={{ width: '100%' }}>
-              <Button type="primary" icon={<SaveOutlined />} block>
+            <Space direction="vertical" style={{ width: '100%' }} size={isMobile ? 4 : 8}>
+              <Button type="primary" icon={<SaveOutlined />} block size={isMobile ? 'small' : 'middle'}>
                 Generate Sitemap
               </Button>
-              <Button icon={<CopyOutlined />} block>
+              <Button icon={<CopyOutlined />} block size={isMobile ? 'small' : 'middle'}>
                 Copy Meta Tags
               </Button>
-              <Button block>
+              <Button block size={isMobile ? 'small' : 'middle'}>
                 Analyze Keywords
               </Button>
             </Space>
@@ -165,11 +179,11 @@ const SEO = () => {
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           marginBottom: 24,
         }}
-        bodyStyle={{ padding: '24px' }}
+        bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
       >
         <Form form={form} layout="vertical">
-          <Row gutter={16}>
-            <Col span={12}>
+          <Row gutter={isMobile ? 12 : 16}>
+            <Col xs={24} sm={24} md={12}>
               <Form.Item
                 name="siteTitle"
                 label="Site Title"
@@ -179,7 +193,7 @@ const SEO = () => {
                 <Input placeholder="Enter site title" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={24} md={12}>
               <Form.Item
                 name="siteSeparator"
                 label="Title Separator"
@@ -199,8 +213,8 @@ const SEO = () => {
             <TextArea rows={3} placeholder="Enter meta description (150-160 characters)" />
           </Form.Item>
 
-          <Row gutter={16}>
-            <Col span={12}>
+          <Row gutter={isMobile ? 12 : 16}>
+            <Col xs={24} sm={24} md={12}>
               <Form.Item
                 name="metaKeywords"
                 label="Meta Keywords"
@@ -209,7 +223,7 @@ const SEO = () => {
                 <Input placeholder="Enter meta keywords (comma-separated)" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} sm={24} md={12}>
               <Form.Item
                 name="ogImage"
                 label="Open Graph Image"
@@ -220,11 +234,11 @@ const SEO = () => {
           </Row>
 
           <Form.Item>
-            <Space>
-              <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
+            <Space style={{ width: '100%', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
+              <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} style={{ width: isMobile ? '100%' : 'auto' }}>
                 Save Settings
               </Button>
-              <Button>Preview</Button>
+              <Button style={{ width: isMobile ? '100%' : 'auto' }}>Preview</Button>
             </Space>
           </Form.Item>
         </Form>
@@ -237,13 +251,16 @@ const SEO = () => {
           border: '1px solid #E5E7EB',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
-        bodyStyle={{ padding: '24px' }}
+        bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
       >
         <Table
           columns={columns}
           dataSource={pages}
           rowKey="id"
+          scroll={{ x: isMobile ? 600 : 800 }}
           pagination={false}
+          size={isMobile ? 'small' : 'middle'}
+          style={{ fontSize: isMobile ? 12 : 14 }}
         />
       </Card>
     </div>

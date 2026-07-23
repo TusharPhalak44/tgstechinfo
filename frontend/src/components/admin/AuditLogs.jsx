@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Typography, Select, DatePicker, Tag, Space, Input, Button } from 'antd';
+import { Card, Table, Typography, Select, DatePicker, Tag, Space, Input, Button, Grid } from 'antd';
 import {
   HistoryOutlined,
   SearchOutlined,
@@ -10,8 +10,14 @@ import {
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 const AuditLogs = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([
     {
@@ -66,31 +72,40 @@ const AuditLogs = () => {
       title: 'Action',
       dataIndex: 'action',
       key: 'action',
-      render: (text) => <Text strong>{text}</Text>,
+      width: isMobile ? 100 : 150,
+      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{text}</Text>,
     },
     {
       title: 'User',
       dataIndex: 'user',
       key: 'user',
+      width: isMobile ? 120 : 180,
+      ellipsis: true,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
     },
     {
       title: 'IP Address',
       dataIndex: 'ip',
       key: 'ip',
-      render: (ip) => <Text code>{ip}</Text>,
+      width: isMobile ? 100 : 130,
+      responsive: ['md'],
+      render: (ip) => <Text code style={{ fontSize: isMobile ? 11 : 14 }}>{ip}</Text>,
     },
     {
       title: 'Timestamp',
       dataIndex: 'timestamp',
       key: 'timestamp',
+      width: isMobile ? 120 : 150,
       sorter: (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: isMobile ? 70 : 90,
       render: (status) => (
-        <Tag color={status === 'success' ? 'green' : 'red'}>
+        <Tag color={status === 'success' ? 'green' : 'red'} style={{ fontSize: isMobile ? 11 : 14 }}>
           {status.toUpperCase()}
         </Tag>
       ),
@@ -99,22 +114,24 @@ const AuditLogs = () => {
       title: 'Details',
       dataIndex: 'details',
       key: 'details',
+      width: isMobile ? 100 : 150,
       ellipsis: true,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
     },
   ];
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-        <div>
-          <Title level={2} style={{ fontSize: 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
+    <div className="p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="w-full sm:w-auto">
+          <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
             <HistoryOutlined /> Audit Logs
           </Title>
-          <Text style={{ fontSize: 15, color: '#6B7280' }}>
+          <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
             Track all system activities and user actions
           </Text>
         </div>
-        <Button icon={<DownloadOutlined />}>Export Logs</Button>
+        <Button icon={<DownloadOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>Export Logs</Button>
       </div>
 
       <Card
@@ -123,28 +140,28 @@ const AuditLogs = () => {
           border: '1px solid #E5E7EB',
           boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         }}
-        bodyStyle={{ padding: '24px' }}
+        bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
       >
-        <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
-          <Space>
+        <Space style={{ marginBottom: isMobile ? 12 : 16, width: '100%' }} direction={isMobile ? 'vertical' : 'horizontal'} size={isMobile ? 8 : 16}>
+          <Space style={{ width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }} size={isMobile ? 8 : 16}>
             <Input
               placeholder="Search logs..."
               prefix={<SearchOutlined />}
-              style={{ width: 250 }}
+              style={{ width: isMobile ? '100%' : 250 }}
             />
-            <Select placeholder="Filter by action" style={{ width: 150 }} allowClear>
+            <Select placeholder="Filter by action" style={{ width: isMobile ? '100%' : 150 }} allowClear>
               <Option value="login">Login</Option>
               <Option value="create">Create</Option>
               <Option value="update">Update</Option>
               <Option value="delete">Delete</Option>
             </Select>
-            <Select placeholder="Filter by status" style={{ width: 120 }} allowClear>
+            <Select placeholder="Filter by status" style={{ width: isMobile ? '100%' : 120 }} allowClear>
               <Option value="success">Success</Option>
               <Option value="failed">Failed</Option>
             </Select>
-            <RangePicker style={{ width: 250 }} />
+            <RangePicker style={{ width: isMobile ? '100%' : 250 }} />
           </Space>
-          <Button icon={<FilterOutlined />}>Apply Filters</Button>
+          <Button icon={<FilterOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>Apply Filters</Button>
         </Space>
 
         <Table
@@ -152,11 +169,17 @@ const AuditLogs = () => {
           dataSource={logs}
           loading={loading}
           rowKey="id"
+          scroll={{ x: isMobile ? 800 : 1000 }}
           pagination={{
             pageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} logs`,
+            showSizeChanger: !isMobile,
+            showQuickJumper: !isMobile,
+            showTotal: !isMobile ? (total) => `Total ${total} logs` : false,
+            simple: isMobile,
+            size: isMobile ? 'small' : 'default',
           }}
+          size={isMobile ? 'small' : 'middle'}
+          style={{ fontSize: isMobile ? 12 : 14 }}
         />
       </Card>
     </div>

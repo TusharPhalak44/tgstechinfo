@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Space, Tag, Badge, message, Popconfirm, Typography, Tabs, Empty, Spin, Avatar } from 'antd';
+import { Row, Col, Card, Button, Space, Tag, Badge, message, Popconfirm, Typography, Tabs, Empty, Spin, Avatar, Pagination } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
   CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined,
@@ -45,6 +45,9 @@ const MyContent = () => {
   const [submitting, setSubmitting] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCards, setVisibleCards] = useState(9);
+  const pageSize = 15;
 
   useEffect(() => {
     // Determine status filter based on route
@@ -57,6 +60,10 @@ const MyContent = () => {
   }, [location.pathname]);
 
   useEffect(() => { fetchContents(); }, [statusFilter]);
+
+  useEffect(() => {
+    setVisibleCards(9);
+  }, [currentPage]);
 
   const fetchContents = async () => {
     setLoading(true);
@@ -98,6 +105,15 @@ const MyContent = () => {
     } catch {
       message.error('Failed to delete');
     }
+  };
+
+  const handleShowMore = () => {
+    setVisibleCards(prev => Math.min(prev + 3, pageSize));
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const filteredContents = activeTab === 'all'
@@ -155,8 +171,9 @@ const MyContent = () => {
           <Button type="primary" onClick={() => navigate('/create-content')}>Create Now</Button>
         </Empty>
       ) : (
-        <Row gutter={[20, 20]}>
-          {filteredContents.map(item => {
+        <>
+          <Row gutter={[20, 20]}>
+            {filteredContents.slice(0, visibleCards).map(item => {
             const status = statusConfig[item.status] || { color: 'default', text: item.status };
             const tags = parseTags(item.tags);
             const canEdit = item.status === 'draft' || item.status === 'changes_requested';
@@ -315,6 +332,28 @@ const MyContent = () => {
             );
           })}
         </Row>
+        <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+          {visibleCards < pageSize && visibleCards < filteredContents.length && (
+            <Button
+              type="default"
+              onClick={handleShowMore}
+              style={{ borderRadius: 8 }}
+            >
+              Show More ({pageSize - visibleCards} more)
+            </Button>
+          )}
+          {visibleCards >= pageSize && (
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={filteredContents.length}
+              showSizeChanger={false}
+              showTotal={(total) => `${total} items`}
+              onChange={handlePageChange}
+            />
+          )}
+        </div>
+        </>
       )}
     </div>
   );

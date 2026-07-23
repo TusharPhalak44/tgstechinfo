@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Tag, Switch, Button, Space, Typography, message, Modal, Form, Input, Select } from 'antd';
+import { Table, Card, Tag, Switch, Button, Space, Typography, message, Modal, Form, Input, Select, Grid } from 'antd';
 import { UserOutlined, EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import PermissionWrapper from '../common/PermissionWrapper';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
+const { useBreakpoint } = Grid;
 
 const UserManagement = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -114,19 +120,24 @@ const UserManagement = () => {
     {
       title: 'Name',
       key: 'name',
-      render: (_, record) => `${record.first_name} ${record.last_name}`
+      width: isMobile ? 100 : 150,
+      render: (_, record) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{`${record.first_name} ${record.last_name}`}</Text>
     },
     {
       title: 'Email',
       dataIndex: 'email',
-      key: 'email'
+      key: 'email',
+      width: isMobile ? 120 : 200,
+      ellipsis: true,
+      render: (email) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{email}</Text>
     },
     {
       title: 'Role',
       dataIndex: 'role',
       key: 'role',
+      width: isMobile ? 70 : 90,
       render: (role) => (
-        <Tag color={role === 'admin' ? 'red' : 'blue'}>
+        <Tag color={role === 'admin' ? 'red' : 'blue'} style={{ fontSize: isMobile ? 11 : 14 }}>
           {role.toUpperCase()}
         </Tag>
       )
@@ -135,12 +146,14 @@ const UserManagement = () => {
       title: 'Status',
       dataIndex: 'is_active',
       key: 'is_active',
+      width: isMobile ? 80 : 100,
       render: (isActive, record) => (
         <Switch
           checked={isActive}
           onChange={() => handleStatusToggle(record.id, isActive)}
           checkedChildren="Active"
           unCheckedChildren="Inactive"
+          size={isMobile ? 'small' : 'default'}
         />
       )
     },
@@ -148,27 +161,34 @@ const UserManagement = () => {
       title: 'Joined',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date) => moment(date).format('MMM D, YYYY')
+      width: isMobile ? 90 : 120,
+      responsive: ['lg'],
+      render: (date) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{moment(date).format('MMM D, YYYY')}</Text>
     },
     {
       title: 'Actions',
       key: 'actions',
+      width: isMobile ? 100 : 150,
       render: (_, record) => (
-        <Space>
+        <Space size={isMobile ? 4 : 8}>
           <PermissionWrapper permissions="user.update">
             <Button 
               icon={<EditOutlined />} 
               onClick={() => handleEdit(record)}
+              style={{ padding: isMobile ? '0 4px' : '0 8px' }}
+              size={isMobile ? 'small' : 'middle'}
             >
-              Edit
+              {!isMobile && 'Edit'}
             </Button>
           </PermissionWrapper>
           <PermissionWrapper permissions="user.manage_roles">
             <Button 
               icon={<TeamOutlined />}
               onClick={() => handleManageRoles(record)}
+              style={{ padding: isMobile ? '0 4px' : '0 8px' }}
+              size={isMobile ? 'small' : 'middle'}
             >
-              Roles
+              {!isMobile && 'Roles'}
             </Button>
           </PermissionWrapper>
         </Space>
@@ -177,11 +197,11 @@ const UserManagement = () => {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6 lg:p-8">
       <Card>
-        <div className="mb-4 flex items-center justify-between">
-          <Title level={3}>User Management</Title>
-          <Button type="primary" icon={<PlusOutlined />}>
+        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <Title level={isMobile ? 4 : 3} style={{ fontSize: isMobile ? 20 : 24 }}>User Management</Title>
+          <Button type="primary" icon={<PlusOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>
             Add User
           </Button>
         </div>
@@ -191,10 +211,17 @@ const UserManagement = () => {
           dataSource={users}
           loading={loading}
           rowKey="id"
+          scroll={{ x: isMobile ? 800 : 1000 }}
           pagination={{
             pageSize: 10,
-            showTotal: (total) => `Total ${total} users`
+            showSizeChanger: !isMobile,
+            showQuickJumper: !isMobile,
+            showTotal: !isMobile ? (total) => `Total ${total} users` : false,
+            simple: isMobile,
+            size: isMobile ? 'small' : 'default',
           }}
+          size={isMobile ? 'small' : 'middle'}
+          style={{ fontSize: isMobile ? 12 : 14 }}
         />
       </Card>
 
@@ -207,6 +234,9 @@ const UserManagement = () => {
           form.resetFields();
         }}
         footer={null}
+        width={isMobile ? '100%' : 600}
+        style={{ top: isMobile ? 0 : 20 }}
+        bodyStyle={{ padding: isMobile ? 16 : 24 }}
       >
         <Form
           form={form}
@@ -253,15 +283,15 @@ const UserManagement = () => {
           </Form.Item>
 
           <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit">
+            <Space style={{ width: '100%', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
+              <Button type="primary" htmlType="submit" style={{ width: isMobile ? '100%' : 'auto' }}>
                 Save
               </Button>
               <Button onClick={() => {
                 setModalVisible(false);
                 setEditingUser(null);
                 form.resetFields();
-              }}>
+              }} style={{ width: isMobile ? '100%' : 'auto' }}>
                 Cancel
               </Button>
             </Space>
@@ -279,6 +309,9 @@ const UserManagement = () => {
           roleForm.resetFields();
         }}
         onOk={() => roleForm.submit()}
+        width={isMobile ? '100%' : 500}
+        style={{ top: isMobile ? 0 : 20 }}
+        bodyStyle={{ padding: isMobile ? 16 : 24 }}
       >
         <Form
           form={roleForm}
