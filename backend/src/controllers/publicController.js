@@ -45,6 +45,12 @@ const normalizeContentTypeSlug = (value) => {
         casestudy: 'case-study',
         'case-studies': 'case-study',
         'case studies': 'case-study',
+        // Landing page variants
+        'landing-page': 'landing-page',
+        'landing page': 'landing-page',
+        'landingpage': 'landing-page',
+        'landing-pages': 'landing-page',
+        'landing pages': 'landing-page',
     };
 
     return slugMap[String(value || '').toLowerCase().trim()] || String(value || '').toLowerCase().trim();

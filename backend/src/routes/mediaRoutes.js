@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const mediaController = require('../controllers/mediaController');
+const { authenticate } = require('../middleware/auth');
 
-// Upload file
-router.post('/upload', mediaController.uploadMiddleware, mediaController.uploadFile);
+// Upload file — requires authentication
+router.post('/upload', authenticate, mediaController.uploadMiddleware, mediaController.uploadFile);
 
 module.exports = router;

@@ -23,9 +23,13 @@ const StandaloneLandingPage = () => {
       const res = await axios.get(`/api/public/content/${slug}`);
       const data = res.data.content;
 
-      // Verify this is an HTML Builder page
+      // Verify this is an HTML Builder page OR a Landing Page content type
       const builderLayout = data.builder_layout ? JSON.parse(data.builder_layout) : null;
-      if (!builderLayout || !Array.isArray(builderLayout) || builderLayout[0] !== 'html') {
+      const isHtmlBuilder = Array.isArray(builderLayout) && builderLayout[0] === 'html';
+      const isLandingPageType = ['landing-page', 'landing page'].includes(
+        (data.content_type || data.content_type_name || '').toLowerCase().trim()
+      );
+      if (!isHtmlBuilder && !isLandingPageType) {
         setError('This content is not a standalone landing page');
         return;
       }

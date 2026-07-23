@@ -5,6 +5,21 @@ import { CalendarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 
+// Detect HTML builder (landing page) content by builder_layout OR content type
+const isHtmlBuilderContent = (item) => {
+  try {
+    const layout = item.builder_layout
+      ? (typeof item.builder_layout === 'string' ? JSON.parse(item.builder_layout) : item.builder_layout)
+      : null;
+    if (Array.isArray(layout) && layout[0] === 'html') return true;
+    return ['landing-page', 'landing page'].includes(
+      (item.content_type || item.content_type_name || '').toLowerCase().trim()
+    );
+  } catch {
+    return false;
+  }
+};
+
 const PAGE_SIZE = 15;
 const INITIAL_SHOW = 9;
 const SEE_MORE_STEP = 3;
@@ -23,28 +38,43 @@ const getContentRoute = (item) => {
   try {
     const layout = item.builder_layout ? JSON.parse(item.builder_layout) : null;
     const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-    if (isHtmlBuilder) return `/content/${item.slug}`;
+    const isLandingPageType = ['landing-page', 'landing page'].includes(
+      (item.content_type || item.content_type_name || '').toLowerCase().trim()
+    );
+    const isStandalone = isHtmlBuilder || isLandingPageType;
+    if (isStandalone) return { url: `/content/${item.slug}`, newTab: true };
     const contentType = item.content_type || 'article';
-    return `/${contentType}/${item.slug}`;
+    return { url: `/${contentType}/${item.slug}`, newTab: false };
   } catch {
     const contentType = item.content_type || 'article';
-    return `/${contentType}/${item.slug}`;
+    return { url: `/${contentType}/${item.slug}`, newTab: false };
+  }
+};
+
+const navigateContent = (item, navigate) => {
+  const { url, newTab } = getContentRoute(item);
+  if (newTab) {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    navigate(url);
   }
 };
 
 const TYPE_MAP = {
-  articles:   { type: 'article',   title: 'Articles',   accent: '#4a7cff', leftImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80' },
-  blogs:      { type: 'blog',      title: 'Blogs',      accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80' },
-  news:       { type: 'news',      title: 'News',       accent: '#00b894', leftImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&q=80' },
-  interviews: { type: 'interview', title: 'Interviews', accent: '#e17055', leftImg: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80' },
-  webinars:   { type: 'webinar',   title: 'Webinars',   accent: '#fd79a8', leftImg: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' },
-  events:     { type: 'event',     title: 'Events',     accent: '#fdcb6e', leftImg: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80' },
-  ebooks:     { type: 'ebook',     title: 'eBooks',     accent: '#00cec9', leftImg: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80' },
-  whitepapers: { type: 'whitepaper', title: 'Whitepapers', accent: '#e84393', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
+  articles:       { type: 'article',      title: 'Articles',      accent: '#4a7cff', leftImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80' },
+  blogs:          { type: 'blog',         title: 'Blogs',         accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80' },
+  news:           { type: 'news',         title: 'News',          accent: '#00b894', leftImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&q=80' },
+  interviews:     { type: 'interview',    title: 'Interviews',    accent: '#e17055', leftImg: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80' },
+  webinars:       { type: 'webinar',      title: 'Webinars',      accent: '#fd79a8', leftImg: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' },
+  events:         { type: 'event',        title: 'Events',        accent: '#fdcb6e', leftImg: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80' },
+  ebooks:         { type: 'ebook',        title: 'eBooks',        accent: '#00cec9', leftImg: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80' },
+  whitepapers:    { type: 'whitepaper',   title: 'Whitepapers',   accent: '#e84393', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
+  'landing-pages': { type: 'landing-page', title: 'Landing Pages', accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&q=80' },
 };
 
 // Category slug → hero images mapping
 const CATEGORY_IMG_MAP = {
+  'technology':               { accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80' },
   'artificial-intelligence':  { accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80' },
   'cybersecurity':            { accent: '#e17055', leftImg: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&q=80' },
   'cloud-computing':          { accent: '#00b894', leftImg: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80' },
@@ -88,19 +118,21 @@ const HeroBanner = ({ title, accent, leftImg, rightImg }) => (
 );
 
 // ── Main list item ───────────────────────────────────────────────
-const ListItem = ({ item, navigate, accent }) => (
+const ListItem = ({ item, navigate, accent }) => {
+  const isLandingPage = isHtmlBuilderContent(item);
+  return (
   <div style={{
     display: 'flex', gap: 20, padding: '20px 0',
     borderBottom: '1px solid #eef0f5', cursor: 'pointer',
     transition: 'background .15s', borderRadius: 4
   }}
     className="cat-list-item"
-    onClick={() => navigate(getContentRoute(item))}
+    onClick={() => navigateContent(item, navigate)}
     onMouseEnter={e => e.currentTarget.style.background = '#fafbff'}
     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
   >
     {/* Thumbnail */}
-    <div style={{ width: 220, height: 150, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f0f4ff' }} className="cat-list-item-thumb">
+    <div style={{ width: 220, height: 150, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f0f4ff', position: 'relative' }} className="cat-list-item-thumb">
       {item.banner_image
         ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .3s', imageRendering: 'auto', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
@@ -108,6 +140,15 @@ const ListItem = ({ item, navigate, accent }) => (
           />
         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📄</div>
       }
+      {/* Landing Page or content type badge on thumbnail */}
+      <span style={{
+        position: 'absolute', top: 8, left: 8,
+        background: isLandingPage ? '#6c5ce7' : accent,
+        color: '#fff', fontSize: 10, fontWeight: 700,
+        padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase'
+      }}>
+        {isLandingPage ? 'Landing Page' : (item.content_type_name || item.content_type || '')}
+      </span>
     </div>
     {/* Content */}
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -126,7 +167,7 @@ const ListItem = ({ item, navigate, accent }) => (
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {item.short_description}
       </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: '#94a3b8' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <UserOutlined style={{ fontSize: 11 }} />
           {item.first_name} {item.last_name}
@@ -139,22 +180,38 @@ const ListItem = ({ item, navigate, accent }) => (
           <EyeOutlined style={{ fontSize: 11 }} />
           {item.view_count || 0}
         </span>
+        {/* CTA label */}
+        <span style={{
+          marginLeft: 'auto', fontSize: 12, fontWeight: 700,
+          color: isLandingPage ? '#6c5ce7' : accent,
+          display: 'flex', alignItems: 'center', gap: 4
+        }}>
+          {isLandingPage ? '→ View Landing Page' : '→ Read More'}
+        </span>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // ── Sidebar recent post ──────────────────────────────────────────
-const SidebarPost = ({ item, navigate, accent }) => (
+const SidebarPost = ({ item, navigate, accent }) => {
+  const isLandingPage = isHtmlBuilderContent(item);
+  return (
   <div style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: '12px 0', borderBottom: '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
-    onClick={() => navigate(getContentRoute(item))}
+    onClick={() => navigateContent(item, navigate)}
   >
     {/* Thumbnail */}
-    <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: '#f0f4ff' }}>
+    <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: '#f0f4ff', position: 'relative' }}>
       {item.banner_image
         ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📄</div>
       }
+      {isLandingPage && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(108,92,231,0.15)', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: '2px 4px' }}>
+          <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', background: '#6c5ce7', borderRadius: 3, padding: '1px 4px', textTransform: 'uppercase', letterSpacing: .3 }}>LP</span>
+        </div>
+      )}
     </div>
     {/* Title + Description */}
     <div style={{ flex: 1, minWidth: 0 }}>
@@ -162,7 +219,7 @@ const SidebarPost = ({ item, navigate, accent }) => (
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         transition: 'color .2s'
       }}
-        onMouseEnter={e => e.currentTarget.style.color = accent}
+        onMouseEnter={e => e.currentTarget.style.color = isLandingPage ? '#6c5ce7' : accent}
         onMouseLeave={e => e.currentTarget.style.color = '#0f172a'}
       >
         {item.title}
@@ -173,7 +230,8 @@ const SidebarPost = ({ item, navigate, accent }) => (
       </p>
     </div>
   </div>
-);
+  );
+};
 
 // ── Main Component ───────────────────────────────────────────────
 const CategoryList = () => {

@@ -506,3 +506,103 @@ exports.getLoginHistory = async (req, res) => {
     }
 };
  
+
+exports.forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        const user = await User.findByEmail(email);
+
+        // Always return success to prevent email enumeration
+        if (!user) {
+            return res.json({ message: 'If that email exists, a reset link has been sent.' });
+        }
+
+        // Generate a secure reset token
+        const crypto = require('crypto');
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        // Store hashed token in DB
+        const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        await User.setResetToken(user.id, hashedToken, resetExpiry);
+
+        // Build reset URL
+        const { pool } = require('../config/database');
+        const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = rawFrontend.split(',')[0].trim();
+        const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+        // Send email
+        const { sendEmail } = require('../config/email');
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                <div style="background: #0B1F4D; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+                    <h2 style="color: #fff; margin: 0;">Password Reset Request</h2>
+                </div>
+                <div style="padding: 30px; background: #f8f9fa; border: 1px solid #e0e0e0;">
+                    <p>Hi ${user.first_name},</p>
+                    <p>We received a request to reset your password. Click the button below to proceed:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${resetUrl}" style="background: #F7941D; color: #fff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+                            Reset My Password
+                        </a>
+                    </div>
+                    <p style="color: #666; font-size: 13px;">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
+                    <p style="color: #666; font-size: 12px;">Or copy this link: <a href="${resetUrl}">${resetUrl}</a></p>
+                </div>
+                <div style="background: #e0e0e0; padding: 15px; text-align: center; border-radius: 0 0 8px 8px;">
+                    <p style="margin: 0; font-size: 12px; color: #666;">© ${new Date().getFullYear()} TGS Tech Info</p>
+                </div>
+            </body>
+            </html>
+        `;
+
+        await sendEmail(user.email, 'Password Reset – TGS Tech Info', html);
+        res.json({ message: 'If that email exists, a reset link has been sent.' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    try {
+        const { token, password } = req.body;
+
+        if (!token || !password) {
+            return res.status(400).json({ message: 'Token and new password are required' });
+        }
+
+        if (password.length < 12) {
+            return res.status(400).json({ message: 'Password must be at least 12 characters' });
+        }
+
+        // Hash the incoming token to compare with DB
+        const crypto = require('crypto');
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+        const user = await User.findByResetToken(hashedToken);
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired reset token' });
+        }
+
+        // Update password and clear reset token
+        const hashed = await hashPassword(password);
+        await User.updatePassword(user.id, hashed);
+
+        // Invalidate all existing sessions for security
+        await UserSession.deactivateAllForUser(user.id);
+
+        res.json({ message: 'Password reset successfully. Please login with your new password.' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

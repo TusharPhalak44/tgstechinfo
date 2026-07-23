@@ -14,10 +14,13 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP NOT NULL,
-    INDEX idx_user_id (user_id)
+    INDEX idx_user_id (user_id),
+    INDEX idx_sessions_token (session_token),
+    INDEX idx_sessions_expires (expires_at),
+    INDEX idx_sessions_active (user_id, is_active)
 );
 
--- Create login_history table for audit trail (without FK to user_sessions initially)
+-- Create login_history table for audit trail
 CREATE TABLE IF NOT EXISTS login_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -35,9 +38,3 @@ CREATE TABLE IF NOT EXISTS login_history (
     INDEX idx_session_id (session_id),
     INDEX idx_created (created_at)
 );
-
--- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(session_token);
-CREATE INDEX IF NOT EXISTS idx_sessions_expires ON user_sessions(expires_at);
-CREATE INDEX IF NOT EXISTS idx_sessions_active ON user_sessions(user_id, is_active);
-

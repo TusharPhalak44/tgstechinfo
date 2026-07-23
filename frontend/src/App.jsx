@@ -1,17 +1,10 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
+import { Layout, ConfigProvider, App as AntApp } from 'antd';
 import { CookieProvider } from './context/CookieContext';
 import { TrackingProvider } from './context/TrackingContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
- 
-
-const ScrollToTop = () => {
-  const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
-  return null;
-};
-import { Layout, ConfigProvider, App as AntApp } from 'antd'; // ✅ Import App from antd
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import Home from './components/public/Home';
@@ -71,10 +64,28 @@ import ContactUs from './pages/ContactUs';
 import StandaloneLandingPage from './pages/StandaloneLandingPage';
 import CaseStudyPage from './pages/CaseStudyPage';
 import Unsubscribe from './components/public/Unsubscribe';
-// import { ChatProvider } from './context/ChatContext';
-// import ChatWidget from './components/common/chatbot/ChatWidget';
+import ResetPassword from './pages/ResetPassword';
+import { ChatProvider } from './context/ChatContext';
+import ChatWidget from './components/common/chatbot/ChatWidget';
 
 const { Content } = Layout;
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+};
+
+// Simple 404 page
+const NotFound = () => (
+  <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+    <h1 style={{ fontSize: 72, fontWeight: 900, color: 'var(--color-primary)', margin: 0 }}>404</h1>
+    <p style={{ fontSize: 20, color: 'var(--color-muted)', marginBottom: 32 }}>Page not found</p>
+    <a href="/" style={{ background: 'var(--color-accent)', color: '#fff', padding: '12px 28px', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
+      Back to Home
+    </a>
+  </div>
+);
 
 // Ant Design Theme Configuration
 const theme = {
@@ -129,17 +140,16 @@ const theme = {
 };
 
 function AppContent() {
-  const authRoutes = ['/login', '/register', '/forgot-password'];
-  const standaloneRoutes = ['/content/:slug'];
+  // All URL prefixes that render as a full-screen standalone landing page (no Navbar/Footer)
+  const STANDALONE_PREFIXES = ['/content/', '/lp/', '/landing-page/'];
   const dashboardRoutes = ['/dashboard', '/create-content', '/my-content', '/my-submissions', '/admin', '/admin/users', '/admin/submissions', '/dashboard/analytics', '/dashboard/create-post', '/dashboard/drafts', '/dashboard/scheduled', '/dashboard/categories', '/dashboard/profile', '/dashboard/settings'];
+  // Auth pages (login/register) are accessed via new tab — hide navbar/footer for them
+  const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
   const location = useLocation();
   const isAuthRoute = authRoutes.includes(location.pathname);
-  const isStandaloneRoute = standaloneRoutes.some(route => {
-    if (route.includes(':slug')) {
-      return location.pathname.startsWith('/content/');
-    }
-    return location.pathname === route;
-  });
+  const isStandaloneRoute = STANDALONE_PREFIXES.some(prefix =>
+    location.pathname.startsWith(prefix)
+  );
   const isDashboardRoute = dashboardRoutes.some(route => {
     if (route.includes(':')) {
       return location.pathname.startsWith(route.split(':')[0]);
@@ -151,13 +161,14 @@ function AppContent() {
     <>
       <ScrollToTop />
 
-      {/* Standalone landing page route - no Navbar/Footer */}
-      <Routes>
-        <Route path="/content/:slug" element={<StandaloneLandingPage />} />
-      </Routes>
-
-      {/* Regular routes with Navbar/Footer */}
-      {!isStandaloneRoute && (
+      {/* Standalone landing page — no Navbar/Footer — served at /content/:slug, /lp/:slug, or /landing-page/:slug */}
+      {isStandaloneRoute ? (
+        <Routes>
+          <Route path="/content/:slug" element={<StandaloneLandingPage />} />
+          <Route path="/lp/:slug" element={<StandaloneLandingPage />} />
+          <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
+        </Routes>
+      ) : (
         <Layout className="app-layout" style={{ background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           {!isAuthRoute && !isDashboardRoute && <Navbar />}
           <Content className="app-content" style={{
@@ -197,6 +208,11 @@ function AppContent() {
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/contact" element={<ContactUs />} />
               <Route path="/case-study/:slug" element={<CaseStudyPage />} />
+              <Route path="/case-studies" element={<CategoryList />} />
+              {/* Landing pages listing + direct access */}
+              <Route path="/landing-pages" element={<CategoryList />} />
+              <Route path="/lp/:slug" element={<StandaloneLandingPage />} />
+              <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-use" element={<TermsOfUse />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -209,13 +225,17 @@ function AppContent() {
               <Route path="/security" element={<SecurityStatement />} />
               <Route path="/vendor-list" element={<VendorList />} />
               <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Admin Routes - must come first to match before User Routes */}
+              {/* Dashboard — Admin gets DashboardLayout, regular users get UserDashboardLayout */}
               <Route path="/dashboard" element={
-                <AdminRoute>
-                  <DashboardLayout />
-                </AdminRoute>
+                <PrivateRoute>
+                  <AdminRoute fallback={<UserDashboardLayout />}>
+                    <DashboardLayout />
+                  </AdminRoute>
+                </PrivateRoute>
               }>
+                {/* Admin sub-routes */}
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="content" element={<AdminContent />} />
                 <Route path="pending-review" element={<ContentReview />} />
@@ -237,21 +257,10 @@ function AppContent() {
                 <Route path="sessions" element={<SessionManagement />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="settings" element={<UserProfile />} />
-              </Route>
-
-              {/* User Routes */}
-              <Route path="/dashboard" element={
-                <PrivateRoute>
-                  <UserDashboardLayout />
-                </PrivateRoute>
-              }>
+                {/* User sub-routes */}
                 <Route index element={<Dashboard />} />
                 <Route path="my-content" element={<MyContent />} />
-                <Route path="drafts" element={<MyContent />} />
                 <Route path="scheduled" element={<MyContent />} />
-                <Route path="create-post" element={<CreateContent />} />
-                <Route path="profile" element={<UserProfile />} />
-                <Route path="settings" element={<UserProfile />} />
               </Route>
 
               {/* Legacy routes for backward compatibility */}
@@ -293,6 +302,9 @@ function AppContent() {
                 <Route path="review/:id" element={<ArticleReviewPage />} />
                 <Route path="edit/:id" element={<AdminEditContent />} />
               </Route>
+
+              {/* 404 catch-all */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Content>
           {!isAuthRoute && !isDashboardRoute && <Footer />}
@@ -310,9 +322,12 @@ function App() {
         <ThemeProvider>
           <CookieProvider>
             <TrackingProvider>
-              <AntApp>
-                <AppContent />
-              </AntApp>
+              <ChatProvider>
+                <AntApp>
+                  <AppContent />
+                  <ChatWidget />
+                </AntApp>
+              </ChatProvider>
             </TrackingProvider>
           </CookieProvider>
         </ThemeProvider>

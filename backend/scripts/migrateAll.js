@@ -138,6 +138,16 @@ const migrateAll = async () => {
         `);
         console.log('✅ Content migrations completed');
 
+        // Run case_studies.sql (adds email_subject, email_template, case_study_headline, case_study_summary)
+        console.log('📋 Running case_studies.sql...');
+        await executeSqlFile(path.join(__dirname, '../database/case_studies.sql'));
+        console.log('✅ Case studies schema applied');
+
+        // Seed Landing Page content type
+        console.log('📋 Running landing_page_content_type.sql...');
+        await executeSqlFile(path.join(__dirname, '../database/landing_page_content_type.sql'));
+        console.log('✅ Landing Page content type seeded');
+
         console.log('🎉 All migrations completed successfully');
         process.exit(0);
     } catch (err) {

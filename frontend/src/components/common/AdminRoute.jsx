@@ -1,24 +1,46 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { Spin } from 'antd';
 
-const AdminRoute = ({ children }) => {
-  const { isAuthenticated, isAdmin, loading, user } = useAuth();
+const AdminRoute = ({ children, fallback = null }) => {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      window.open('/login', '_blank', 'noopener,noreferrer');
+    }
+  }, [loading, isAuthenticated]);
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        Loading...
+      <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+        <Spin size="large" />
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+        <p style={{ fontSize: 16, color: 'var(--color-muted)' }}>Please login to access this page.</p>
+        <button
+          onClick={() => window.open('/login', '_blank', 'noopener,noreferrer')}
+          style={{ background: 'var(--color-accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+        >
+          Open Login
+        </button>
+      </div>
+    );
   }
 
+  // Non-admin user — show fallback layout or access denied
   if (!isAdmin) {
-    return <Navigate to="/dashboard" />;
+    if (fallback) return fallback;
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontSize: 16, color: 'var(--color-muted)' }}>Access denied. Admin only.</p>
+      </div>
+    );
   }
 
   return children;

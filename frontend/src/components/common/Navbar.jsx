@@ -34,6 +34,7 @@ const STATIC_NAV = [
       { label: 'Whitepaper', to: '/category/whitepaper' },
       { label: 'Webinar', to: '/webinars' },
       { label: 'Events', to: '/events' },
+      { label: 'Case Study', to: '/case-studies' },
     ]
   },
   { key: 'technology', label: 'Technology', dynamic: true },
@@ -329,38 +330,43 @@ const Navbar = () => {
           {/* Right actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 'auto' }}>
 
-            {/* Search */}
+            {/* Search — always visible compact bar */}
             <div ref={searchRef} style={{ display: 'flex', alignItems: 'center' }}>
-              {searchVisible ? (
-                <div style={{
-                  display: 'flex', alignItems: 'center',
-                  background: 'var(--color-primary-light)', borderRadius: 24,
-                  padding: '0 12px', border: '1.5px solid var(--color-primary)'
-                }}>
-                  <SearchOutlined style={{ color: 'var(--color-primary)', fontSize: 13 }} />
-                  <input
-                    autoFocus
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                    placeholder="Search..."
-                    style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, padding: '7px 8px', width: isMobile ? 120 : 180, color: 'var(--color-heading)' }}
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                background: 'var(--color-primary-light)', borderRadius: 24,
+                padding: '0 12px', border: '1.5px solid var(--color-border)',
+                transition: 'border-color .2s'
+              }}
+                onFocus={() => {}}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border)'}
+              >
+                <SearchOutlined style={{ color: 'var(--color-primary)', fontSize: 13, flexShrink: 0 }} />
+                <input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                  placeholder="Search articles..."
+                  style={{
+                    border: 'none', background: 'transparent', outline: 'none',
+                    fontSize: 13, padding: '7px 8px',
+                    width: isMobile ? 0 : searchVisible ? 180 : 130,
+                    maxWidth: isMobile ? 0 : 180,
+                    overflow: 'hidden',
+                    color: 'var(--color-heading)',
+                    transition: 'width .25s ease',
+                  }}
+                  onFocus={() => setSearchVisible(true)}
+                  onBlur={() => { if (!searchQuery) setSearchVisible(false); }}
+                />
+                {searchQuery && (
+                  <CloseOutlined
+                    style={{ color: 'var(--color-muted)', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
+                    onClick={() => { setSearchQuery(''); setSearchVisible(false); }}
                   />
-                  <CloseOutlined style={{ color: 'var(--color-muted)', fontSize: 11, cursor: 'pointer' }} onClick={() => { setSearchVisible(false); setSearchQuery(''); }} />
-                </div>
-              ) : (
-                <button onClick={() => setSearchVisible(true)} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  width: 36, height: 36, borderRadius: 10,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--color-muted)', transition: 'background .2s'
-                }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-light)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                >
-                  <SearchOutlined style={{ fontSize: 16 }} />
-                </button>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Notifications */}

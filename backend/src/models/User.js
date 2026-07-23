@@ -51,6 +51,28 @@ class User {
         return await Role.getUserRoles(userId);
     }
 
+    static async setResetToken(userId, hashedToken, expiry) {
+        await pool.query(
+            'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+            [hashedToken, expiry, userId]
+        );
+    }
+
+    static async findByResetToken(hashedToken) {
+        const [rows] = await pool.query(
+            'SELECT * FROM users WHERE reset_token = ? AND reset_token_expires > NOW() AND is_active = 1',
+            [hashedToken]
+        );
+        return rows[0];
+    }
+
+    static async updatePassword(userId, hashedPassword) {
+        await pool.query(
+            'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+            [hashedPassword, userId]
+        );
+    }
+
     static async getPermissions(userId) {
         const Permission = require('./Permission');
         return await Permission.getPermissionsByUser(userId);

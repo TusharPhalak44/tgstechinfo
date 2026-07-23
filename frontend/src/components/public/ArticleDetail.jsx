@@ -169,16 +169,26 @@ const ArticleDetail = () => {
       const response = await axios.get(`/api/public/content/${slug}`);
       const c = response.data.content;
 
-      // If this is an HTML builder page, redirect to the standalone route
+      // Debug — log what builder_layout actually contains
+      console.log('[ArticleDetail] builder_layout raw:', c.builder_layout);
+      console.log('[ArticleDetail] builder_layout type:', typeof c.builder_layout);
+
+      // If this is an HTML builder page, open in new tab at /content/:slug
       try {
         const layout = typeof c.builder_layout === 'string'
           ? JSON.parse(c.builder_layout)
           : c.builder_layout;
-        if (Array.isArray(layout) && layout[0] === 'html') {
-          navigate(`/content/${c.slug}`, { replace: true });
+        console.log('[ArticleDetail] layout parsed:', layout);
+        const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
+        console.log('[ArticleDetail] isHtmlBuilder:', isHtmlBuilder);
+        if (isHtmlBuilder) {
+          window.open(`/content/${c.slug}`, '_blank', 'noopener,noreferrer');
+          navigate(-1);
           return;
         }
-      } catch { /* not an html builder page, continue */ }
+      } catch (e) {
+        console.log('[ArticleDetail] layout parse error:', e.message);
+      }
 
       setContent(c);
       setRelatedArticles(response.data.relatedArticles || []);
@@ -739,7 +749,7 @@ const ArticleDetail = () => {
                           ? JSON.parse(article.builder_layout)
                           : article.builder_layout;
                         if (Array.isArray(layout) && layout[0] === 'html') {
-                          navigate(`/content/${article.slug}`);
+                          window.open(`/content/${article.slug}`, '_blank', 'noopener,noreferrer');
                           return;
                         }
                       } catch { /* fall through */ }
