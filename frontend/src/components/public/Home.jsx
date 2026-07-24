@@ -140,149 +140,148 @@ const useCountUp = (target, visible, duration = 1400) => {
   return count;
 };
 
-
-          // ── Single stat card — hooks at top level ───────────────────────
+// ── Single stat card ───────────────────────────────────────
 const StatCard = ({ s, i, visible }) => {
-          const num = useCountUp(Number(s.value) || 0, visible);
-          return (
-            <div 
-              
-              className="stat-card-modern"
-              style={{
-                background: 'rgba(255, 255, 255, 0.75)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                borderRadius: 'clamp(18px, 2vw, 24px)',
-                padding: 'clamp(20px, 2.5vw, 32px) clamp(16px, 2vw, 28px)',
-                border: '1px solid rgba(255, 255, 255, 0.7)',
-                boxShadow: '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                transform: visible ? `translateY(${s.offset}px)` : 'translateY(40px)',
-                opacity: visible ? 1 : 0,
-                transition: `opacity 0.6s ease ${i * 100}ms, transform 0.6s cubic-bezier(0.25, 1, 0.5, 1) ${i * 100}ms, box-shadow 0.3s ease, border-color 0.3s ease`,
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-              onMouseEnter={e => {
-                if (window.innerWidth > 768) {
-                  e.currentTarget.style.transform = `translateY(${s.offset - 8}px) scale(1.02)`;
-                  e.currentTarget.style.boxShadow = `0 20px 48px rgba(11, 31, 77, 0.12), 0 0 24px ${s.color}25, inset 0 1px 0 rgba(255, 255, 255, 0.95)`;
-                  e.currentTarget.style.borderColor = `${s.color}50`;
-                }
-              }}
-              onMouseLeave={e => {
-                if (window.innerWidth > 768) {
-                  e.currentTarget.style.transform = `translateY(${s.offset}px) scale(1)`;
-                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.7)';
-                }
-              }}
-            >
-              {/* Gradient accent bar */}
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 4,
-                background: s.gradient,
-                opacity: 0.8
-              }} />
+  const num = useCountUp(Number(s.value) || 0, visible);
+  return (
+    <div 
+      className="stat-card-modern"
+      style={{
+        background: 'rgba(255, 255, 255, 0.75)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        borderRadius: 'clamp(18px, 2vw, 24px)',
+        padding: 'clamp(20px, 2.5vw, 32px) clamp(16px, 2vw, 28px)',
+        border: '1px solid rgba(255, 255, 255, 0.7)',
+        boxShadow: '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        transform: visible ? `translateY(${s.offset}px)` : 'translateY(40px)',
+        opacity: visible ? 1 : 0,
+        transition: `opacity 0.6s ease ${i * 100}ms, transform 0.6s cubic-bezier(0.25, 1, 0.5, 1) ${i * 100}ms, box-shadow 0.3s ease, border-color 0.3s ease`,
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+      onMouseEnter={e => {
+        if (window.innerWidth > 768) {
+          e.currentTarget.style.transform = `translateY(${s.offset - 8}px) scale(1.02)`;
+          e.currentTarget.style.boxShadow = `0 20px 48px rgba(11, 31, 77, 0.12), 0 0 24px ${s.color}25, inset 0 1px 0 rgba(255, 255, 255, 0.95)`;
+          e.currentTarget.style.borderColor = `${s.color}50`;
+        }
+      }}
+      onMouseLeave={e => {
+        if (window.innerWidth > 768) {
+          e.currentTarget.style.transform = `translateY(${s.offset}px) scale(1)`;
+          e.currentTarget.style.boxShadow = '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.7)';
+        }
+      }}
+    >
+      {/* Gradient accent bar */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 4,
+        background: s.gradient,
+        opacity: 0.8
+      }} />
 
-              {/* Icon with ring */}
-              <div className="stat-icon-ring" style={{
-                width: 'clamp(44px, 4.5vw, 56px)',
-                height: 'clamp(44px, 4.5vw, 56px)',
-                borderRadius: '50%',
-                background: `linear-gradient(135deg, ${s.color}15, ${s.color}05)`,
-                border: `2px solid ${s.color}25`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 'clamp(20px, 2vw, 26px)',
-                color: s.color,
-                marginBottom: 'clamp(14px, 1.5vw, 20px)',
-                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                position: 'relative'
-              }}>
-                {s.icon}
-              </div>
+      {/* Icon with ring */}
+      <div className="stat-icon-ring" style={{
+        width: 'clamp(44px, 4.5vw, 56px)',
+        height: 'clamp(44px, 4.5vw, 56px)',
+        borderRadius: '50%',
+        background: `linear-gradient(135deg, ${s.color}15, ${s.color}05)`,
+        border: `2px solid ${s.color}25`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 'clamp(20px, 2vw, 26px)',
+        color: s.color,
+        marginBottom: 'clamp(14px, 1.5vw, 20px)',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        position: 'relative'
+      }}>
+        {s.icon}
+      </div>
 
-              {/* Number with label */}
-              <div style={{ width: '100%' }}>
-                <div className="stat-number-modern" style={{
-                  fontSize: 'clamp(32px, 3.8vw, 52px)',
-                  fontWeight: 800,
-                  color: '#0b1f4d',
-                  lineHeight: 1,
-                  letterSpacing: '-2px',
-                  marginBottom: 'clamp(6px, 0.8vw, 10px)',
-                  fontFeatureSettings: "'ss02' on",
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 4,
-                  flexWrap: 'wrap'
-                }}>
-                  <span className="stat-number-value">
-                    {num.toLocaleString()}
-                  </span>
-                  {i === 1 && (
-                    <span style={{
-                      fontSize: 'clamp(16px, 1.2vw, 22px)',
-                      fontWeight: 700,
-                      color: s.color,
-                      marginLeft: 2
-                    }}>+</span>
-                  )}
-                </div>
+      {/* Number with label */}
+      <div style={{ width: '100%' }}>
+        <div className="stat-number-modern" style={{
+          fontSize: 'clamp(32px, 3.8vw, 52px)',
+          fontWeight: 800,
+          color: '#0b1f4d',
+          lineHeight: 1,
+          letterSpacing: '-2px',
+          marginBottom: 'clamp(6px, 0.8vw, 10px)',
+          fontFeatureSettings: "'ss02' on",
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: 4,
+          flexWrap: 'wrap'
+        }}>
+          <span className="stat-number-value">
+            {num.toLocaleString()}
+          </span>
+          {i === 1 && (
+            <span style={{
+              fontSize: 'clamp(16px, 1.2vw, 22px)',
+              fontWeight: 700,
+              color: s.color,
+              marginLeft: 2
+            }}>+</span>
+          )}
+        </div>
 
-                <div style={{
-                  fontWeight: 700,
-                  fontSize: 'clamp(14px, 1.1vw, 17px)',
-                  color: '#1e293b',
-                  marginBottom: 'clamp(4px, 0.5vw, 8px)',
-                  letterSpacing: '-0.3px'
-                }}>
-                  {s.label}
-                </div>
+        <div style={{
+          fontWeight: 700,
+          fontSize: 'clamp(14px, 1.1vw, 17px)',
+          color: '#1e293b',
+          marginBottom: 'clamp(4px, 0.5vw, 8px)',
+          letterSpacing: '-0.3px'
+        }}>
+          {s.label}
+        </div>
 
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 'clamp(11px, 0.8vw, 13px)',
-                  color: '#64748b',
-                  fontWeight: 500
-                }}>
-                  <span style={{
-                    display: 'inline-block',
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: s.color,
-                    boxShadow: `0 0 12px ${s.color}50`,
-                    animation: 'pulse-dot 2s ease-in-out infinite'
-                  }} />
-                  {s.info}
-                </div>
-              </div>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 'clamp(11px, 0.8vw, 13px)',
+          color: '#64748b',
+          fontWeight: 500
+        }}>
+          <span style={{
+            display: 'inline-block',
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: s.color,
+            boxShadow: `0 0 12px ${s.color}50`,
+            animation: 'pulse-dot 2s ease-in-out infinite'
+          }} />
+          {s.info}
+        </div>
+      </div>
 
-              {/* Decorative corner */}
-              <div style={{
-                position: 'absolute',
-                bottom: -20,
-                right: -20,
-                width: 80,
-                height: 80,
-                borderRadius: '50%',
-                background: `radial-gradient(circle, ${s.color}08, transparent 70%)`,
-                pointerEvents: 'none'
-              }} />
-            </div>
-          );
-        };
+      {/* Decorative corner */}
+      <div style={{
+        position: 'absolute',
+        bottom: -20,
+        right: -20,
+        width: 80,
+        height: 80,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${s.color}08, transparent 70%)`,
+        pointerEvents: 'none'
+      }} />
+    </div>
+  );
+};
+
 const StatsBar = ({ stats }) => {
   const [ref, visible] = useReveal();
  
@@ -315,9 +314,7 @@ const StatsBar = ({ stats }) => {
         {items.map((s, i) => (
           <StatCard key={i} s={s} i={i} visible={visible} />
         ))}
-        
       </div>
-
 
       <style>{`
         @keyframes pulse-dot {
@@ -669,7 +666,6 @@ const CaseStudiesSection = ({ navigate }) => {
                     <span style={{ fontSize: 48, opacity: 0.4 }}>📋</span>
                   </div>
                 )}
-                
               </div>
 
               {/* Body */}
@@ -976,6 +972,7 @@ const HERO_SLIDES = [
   { img: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80', tag: 'Data Analytics', title: 'Real-Time Data Processing: The Shift Every Business Must Make' },
 ];
 
+// ── Hero Section (REDUCED HEIGHT VERSION) ──────────────────────
 const HeroSection = () => {
   const [active, setActive] = useState(0);
   const timerRef = useRef(null);
@@ -991,7 +988,7 @@ const HeroSection = () => {
       background: 'var(--color-primary)',
       position: 'relative',
       overflow: 'hidden',
-      minHeight: 'clamp(400px, 40vw, 480px)'
+      minHeight: 'clamp(300px, 30vw, 360px)'
     }}>
       <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 30%, rgba(247,148,29,0.15) 0%, transparent 40%), radial-gradient(circle at 80% 80%, rgba(59,130,246,0.12) 0%, transparent 40%)', pointerEvents: 'none' }} />
@@ -999,53 +996,76 @@ const HeroSection = () => {
       <div className="hero-grid" style={{
         maxWidth: 1200,
         margin: '0 auto',
-        padding: 'clamp(24px, 2vw, 40px) clamp(16px, 2vw, 24px)',
+        padding: 'clamp(16px, 1.5vw, 28px) clamp(16px, 2vw, 24px)',
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 'clamp(24px, 3vw, 40px)',
+        gap: 'clamp(20px, 2.5vw, 32px)',
         alignItems: 'center',
-        minHeight: 'clamp(400px, 40vw, 480px)'
+        minHeight: 'clamp(300px, 30vw, 360px)'
       }}>
-        {/* LEFT */}
-        <div style={{ padding: 'clamp(20px, 2vw, 40px) 0', position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 24, padding: '6px 16px', marginBottom: 'clamp(16px, 1.5vw, 24px)' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-accent)', display: 'inline-block', boxShadow: '0 0 0 4px rgba(247,148,29,0.2)' }} />
-            <span style={{ fontSize: 'clamp(11px, 0.8vw, 12px)', color: 'rgba(255,255,255,.9)', fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Live Tech Intelligence</span>
+        {/* LEFT - Desktop: Left aligned, Mobile: Top */}
+        <div className="hero-left" style={{ 
+          padding: 'clamp(12px, 1.5vw, 24px) 0', 
+          position: 'relative', 
+          zIndex: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          textAlign: 'left'
+        }}>
+          <div style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: 6, 
+            background: 'rgba(255,255,255,.1)', 
+            border: '1px solid rgba(255,255,255,.2)', 
+            borderRadius: 24, 
+            padding: '4px 14px', 
+            marginBottom: 'clamp(10px, 1vw, 16px)',
+            alignSelf: 'flex-start'
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-accent)', display: 'inline-block', boxShadow: '0 0 0 3px rgba(247,148,29,0.2)' }} />
+            <span style={{ fontSize: 'clamp(10px, 0.7vw, 11px)', color: 'rgba(255,255,255,.9)', fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Live Tech Intelligence</span>
           </div>
           <h1 style={{
             color: '#fff',
             fontWeight: 900,
             lineHeight: 1.1,
-            fontSize: 'clamp(26px, 3.5vw, 52px)',
-            margin: '0 0 clamp(14px, 1.5vw, 20px)',
-            letterSpacing: -0.8
+            fontSize: 'clamp(24px, 3vw, 42px)',
+            margin: '0 0 clamp(10px, 1vw, 14px)',
+            letterSpacing: -0.8,
+            textAlign: 'left',
+            width: '100%'
           }}>
             Your Gateway to<br />
             <span className="orange-shimmer-text">Tech Insights</span> & Innovation
           </h1>
           <p style={{
             color: 'rgba(255,255,255,.75)',
-            fontSize: 'clamp(14px, 1.1vw, 16px)',
-            lineHeight: 1.8,
-            margin: '0 0 clamp(20px, 2vw, 30px)',
-            maxWidth: 480
+            fontSize: 'clamp(13px, 1vw, 14px)',
+            lineHeight: 1.6,
+            margin: '0 0 clamp(12px, 1.2vw, 18px)',
+            maxWidth: 480,
+            textAlign: 'left',
+            width: '100%'
           }}>
             In-depth articles, expert interviews, breaking news and research across AI, Cloud, Cybersecurity, DevOps and more.
           </p>
           <div className="hero-tag-pills" style={{
             display: 'flex',
-            gap: 10,
-            marginTop: 'clamp(14px, 1.5vw, 20px)',
-            flexWrap: 'wrap'
+            gap: 8,
+            marginTop: 'clamp(8px, 1vw, 14px)',
+            flexWrap: 'wrap',
+            justifyContent: 'flex-start'
           }}>
             {['AI & ML', 'Cybersecurity', 'Cloud', 'DevOps'].map(t => (
               <span key={t} className="hero-tag" style={{
-                fontSize: 'clamp(12px, 0.8vw, 12.5px)',
+                fontSize: 'clamp(11px, 0.7vw, 12px)',
                 color: 'rgba(255,255,255,.85)',
                 background: 'rgba(255,255,255,.12)',
                 border: '1px solid rgba(255,255,255,.18)',
                 borderRadius: 22,
-                padding: '6px 16px',
+                padding: '4px 14px',
                 cursor: 'pointer',
                 transition: 'all .25s'
               }}
@@ -1056,9 +1076,9 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* RIGHT */}
-        <div style={{ padding: 'clamp(20px, 2vw, 40px) 0', position: 'relative', zIndex: 2 }}>
-          <div style={{ position: 'relative', borderRadius: 24, overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,.55)', border: '1px solid rgba(255,255,255,.1)' }}>
+        {/* RIGHT - Desktop: Right, Mobile: Bottom */}
+        <div className="hero-right" style={{ padding: 'clamp(12px, 1.5vw, 24px) 0', position: 'relative', zIndex: 2 }}>
+          <div style={{ position: 'relative', borderRadius: 20, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,.5)', border: '1px solid rgba(255,255,255,.1)' }}>
             {HERO_SLIDES.map((slide, i) => (
               <div key={i} style={{
                 position: i === 0 ? 'relative' : 'absolute',
@@ -1068,29 +1088,175 @@ const HeroSection = () => {
                 transition: 'opacity 0.8s ease, transform 0.8s ease',
                 pointerEvents: active === i ? 'auto' : 'none'
               }}>
-                <img src={slide.img} alt={slide.tag} style={{ width: '100%', height: 'clamp(200px, 28vw, 340px)', objectFit: 'cover', display: 'block' }} />
+                <img src={slide.img} alt={slide.tag} style={{ width: '100%', height: 'clamp(160px, 22vw, 260px)', objectFit: 'cover', display: 'block' }} />
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(11,31,77,.85) 0%, rgba(11,31,77,.2) 50%, transparent 100%)' }} />
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 'clamp(18px, 2vw, 28px) clamp(18px, 2vw, 26px)', background: 'linear-gradient(to top, rgba(11,31,77,.95), transparent)' }}>
-                  <span style={{ fontSize: 'clamp(11px, 0.8vw, 11.5px)', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: 1.3, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 20, padding: '4px 12px', display: 'inline-block', marginBottom: 10 }}>{slide.tag}</span>
-                  <div style={{ color: '#fff', fontWeight: 700, fontSize: 'clamp(15px, 1.2vw, 18px)', lineHeight: 1.4 }}>{slide.title}</div>
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 'clamp(14px, 1.5vw, 20px) clamp(14px, 1.5vw, 20px)', background: 'linear-gradient(to top, rgba(11,31,77,.95), transparent)' }}>
+                  <span style={{ fontSize: 'clamp(10px, 0.7vw, 11px)', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: 1.2, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 20, padding: '3px 10px', display: 'inline-block', marginBottom: 6 }}>{slide.tag}</span>
+                  <div style={{ color: '#fff', fontWeight: 700, fontSize: 'clamp(13px, 1vw, 16px)', lineHeight: 1.3 }}>{slide.title}</div>
                 </div>
               </div>
             ))}
-            <div style={{ position: 'absolute', bottom: 18, right: 18, display: 'flex', gap: 8, zIndex: 10 }}>
+            <div style={{ position: 'absolute', bottom: 14, right: 14, display: 'flex', gap: 6, zIndex: 10 }}>
               {HERO_SLIDES.map((_, i) => (
-                <button key={i} onClick={() => goTo(i)} style={{ width: active === i ? 28 : 8, height: 8, borderRadius: 10, border: 'none', cursor: 'pointer', background: active === i ? 'var(--color-accent)' : 'rgba(255,255,255,.4)', transition: 'all .3s', padding: 0 }} />
+                <button key={i} onClick={() => goTo(i)} style={{ width: active === i ? 24 : 6, height: 6, borderRadius: 10, border: 'none', cursor: 'pointer', background: active === i ? 'var(--color-accent)' : 'rgba(255,255,255,.4)', transition: 'all .3s', padding: 0 }} />
               ))}
             </div>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'rgba(255,255,255,.18)' }}>
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'rgba(255,255,255,.18)' }}>
               <div style={{ height: '100%', background: 'var(--color-accent)', animation: 'heroProgress 3.8s linear infinite', boxShadow: '0 0 12px rgba(247,148,29,.4)' }} />
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12, gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,.1)', padding: '4px 10px', borderRadius: 8 }}>{String(active + 1).padStart(2, '0')}</span>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,.5)', fontWeight: 600 }}>/ {String(HERO_SLIDES.length).padStart(2, '0')}</span>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 8, gap: 4 }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,.1)', padding: '2px 8px', borderRadius: 6 }}>{String(active + 1).padStart(2, '0')}</span>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', fontWeight: 600 }}>/ {String(HERO_SLIDES.length).padStart(2, '0')}</span>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes heroProgress { 0% { width: 0%; } 100% { width: 100%; } }
+        @keyframes orangeShimmerAnim {
+          0% { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+        .orange-shimmer-text {
+          background: linear-gradient(120deg, #f79429 25%, #ffe3b3 50%, #f79429 75%);
+          background-size: 200% auto;
+          color: transparent;
+          -webkit-background-clip: text;
+          background-clip: text;
+          animation: orangeShimmerAnim 3s linear infinite;
+          display: inline-block;
+        }
+
+        /* Desktop & Tablet Styles - Left on left, Right on right */
+        @media (min-width: 769px) {
+          .hero-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+          .hero-left {
+            order: 0 !important;
+          }
+          .hero-right {
+            order: 1 !important;
+          }
+        }
+
+        /* Mobile Styles - Left on top, Right below */
+        @media (max-width: 768px) {
+          .hero-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+            min-height: auto !important;
+            padding: 16px 16px !important;
+          }
+          
+          .hero-left {
+            order: 0 !important;
+            padding: 4px 0 2px 0 !important;
+          }
+          
+          .hero-right {
+            order: 1 !important;
+            padding: 2px 0 4px 0 !important;
+          }
+          
+          .hero-section {
+            min-height: auto !important;
+          }
+          
+          .hero-tag-pills {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+          }
+
+          .hero-left h1 {
+            font-size: clamp(22px, 4.5vw, 28px) !important;
+          }
+          
+          .hero-left p {
+            font-size: clamp(12px, 2.5vw, 14px) !important;
+            max-width: 100% !important;
+          }
+
+          .hero-left .hero-tag {
+            font-size: 10px !important;
+            padding: 3px 10px !important;
+          }
+
+          .hero-left .hero-badge {
+            font-size: 10px !important;
+            padding: 3px 10px !important;
+          }
+
+          .hero-right img {
+            height: clamp(140px, 35vw, 200px) !important;
+          }
+
+          .hero-right .hero-slide-title {
+            font-size: clamp(12px, 2.5vw, 14px) !important;
+          }
+        }
+
+        /* Small Mobile */
+        @media (max-width: 480px) {
+          .hero-grid {
+            padding: 12px 12px !important;
+            gap: 10px !important;
+          }
+          
+          .hero-left h1 {
+            font-size: 20px !important;
+          }
+          
+          .hero-left p {
+            font-size: 12px !important;
+            line-height: 1.5 !important;
+          }
+          
+          .hero-left .hero-tag {
+            font-size: 9px !important;
+            padding: 2px 8px !important;
+          }
+          
+          .hero-left .hero-badge {
+            font-size: 9px !important;
+            padding: 3px 10px !important;
+          }
+
+          .hero-right img {
+            height: 130px !important;
+          }
+
+          .hero-right .hero-slide-title {
+            font-size: 12px !important;
+          }
+
+          .hero-right .hero-slide-tag {
+            font-size: 9px !important;
+            padding: 2px 8px !important;
+          }
+        }
+
+        /* Extra Small Mobile */
+        @media (max-width: 380px) {
+          .hero-grid {
+            padding: 10px 8px !important;
+          }
+          
+          .hero-left h1 {
+            font-size: 18px !important;
+          }
+          
+          .hero-left p {
+            font-size: 11px !important;
+          }
+          
+          .hero-right img {
+            height: 110px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -1107,6 +1273,9 @@ const TickerStrip = ({ items }) => {
           </span>
         ))}
       </div>
+      <style>{`
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+      `}</style>
     </div>
   );
 };
@@ -1183,7 +1352,6 @@ const navigateArticle = (article, navigate) => {
     navigate(url);
   }
 };
- 
 
 // ── Magazine HeroCard ────────────────────────────────────────────
 const HeroCard = ({ article, navigate, onImgClick, accent = 'var(--color-primary)' }) => (
@@ -1244,7 +1412,7 @@ const ListCard = ({ article, navigate, onImgClick, isLast }) => (
   </div>
 );
 
-// ── Latest Posts Section (shadcn Cards) ─────────────────────────
+// ── Latest Posts Section ─────────────────────────────────────────
 const LatestArticlesSection = ({ articles, blogs, navigate }) => {
   const combined = [...(articles || []), ...(blogs || [])]
     .sort((a, b) => new Date(b.published_date || b.created_at) - new Date(a.published_date || a.created_at))
@@ -1616,13 +1784,11 @@ const Home = () => {
                               : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${activeCat?.color || 'var(--color-primary)'}22 0%, #e8edff 100%)` }}><ReadOutlined style={{ fontSize: 40, color: activeCat?.color || 'var(--color-primary)', opacity: 0.4 }} /></div>
                             }
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: activeCat?.color || 'var(--color-primary)' }} />
-                          {/* Landing Page badge */}
                             {isHtmlBuilderContent(a) && (
                               <span style={{ position: 'absolute', top: 10, right: 10, background: '#6c5ce7', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase' }}>
                                 Landing Page
                               </span>
                             )}
-                            {/* Content type badge (shown when not a landing page) */}
                             {!isHtmlBuilderContent(a) && a.content_type_name && (
                               <span style={{ position: 'absolute', top: 10, right: 10, background: activeCat?.color || 'var(--color-primary)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase' }}>
                                 {a.content_type_name}
@@ -1759,24 +1925,7 @@ const Home = () => {
       </div>
 
       <style>{`
-        /* Animations */
-        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
-        @keyframes heroProgress { 0% { width: 0%; } 100% { width: 100%; } }
         @keyframes catCardIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes orangeShimmerAnim {
-          0% { background-position: 100% center; }
-          100% { background-position: -100% center; }
-        }
-        .orange-shimmer-text {
-          background: linear-gradient(120deg, #f79429 25%, #ffe3b3 50%, #f79429 75%);
-          background-size: 200% auto;
-          color: transparent;
-          -webkit-background-clip: text;
-          background-clip: text;
-          animation: orangeShimmerAnim 3s linear infinite;
-          display: inline-block;
-        }
-        .latest-article-card { will-change: transform, box-shadow; }
 
         /* Responsive Grids */
         @media (max-width: 1024px) {
@@ -1788,20 +1937,15 @@ const Home = () => {
 
         @media (max-width: 768px) {
           .hero-grid { grid-template-columns: 1fr !important; gap: 24px !important; min-height: auto !important; }
-          .hero-grid > div:first-child { padding: 16px 0 !important; }
-          .hero-grid > div:last-child { padding: 16px 0 !important; }
           .featured-articles-grid { grid-template-columns: 1fr !important; }
           .why-grid { grid-template-columns: 1fr 1fr !important; }
           .case-studies-grid { grid-template-columns: 1fr !important; }
-          .stats-bar { margin: 40px -12px !important; padding: 40px 12px 60px !important; border-radius: 20px !important; }
-          .glass-stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
-          .glass-stat-card { padding: 20px !important; }
+          .cat-cards-grid { grid-template-columns: 1fr !important; }
           .container { padding: 0 16px !important; }
         }
 
         @media (max-width: 640px) {
           .latest-articles-grid { grid-template-columns: 1fr !important; }
-          .cat-cards-grid { grid-template-columns: 1fr !important; }
           .solutions-grid { grid-template-columns: 1fr !important; }
           .why-grid { grid-template-columns: 1fr !important; }
           .trending-grid { grid-template-columns: 1fr !important; }
@@ -1821,141 +1965,10 @@ const Home = () => {
         @media (max-width: 480px) {
           .hero-grid h1 { font-size: 26px !important; }
           .hero-grid p { font-size: 14px !important; }
-          .glass-number { font-size: 28px !important; }
-          .glass-icon-wrapper { width: 44px !important; height: 44px !important; font-size: 20px !important; }
           .latest-article-card > div:first-child { height: 140px !important; }
           .case-study-card > div:first-child { height: 130px !important; }
           .featured-article-card > div:first-child { height: 160px !important; }
           .trending-card > div:first-child { padding-top: 40% !important; }
-        }
-
-        /* Stats Bar Specific Responsive Styles */
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.8); }
-        }
-
-        @media (max-width: 768px) {
-          .stats-bar-wrapper {
-            margin: 40px -12px !important;
-            padding: 32px 12px 40px !important;
-            border-radius: 20px !important;
-          }
-          
-          .stats-grid-modern {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 12px !important;
-          }
-
-          .stat-card-modern {
-            padding: 18px 14px 16px !important;
-            transform: translateY(0) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-          }
-
-          .stat-card-modern:hover {
-            transform: translateY(-4px) !important;
-            box-shadow: 0 12px 32px rgba(11, 31, 77, 0.1) !important;
-          }
-
-          .stat-number-modern {
-            font-size: clamp(26px, 6vw, 34px) !important;
-            letter-spacing: -1px !important;
-          }
-
-          .stat-icon-ring {
-            width: 38px !important;
-            height: 38px !important;
-            font-size: 16px !important;
-            margin-bottom: 10px !important;
-            border-width: 1.5px !important;
-          }
-
-          .stats-blob-desktop {
-            display: none !important;
-          }
-
-          .stat-card-modern {
-            transform: translateY(0) !important;
-          }
-
-          @media (max-width: 420px) {
-            .stats-grid-modern {
-              grid-template-columns: 1fr 1fr !important;
-              gap: 10px !important;
-            }
-
-            .stat-card-modern {
-              padding: 14px 12px !important;
-            }
-
-            .stat-number-modern {
-              font-size: 22px !important;
-            }
-
-            .stat-icon-ring {
-              width: 32px !important;
-              height: 32px !important;
-              font-size: 14px !important;
-              margin-bottom: 8px !important;
-            }
-
-            .stat-card-modern > div:last-child > div:first-child {
-              font-size: 12px !important;
-            }
-
-            .stat-card-modern > div:last-child > div:last-child {
-              font-size: 10px !important;
-            }
-          }
-        }
-
-        @media (max-width: 380px) {
-          .stats-grid-modern {
-            gap: 8px !important;
-          }
-
-          .stat-card-modern {
-            padding: 12px 10px !important;
-          }
-
-          .stat-number-modern {
-            font-size: 20px !important;
-            letter-spacing: -0.5px !important;
-          }
-
-          .stat-icon-ring {
-            width: 28px !important;
-            height: 28px !important;
-            font-size: 12px !important;
-            margin-bottom: 6px !important;
-          }
-        }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .stats-grid-modern {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 18px !important;
-          }
-
-          .stat-card-modern {
-            padding: 24px 20px !important;
-          }
-
-          .stat-number-modern {
-            fontSize: clamp(30px, 4vw, 38px) !important;
-          }
-        }
-
-        @media (min-width: 1025px) {
-          .stats-grid-modern {
-            grid-template-columns: repeat(4, 1fr) !important;
-          }
-
-          .stat-card-modern:hover {
-            transform: translateY(-6px) scale(1.02) !important;
-          }
         }
       `}</style>
     </div>

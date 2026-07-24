@@ -1,3 +1,4 @@
+// UserDashboardLayout.jsx - Updated
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, Typography, Input, Badge, Tooltip } from 'antd';
 import {
@@ -157,7 +158,7 @@ const UserDashboardLayout = () => {
           background: darkMode ? '#1E293B' : '#FFFFFF',
           overflow: 'auto',
           height: '100vh',
-          position: isMobile ? 'fixed' : 'fixed',
+          position: 'fixed',
           left: isMobile && !mobileMenuOpen ? -280 : 0,
           top: 0,
           bottom: 0,
@@ -215,7 +216,14 @@ const UserDashboardLayout = () => {
           inlineIndent={collapsed ? 0 : 16}
         />
       </Sider>
-      <Layout style={{ marginLeft: isMobile ? 0 : (collapsed ? 80 : 280), transition: isMobile ? 'none' : 'margin-left 0.2s', background: darkMode ? '#0F172A' : '#F8FAFC' }}>
+      
+      <Layout style={{ 
+        marginLeft: isMobile ? 0 : (collapsed ? 80 : 280), 
+        transition: isMobile ? 'none' : 'margin-left 0.2s', 
+        background: darkMode ? '#0F172A' : '#F8FAFC',
+        width: isMobile ? '100%' : `calc(100% - ${collapsed ? 80 : 280}px)`,
+        minHeight: '100vh'
+      }}>
         <Header
           style={{
             padding: isMobile ? '0 16px' : '0 32px',
@@ -321,12 +329,14 @@ const UserDashboardLayout = () => {
             </Dropdown>
           </div>
         </Header>
+        
         <Content
           style={{
             margin: 0,
-            padding: isMobile ? 0 : '32px',
+            padding: isMobile ? 0 : '24px',
             minHeight: 'calc(100vh - 64px)',
             background: darkMode ? '#0F172A' : '#F8FAFC',
+            width: '100%',
           }}
         >
           <Outlet />

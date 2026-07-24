@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Button, Typography, Tag, Badge, Avatar, Empty, Spin, Space, message, Tabs } from 'antd';
+import { Row, Col, Card, Statistic, Button, Typography, Tag, Badge, Avatar, Empty, Spin, Space, message, Tabs, Grid } from 'antd';
 import {
   FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined,
   PlusOutlined, UserOutlined, CalendarOutlined, EditOutlined,
   CloseCircleOutlined, SendOutlined, TagOutlined, FormOutlined,
-  DownOutlined
+  DownOutlined, EyeOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 
 const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
 
 const parseTags = (tags) => {
   if (!tags) return [];
@@ -27,16 +28,16 @@ const statusConfig = {
   changes_requested: { color: 'warning', text: 'Changes Requested' }
 };
 
-// Tab order & labels — matched against content_type_name (case-insensitive)
+// Tab order & labels
 const CONTENT_TABS = [
-  { key: 'all',        label: 'All' },
-  { key: 'article',   label: 'Articles' },
-  { key: 'news',      label: 'News' },
-  { key: 'blog',      label: 'Blogs' },
-  { key: 'whitepaper',label: 'Whitepaper' },
+  { key: 'all', label: 'All' },
+  { key: 'article', label: 'Articles' },
+  { key: 'news', label: 'News' },
+  { key: 'blog', label: 'Blogs' },
+  { key: 'whitepaper', label: 'Whitepaper' },
   { key: 'interview', label: 'Interview' },
-  { key: 'webinar',   label: 'Webinar' },
-  { key: 'event',     label: 'Event' },
+  { key: 'webinar', label: 'Webinar' },
+  { key: 'event', label: 'Event' },
 ];
 
 const ITEMS_PER_PAGE = 18;
@@ -47,129 +48,250 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
   const status = statusConfig[article.status] || { color: 'default', text: article.status };
   const tags = parseTags(article.tags);
   const canEdit = article.status === 'changes_requested' || article.status === 'draft';
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+
+  // Limit description to 2-3 lines
+  const truncateDescription = (text, maxLines = 3) => {
+    if (!text) return '';
+    // Split by sentences or words
+    const words = text.split(' ');
+    if (words.length <= 30) return text; // If short, show full
+    return words.slice(0, 30).join(' ') + '...';
+  };
+
+  // Limit tags to 4
+  const displayTags = tags.slice(0, 4);
+  const hasMoreTags = tags.length > 4;
 
   return (
-    <Col xs={24} sm={12} lg={8} key={article.id}>
+    <Col xs={24} sm={12} md={8} lg={6} xl={6} xxl={4} key={article.id}>
       <Card
         hoverable
-        className="cursor-pointer"
-        style={{ borderRadius: 12 }}
-        styles={{ body: { padding: 0 } }}
+        style={{ 
+          borderRadius: 12, 
+          height: '100%',
+          border: '1px solid #f0f0f0',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          transition: 'all 0.3s ease',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+        bodyStyle={{ 
+          padding: 0,
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column'
+        }}
         onClick={() => navigate(`/article-preview/${article.id}`)}
       >
+        {/* Banner Image */}
+        <div style={{ position: 'relative', lineHeight: 0, flexShrink: 0 }}>
           {article.banner_image ? (
-            <div style={{ position: 'relative', lineHeight: 0 }}>
-              <img src={`/uploads/${article.banner_image}`} alt={article.title}
-                style={{ width: '100%', height: 200, objectFit: 'contain', display: 'block', borderRadius: '8px 8px 0 0', background: '#f0f4ff' }} />
-              <div style={{ position: 'absolute', top: 10, left: 10 }}>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: 'rgba(255,255,255,0.95)', borderRadius: 6,
-                  padding: '3px 10px', fontSize: 12, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.12)'
-                }}>
-                  <Badge status={status.color} />
-                  {status.text}
-                </span>
-              </div>
-            </div>
+            <img 
+              src={`/uploads/${article.banner_image}`} 
+              alt={article.title}
+              style={{ 
+                width: '100%', 
+                height: isMobile ? 160 : 180, 
+                objectFit: 'cover', 
+                display: 'block', 
+                background: '#f0f4ff' 
+              }} 
+            />
           ) : (
-            <div style={{ position: 'relative', lineHeight: 0 }}>
-              <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', borderRadius: '8px 8px 0 0' }}>
-                <FileTextOutlined style={{ fontSize: 40, color: '#bfbfbf' }} />
-              </div>
-              <div style={{ position: 'absolute', top: 10, left: 10 }}>
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: 'rgba(255,255,255,0.95)', borderRadius: 6,
-                  padding: '3px 10px', fontSize: 12, fontWeight: 500, boxShadow: '0 1px 4px rgba(0,0,0,0.12)'
-                }}>
-                  <Badge status={status.color} />
-                  {status.text}
-                </span>
-              </div>
+            <div style={{ 
+              height: isMobile ? 160 : 180, 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
+            }}>
+              <FileTextOutlined style={{ fontSize: 40, color: '#bfbfbf' }} />
             </div>
           )}
+          <div style={{ 
+            position: 'absolute', 
+            top: 12, 
+            left: 12,
+            background: 'rgba(255,255,255,0.95)',
+            padding: '4px 12px',
+            borderRadius: 6,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6
+          }}>
+            <Badge status={status.color} />
+            <span style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500 }}>{status.text}</span>
+          </div>
+        </div>
 
-        <div style={{ padding: '14px 16px' }}>
+        {/* Content */}
+        <div style={{ 
+          padding: isMobile ? '12px 14px' : '14px 16px',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
           {/* Category & Type */}
-          <div style={{ marginBottom: 8 }}>
-            {article.category_name && <Tag color="blue" style={{ fontSize: 11 }}>{article.category_name}</Tag>}
-            {article.content_type_name && <Tag color="purple" style={{ fontSize: 11 }}>{article.content_type_name}</Tag>}
+          <div style={{ marginBottom: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {article.category_name && (
+              <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>
+                {article.category_name}
+              </Tag>
+            )}
+            {article.content_type_name && (
+              <Tag color="purple" style={{ fontSize: 11, margin: 0 }}>
+                {article.content_type_name}
+              </Tag>
+            )}
           </div>
 
-          {/* Title */}
+          {/* Title - 2 lines max */}
           <div style={{
-            fontWeight: 700, fontSize: 15, lineHeight: 1.4, marginBottom: 8, color: '#1a1a1a',
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+            fontWeight: 700, 
+            fontSize: isMobile ? 14 : 15, 
+            lineHeight: 1.4, 
+            marginBottom: 6, 
+            color: '#1a1a1a',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            minHeight: isMobile ? 40 : 42
           }}>
             {article.title}
           </div>
 
-          {/* Short Description */}
+          {/* Short Description - 3 lines max */}
           {article.short_description && (
             <div style={{
-              fontSize: 13, color: '#595959', lineHeight: 1.6, marginBottom: 10,
-              display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+              fontSize: 12, 
+              color: '#595959', 
+              lineHeight: 1.6, 
+              marginBottom: 8,
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: 58
             }}>
               {article.short_description}
             </div>
           )}
 
-          {/* Tags */}
-          {tags.length > 0 && (
-            <div style={{ marginBottom: 10, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+          {/* Tags - Max 4 tags */}
+          {displayTags.length > 0 && (
+            <div style={{ 
+              marginBottom: 8, 
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              gap: 4, 
+              alignItems: 'center',
+              minHeight: 26
+            }}>
               <TagOutlined style={{ fontSize: 11, color: '#8c8c8c' }} />
-              {tags.slice(0, 3).map((tag, i) => (
-                <Tag key={i} color="geekblue" style={{ fontSize: 11, margin: 0 }}>{tag}</Tag>
+              {displayTags.map((tag, i) => (
+                <Tag key={i} color="geekblue" style={{ fontSize: 11, margin: 0 }}>
+                  {tag.length > 15 ? tag.substring(0, 15) + '...' : tag}
+                </Tag>
               ))}
-              {tags.length > 3 && <Text style={{ fontSize: 11, color: '#8c8c8c' }}>+{tags.length - 3}</Text>}
+              {hasMoreTags && (
+                <Text style={{ fontSize: 11, color: '#8c8c8c' }}>+{tags.length - 4}</Text>
+              )}
             </div>
           )}
 
-          {/* Admin feedback */}
+          {/* Admin feedback - Only show if present */}
           {article.status === 'changes_requested' && article.admin_comment && (
-            <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 6, padding: '7px 10px', marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#d46b08', marginBottom: 2 }}>
-                <EditOutlined style={{ marginRight: 4 }} />Admin Feedback
+            <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#d46b08', marginBottom: 2 }}>
+                <EditOutlined style={{ marginRight: 4 }} />Feedback
               </div>
-              <div style={{ fontSize: 12, color: '#614700' }}>{article.admin_comment}</div>
+              <div style={{ fontSize: 11, color: '#614700', 
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
+                {article.admin_comment}
+              </div>
             </div>
           )}
           {article.status === 'rejected' && article.admin_comment && (
-            <div style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 6, padding: '7px 10px', marginBottom: 10 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#cf1322', marginBottom: 2 }}>
-                <CloseCircleOutlined style={{ marginRight: 4 }} />Rejection Reason
+            <div style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#cf1322', marginBottom: 2 }}>
+                <CloseCircleOutlined style={{ marginRight: 4 }} />Rejected
               </div>
-              <div style={{ fontSize: 12, color: '#820014' }}>{article.admin_comment}</div>
+              <div style={{ fontSize: 11, color: '#820014',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
+                {article.admin_comment}
+              </div>
             </div>
           )}
 
           {/* Edit + Submit */}
           {canEdit && (
-            <div style={{ marginBottom: 10 }} onClick={e => e.stopPropagation()}>
-              <Space size={6}>
-                <Button size="small" icon={<EditOutlined />}
-                  onClick={(e) => { e.stopPropagation(); navigate(`/edit-content/${article.id}`); }}>
+            <div style={{ marginBottom: 8 }} onClick={e => e.stopPropagation()}>
+              <Space size={4} wrap>
+                <Button 
+                  size="small" 
+                  icon={<EditOutlined />}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/edit-content/${article.id}`); }}
+                  style={{ fontSize: 11 }}
+                >
                   Edit
                 </Button>
-                <Button size="small" type="primary" icon={<SendOutlined />}
+                <Button 
+                  size="small" 
+                  type="primary" 
+                  icon={<SendOutlined />}
                   loading={submitting === article.id}
-                  onClick={(e) => onSubmit(e, article.id)}>
-                  Submit for Review
+                  onClick={(e) => onSubmit(e, article.id)}
+                  style={{ fontSize: 11 }}
+                >
+                  Submit
                 </Button>
               </Space>
             </div>
           )}
 
-          {/* Author & Date */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #f0f0f0', paddingTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Avatar size={22} icon={<UserOutlined />} style={{ background: '#4a7cff' }} />
-              <Text style={{ fontSize: 12, color: '#595959' }}>{article.first_name} {article.last_name}</Text>
+          {/* Author & Date - Always at bottom */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'space-between', 
+            borderTop: '1px solid #f0f0f0', 
+            paddingTop: 8,
+            marginTop: 'auto'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+              <Avatar 
+                size={20} 
+                icon={<UserOutlined />} 
+                style={{ background: '#4a7cff', flexShrink: 0 }} 
+              />
+              <Text style={{ 
+                fontSize: 11, 
+                color: '#595959',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {article.first_name} {article.last_name}
+              </Text>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <CalendarOutlined style={{ fontSize: 11, color: '#8c8c8c' }} />
-              <Text style={{ fontSize: 12, color: '#8c8c8c' }}>{moment(article.created_at).format('MMM D, YYYY')}</Text>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+              <CalendarOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+              <Text style={{ fontSize: 11, color: '#8c8c8c' }}>
+                {moment(article.created_at).format('MMM D, YYYY')}
+              </Text>
             </div>
           </div>
         </div>
@@ -179,6 +301,11 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
 };
 
 const Dashboard = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
+  
   const [contents, setContents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(null);
@@ -191,7 +318,6 @@ const Dashboard = () => {
     fetchContents(); 
   }, []);
 
-  // Reset page and visible count when tab changes
   useEffect(() => {
     setCurrentPage(1);
     setVisibleCount(INITIAL_SHOW);
@@ -214,9 +340,7 @@ const Dashboard = () => {
     setSubmitting(articleId);
     try {
       await axios.post(`/api/user/content/${articleId}/submit`);
-      const item = contents.find(c => c.id === articleId);
-      const typeName = item?.content_type_name || 'Content';
-      message.success(`${typeName} submitted for review!`);
+      message.success('Content submitted for review!');
       fetchContents();
     } catch {
       message.error('Failed to submit for review');
@@ -236,24 +360,18 @@ const Dashboard = () => {
     published: contents.filter(c => c.status === 'published').length
   };
 
-  // Filter by tab — match content_type_name case-insensitively
   const filteredContents = activeTab === 'all'
     ? contents
     : contents.filter(c => (c.content_type_name || '').toLowerCase() === activeTab);
 
-  // Pagination
   const totalItems = filteredContents.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
   const currentPageItems = filteredContents.slice(startIndex, endIndex);
-  
-  // Visible items for current page with "Show More" logic
   const visibleItems = currentPageItems.slice(0, visibleCount);
   const hasMoreInPage = visibleCount < currentPageItems.length;
-  const hasNextPage = currentPage < totalPages;
 
-  // Build tab items with count badges
   const tabItems = CONTENT_TABS.map(tab => {
     const count = tab.key === 'all'
       ? contents.length
@@ -281,7 +399,6 @@ const Dashboard = () => {
     };
   });
 
-  // Reset visible count when changing pages
   const handlePageChange = (page) => {
     setCurrentPage(page);
     setVisibleCount(INITIAL_SHOW);
@@ -289,32 +406,148 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="p-6" style={{ padding: window.innerWidth < 768 ? 0 : 'clamp(16px, 2vw, 24px)' }}>
-      <div className="mb-6 flex items-center justify-between" style={{ marginBottom: 'clamp(20px, 2.5vw, 24px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <Title level={2} style={{ margin: 0, fontSize: 'clamp(20px, 2.5vw, 24px)' }}>Dashboard</Title>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button icon={<FormOutlined />} onClick={() => navigate('/my-submissions')} size={window.innerWidth < 768 ? 'small' : 'middle'}>
-            My Submissions
+    <div style={{ 
+      padding: isMobile ? '12px' : isTablet ? '20px' : '24px',
+      width: '100%',
+      background: '#F8FAFC',
+      minHeight: '100vh'
+    }}>
+      {/* Header */}
+      <div style={{ 
+        marginBottom: isMobile ? '16px' : '24px', 
+        display: 'flex', 
+        alignItems: isMobile ? 'flex-start' : 'center', 
+        justifyContent: 'space-between', 
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? 12 : 0
+      }}>
+        <div>
+          <Title level={isMobile ? 3 : 2} style={{ 
+            margin: 0, 
+            fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
+            fontWeight: 700,
+            color: '#111827'
+          }}>
+            Dashboard
+          </Title>
+          <Text style={{ 
+            fontSize: isMobile ? 13 : 15, 
+            color: '#6B7280'
+          }}>
+            Welcome back! Here's your content overview
+          </Text>
+        </div>
+        <div style={{ 
+          display: 'flex', 
+          gap: isMobile ? 8 : 12, 
+          flexWrap: 'wrap',
+          width: isMobile ? '100%' : 'auto'
+        }}>
+          <Button 
+            icon={<EyeOutlined />} 
+            onClick={() => navigate('/my-submissions')} 
+            size={isMobile ? 'small' : 'middle'}
+            style={{ 
+              flex: isMobile ? 1 : 'none',
+              borderRadius: 8
+            }}
+          >
+            {isMobile ? 'Submissions' : 'My Submissions'}
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/create-content')} size={window.innerWidth < 768 ? 'small' : 'middle'}>
-            Create Content
+          <Button 
+            type="primary" 
+            icon={<PlusOutlined />} 
+            onClick={() => navigate('/create-content')} 
+            size={isMobile ? 'small' : 'middle'}
+            style={{ 
+              flex: isMobile ? 1 : 'none',
+              borderRadius: 8,
+              background: '#4a7cff',
+              borderColor: '#4a7cff'
+            }}
+          >
+            {isMobile ? 'Create' : 'Create Content'}
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <Row gutter={[16, 16]} className="mb-8" style={{ marginBottom: 'clamp(24px, 3vw, 32px)' }}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card"><Statistic title="Total Content" value={stats.total} prefix={<FileTextOutlined />} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
+      {/* Stats Cards */}
+      <Row gutter={[isMobile ? 12 : 16, isMobile ? 12 : 16]} style={{ marginBottom: isMobile ? 20 : 24 }}>
+        <Col xs={12} sm={12} md={6} lg={6}>
+          <Card 
+            style={{ 
+              borderRadius: 12, 
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              background: '#FFFFFF'
+            }}
+            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
+          >
+            <Statistic 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Total Content</Text>} 
+              value={stats.total} 
+              prefix={<FileTextOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#4a7cff' }} />} 
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }} 
+            />
+          </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card"><Statistic title="Drafts" value={stats.draft} prefix={<FileTextOutlined />} styles={{ content: { color: '#8c8c8c' } }} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
+        <Col xs={12} sm={12} md={6} lg={6}>
+          <Card 
+            style={{ 
+              borderRadius: 12, 
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              background: '#FFFFFF'
+            }}
+            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
+          >
+            <Statistic 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Drafts</Text>} 
+              value={stats.draft} 
+              prefix={<FileTextOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#8c8c8c' }} />} 
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#8c8c8c' }} 
+            />
+          </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card"><Statistic title="Pending Review" value={stats.pending} prefix={<ClockCircleOutlined />} styles={{ content: { color: '#faad14' } }} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
+        <Col xs={12} sm={12} md={6} lg={6}>
+          <Card 
+            style={{ 
+              borderRadius: 12, 
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              background: '#FFFFFF'
+            }}
+            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
+          >
+            <Statistic 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Pending Review</Text>} 
+              value={stats.pending} 
+              prefix={<ClockCircleOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#faad14' }} />} 
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#faad14' }} 
+            />
+          </Card>
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="stat-card"><Statistic title="Published" value={stats.published} prefix={<CheckCircleOutlined />} styles={{ content: { color: '#52c41a' } }} valueStyle={{ fontSize: 'clamp(20px, 2.5vw, 24px)' }} /></Card>
+        <Col xs={12} sm={12} md={6} lg={6}>
+          <Card 
+            style={{ 
+              borderRadius: 12, 
+              border: '1px solid #E5E7EB',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              height: '100%',
+              background: '#FFFFFF'
+            }}
+            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
+          >
+            <Statistic 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Published</Text>} 
+              value={stats.published} 
+              prefix={<CheckCircleOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#52c41a' }} />} 
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#52c41a' }} 
+            />
+          </Card>
         </Col>
       </Row>
 
@@ -323,26 +556,28 @@ const Dashboard = () => {
         activeKey={activeTab}
         onChange={setActiveTab}
         items={tabItems}
-        style={{ marginBottom: 20 }}
+        style={{ marginBottom: isMobile ? 16 : 20 }}
         className="dashboard-tabs"
+        size={isMobile ? 'small' : 'middle'}
       />
 
       {/* Content Grid */}
       {loading ? (
-        <div className="py-12 text-center" style={{ padding: 'clamp(32px, 4vw, 48px) 0', textAlign: 'center' }}><Spin size="large" /></div>
+        <div style={{ padding: isMobile ? '40px 0' : '48px 0', textAlign: 'center' }}>
+          <Spin size="large" />
+        </div>
       ) : filteredContents.length === 0 ? (
         <Empty
           description={activeTab === 'all' ? 'No content yet' : `No ${CONTENT_TABS.find(t => t.key === activeTab)?.label.toLowerCase() || 'content'} yet`}
-          className="py-12"
-          style={{ padding: 'clamp(32px, 4vw, 48px) 0' }}
+          style={{ padding: isMobile ? '40px 0' : '48px 0' }}
         >
           <Button type="primary" onClick={() => navigate('/create-content')}>
-            Create Your First {activeTab === 'all' ? 'Content' : CONTENT_TABS.find(t => t.key === activeTab)?.label.slice(0, -1) || 'Content'}
+            Create Your First Content
           </Button>
         </Empty>
       ) : (
         <>
-          <Row gutter={[20, 20]} className="content-grid">
+          <Row gutter={[isMobile ? 12 : 16, isMobile ? 12 : 16]}>
             {visibleItems.map(article => (
               <ArticleCard
                 key={article.id}
@@ -354,16 +589,15 @@ const Dashboard = () => {
             ))}
           </Row>
           
-          {/* Show More / Pagination Controls */}
+          {/* Show More / Pagination */}
           <div style={{ 
             display: 'flex', 
             flexDirection: 'column',
             alignItems: 'center', 
-            marginTop: 'clamp(24px, 3vw, 32px)',
-            padding: 'clamp(12px, 1.5vw, 16px) 0',
-            gap: 16
+            marginTop: isMobile ? 20 : 32,
+            padding: isMobile ? '12px 0' : '16px 0',
+            gap: isMobile ? 12 : 16
           }}>
-            {/* Show More Button - Only show if there are more items in current page */}
             {hasMoreInPage && (
               <Button
                 type="primary"
@@ -371,77 +605,81 @@ const Dashboard = () => {
                 onClick={handleShowMore}
                 style={{
                   borderRadius: 24,
-                  padding: 'clamp(6px, 0.8vw, 8px) clamp(20px, 2.5vw, 32px)',
+                  padding: isMobile ? '6px 16px' : '8px 32px',
                   height: 'auto',
-                  minWidth: 'clamp(160px, 20vw, 200px)',
-                  fontSize: 'clamp(13px, 0.9vw, 14px)'
+                  minWidth: isMobile ? '140px' : '200px',
+                  fontSize: isMobile ? 13 : 14,
+                  background: '#4a7cff',
+                  borderColor: '#4a7cff'
                 }}
               >
                 Show More ({visibleCount}/{currentPageItems.length})
               </Button>
             )}
 
-            {/* Pagination - Show when there are multiple pages or after all items in current page are shown */}
             {totalPages > 1 && !hasMoreInPage && (
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'center',
-                gap: 16,
+                gap: isMobile ? 8 : 16,
                 flexWrap: 'wrap',
                 justifyContent: 'center'
               }}>
                 <Button
                   disabled={currentPage === 1}
                   onClick={() => handlePageChange(currentPage - 1)}
-                  style={{ borderRadius: 8 }}
+                  size={isMobile ? 'small' : 'middle'}
                 >
                   Previous
                 </Button>
                 
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                <div style={{ display: 'flex', gap: isMobile ? 4 : 6 }}>
+                  {Array.from({ length: Math.min(totalPages, isMobile ? 3 : 5) }, (_, i) => {
                     let pageNum;
-                    if (totalPages <= 5) {
+                    const maxVisible = isMobile ? 3 : 5;
+                    if (totalPages <= maxVisible) {
                       pageNum = i + 1;
-                    } else if (currentPage <= 3) {
+                    } else if (currentPage <= 2) {
                       pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
+                    } else if (currentPage >= totalPages - 1) {
+                      pageNum = totalPages - maxVisible + 1 + i;
                     } else {
-                      pageNum = currentPage - 2 + i;
+                      pageNum = currentPage - 1 + i;
                     }
                     
-                    return (
-                      <Button
-                        key={pageNum}
-                        type={currentPage === pageNum ? 'primary' : 'default'}
-                        onClick={() => handlePageChange(pageNum)}
-                        style={{ 
-                          borderRadius: 8,
-                          minWidth: 36,
-                          ...(currentPage === pageNum ? {} : { border: '1px solid #d9d9d9' })
-                        }}
-                      >
-                        {pageNum}
-                      </Button>
-                    );
+                    if (pageNum > 0 && pageNum <= totalPages) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          type={currentPage === pageNum ? 'primary' : 'default'}
+                          onClick={() => handlePageChange(pageNum)}
+                          size={isMobile ? 'small' : 'middle'}
+                          style={{ 
+                            borderRadius: 8,
+                            minWidth: isMobile ? 28 : 36
+                          }}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    }
+                    return null;
                   })}
                 </div>
 
                 <Button
                   disabled={currentPage === totalPages}
                   onClick={() => handlePageChange(currentPage + 1)}
-                  style={{ borderRadius: 8 }}
+                  size={isMobile ? 'small' : 'middle'}
                 >
                   Next
                 </Button>
               </div>
             )}
 
-            {/* Show total items info */}
             {totalItems > 0 && (
               <div style={{ 
-                fontSize: 'clamp(12px, 0.85vw, 13px)', 
+                fontSize: isMobile ? 11 : 13, 
                 color: '#8c8c8c',
                 textAlign: 'center'
               }}>
@@ -452,54 +690,71 @@ const Dashboard = () => {
           </div>
         </>
       )}
+      
       <style>{`
+        .dashboard-tabs .ant-tabs-nav {
+          overflow-x: auto !important;
+          overflow-y: hidden !important;
+          white-space: nowrap !important;
+          -webkit-overflow-scrolling: touch;
+        }
+        
+        .dashboard-tabs .ant-tabs-nav::-webkit-scrollbar {
+          height: 4px;
+        }
+        
+        .dashboard-tabs .ant-tabs-nav::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+        
+        .dashboard-tabs .ant-tabs-nav::-webkit-scrollbar-thumb {
+          background: #d1d5db;
+          border-radius: 4px;
+        }
+        
+        .dashboard-tabs .ant-tabs-tab {
+          flex-shrink: 0 !important;
+        }
+
         @media (max-width: 768px) {
-          .dashboard-tabs .ant-tabs-nav {
-            overflow-x: auto !important;
-            white-space: nowrap !important;
-            -webkit-overflow-scrolling: touch;
-          }
           .dashboard-tabs .ant-tabs-tab {
-            flex-shrink: 0 !important;
             padding: 8px 12px !important;
             font-size: 12px !important;
           }
-          .stat-card {
-            margin-bottom: 12px !important;
-          }
-          .stat-card .ant-statistic-title {
-            font-size: 12px !important;
-          }
-          .content-grid {
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 16px !important;
-          }
-          .content-grid > div {
-            width: 100% !important;
-            max-width: 100% !important;
-            flex: 0 0 auto !important;
+        }
+
+        @media (min-width: 1200px) {
+          .ant-row > .ant-col {
+            flex: 0 0 25% !important;
+            max-width: 25% !important;
           }
         }
 
-        @media (max-width: 480px) {
-          .dashboard-tabs .ant-tabs-tab {
-            padding: 6px 10px !important;
-            font-size: 11px !important;
-          }
-          .stat-card {
-            margin-bottom: 10px !important;
-          }
-          .content-grid {
-            gap: 12px !important;
+        @media (min-width: 992px) and (max-width: 1199px) {
+          .ant-row > .ant-col {
+            flex: 0 0 33.33% !important;
+            max-width: 33.33% !important;
           }
         }
 
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .content-grid > div {
-            width: 50% !important;
+        @media (min-width: 768px) and (max-width: 991px) {
+          .ant-row > .ant-col {
+            flex: 0 0 50% !important;
             max-width: 50% !important;
           }
+        }
+
+        @media (max-width: 767px) {
+          .ant-row > .ant-col {
+            flex: 0 0 100% !important;
+            max-width: 100% !important;
+          }
+        }
+
+        .ant-card-hoverable:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
         }
       `}</style>
     </div>

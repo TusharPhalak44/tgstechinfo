@@ -4,7 +4,7 @@ import { Dropdown, Button, Avatar, Badge, List, Typography, Empty, Tag } from 'a
 import {
   UserOutlined, LogoutOutlined, DashboardOutlined,
   MenuOutlined, CloseOutlined, SearchOutlined, BellOutlined,
-  CheckOutlined, DownOutlined
+  CheckOutlined, DownOutlined, RightOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
@@ -39,7 +39,6 @@ const STATIC_NAV = [
   },
   { key: 'technology', label: 'Technology', dynamic: true },
   { key: 'industries', label: 'Industries', dynamic: true },
-  // { key: 'newsletter', label: 'Newsletter', to: '/newsletter' },
   { key: 'contact', label: 'Contact', to: '/contact' },
 ];
 
@@ -162,6 +161,97 @@ const NavLink = ({ item, active }) => {
   );
 };
 
+// ── Mobile Menu Item with Dropdown ──────────────────────────────
+const MobileMenuItem = ({ item, onClose, isAuthenticated, setIsMobileOpen }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (!item.children) {
+    return (
+      <Link to={item.to} onClick={() => { onClose(); setIsMobileOpen(false); }} style={{
+        display: 'block',
+        padding: '14px 0',
+        fontSize: 16,
+        fontWeight: 600,
+        color: 'var(--color-heading)',
+        textDecoration: 'none',
+        borderBottom: '1px solid var(--color-border)'
+      }}>
+        {item.label}
+      </Link>
+    );
+  }
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--color-border)' }}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%',
+          padding: '14px 0',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: 16,
+          fontWeight: 600,
+          color: 'var(--color-heading)',
+          transition: 'color .2s'
+        }}
+      >
+        <span>{item.label}</span>
+        <span style={{
+          transition: 'transform .3s ease',
+          transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+          display: 'flex',
+          alignItems: 'center',
+          color: 'var(--color-muted)'
+        }}>
+          <RightOutlined style={{ fontSize: 14 }} />
+        </span>
+      </button>
+      <div style={{
+        maxHeight: isOpen ? '500px' : '0',
+        overflow: 'hidden',
+        transition: 'max-height .3s ease, opacity .3s ease, margin .3s ease',
+        opacity: isOpen ? 1 : 0,
+        marginBottom: isOpen ? '8px' : '0'
+      }}>
+        {item.children.map(child => (
+          <Link
+            key={child.label}
+            to={child.to}
+            onClick={() => { onClose(); setIsMobileOpen(false); }}
+            style={{
+              display: 'block',
+              padding: '10px 0 10px 16px',
+              fontSize: 15,
+              fontWeight: 500,
+              color: 'var(--color-body)',
+              textDecoration: 'none',
+              borderRadius: 8,
+              transition: 'background .2s, color .2s, padding-left .2s'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'var(--color-primary-light)';
+              e.currentTarget.style.color = 'var(--color-primary)';
+              e.currentTarget.style.paddingLeft = '22px';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--color-body)';
+              e.currentTarget.style.paddingLeft = '16px';
+            }}
+          >
+            {child.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── Notification panel ───────────────────────────────────────────
 const NotifPanel = ({ notifications, onMarkRead }) => (
   <div style={{
@@ -211,6 +301,7 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
+  const [isLaptop, setIsLaptop] = useState(window.innerWidth > 900 && window.innerWidth <= 1200);
   const [navItems, setNavItems] = useState(STATIC_NAV);
   const searchRef = useRef(null);
   const pollRef = useRef(null);
@@ -232,8 +323,10 @@ const Navbar = () => {
 
   useEffect(() => {
     const handler = () => {
+      const width = window.innerWidth;
       setScrolled(window.scrollY > 8);
-      setIsMobile(window.innerWidth <= 900);
+      setIsMobile(width <= 900);
+      setIsLaptop(width > 900 && width <= 1200);
     };
     window.addEventListener('scroll', handler);
     window.addEventListener('resize', handler);
@@ -294,6 +387,8 @@ const Navbar = () => {
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', onClick: logout, danger: true },
   ];
 
+  const showCondensedNav = isLaptop || isMobile;
+
   return (
     <>
       <style>{`
@@ -311,48 +406,81 @@ const Navbar = () => {
         boxShadow: scrolled ? '0 4px 24px rgba(11,31,77,0.09)' : '0 1px 0 var(--color-border)',
         transition: 'box-shadow .3s, background .3s',
       }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', height: 58, display: 'flex', alignItems: 'center', gap: 24 }}>
+        <div style={{ 
+          maxWidth: 1280, 
+          margin: '0 auto', 
+          padding: isMobile ? '0 12px' : isLaptop ? '0 16px' : '0 24px', 
+          height: 58, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: isMobile ? 12 : isLaptop ? 16 : 24 
+        }}>
 
           {/* Logo */}
           <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/logo.jpg" alt="TGS TechInfo" style={{ height: 52, width: 'auto', display: 'block' }} />
+            <img src="/logo.jpg" alt="TGS TechInfo" style={{ 
+              height: isMobile ? 40 : isLaptop ? 44 : 52, 
+              width: 'auto', 
+              display: 'block' 
+            }} />
           </Link>
 
-          {/* Desktop nav */}
+          {/* Desktop nav - Hide on mobile */}
           {!isMobile && (
-            <nav style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
-              {navItems.map(item => (
-                <NavLink key={item.key} item={item} active={location.pathname === item.to} />
-              ))}
+            <nav style={{ 
+              flex: 1, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: isLaptop ? 8 : 16, 
+              minWidth: 0,
+              overflow: 'hidden'
+            }}>
+              {navItems.map(item => {
+                return (
+                  <NavLink key={item.key} item={item} active={location.pathname === item.to} />
+                );
+              })}
             </nav>
           )}
 
           {/* Right actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 'auto' }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: isMobile ? 4 : isLaptop ? 6 : 8, 
+            flexShrink: 0, 
+            marginLeft: 'auto' 
+          }}>
 
-            {/* Search — always visible compact bar */}
+            {/* Search — compact bar */}
             <div ref={searchRef} style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{
                 display: 'flex', alignItems: 'center',
                 background: 'var(--color-primary-light)', borderRadius: 24,
-                padding: '0 12px', border: '1.5px solid var(--color-border)',
+                padding: isMobile ? '0 8px' : '0 12px',
+                border: '1.5px solid var(--color-border)',
                 transition: 'border-color .2s'
               }}
-                onFocus={() => {}}
                 onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border)'}
               >
-                <SearchOutlined style={{ color: 'var(--color-primary)', fontSize: 13, flexShrink: 0 }} />
+                <SearchOutlined style={{ 
+                  color: 'var(--color-primary)', 
+                  fontSize: isMobile ? 12 : 13, 
+                  flexShrink: 0,
+                  cursor: 'pointer'
+                }} onClick={() => { if (isMobile) setSearchVisible(!searchVisible); }} />
                 <input
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Search articles..."
+                  placeholder={isMobile ? "Search..." : "Search..."}
                   style={{
                     border: 'none', background: 'transparent', outline: 'none',
-                    fontSize: 13, padding: '7px 8px',
-                    width: isMobile ? 0 : searchVisible ? 180 : 130,
-                    maxWidth: isMobile ? 0 : 180,
+                    fontSize: isMobile ? 12 : 13, 
+                    padding: isMobile ? '5px 6px' : '7px 8px',
+                    width: isMobile ? (searchVisible ? 140 : 0) : (searchVisible ? (isLaptop ? 120 : 180) : (isLaptop ? 80 : 130)),
+                    maxWidth: isMobile ? (searchVisible ? 160 : 0) : (isLaptop ? 140 : 180),
                     overflow: 'hidden',
                     color: 'var(--color-heading)',
                     transition: 'width .25s ease',
@@ -362,7 +490,12 @@ const Navbar = () => {
                 />
                 {searchQuery && (
                   <CloseOutlined
-                    style={{ color: 'var(--color-muted)', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
+                    style={{ 
+                      color: 'var(--color-muted)', 
+                      fontSize: isMobile ? 10 : 11, 
+                      cursor: 'pointer', 
+                      flexShrink: 0 
+                    }}
                     onClick={() => { setSearchQuery(''); setSearchVisible(false); }}
                   />
                 )}
@@ -379,14 +512,16 @@ const Navbar = () => {
                 <Badge count={notifications.length} size="small" overflowCount={99}>
                   <button style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    width: 36, height: 36, borderRadius: 10,
+                    width: isMobile ? 32 : 36, 
+                    height: isMobile ? 32 : 36, 
+                    borderRadius: 10,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: 'var(--color-muted)', transition: 'background .2s'
                   }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-light)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'none'}
                   >
-                    <BellOutlined style={{ fontSize: 16 }} />
+                    <BellOutlined style={{ fontSize: isMobile ? 14 : 16 }} />
                   </button>
                 </Badge>
               </Dropdown>
@@ -396,25 +531,45 @@ const Navbar = () => {
             {isAuthenticated ? (
               <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
-                  padding: '5px 12px 5px 6px', borderRadius: 24,
-                  border: '1.5px solid var(--color-primary-light)', background: 'var(--color-primary-light)',
+                  display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 8, 
+                  cursor: 'pointer',
+                  padding: isMobile ? '4px 8px 4px 4px' : '5px 12px 5px 6px', 
+                  borderRadius: 24,
+                  border: '1.5px solid var(--color-primary-light)', 
+                  background: 'var(--color-primary-light)',
                   transition: 'border-color .2s'
                 }}
                   onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
                   onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-primary-light)'}
                 >
-                  <Avatar size={26} icon={<UserOutlined />} style={{ background: 'var(--color-primary)', flexShrink: 0 }} />
-                  {!isMobile && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-heading)' }}>{user?.first_name}</span>}
-                  <DownOutlined style={{ fontSize: 9, color: 'var(--color-primary)' }} />
+                  <Avatar 
+                    size={isMobile ? 22 : 26} 
+                    icon={<UserOutlined />} 
+                    style={{ background: 'var(--color-primary)', flexShrink: 0 }} 
+                  />
+                  {!isMobile && !isLaptop && (
+                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-heading)' }}>
+                      {user?.first_name}
+                    </span>
+                  )}
+                  {!isMobile && (
+                    <DownOutlined style={{ fontSize: 9, color: 'var(--color-primary)' }} />
+                  )}
                 </div>
               </Dropdown>
             ) : !isMobile ? (
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: isLaptop ? 4 : 8 }}>
                 <button onClick={() => window.open('/login', '_blank')} style={{
-                  padding: '7px 18px', borderRadius: 24, border: '1.5px solid var(--color-primary)',
-                  background: 'transparent', color: 'var(--color-primary)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  transition: 'all .2s'
+                  padding: isLaptop ? '5px 12px' : '7px 18px', 
+                  borderRadius: 24, 
+                  border: '1.5px solid var(--color-primary)',
+                  background: 'transparent', 
+                  color: 'var(--color-primary)', 
+                  fontSize: isLaptop ? 12 : 13, 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  transition: 'all .2s',
+                  whiteSpace: 'nowrap'
                 }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary)'; e.currentTarget.style.color = '#fff'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-primary)'; }}
@@ -422,10 +577,17 @@ const Navbar = () => {
                   Login
                 </button>
                 <button onClick={() => navigate('/register')} style={{
-                  padding: '7px 18px', borderRadius: 24, border: 'none',
-                  background: 'var(--color-accent)', color: '#fff',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                  boxShadow: '0 2px 10px rgba(247,148,29,.3)', transition: 'opacity .2s'
+                  padding: isLaptop ? '5px 12px' : '7px 18px', 
+                  borderRadius: 24, 
+                  border: 'none',
+                  background: 'var(--color-accent)', 
+                  color: '#fff',
+                  fontSize: isLaptop ? 12 : 13, 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(247,148,29,.3)', 
+                  transition: 'opacity .2s',
+                  whiteSpace: 'nowrap'
                 }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
@@ -441,12 +603,12 @@ const Navbar = () => {
                 onClick={() => setMobileOpen(o => !o)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  width: 36, height: 36, borderRadius: 8,
+                  width: 32, height: 32, borderRadius: 8,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: 'var(--color-heading)', flexShrink: 0
                 }}
               >
-                {mobileOpen ? <CloseOutlined style={{ fontSize: 18 }} /> : <MenuOutlined style={{ fontSize: 18 }} />}
+                {mobileOpen ? <CloseOutlined style={{ fontSize: 16 }} /> : <MenuOutlined style={{ fontSize: 16 }} />}
               </button>
             )}
           </div>
@@ -454,45 +616,144 @@ const Navbar = () => {
       </header>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu with dropdown support */}
       {isMobile && mobileOpen && (
         <div style={{
-          position: 'fixed', top: 61, left: 0, right: 0, bottom: 0,
-          background: 'var(--color-surface)', zIndex: 9998, overflowY: 'auto', padding: '16px 20px',
+          position: 'fixed', 
+          top: 58, 
+          left: 0, 
+          right: 0, 
+          bottom: 0,
+          background: 'var(--color-surface)', 
+          zIndex: 9998, 
+          overflowY: 'auto', 
+          padding: '16px 20px 24px',
           borderTop: '1px solid var(--color-border)'
         }}>
+          {/* Close button at top */}
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            marginBottom: 8 
+          }}>
+            <button
+              onClick={() => setMobileOpen(false)}
+              style={{
+                background: 'var(--color-primary-light)',
+                border: 'none',
+                borderRadius: '50%',
+                width: 36,
+                height: 36,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'var(--color-primary)',
+                fontSize: 16
+              }}
+            >
+              <CloseOutlined />
+            </button>
+          </div>
+
+          {/* Navigation items with dropdown */}
           {navItems.map(item => (
-            <div key={item.key}>
-              {item.to
-                ? <Link to={item.to} onClick={() => setMobileOpen(false)} style={{
-                    display: 'block', padding: '12px 0', fontSize: 15, fontWeight: 600,
-                    color: 'var(--color-heading)', textDecoration: 'none', borderBottom: '1px solid var(--color-border)'
-                  }}>{item.label}</Link>
-                : <>
-                    <div style={{ padding: '12px 0 6px', fontSize: 11, fontWeight: 700, color: 'var(--color-muted)', textTransform: 'uppercase', letterSpacing: 1.2 }}>{item.label}</div>
-                    {item.children?.map(c => (
-                      <Link key={c.label} to={c.to} onClick={() => setMobileOpen(false)} style={{
-                        display: 'block', padding: '9px 12px', fontSize: 14, color: 'var(--color-body)',
-                        textDecoration: 'none', borderRadius: 8
-                      }}>{c.label}</Link>
-                    ))}
-                  </>
-              }
-            </div>
+            <MobileMenuItem 
+              key={item.key} 
+              item={item} 
+              onClose={() => setMobileOpen(false)}
+              isAuthenticated={isAuthenticated}
+              setIsMobileOpen={setMobileOpen}
+            />
           ))}
+
+          {/* User actions in mobile menu */}
           {!isAuthenticated && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
-              <button onClick={() => { window.open('/login', '_blank'); setMobileOpen(false); }} style={{
-                flex: 1, padding: '10px', borderRadius: 24, border: '1.5px solid var(--color-primary)',
-                background: 'transparent', color: 'var(--color-primary)', fontSize: 14, fontWeight: 600, cursor: 'pointer'
-              }}>Login</button>
-              <button onClick={() => { navigate('/register'); setMobileOpen(false); }} style={{
-                flex: 1, padding: '10px', borderRadius: 24, border: 'none',
-                background: 'var(--color-accent)', color: '#fff',
-                fontSize: 14, fontWeight: 600, cursor: 'pointer'
-              }}>Register</button>
+            <div style={{ 
+              display: 'flex', 
+              gap: 10, 
+              marginTop: 20, 
+              paddingTop: 16, 
+              borderTop: '1px solid var(--color-border)' 
+            }}>
+              <button 
+                onClick={() => { 
+                  window.open('/login', '_blank'); 
+                  setMobileOpen(false); 
+                }} 
+                style={{
+                  flex: 1, 
+                  padding: '12px', 
+                  borderRadius: 12, 
+                  border: '1.5px solid var(--color-primary)',
+                  background: 'transparent', 
+                  color: 'var(--color-primary)', 
+                  fontSize: 14, 
+                  fontWeight: 600, 
+                  cursor: 'pointer'
+                }}
+              >
+                Login
+              </button>
+              <button 
+                onClick={() => { 
+                  navigate('/register'); 
+                  setMobileOpen(false); 
+                }} 
+                style={{
+                  flex: 1, 
+                  padding: '12px', 
+                  borderRadius: 12, 
+                  border: 'none',
+                  background: 'var(--color-accent)', 
+                  color: '#fff',
+                  fontSize: 14, 
+                  fontWeight: 600, 
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(247,148,29,.3)'
+                }}
+              >
+                Register
+              </button>
             </div>
           )}
+
+          {/* User info when authenticated */}
+          {isAuthenticated && (
+            <div style={{ 
+              marginTop: 20, 
+              paddingTop: 16, 
+              borderTop: '1px solid var(--color-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12
+            }}>
+              <Avatar 
+                size={40} 
+                icon={<UserOutlined />} 
+                style={{ background: 'var(--color-primary)' }} 
+              />
+              <div>
+                <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>
+                  {user?.first_name} {user?.last_name}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
+                  {user?.email}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Version info */}
+          <div style={{ 
+            marginTop: 24, 
+            textAlign: 'center', 
+            fontSize: 11, 
+            color: 'var(--color-muted)',
+            opacity: 0.6
+          }}>
+            v1.0.0
+          </div>
         </div>
       )}
     </>
