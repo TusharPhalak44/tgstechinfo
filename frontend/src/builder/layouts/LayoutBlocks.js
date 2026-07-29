@@ -1,0 +1,816 @@
+/**
+ * Layout Blocks
+ * Pre-built layout configurations for drag-and-drop
+ */
+
+import { NodeType } from '../utils/types';
+
+/**
+ * Layout Block Definitions
+ */
+export const LAYOUT_BLOCKS = {
+  section: {
+    type: 'section',
+    label: 'Section',
+    icon: '📦',
+    createNode: () => ({
+      id: `section-${Date.now()}`,
+      type: 'section',
+      label: 'Section',
+      children: [],
+      settings: {},
+      styles: {
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '24px 28px',
+        marginBottom: '20px',
+        border: '1px solid #e8e8e8',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  container: {
+    type: 'container',
+    label: 'Container',
+    icon: '📦',
+    createNode: () => ({
+      id: `container-${Date.now()}`,
+      type: 'container',
+      label: 'Container',
+      children: [],
+      settings: {},
+      styles: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        minHeight: '200px',
+        border: '1px solid #e8e8e8',
+        borderRadius: '8px',
+        padding: '16px',
+        background: '#fafafa',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  'column-1': {
+    type: 'column-1',
+    label: '1 Column',
+    icon: '▭',
+    createNode: () => ({
+      id: `column-1-${Date.now()}`,
+      type: 'column',
+      label: '1 Column',
+      children: [],
+      settings: { flex: 1 },
+      styles: {
+        flex: 1,
+        minWidth: '200px',
+        padding: '12px',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  'column-2': {
+    type: 'column-2',
+    label: '2 Columns',
+    icon: '▭▭',
+    createNode: () => ({
+      id: `column-2-${Date.now()}`,
+      type: 'container',
+      label: '2 Columns',
+      children: [
+        {
+          id: `col-${Date.now()}-1`,
+          type: 'column',
+          label: 'Column 1',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+        {
+          id: `col-${Date.now()}-2`,
+          type: 'column',
+          label: 'Column 2',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        display: 'flex',
+        gap: '16px',
+        minHeight: '200px',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  'column-3': {
+    type: 'column-3',
+    label: '3 Columns',
+    icon: '▭▭▭',
+    createNode: () => ({
+      id: `column-3-${Date.now()}`,
+      type: 'container',
+      label: '3 Columns',
+      children: [
+        {
+          id: `col-${Date.now()}-1`,
+          type: 'column',
+          label: 'Column 1',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+        {
+          id: `col-${Date.now()}-2`,
+          type: 'column',
+          label: 'Column 2',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+        {
+          id: `col-${Date.now()}-3`,
+          type: 'column',
+          label: 'Column 3',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        display: 'flex',
+        gap: '16px',
+        minHeight: '200px',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  'column-4': {
+    type: 'column-4',
+    label: '4 Columns',
+    icon: '▭▭▭▭',
+    createNode: () => ({
+      id: `column-4-${Date.now()}`,
+      type: 'container',
+      label: '4 Columns',
+      children: [
+        {
+          id: `col-${Date.now()}-1`,
+          type: 'column',
+          label: 'Column 1',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '150px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+        {
+          id: `col-${Date.now()}-2`,
+          type: 'column',
+          label: 'Column 2',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '150px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+        {
+          id: `col-${Date.now()}-3`,
+          type: 'column',
+          label: 'Column 3',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '150px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+        {
+          id: `col-${Date.now()}-4`,
+          type: 'column',
+          label: 'Column 4',
+          children: [],
+          settings: { flex: 1 },
+          styles: {
+            flex: 1,
+            minWidth: '150px',
+            padding: '12px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        display: 'flex',
+        gap: '12px',
+        minHeight: '200px',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  hero: {
+    type: 'hero',
+    label: 'Hero Layout',
+    icon: '🎯',
+    createNode: () => ({
+      id: `hero-${Date.now()}`,
+      type: 'section',
+      label: 'Hero Section',
+      children: [
+        {
+          id: `container-${Date.now()}`,
+          type: 'container',
+          label: 'Hero Container',
+          children: [
+            {
+              id: `heading-${Date.now()}`,
+              type: NodeType.HEADING,
+              label: 'Hero Heading',
+              content: 'Welcome to Our Platform',
+              headingLevel: 'h1',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+            {
+              id: `paragraph-${Date.now()}`,
+              type: NodeType.PARAGRAPH,
+              label: 'Hero Subtitle',
+              content: 'Build amazing experiences with our powerful tools',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+            {
+              id: `button-${Date.now()}`,
+              type: NodeType.BUTTON,
+              label: 'CTA Button',
+              content: JSON.stringify({ text: 'Get Started', url: '#' }),
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+          ],
+          settings: {},
+          styles: {
+            textAlign: 'center',
+            padding: '60px 20px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        color: '#fff',
+        borderRadius: '12px',
+        padding: '40px',
+        marginBottom: '20px',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  cta: {
+    type: 'cta',
+    label: 'CTA Layout',
+    icon: '📢',
+    createNode: () => ({
+      id: `cta-${Date.now()}`,
+      type: 'section',
+      label: 'CTA Section',
+      children: [
+        {
+          id: `container-${Date.now()}`,
+          type: 'container',
+          label: 'CTA Container',
+          children: [
+            {
+              id: `heading-${Date.now()}`,
+              type: NodeType.HEADING,
+              label: 'CTA Heading',
+              content: 'Ready to Get Started?',
+              headingLevel: 'h2',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+            {
+              id: `paragraph-${Date.now()}`,
+              type: NodeType.PARAGRAPH,
+              label: 'CTA Text',
+              content: 'Join thousands of users who are already building amazing things.',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+            {
+              id: `button-${Date.now()}`,
+              type: NodeType.BUTTON,
+              label: 'CTA Button',
+              content: JSON.stringify({ text: 'Sign Up Now', url: '#' }),
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+          ],
+          settings: {},
+          styles: {
+            textAlign: 'center',
+            padding: '40px 20px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        background: '#4a7cff',
+        color: '#fff',
+        borderRadius: '12px',
+        padding: '32px',
+        marginBottom: '20px',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  feature: {
+    type: 'feature',
+    label: 'Feature Layout',
+    icon: '⭐',
+    createNode: () => ({
+      id: `feature-${Date.now()}`,
+      type: 'section',
+      label: 'Features Section',
+      children: [
+        {
+          id: `container-${Date.now()}`,
+          type: 'container',
+          label: 'Features Container',
+          children: [
+            {
+              id: `heading-${Date.now()}`,
+              type: NodeType.HEADING,
+              label: 'Features Heading',
+              content: 'Our Features',
+              headingLevel: 'h2',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+          ],
+          settings: {},
+          styles: {
+            marginBottom: '24px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+        {
+          id: `columns-${Date.now()}`,
+          type: 'container',
+          label: 'Features Columns',
+          children: [
+            {
+              id: `col-${Date.now()}-1`,
+              type: 'column',
+              label: 'Feature 1',
+              children: [
+                {
+                  id: `heading-${Date.now()}`,
+                  type: NodeType.HEADING,
+                  label: 'Feature 1 Title',
+                  content: 'Feature 1',
+                  headingLevel: 'h3',
+                  alignment: 'left',
+                  children: [],
+                  settings: {},
+                  styles: {},
+                  responsive: {},
+                  metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+                },
+                {
+                  id: `paragraph-${Date.now()}`,
+                  type: NodeType.PARAGRAPH,
+                  label: 'Feature 1 Description',
+                  content: 'Description of feature 1',
+                  alignment: 'left',
+                  children: [],
+                  settings: {},
+                  styles: {},
+                  responsive: {},
+                  metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+                },
+              ],
+              settings: { flex: 1 },
+              styles: {
+                flex: 1,
+                minWidth: '200px',
+                padding: '16px',
+                background: '#f9f9f9',
+                borderRadius: '8px',
+              },
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+            {
+              id: `col-${Date.now()}-2`,
+              type: 'column',
+              label: 'Feature 2',
+              children: [
+                {
+                  id: `heading-${Date.now()}`,
+                  type: NodeType.HEADING,
+                  label: 'Feature 2 Title',
+                  content: 'Feature 2',
+                  headingLevel: 'h3',
+                  alignment: 'left',
+                  children: [],
+                  settings: {},
+                  styles: {},
+                  responsive: {},
+                  metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+                },
+                {
+                  id: `paragraph-${Date.now()}`,
+                  type: NodeType.PARAGRAPH,
+                  label: 'Feature 2 Description',
+                  content: 'Description of feature 2',
+                  alignment: 'left',
+                  children: [],
+                  settings: {},
+                  styles: {},
+                  responsive: {},
+                  metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+                },
+              ],
+              settings: { flex: 1 },
+              styles: {
+                flex: 1,
+                minWidth: '200px',
+                padding: '16px',
+                background: '#f9f9f9',
+                borderRadius: '8px',
+              },
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+            {
+              id: `col-${Date.now()}-3`,
+              type: 'column',
+              label: 'Feature 3',
+              children: [
+                {
+                  id: `heading-${Date.now()}`,
+                  type: NodeType.HEADING,
+                  label: 'Feature 3 Title',
+                  content: 'Feature 3',
+                  headingLevel: 'h3',
+                  alignment: 'left',
+                  children: [],
+                  settings: {},
+                  styles: {},
+                  responsive: {},
+                  metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+                },
+                {
+                  id: `paragraph-${Date.now()}`,
+                  type: NodeType.PARAGRAPH,
+                  label: 'Feature 3 Description',
+                  content: 'Description of feature 3',
+                  alignment: 'left',
+                  children: [],
+                  settings: {},
+                  styles: {},
+                  responsive: {},
+                  metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+                },
+              ],
+              settings: { flex: 1 },
+              styles: {
+                flex: 1,
+                minWidth: '200px',
+                padding: '16px',
+                background: '#f9f9f9',
+                borderRadius: '8px',
+              },
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+          ],
+          settings: {},
+          styles: {
+            display: 'flex',
+            gap: '16px',
+          },
+          responsive: {},
+          metadata: {
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          },
+        },
+      ],
+      settings: {},
+      styles: {
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '32px',
+        marginBottom: '20px',
+        border: '1px solid #e8e8e8',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  faq: {
+    type: 'faq',
+    label: 'FAQ Layout',
+    icon: '❓',
+    createNode: () => ({
+      id: `faq-${Date.now()}`,
+      type: 'section',
+      label: 'FAQ Section',
+      children: [
+        {
+          id: `container-${Date.now()}`,
+          type: 'container',
+          label: 'FAQ Container',
+          children: [
+            {
+              id: `heading-${Date.now()}`,
+              type: NodeType.HEADING,
+              label: 'FAQ Heading',
+              content: 'Frequently Asked Questions',
+              headingLevel: 'h2',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+          ],
+          settings: {},
+          styles: {
+            marginBottom: '24px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '32px',
+        marginBottom: '20px',
+        border: '1px solid #e8e8e8',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  testimonial: {
+    type: 'testimonial',
+    label: 'Testimonial Layout',
+    icon: '💬',
+    createNode: () => ({
+      id: `testimonial-${Date.now()}`,
+      type: 'section',
+      label: 'Testimonial Section',
+      children: [
+        {
+          id: `container-${Date.now()}`,
+          type: 'container',
+          label: 'Testimonial Container',
+          children: [
+            {
+              id: `heading-${Date.now()}`,
+              type: NodeType.HEADING,
+              label: 'Testimonial Heading',
+              content: 'What Our Customers Say',
+              headingLevel: 'h2',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+          ],
+          settings: {},
+          styles: {
+            marginBottom: '24px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        background: '#f9f9f9',
+        borderRadius: '12px',
+        padding: '32px',
+        marginBottom: '20px',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+
+  contact: {
+    type: 'contact',
+    label: 'Contact Layout',
+    icon: '📞',
+    createNode: () => ({
+      id: `contact-${Date.now()}`,
+      type: 'section',
+      label: 'Contact Section',
+      children: [
+        {
+          id: `container-${Date.now()}`,
+          type: 'container',
+          label: 'Contact Container',
+          children: [
+            {
+              id: `heading-${Date.now()}`,
+              type: NodeType.HEADING,
+              label: 'Contact Heading',
+              content: 'Get In Touch',
+              headingLevel: 'h2',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+            {
+              id: `paragraph-${Date.now()}`,
+              type: NodeType.PARAGRAPH,
+              label: 'Contact Text',
+              content: 'We\'d love to hear from you. Send us a message and we\'ll respond as soon as possible.',
+              alignment: 'center',
+              children: [],
+              settings: {},
+              styles: {},
+              responsive: {},
+              metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+            },
+          ],
+          settings: {},
+          styles: {
+            textAlign: 'center',
+            marginBottom: '24px',
+          },
+          responsive: {},
+          metadata: { createdAt: Date.now(), updatedAt: Date.now() },
+        },
+      ],
+      settings: {},
+      styles: {
+        background: '#fff',
+        borderRadius: '12px',
+        padding: '32px',
+        marginBottom: '20px',
+        border: '1px solid #e8e8e8',
+      },
+      responsive: {},
+      metadata: {
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      },
+    }),
+  },
+};
+
+/**
+ * Get layout block by type
+ */
+export function getLayoutBlock(type) {
+  return LAYOUT_BLOCKS[type];
+}
+
+/**
+ * Create layout node by type
+ */
+export function createLayoutNode(type) {
+  const block = LAYOUT_BLOCKS[type];
+  if (!block) return null;
+  return block.createNode();
+}

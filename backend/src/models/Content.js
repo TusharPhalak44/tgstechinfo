@@ -110,7 +110,7 @@ class Content {
         let {
             user_id, content_type_id, category_id, title, short_description,
             tags, banner_image, pdf_file, custom_fields, content, webhook_url,
-            webhook_field_mapping, builder_layout, builder_content_elements,
+            webhook_field_mapping, builder_layout, builder_content_elements, builder_page_data,
             seo_meta_title, seo_meta_description, seo_meta_keywords,         
             scheduled_publish_date, status = 'draft',
             email_subject, email_template, case_study_headline, case_study_summary
@@ -137,7 +137,7 @@ class Content {
             }
         }
 
-        const slug = slugify(title, { lower: true, strict: true });
+        const slug = slugify(title ? String(title).trim() : `untitled-${Date.now()}`, { lower: true, strict: true }) || `untitled-${Date.now()}`;
         const wordCount = (content || '').split(/\s+/).length;
         const reading_time = Math.ceil(wordCount / 200);
 
@@ -145,10 +145,10 @@ class Content {
             INSERT INTO contents (
                 user_id, content_type_id, category_id, title, slug,
                 short_description, tags, banner_image, pdf_file, custom_fields, content, webhook_url,
-                webhook_field_mapping, builder_layout, builder_content_elements,
+                webhook_field_mapping, builder_layout, builder_content_elements, builder_page_data,
                 seo_meta_title, seo_meta_description, seo_meta_keywords,
                 scheduled_publish_date, reading_time, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const values = [
             user_id, content_type_id, category_id, title, slug,
@@ -160,6 +160,7 @@ class Content {
             webhook_field_mapping ? JSON.stringify(webhook_field_mapping) : null,
             builder_layout ? (typeof builder_layout === 'string' ? builder_layout : JSON.stringify(builder_layout)) : null,
             builder_content_elements ? (typeof builder_content_elements === 'string' ? builder_content_elements : JSON.stringify(builder_content_elements)) : null,
+            builder_page_data ? (typeof builder_page_data === 'string' ? builder_page_data : JSON.stringify(builder_page_data)) : null,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
             scheduled_publish_date, reading_time, status
         ];
@@ -307,7 +308,7 @@ class Content {
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
-            'webhook_field_mapping', 'builder_layout', 'builder_content_elements'
+            'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data'
         ];
 
         const updates = [];
@@ -321,7 +322,7 @@ class Content {
         }
 
         if (contentData.title) {
-            const newSlug = slugify(contentData.title, { lower: true, strict: true });
+            const newSlug = slugify(String(contentData.title).trim(), { lower: true, strict: true }) || `untitled-${Date.now()}`;
             const [existing] = await pool.query('SELECT slug FROM contents WHERE id = ?', [id]);
             if (existing[0]?.slug !== newSlug) {
                 const [conflict] = await pool.query('SELECT id FROM contents WHERE slug = ? AND id != ?', [newSlug, id]);

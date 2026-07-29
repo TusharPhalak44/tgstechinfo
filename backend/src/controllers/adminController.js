@@ -143,6 +143,39 @@ exports.getAllContent = async (req, res) => {
     }
 };
 
+// ✅ Admin create user
+exports.createUser = async (req, res) => {
+    try {
+        const { first_name, last_name, email, password, role } = req.body;
+
+        if (!first_name || !last_name || !email || !password) {
+            return res.status(400).json({ message: 'first_name, last_name, email and password are required' });
+        }
+
+        const existing = await User.findByEmail(email);
+        if (existing) {
+            return res.status(409).json({ message: 'A user with that email already exists' });
+        }
+
+        const { hashPassword } = require('../config/auth');
+        const password_hash = await hashPassword(password);
+
+        const user = await User.create({
+            first_name,
+            last_name,
+            email,
+            password_hash,
+            role: role || 'user'
+        });
+
+        delete user.password_hash;
+        res.status(201).json({ message: 'User created successfully', user });
+    } catch (error) {
+        console.error('Admin create user error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // ✅ Get all users
 exports.getAllUsers = async (req, res) => {
     try {

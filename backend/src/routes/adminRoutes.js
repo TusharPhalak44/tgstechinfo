@@ -22,6 +22,7 @@ router.get('/content/:id', adminController.getContentDetails);
 
 // User management
 router.get('/users', hasPermission('user.read'), adminController.getAllUsers);
+router.post('/users', hasPermission('user.create'), adminController.createUser);
 router.put('/users/:id/status', hasPermission('user.update'), adminController.updateUserStatus);
 router.get('/users/:id/content', hasPermission('user.read'), adminController.getUserContent);
 
