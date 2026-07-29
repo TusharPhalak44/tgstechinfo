@@ -4,9 +4,10 @@ import { Dropdown, Button, Avatar, Badge, List, Typography, Empty, Tag } from 'a
 import {
   UserOutlined, LogoutOutlined, DashboardOutlined,
   MenuOutlined, CloseOutlined, SearchOutlined, BellOutlined,
-  CheckOutlined, DownOutlined, RightOutlined
+  CheckOutlined, DownOutlined, RightOutlined, SunOutlined, MoonOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
 
 const { Text } = Typography;
@@ -292,6 +293,7 @@ const NotifPanel = ({ notifications, onMarkRead }) => (
 // ── Main Navbar ──────────────────────────────────────────────────
 const Navbar = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { darkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -401,7 +403,7 @@ const Navbar = () => {
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
 
       <header style={{
-        background: scrolled ? 'rgba(255,255,255,0.98)' : 'var(--color-surface)',
+        background: scrolled ? (darkMode ? 'rgba(15,23,42,0.98)' : 'rgba(255,255,255,0.98)') : 'var(--color-surface)',
         backdropFilter: scrolled ? 'blur(16px)' : 'none',
         boxShadow: scrolled ? '0 4px 24px rgba(11,31,77,0.09)' : '0 1px 0 var(--color-border)',
         transition: 'box-shadow .3s, background .3s',
@@ -451,6 +453,28 @@ const Navbar = () => {
             flexShrink: 0, 
             marginLeft: 'auto' 
           }}>
+
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTheme}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                width: isMobile ? 32 : 36,
+                height: isMobile ? 32 : 36,
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--color-muted)',
+                transition: 'background .2s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-light)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              {darkMode ? <SunOutlined style={{ fontSize: isMobile ? 14 : 16 }} /> : <MoonOutlined style={{ fontSize: isMobile ? 14 : 16 }} />}
+            </button>
 
             {/* Search — compact bar */}
             <div ref={searchRef} style={{ display: 'flex', alignItems: 'center' }}>
