@@ -286,56 +286,6 @@ const SecurityDashboard = () => {
           </Card>
         </Col>
       </Row>
-
-      {/* Security Recommendations */}
-      <Card 
-        title={
-          <Space size={window.innerWidth < 768 ? 'small' : 'middle'}>
-            <SafetyOutlined style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }} />
-            <span style={{ fontSize: 'clamp(14px, 1.2vw, 16px)' }}>Security Recommendations</span>
-          </Space>
-        }
-        className="recommendations-card"
-      >
-        <List
-          dataSource={[
-            {
-              icon: <KeyOutlined />,
-              title: 'Enable Multi-Factor Authentication',
-              description: 'Add an extra layer of security to your account',
-              action: 'Coming Soon'
-            },
-            {
-              icon: <MobileOutlined />,
-              title: 'Review Active Sessions',
-              description: 'Revoke any sessions you don\'t recognize',
-              action: 'Manage Sessions'
-            },
-            {
-              icon: <LockOutlined />,
-              title: 'Use Strong Password',
-              description: 'Ensure your password meets security requirements',
-              action: 'Change Password'
-            }
-          ]}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                <Button type="link" size={window.innerWidth < 768 ? 'small' : 'middle'} style={{ fontSize: 'clamp(12px, 0.85vw, 14px)' }}>
-                  {item.action}
-                </Button>
-              ]}
-              style={{ padding: 'clamp(12px, 1.5vw, 16px) 0' }}
-            >
-              <List.Item.Meta
-                avatar={item.icon}
-                title={<span style={{ fontSize: 'clamp(13px, 1vw, 14px)' }}>{item.title}</span>}
-                description={<span style={{ fontSize: 'clamp(12px, 0.85vw, 13px)' }}>{item.description}</span>}
-              />
-            </List.Item>
-          )}
-        />
-      </Card>
       <style>{`
         @media (max-width: 768px) {
           .security-score-card {
@@ -344,12 +294,11 @@ const SecurityDashboard = () => {
           .security-score-card .ant-card-body {
             padding: 16px !important;
           }
-          .session-card, .activity-card, .recommendations-card {
+          .session-card, .activity-card {
             margin-bottom: 16px !important;
           }
           .session-card .ant-card-body,
-          .activity-card .ant-card-body,
-          .recommendations-card .ant-card-body {
+          .activity-card .ant-card-body {
             padding: 16px !important;
           }
           .ant-list-item {
@@ -365,8 +314,7 @@ const SecurityDashboard = () => {
             padding: 12px !important;
           }
           .session-card .ant-card-body,
-          .activity-card .ant-card-body,
-          .recommendations-card .ant-card-body {
+          .activity-card .ant-card-body {
             padding: 12px !important;
           }
           .ant-list-item {

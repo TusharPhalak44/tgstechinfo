@@ -56,8 +56,9 @@ const restoreRawHtml = (html = '') =>
  *   renderBanner   — optional custom banner renderer (src, alt) => JSX
  *   contentHtml    — HTML string to render for content section
  *   extraAfter     — JSX to render after all sections (e.g. tags, share, comments)
+ *   darkMode       — boolean for dark mode styling
  */
-const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter }) => {
+const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkMode = false }) => {
   const tags = parseTags(content.tags);
   const order = getSectionOrder(content.builder_layout);
 
@@ -71,21 +72,16 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter }) => 
     : [...sectionOrder.slice(0, sectionOrder.indexOf('content') !== -1 ? sectionOrder.indexOf('content') : sectionOrder.length), 'tags', ...sectionOrder.slice(sectionOrder.indexOf('content') !== -1 ? sectionOrder.indexOf('content') : sectionOrder.length)];
 
   const sections = {
-    meta: content.category_name || content.content_type_name ? (
-      <div key="meta" style={{ marginBottom: 12 }}>
-        {content.category_name && <Tag color="blue">{content.category_name}</Tag>}
-        {content.content_type_name && <Tag color="purple">{content.content_type_name}</Tag>}
-      </div>
-    ) : null,
+    meta: null, // Removed as requested
 
     title: (
       <div key="title">
-        <h1 style={{ fontSize: 32, fontWeight: 700, color: '#1a1a1a', margin: '12px 0 16px', lineHeight: 1.3 }}>
+        <h1 style={{ fontSize: 32, fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a1a', margin: '12px 0 16px', lineHeight: 1.3 }}>
           {content.title}
         </h1>
         {content.short_description && (
-          <div style={{ marginBottom: 20, padding: '12px 16px', background: '#f8f9fa', borderLeft: '4px solid #1890ff', borderRadius: '0 8px 8px 0' }}>
-            <Text style={{ fontSize: 15, color: '#374151', lineHeight: 1.7 }}>{content.short_description}</Text>
+          <div style={{ marginBottom: 20, padding: '12px 16px', background: darkMode ? 'rgba(30, 41, 59, 0.5)' : '#f8f9fa', borderLeft: darkMode ? '4px solid #4a7cff' : '4px solid #1890ff', borderRadius: '0 8px 8px 0' }}>
+            <Text style={{ fontSize: 15, color: darkMode ? '#cbd5e1' : '#374151', lineHeight: 1.7 }}>{content.short_description}</Text>
           </div>
         )}
       </div>
@@ -94,7 +90,7 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter }) => 
     banner: content.banner_image ? (
       <div key="banner" style={{ marginBottom: 24 }}>
         {renderBanner
-          ? renderBanner(`/uploads/${content.banner_image}`, content.title)
+          ? renderBanner(`/uploads/${content.banner_image}`, content.title, darkMode)
           : (
             <div style={{ borderRadius: 10, overflow: 'hidden' }}>
               <img
@@ -110,9 +106,9 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter }) => 
 
     tags: tags.length > 0 ? (
       <div key="tags" style={{ marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-        <TagOutlined style={{ color: '#8c8c8c' }} />
+        <TagOutlined style={{ color: darkMode ? '#94a3b8' : '#8c8c8c' }} />
         {tags.map((tag, i) => (
-          <Tag key={i} color="geekblue" style={{ borderRadius: 20, fontSize: 12 }}>{tag}</Tag>
+          <Tag key={i} color="geekblue" style={{ borderRadius: 20, fontSize: 12, color: darkMode ? '#60a5fa' : undefined }}>{tag}</Tag>
         ))}
       </div>
     ) : null,

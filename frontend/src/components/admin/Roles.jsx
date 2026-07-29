@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Checkbox, Grid } from 'antd';
+import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Checkbox, Grid, ConfigProvider } from 'antd';
 import {
   SecurityScanOutlined,
   PlusOutlined,
@@ -7,6 +7,7 @@ import {
   DeleteOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -17,6 +18,7 @@ const Roles = () => {
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
   const isDesktop = screens.lg;
+  const { darkMode } = useTheme();
 
   const [roles, setRoles] = useState([
     {
@@ -119,7 +121,7 @@ const Roles = () => {
       dataIndex: 'name',
       key: 'name',
       width: isMobile ? 100 : 150,
-      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{text}</Text>,
+      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'Description',
@@ -127,7 +129,7 @@ const Roles = () => {
       key: 'description',
       width: isMobile ? 120 : 200,
       ellipsis: true,
-      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'Permissions',
@@ -155,7 +157,7 @@ const Roles = () => {
       dataIndex: 'userCount',
       key: 'userCount',
       width: isMobile ? 70 : 90,
-      render: (count) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{count} users</Text>,
+      render: (count) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{count} users</Text>,
     },
     {
       title: 'Status',
@@ -189,173 +191,185 @@ const Roles = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="w-full sm:w-auto">
-          <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
-            <SecurityScanOutlined /> Roles
-          </Title>
-          <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
-            Manage user roles and permissions
-          </Text>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorText: darkMode ? '#cbd5e1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#e5e7eb',
+          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+        },
+      }}
+    >
+      <div className="p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="w-full sm:w-auto">
+            <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 8 }}>
+              <SecurityScanOutlined /> Roles
+            </Title>
+            <Text style={{ fontSize: isMobile ? 13 : 15, color: darkMode ? '#94a3b8' : '#6B7280' }}>
+              Manage user roles and permissions
+            </Text>
+          </div>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} style={{ width: isMobile ? '100%' : 'auto' }}>
+            Create Role
+          </Button>
         </div>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} style={{ width: isMobile ? '100%' : 'auto' }}>
-          Create Role
-        </Button>
-      </div>
 
-      <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={12} md={6} style={{ padding: isMobile ? '0 6px' : '0' }}>
-          <Card
-            style={{
-              borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              margin: isMobile ? '0 4px' : '0',
-            }}
-            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
-          >
-            <Title level={isMobile ? 4 : 3} style={{ color: '#0AAEEF', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
-              {roles.length}
-            </Title>
-            <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14 }}>Total Roles</Text>
-          </Card>
-        </Col>
-        <Col xs={12} sm={12} md={6} style={{ padding: isMobile ? '0 6px' : '0' }}>
-          <Card
-            style={{
-              borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              margin: isMobile ? '0 4px' : '0',
-            }}
-            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
-          >
-            <Title level={isMobile ? 4 : 3} style={{ color: '#10B981', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
-              {roles.reduce((acc, role) => acc + role.userCount, 0)}
-            </Title>
-            <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14 }}>Total Users</Text>
-          </Card>
-        </Col>
-        <Col xs={12} sm={12} md={6} style={{ padding: isMobile ? '0 6px' : '0' }}>
-          <Card
-            style={{
-              borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              margin: isMobile ? '0 4px' : '0',
-            }}
-            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
-          >
-            <Title level={isMobile ? 4 : 3} style={{ color: '#8B5CF6', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
-              {roles.filter(role => role.status === 'active').length}
-            </Title>
-            <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14 }}>Active Roles</Text>
-          </Card>
-        </Col>
-        <Col xs={12} sm={12} md={6} style={{ padding: isMobile ? '0 6px' : '0' }}>
-          <Card
-            style={{
-              borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              margin: isMobile ? '0 4px' : '0',
-            }}
-            bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
-          >
-            <Title level={isMobile ? 4 : 3} style={{ color: '#F59E0B', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
-              {availablePermissions.length}
-            </Title>
-            <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14 }}>Permissions</Text>
-          </Card>
-        </Col>
-      </Row>
+        <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                borderRadius: 12,
+                border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                height: '100%',
+                margin: isMobile ? '0 4px' : '0',
+              }}
+              bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
+            >
+              <Title level={isMobile ? 4 : 3} style={{ color: '#0AAEEF', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
+                {roles.length}
+              </Title>
+              <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#94a3b8' : '#6B7280' }}>Total Roles</Text>
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                borderRadius: 12,
+                border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                height: '100%',
+                margin: isMobile ? '0 4px' : '0',
+              }}
+              bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
+            >
+              <Title level={isMobile ? 4 : 3} style={{ color: '#10B981', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
+                {roles.reduce((acc, role) => acc + role.userCount, 0)}
+              </Title>
+              <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#94a3b8' : '#6B7280' }}>Total Users</Text>
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                borderRadius: 12,
+                border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                height: '100%',
+                margin: isMobile ? '0 4px' : '0',
+              }}
+              bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
+            >
+              <Title level={isMobile ? 4 : 3} style={{ color: '#8B5CF6', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
+                {roles.filter(role => role.status === 'active').length}
+              </Title>
+              <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#94a3b8' : '#6B7280' }}>Active Roles</Text>
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                borderRadius: 12,
+                border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+                boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                height: '100%',
+                margin: isMobile ? '0 4px' : '0',
+              }}
+              bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
+            >
+              <Title level={isMobile ? 4 : 3} style={{ color: '#F59E0B', marginBottom: 8, fontSize: isMobile ? 20 : 24 }}>
+                {availablePermissions.length}
+              </Title>
+              <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#94a3b8' : '#6B7280' }}>Permissions</Text>
+            </Card>
+          </Col>
+        </Row>
 
-      <Card
-        style={{
-          borderRadius: 12,
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        }}
-        bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
-      >
-        <Table
-          columns={columns}
-          dataSource={roles}
-          rowKey="id"
-          scroll={{ x: isMobile ? 800 : 1000 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: !isMobile,
-            showQuickJumper: !isMobile,
-            showTotal: !isMobile ? (total) => `Total ${total} roles` : false,
-            simple: isMobile,
-            size: isMobile ? 'small' : 'default',
+        <Card
+          style={{
+            borderRadius: 12,
+            border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+            boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
           }}
-          size={isMobile ? 'small' : 'middle'}
-          style={{ fontSize: isMobile ? 12 : 14 }}
-        />
-      </Card>
+          bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
+        >
+          <Table
+            columns={columns}
+            dataSource={roles}
+            rowKey="id"
+            scroll={{ x: isMobile ? 800 : 1000 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: !isMobile,
+              showQuickJumper: !isMobile,
+              showTotal: !isMobile ? (total) => `Total ${total} roles` : false,
+              simple: isMobile,
+              size: isMobile ? 'small' : 'default',
+            }}
+            size={isMobile ? 'small' : 'middle'}
+            style={{ fontSize: isMobile ? 12 : 14 }}
+          />
+        </Card>
 
-      <Modal
-        title={editingRole ? 'Edit Role' : 'Create Role'}
-        open={isModalVisible}
-        onOk={handleModalOk}
-        onCancel={handleModalCancel}
-        width={isMobile ? '100%' : 600}
-        style={{ top: isMobile ? 0 : 20 }}
-        bodyStyle={{ padding: isMobile ? 16 : 24 }}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="name"
-            label="Role Name"
-            rules={[{ required: true, message: 'Please enter role name' }]}
-          >
-            <Input placeholder="Enter role name" />
-          </Form.Item>
+        <Modal
+          title={editingRole ? 'Edit Role' : 'Create Role'}
+          open={isModalVisible}
+          onOk={handleModalOk}
+          onCancel={handleModalCancel}
+          width={isMobile ? '100%' : 600}
+          style={{ top: isMobile ? 0 : 20 }}
+          bodyStyle={{ padding: isMobile ? 16 : 24 }}
+        >
+          <Form form={form} layout="vertical">
+            <Form.Item
+              name="name"
+              label="Role Name"
+              rules={[{ required: true, message: 'Please enter role name' }]}
+            >
+              <Input placeholder="Enter role name" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
+            </Form.Item>
 
-          <Form.Item
-            name="description"
-            label="Description"
-            rules={[{ required: true, message: 'Please enter description' }]}
-          >
-            <Input.TextArea rows={3} placeholder="Enter role description" />
-          </Form.Item>
+            <Form.Item
+              name="description"
+              label="Description"
+              rules={[{ required: true, message: 'Please enter description' }]}
+            >
+              <Input.TextArea rows={3} placeholder="Enter role description" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
+            </Form.Item>
 
-          <Form.Item
-            name="permissions"
-            label="Permissions"
-            rules={[{ required: true, message: 'Please select permissions' }]}
-          >
-            <Checkbox.Group style={{ width: '100%' }}>
-              <Row gutter={[isMobile ? 6 : 8, isMobile ? 6 : 8]}>
-                {availablePermissions.map(perm => (
-                  <Col xs={24} sm={12} key={perm.value}>
-                    <Checkbox value={perm.value} style={{ fontSize: isMobile ? 12 : 14 }}>{perm.label}</Checkbox>
-                  </Col>
-                ))}
-              </Row>
-            </Checkbox.Group>
-          </Form.Item>
+            <Form.Item
+              name="permissions"
+              label="Permissions"
+              rules={[{ required: true, message: 'Please select permissions' }]}
+            >
+              <Checkbox.Group style={{ width: '100%' }}>
+                <Row gutter={[isMobile ? 6 : 8, isMobile ? 6 : 8]}>
+                  {availablePermissions.map(perm => (
+                    <Col xs={24} sm={12} key={perm.value}>
+                      <Checkbox value={perm.value} style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{perm.label}</Checkbox>
+                    </Col>
+                  ))}
+                </Row>
+              </Checkbox.Group>
+            </Form.Item>
 
-          <Form.Item
-            name="status"
-            label="Status"
-            rules={[{ required: true, message: 'Please select status' }]}
-          >
-            <Select placeholder="Select status">
-              <Option value="active">Active</Option>
-              <Option value="inactive">Inactive</Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: 'Please select status' }]}
+            >
+              <Select placeholder="Select status" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
+                <Option value="active">Active</Option>
+                <Option value="inactive">Inactive</Option>
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
+      </div>
+    </ConfigProvider>
   );
 };
 

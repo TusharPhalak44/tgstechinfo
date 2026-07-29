@@ -48,10 +48,31 @@ const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [siteName, setSiteName] = useState('TgsTechInfo');
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
+
+    // Load site name from localStorage
+  useEffect(() => {
+    const savedSiteName = localStorage.getItem('cmsSiteName');
+    if (savedSiteName) {
+      setSiteName(savedSiteName);
+    }
+ 
+    // Load and apply favicon
+    const savedFavicon = localStorage.getItem('cmsFaviconUrl');
+    if (savedFavicon) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = savedFavicon;
+    }
+  }, []);
 
   // Detect mobile screen size
   useEffect(() => {
@@ -71,7 +92,7 @@ const DashboardLayout = () => {
   const getMenuItems = () => {
     const items = [
       {
-        key: '/dashboard',
+        key: '/admin',
         icon: <DashboardOutlined />,
         label: 'Dashboard',
       },
@@ -132,16 +153,6 @@ const DashboardLayout = () => {
         label: 'WEBSITE',
         type: 'group',
         children: [
-          {
-            key: '/dashboard/menus',
-            icon: <MenuUnfoldOutlined />,
-            label: 'Menus',
-          },
-          {
-            key: '/dashboard/navigation',
-            icon: <GlobalOutlined />,
-            label: 'Navigation',
-          },
           {
             key: '/dashboard/forms',
             icon: <FormOutlined />,
@@ -325,9 +336,41 @@ const DashboardLayout = () => {
             letterSpacing: '-0.5px',
           }}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+         <span
+            style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+            onClick={() => navigate('/dashboard/settings')}
+          >
+            {(localStorage.getItem('cmsSidebarLogo1Url') || localStorage.getItem('cmsSidebarLogo2Url')) ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {localStorage.getItem('cmsSidebarLogo1Url') && (
+                  <img
+                    src={localStorage.getItem('cmsSidebarLogo1Url')}
+                    alt="Logo 1"
+                    style={{
+                      height: collapsed ? 32 : 40,
+                      maxWidth: collapsed ? 32 : 70,
+                      objectFit: 'contain'
+                    }}
+                  />
+                )}
+                {localStorage.getItem('cmsSidebarLogo2Url') && (
+                  <img
+                    src={localStorage.getItem('cmsSidebarLogo2Url')}
+                    alt="Logo 2"
+                    style={{
+                      height: collapsed ? 32 : 48,
+                      maxWidth: collapsed ? 32 : 120,
+                      objectFit: 'contain'
+                    }}
+                  />
+                )}
+              </div>
+            ) : (
+              <>
             <AppstoreOutlined style={{ fontSize: 24, color: '#0AAEEF' }} />
-            {!collapsed && <span>TgsTechInfo</span>}
+            {!collapsed && <span>{siteName}</span>}
+              </>
+            )}
           </span>
           {isMobile && (
             <Button
@@ -474,7 +517,7 @@ const DashboardLayout = () => {
         <Content
           style={{
             margin: 0,
-            padding: isMobile ? '64px 0 0' : '96px 32px 32px',
+            padding: isMobile ? '64px 0 0' : '64px 32px 32px',
             minHeight: 'calc(100vh - 64px)',
             background: darkMode ? '#0F172A' : '#F8FAFC',
           }}

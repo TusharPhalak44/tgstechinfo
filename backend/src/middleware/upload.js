@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 const uploadDir = path.join(__dirname, '../../uploads');
+console.log('Upload middleware uploadDir:', uploadDir);
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }

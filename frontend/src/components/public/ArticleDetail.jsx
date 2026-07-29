@@ -12,6 +12,7 @@ import axios from 'axios';
 import moment from 'moment';
 import '../../prose-content.css';
 import ContentRenderer from '../common/ContentRenderer';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 
@@ -35,18 +36,18 @@ const getPreviewHtml = (html = '') => {
 };
 
 // Custom Comment Component
-const CustomComment = ({ author, avatar, content, datetime }) => (
-  <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
+const CustomComment = ({ author, avatar, content, datetime, darkMode }) => (
+  <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
     <div>{avatar || <Avatar icon={<UserOutlined />} />}</div>
     <div style={{ flex: 1 }}>
-      <div style={{ fontWeight: 500, fontSize: 14 }}>{author}</div>
-      <div style={{ fontSize: 12, color: '#999', marginTop: 2 }}>{datetime}</div>
-      <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6 }}>{content}</div>
+      <div style={{ fontWeight: 500, fontSize: 14, color: darkMode ? '#f1f5f9' : '#000' }}>{author}</div>
+      <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#999', marginTop: 2 }}>{datetime}</div>
+      <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: darkMode ? '#cbd5e1' : '#000' }}>{content}</div>
     </div>
   </div>
 );
 
-const BannerImage = ({ src, alt }) => {
+const BannerImage = ({ src, alt, darkMode }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   return (
@@ -55,11 +56,12 @@ const BannerImage = ({ src, alt }) => {
       <div
         onClick={() => setLightboxOpen(true)}
         style={{
-          margin: '24px -32px 32px',
+          margin: '24px 0 32px',
           cursor: 'pointer',
           overflow: 'hidden',
           position: 'relative',
         }}
+        className="article-banner-image"
       >
         <img
           src={src}
@@ -70,7 +72,7 @@ const BannerImage = ({ src, alt }) => {
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           height: '85%',
-          background: 'linear-gradient(to bottom, transparent 0%, #fff 60%)',
+          background: darkMode ? 'linear-gradient(to bottom, transparent 0%, #0f172a 60%)' : 'linear-gradient(to bottom, transparent 0%, #fff 60%)',
           display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
           paddingBottom: 12,
         }}>
@@ -125,6 +127,7 @@ const BannerImage = ({ src, alt }) => {
 const ArticleDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { darkMode } = useTheme();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [relatedArticles, setRelatedArticles] = useState([]);
@@ -169,6 +172,13 @@ const ArticleDetail = () => {
       const response = await axios.get(`/api/public/content/${slug}`);
       const c = response.data.content;
 
+      if (!c) {
+        messageApi.error('Content not found');
+        setContent(null);
+        setLoading(false);
+        return;
+      }
+
       // Debug — log what builder_layout actually contains
       console.log('[ArticleDetail] builder_layout raw:', c.builder_layout);
       console.log('[ArticleDetail] builder_layout type:', typeof c.builder_layout);
@@ -203,7 +213,9 @@ const ArticleDetail = () => {
         { id: 1, author: 'Admin', content: 'Great article! Thanks for sharing.', datetime: moment().format('MMMM D, YYYY') }
       ]);
     } catch (error) {
+      console.error('[ArticleDetail] Fetch error:', error);
       messageApi.error('Failed to load content');
+      setContent(null);
     } finally {
       setLoading(false);
     }
@@ -267,7 +279,31 @@ const ArticleDetail = () => {
   };
 
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} style={{ padding: 24 }} />;
-  if (!content) return <Title level={3} style={{ padding: 24 }}>Content not found</Title>;
+  if (!content) return (
+    <div style={{ 
+      textAlign: 'center', 
+      padding: '80px 24px',
+      background: darkMode ? '#1e293b' : '#fff',
+      borderRadius: 8,
+      boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)'
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 16 }}>📄</div>
+      <Title level={2} style={{ marginBottom: 8 }}>Content Not Found</Title>
+      <Text style={{ color: darkMode ? '#94a3b8' : '#666', display: 'block', marginBottom: 24 }}>
+        The content you're looking for doesn't exist or has been removed.
+      </Text>
+      <Button 
+        type="primary" 
+        onClick={() => navigate('/search')}
+        style={{
+          background: 'linear-gradient(135deg, #0B1F4D 0%, #123A8C 100%)',
+          border: 'none'
+        }}
+      >
+        Return to Search
+      </Button>
+    </div>
+  );
 
   const LANDING_TYPES = ['webinar', 'whitepaper', 'white paper', 'white-paper', 'event', 'ebook', 'e-book'];
   const contentTypeName = (content?.content_type_name || content?.content_type || '').toLowerCase().trim();
@@ -279,33 +315,47 @@ const ArticleDetail = () => {
   return (
     <>
       {contextHolder}
-      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '24px 20px 40px' }}>
+      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '24px 20px 40px', background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }} className="article-detail-container">
       <style>{`
         .prose-content * { box-sizing: border-box; }
+        @media (max-width: 768px) {
+          .article-detail-container {
+            padding: 0 !important;
+          }
+          .article-content-card {
+            padding: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+          }
+          .article-banner-image {
+            margin-left: 16px !important;
+            margin-right: 16px !important;
+          }
+        }
       `}</style>
       <Row gutter={[24, 24]} style={{ alignItems: 'flex-start' }}>
         {/* Main Content - 70% */}
         <Col xs={24} lg={17} style={{ order: 1 }}>
-          <div style={{ background: '#fff', padding: 32, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+          <div style={{ background: darkMode ? '#1e293b' : '#fff', padding: 32, borderRadius: 8, boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)' }} className="article-content-card">
             {/* Back Button + Breadcrumb */}
             <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <button
                 onClick={() => navigate(-1)}
                 style={{
-                  background: 'none', border: '1.5px solid #d9d9d9', borderRadius: 8,
+                  background: 'none', border: darkMode ? '1.5px solid #475569' : '1.5px solid #d9d9d9', borderRadius: 8,
                   padding: '4px 12px', cursor: 'pointer', fontSize: 13,
-                  color: '#374151', display: 'flex', alignItems: 'center', gap: 6,
+                  color: darkMode ? '#cbd5e1' : '#374151', display: 'flex', alignItems: 'center', gap: 6,
                   flexShrink: 0
                 }}
               >← Back</button>
               <div style={{ fontSize: 14 }}>
                 <Link to="/" style={{ color: '#1890ff' }}>Home</Link>
-              <span style={{ margin: '0 8px', color: '#999' }}>/</span>
+              <span style={{ margin: '0 8px', color: darkMode ? '#64748b' : '#999' }}>/</span>
               <Link to={`/category/${content.category_slug}`} style={{ color: '#1890ff' }}>
                 {content.category_name}
               </Link>
-              <span style={{ margin: '0 8px', color: '#999' }}>/</span>
-              <span>{content.title}</span>
+              <span style={{ margin: '0 8px', color: darkMode ? '#64748b' : '#999' }}>/</span>
+              <span style={{ color: darkMode ? '#f1f5f9' : '#000' }}>{content.title}</span>
             </div>
             </div>
 
@@ -313,7 +363,7 @@ const ArticleDetail = () => {
             <Tag color="blue" style={{ marginBottom: 12 }}>{content.category_name}</Tag>
 
             {/* Meta */}
-            <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
               <Space size="middle" wrap>
                 <Space>
                   <Avatar icon={<UserOutlined />} size="small" />
@@ -331,8 +381,8 @@ const ArticleDetail = () => {
 
             {/* Content rendered in saved layout order */}
             {requiresLanding && !hasAccess && (
-              <div style={{ marginBottom: 20, padding: '14px 16px', background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8 }}>
-                <Text strong style={{ color: '#8c4b00' }}>
+              <div style={{ marginBottom: 20, padding: '14px 16px', background: darkMode ? 'rgba(251, 191, 36, 0.1)' : '#fff7e6', border: darkMode ? '1px solid #fbbf24' : '1px solid #ffd591', borderRadius: 8 }}>
+                <Text strong style={{ color: darkMode ? '#fcd34d' : '#8c4b00' }}>
                   <LockOutlined style={{ marginRight: 8 }} /> Preview only. Fill the form on the right to unlock the full article.
                 </Text>
               </div>
@@ -340,11 +390,12 @@ const ArticleDetail = () => {
 
             <ContentRenderer
               content={content}
-              renderBanner={(src, alt) => <BannerImage src={src} alt={alt} />}
+              renderBanner={(src, alt) => <BannerImage src={src} alt={alt} darkMode={darkMode} />}
               contentHtml={(requiresLanding && !hasAccess) ? previewContent : fullContent}
+              darkMode={darkMode}
               extraAfter={
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f0f0f0', display: 'flex', gap: 16, alignItems: 'center' }}>
-                  <Text strong>Share:</Text>
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <Text strong style={{ color: darkMode ? '#f1f5f9' : '#000' }}>Share:</Text>
                   <Button icon={<ShareAltOutlined />}>Share</Button>
                 </div>
               }
@@ -352,8 +403,8 @@ const ArticleDetail = () => {
           </div>
 
           {/* Comments */}
-          <div style={{ marginTop: 40, background: '#fff', padding: 24, borderRadius: 8 }}>
-            <Title level={3}>Comments</Title>
+          <div style={{ marginTop: 40, background: darkMode ? '#1e293b' : '#fff', padding: 24, borderRadius: 8 }}>
+            <Title level={3} style={{ color: darkMode ? '#f1f5f9' : '#000' }}>Comments</Title>
             <div>
               {comments.map((item) => (
                 <CustomComment
@@ -361,6 +412,7 @@ const ArticleDetail = () => {
                   author={item.author}
                   content={item.content}
                   datetime={item.datetime}
+                  darkMode={darkMode}
                 />
               ))}
             </div>
@@ -375,10 +427,10 @@ const ArticleDetail = () => {
             {requiresLanding && (
               <Card 
                 style={{ 
-                  background: '#fff', 
+                  background: darkMode ? '#1e293b' : '#fff', 
                   borderRadius: 16, 
-                  border: '2px solid #e8ecf4',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                  border: darkMode ? '2px solid #334155' : '2px solid #e8ecf4',
+                  boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.08)',
                   overflow: 'hidden'
                 }}
               >
@@ -451,7 +503,7 @@ const ArticleDetail = () => {
                   {/* BEFORE SUBMIT: show form */}
                   {!hasAccess && (
                     <>
-                      <Text style={{ color: '#64748b', display: 'block', marginBottom: 20, fontSize: 14, lineHeight: 1.6 }}>
+                      <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', display: 'block', marginBottom: 20, fontSize: 14, lineHeight: 1.6 }}>
                         Fill in your details below to unlock the full article and get instant access.
                       </Text>
                       <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
@@ -468,13 +520,15 @@ const ArticleDetail = () => {
                                 rows={3} 
                                 style={{ 
                                   borderRadius: 8,
-                                  border: '1px solid #e2e8f0',
+                                  border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
                                   padding: '10px 12px',
                                   fontSize: 14,
-                                  transition: 'all 0.2s'
+                                  transition: 'all 0.2s',
+                                  background: darkMode ? '#0f172a' : '#fff',
+                                  color: darkMode ? '#f1f5f9' : '#000'
                                 }}
                                 onFocus={e => e.currentTarget.style.borderColor = '#4a7cff'}
-                                onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                                onBlur={e => e.currentTarget.style.borderColor = darkMode ? '#475569' : '#e2e8f0'}
                               />
                             ) : field.type === 'select' ? (
                               <Select 
@@ -496,7 +550,7 @@ const ArticleDetail = () => {
                                   required={field.required !== false}
                                   style={{ marginTop: 4, width: 16, height: 16, cursor: 'pointer' }}
                                 />
-                                <label htmlFor={field.name} style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5, cursor: 'pointer' }}>
+                                <label htmlFor={field.name} style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.5, cursor: 'pointer' }}>
                                   {field.consent_text || field.label}
                                   {field.redirect_link && (
                                     <a href={field.redirect_link} target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff', marginLeft: 4 }}>
@@ -511,13 +565,15 @@ const ArticleDetail = () => {
                                 placeholder={field.placeholder || field.label} 
                                 style={{ 
                                   borderRadius: 8,
-                                  border: '1px solid #e2e8f0',
+                                  border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
                                   padding: '10px 12px',
                                   fontSize: 14,
-                                  transition: 'all 0.2s'
+                                  transition: 'all 0.2s',
+                                  background: darkMode ? '#0f172a' : '#fff',
+                                  color: darkMode ? '#f1f5f9' : '#000'
                                 }}
                                 onFocus={e => e.currentTarget.style.borderColor = '#4a7cff'}
-                                onBlur={e => e.currentTarget.style.borderColor = '#e2e8f0'}
+                                onBlur={e => e.currentTarget.style.borderColor = darkMode ? '#475569' : '#e2e8f0'}
                               />
                             )}
                           </Form.Item>
@@ -567,15 +623,15 @@ const ArticleDetail = () => {
                         textAlign: 'center', 
                         marginBottom: 24,
                         padding: '16px',
-                        background: '#f0fdf4',
+                        background: darkMode ? 'rgba(34, 197, 94, 0.1)' : '#f0fdf4',
                         borderRadius: 8,
-                        border: '1px solid #bbf7d0'
+                        border: darkMode ? '1px solid #22c55e' : '1px solid #bbf7d0'
                       }}>
                         <div style={{ fontSize: 32, marginBottom: 8 }}>✅</div>
-                        <Text style={{ color: '#166534', fontSize: 15, fontWeight: 600, display: 'block' }}>
+                        <Text style={{ color: darkMode ? '#86efac' : '#166534', fontSize: 15, fontWeight: 600, display: 'block' }}>
                           Access Unlocked!
                         </Text>
-                        <Text style={{ color: '#15803d', fontSize: 13, display: 'block', marginTop: 4 }}>
+                        <Text style={{ color: darkMode ? '#4ade80' : '#15803d', fontSize: 13, display: 'block', marginTop: 4 }}>
                           Your details have been submitted successfully.
                         </Text>
                       </div>
@@ -583,19 +639,19 @@ const ArticleDetail = () => {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {/* Option 1: Read full article (+ PDF if available) */}
                         <div style={{ 
-                          background: '#f8fafc', 
+                          background: darkMode ? '#1e293b' : '#f8fafc', 
                           borderRadius: 12, 
                           padding: '16px', 
-                          border: '2px solid #e2e8f0',
+                          border: darkMode ? '2px solid #334155' : '2px solid #e2e8f0',
                           transition: 'all 0.2s'
                         }}
                         onMouseEnter={e => {
                           e.currentTarget.style.borderColor = '#4a7cff';
-                          e.currentTarget.style.background = '#f0f9ff';
+                          e.currentTarget.style.background = darkMode ? '#334155' : '#f0f9ff';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.borderColor = '#e2e8f0';
-                          e.currentTarget.style.background = '#f8fafc';
+                          e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                          e.currentTarget.style.background = darkMode ? '#1e293b' : '#f8fafc';
                         }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
@@ -606,8 +662,8 @@ const ArticleDetail = () => {
                               fontSize: 18
                             }}>📖</div>
                             <div>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>Read Full Article</div>
-                              <Text style={{ color: '#64748b', fontSize: 12 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: darkMode ? '#f1f5f9' : '#1e293b' }}>Read Full Article</div>
+                              <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12 }}>
                                 Full article is now unlocked above
                               </Text>
                             </div>
@@ -642,19 +698,19 @@ const ArticleDetail = () => {
 
                         {/* Option 2: Subscribe */}
                         <div style={{ 
-                          background: '#f8fafc', 
+                          background: darkMode ? '#1e293b' : '#f8fafc', 
                           borderRadius: 12, 
                           padding: '16px', 
-                          border: '2px solid #e2e8f0',
+                          border: darkMode ? '2px solid #334155' : '2px solid #e2e8f0',
                           transition: 'all 0.2s'
                         }}
                         onMouseEnter={e => {
                           e.currentTarget.style.borderColor = '#4a7cff';
-                          e.currentTarget.style.background = '#f0f9ff';
+                          e.currentTarget.style.background = darkMode ? '#334155' : '#f0f9ff';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.borderColor = '#e2e8f0';
-                          e.currentTarget.style.background = '#f8fafc';
+                          e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                          e.currentTarget.style.background = darkMode ? '#1e293b' : '#f8fafc';
                         }}
                         >
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
@@ -665,8 +721,8 @@ const ArticleDetail = () => {
                               fontSize: 18
                             }}>📧</div>
                             <div>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: '#1e293b' }}>Subscribe for Updates</div>
-                              <Text style={{ color: '#64748b', fontSize: 12 }}>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: darkMode ? '#f1f5f9' : '#1e293b' }}>Subscribe for Updates</div>
+                              <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12 }}>
                                 Get a confirmation email with access details
                               </Text>
                             </div>
@@ -705,25 +761,25 @@ const ArticleDetail = () => {
 
             {/* SEO Info Card — sidebar */}
             {(content.seo_meta_title || content.seo_meta_description || content.seo_meta_keywords) && (
-              <div style={{ background: '#fff', borderRadius: 10, border: '1px solid #e8ecf4', padding: '16px 18px' }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: '#1a1a2e', marginBottom: 12, paddingBottom: 8, borderBottom: '1px solid #f0f0f0' }}>
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 10, border: darkMode ? '1px solid #334155' : '1px solid #e8ecf4', padding: '16px 18px' }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: darkMode ? '#f1f5f9' : '#1a1a2e', marginBottom: 12, paddingBottom: 8, borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
                   🔍 SEO Info
                 </div>
                 {content.seo_meta_title && (
                   <div style={{ marginBottom: 10 }}>
-                    <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meta Title</Text>
-                    <div style={{ fontSize: 13, color: '#374151', marginTop: 2 }}>{content.seo_meta_title}</div>
+                    <Text style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: darkMode ? '#94a3b8' : '#64748b' }}>Meta Title</Text>
+                    <div style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#374151', marginTop: 2 }}>{content.seo_meta_title}</div>
                   </div>
                 )}
                 {content.seo_meta_description && (
                   <div style={{ marginBottom: 10 }}>
-                    <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Meta Description</Text>
-                    <div style={{ fontSize: 13, color: '#374151', marginTop: 2, lineHeight: 1.5 }}>{content.seo_meta_description}</div>
+                    <Text style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: darkMode ? '#94a3b8' : '#64748b' }}>Meta Description</Text>
+                    <div style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#374151', marginTop: 2, lineHeight: 1.5 }}>{content.seo_meta_description}</div>
                   </div>
                 )}
                 {content.seo_meta_keywords && (
                   <div>
-                    <Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Keywords</Text>
+                    <Text style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: darkMode ? '#94a3b8' : '#64748b' }}>Keywords</Text>
                     <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {content.seo_meta_keywords.split(',').map(k => k.trim()).filter(Boolean).map((k, i) => (
                         <Tag key={i} style={{ fontSize: 11, borderRadius: 12 }}>{k}</Tag>
@@ -737,7 +793,7 @@ const ArticleDetail = () => {
             {/* ── Related Articles — below landing card ── */}
             {relatedArticles.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', paddingBottom: 8, borderBottom: '2px solid #e8ecf4' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: darkMode ? '#f1f5f9' : '#1a1a2e', paddingBottom: 8, borderBottom: darkMode ? '2px solid #334155' : '2px solid #e8ecf4' }}>
                   Related Articles
                 </div>
                 {relatedArticles.map(article => (
@@ -755,8 +811,8 @@ const ArticleDetail = () => {
                       } catch { /* fall through */ }
                       navigate(`/article/${article.slug}`);
                     }}
-                    style={{ background: '#fff', borderRadius: 10, border: '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
+                    style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 10, border: darkMode ? '1px solid #334155' : '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
+                    onMouseEnter={e => e.currentTarget.style.boxShadow = darkMode ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.08)'}
                     onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
                   >
                     {article.banner_image
@@ -765,15 +821,15 @@ const ArticleDetail = () => {
                     }
                     <div style={{ padding: '10px 12px' }}>
                       <Tag color="blue" style={{ fontSize: 10, marginBottom: 6 }}>{article.category_name}</Tag>
-                      <div style={{ fontWeight: 600, fontSize: 13, color: '#0f172a', lineHeight: 1.4, marginBottom: 4,
+                      <div style={{ fontWeight: 600, fontSize: 13, color: darkMode ? '#f1f5f9' : '#0f172a', lineHeight: 1.4, marginBottom: 4,
                         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {article.title}
                       </div>
-                      <div style={{ fontSize: 11.5, color: '#6b7280', lineHeight: 1.4,
+                      <div style={{ fontSize: 11.5, color: darkMode ? '#94a3b8' : '#6b7280', lineHeight: 1.4,
                         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {article.short_description}
                       </div>
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#9ca3af', marginTop: 6 }}>
                         <CalendarOutlined style={{ marginRight: 3 }} />
                         {moment(article.published_date || article.created_at).format('MMM D, YYYY')}
                       </div>

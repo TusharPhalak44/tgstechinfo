@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, Globe, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const FEATURES = [
@@ -11,6 +12,7 @@ const FEATURES = [
 ];
 
 const Login = () => {
+  const { darkMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
@@ -66,7 +68,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-alt)] flex">
+    <div className="min-h-screen flex" style={{ background: darkMode ? '#0f172a' : 'var(--color-bg-alt)' }}>
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden bg-gradient-to-br from-[var(--color-primary)] via-[var(--color-primary-hover)] to-[var(--color-accent)]">
         {/* Background decorations */}

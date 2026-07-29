@@ -3,10 +3,12 @@ import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { MailOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useTheme } from '../context/ThemeContext';
 
 const { Title, Text } = Typography;
 
 const ForgotPassword = () => {
+  const { darkMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -24,11 +26,11 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-120px)] flex items-center justify-center p-6 bg-gradient-to-br from-primary-50 via-primary-100 to-[#f8f0ff]">
-      <Card className="w-full max-w-[420px] rounded-2xl shadow-[0_20px_60px_rgba(74,124,255,0.15)] border border-white/50 backdrop-blur-sm bg-white/95">
+    <div className="min-h-[calc(100vh-120px)] flex items-center justify-center p-6" style={{ background: darkMode ? '#0f172a' : 'linear-gradient(to bottom right, #eff6ff, #f0f9ff, #faf5ff)' }}>
+      <Card className="w-full max-w-[420px] rounded-2xl shadow-[0_20px_60px_rgba(74,124,255,0.15)] border border-white/50 backdrop-blur-sm" style={{ background: darkMode ? '#1e293b' : 'rgba(255,255,255,0.95)' }}>
         <div className="text-center px-2">
-          <Title level={2} className="!text-2xl !font-bold !mb-2 !text-[#1a1a2e]">Reset Password</Title>
-          <Text className="text-sm text-[#6c6c80]">Enter your email to receive a reset link</Text>
+          <Title level={2} className="!text-2xl !font-bold !mb-2" style={{ color: darkMode ? '#f1f5f9' : '#1a1a2e' }}>Reset Password</Title>
+          <Text className="text-sm" style={{ color: darkMode ? '#94a3b8' : '#6c6c80' }}>Enter your email to receive a reset link</Text>
         </div>
 
         {!submitted ? (
@@ -36,8 +38,8 @@ const ForgotPassword = () => {
             <Form.Item name="email" label="Email Address"
               rules={[{ required: true, message: 'Please enter your email' }, { type: 'email', message: 'Please enter a valid email' }]}
             >
-              <Input prefix={<MailOutlined className="text-gray-400" />} placeholder="you@example.com"
-                size="large" className="rounded-[10px] h-11 border-gray-200"
+              <Input prefix={<MailOutlined style={{ color: darkMode ? '#94a3b8' : '#9ca3af' }} />} placeholder="you@example.com"
+                size="large" style={{ borderRadius: 10, height: 44, borderColor: darkMode ? '#475569' : '#e5e7eb', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
               />
             </Form.Item>
 
@@ -57,12 +59,12 @@ const ForgotPassword = () => {
           </Form>
         ) : (
           <div className="text-center py-6">
-            <div className="w-16 h-16 rounded-full bg-[#d3f0df] flex items-center justify-center mx-auto mb-4 text-3xl">✅</div>
-            <Title level={4} className="!text-green-700">Check Your Email</Title>
-            <Text className="text-[#6c6c80]">We've sent a password reset link to your email address.</Text>
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl" style={{ background: darkMode ? 'rgba(34, 197, 94, 0.2)' : '#d3f0df' }}>✅</div>
+            <Title level={4} style={{ color: darkMode ? '#86efac' : '#166534' }}>Check Your Email</Title>
+            <Text style={{ color: darkMode ? '#94a3b8' : '#6c6c80' }}>We've sent a password reset link to your email address.</Text>
             <div className="mt-6">
               <Button type="primary" onClick={() => setSubmitted(false)} size="large"
-                className="rounded-xl h-11 border-primary-500 text-primary-500"
+                style={{ borderRadius: 12, height: 44, borderColor: '#4a7cff', color: '#4a7cff', background: 'transparent' }}
               >
                 Try Again
               </Button>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Input, Select, Button, DatePicker,
-  Upload, Space, Divider, Typography, Tooltip, App
+  Upload, Space, Divider, Typography, Tooltip, App, ConfigProvider
 } from 'antd';
 import {
   UploadOutlined, SaveOutlined, ArrowLeftOutlined,
@@ -12,6 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import TipTapEditor from '../common/TipTapEditor';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -22,6 +23,7 @@ const AdminEditContent = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const { message } = App.useApp();
+  const { darkMode } = useTheme();
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -123,16 +125,16 @@ const AdminEditContent = () => {
   const bannerImageUrl = fileList.length > 0 ? getImageUrl(fileList[0]) : null;
 
   if (fetching) return (
-    <div style={{ padding: window.innerWidth < 768 ? 20 : 40, textAlign: 'center', color: '#8c8c8c' }}>Loading content...</div>
+    <div style={{ padding: window.innerWidth < 768 ? 20 : 40, textAlign: 'center', color: darkMode ? '#94a3b8' : '#8c8c8c' }}>Loading content...</div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', background: darkMode ? '#0f172a' : '#f5f5f5' }}>
 
       {/* Top Header */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: '#fff', borderBottom: '1px solid #e8e8e8',
+        background: darkMode ? '#1e293b' : '#fff', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
         padding: window.innerWidth < 768 ? '0 16px' : '0 24px', height: 56,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
@@ -141,14 +143,14 @@ const AdminEditContent = () => {
             type="text"
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate(`/admin/review/${id}`)}
-            style={{ color: '#595959', padding: window.innerWidth < 768 ? '4px 8px' : '5px 15px' }}
+            style={{ color: darkMode ? '#cbd5e1' : '#595959', padding: window.innerWidth < 768 ? '4px 8px' : '5px 15px' }}
           >
             {window.innerWidth < 768 ? '' : 'Back to Review'}
           </Button>
           {window.innerWidth >= 768 && (
             <>
               <Divider orientation="vertical" style={{ margin: 0 }} />
-              <Text style={{ color: '#8c8c8c', fontSize: 13 }}>Admin Edit</Text>
+              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>Admin Edit</Text>
             </>
           )}
         </div>
@@ -165,15 +167,27 @@ const AdminEditContent = () => {
         </Space>
       </div>
 
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorBgContainer: darkMode ? '#1e293b' : '#fff',
+            colorText: darkMode ? '#cbd5e1' : '#374151',
+            colorBorder: darkMode ? '#475569' : '#d9d9d9',
+            colorBgElevated: darkMode ? '#1e293b' : '#fff',
+            colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+            colorPrimary: '#4a7cff',
+          },
+        }}
+      >
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: window.innerWidth < 768 ? '16px' : '32px 24px', display: 'flex', gap: window.innerWidth < 768 ? 0 : 24, alignItems: 'flex-start', flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
 
           {/* Main Content Area */}
           <div style={{ flex: 1, minWidth: 0, width: window.innerWidth < 768 ? '100%' : 'auto' }}>
 
             {/* Article Meta */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: '1px solid #e8e8e8' }}>
-              <Text style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+              <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 Article Details
               </Text>
               <div style={{ display: 'flex', gap: window.innerWidth < 768 ? 12 : 16, marginTop: 16, flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
@@ -191,12 +205,12 @@ const AdminEditContent = () => {
             </div>
 
             {/* Title + Description */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: '1px solid #e8e8e8' }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
               <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
                 <Input
                   placeholder="Article title..."
                   size={window.innerWidth < 768 ? 'default' : 'large'}
-                  style={{ fontSize: window.innerWidth < 768 ? 20 : 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }}
+                  style={{ fontSize: window.innerWidth < 768 ? 20 : 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }}
                 />
               </Form.Item>
               <Form.Item
@@ -204,25 +218,25 @@ const AdminEditContent = () => {
                 label={
                   <span>Short Description
                     <Tooltip title="A brief summary shown in article cards">
-                      <InfoCircleOutlined style={{ marginLeft: 6, color: '#8c8c8c', fontSize: 12 }} />
+                      <InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} />
                     </Tooltip>
                   </span>
                 }
                 rules={[{ required: true }]}
                 style={{ marginBottom: 0 }}
               >
-                <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} showCount maxLength={300} />
+                <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, color: darkMode ? '#f1f5f9' : '#000', background: darkMode ? '#0f172a' : '#fff' }} showCount maxLength={300} />
               </Form.Item>
             </div>
 
             {/* Banner Image */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: '1px solid #e8e8e8' }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : '24px 28px', marginBottom: window.innerWidth < 768 ? 16 : 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
               <div style={{ display: 'flex', alignItems: window.innerWidth < 768 ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 16, flexDirection: window.innerWidth < 768 ? 'column' : 'row', gap: window.innerWidth < 768 ? 12 : 0 }}>
                 <div>
-                  <Text strong style={{ fontSize: 14 }}>
+                  <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#000' }}>
                     <PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image
                   </Text>
-                  <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
+                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
                 </div>
                 <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
                   <Button icon={<UploadOutlined />} size="small">
@@ -231,27 +245,27 @@ const AdminEditContent = () => {
                 </Upload>
               </div>
               {bannerImageUrl ? (
-                <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+                <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
                   <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: window.innerWidth < 768 ? 240 : 360, objectFit: 'contain', display: 'block' }} />
                 </div>
               ) : (
-                <div style={{ border: '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: '#fafafa' }}>
-                  <PictureOutlined style={{ fontSize: 32, color: '#bfbfbf', marginBottom: 8, display: 'block' }} />
-                  <Text style={{ color: '#8c8c8c', fontSize: 13 }}>No banner image</Text>
+                <div style={{ border: darkMode ? '2px dashed #475569' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                  <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                  <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner image</Text>
                 </div>
               )}
             </div>
 
             {/* Content Editor */}
-            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: window.innerWidth < 768 ? 16 : 20 }}>
-              <div style={{ padding: window.innerWidth < 768 ? '12px 20px' : '16px 28px', borderBottom: '1px solid #f0f0f0' }}>
-                <Text strong style={{ fontSize: 14 }}>Content</Text>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', overflow: 'hidden', marginBottom: window.innerWidth < 768 ? 16 : 20 }}>
+              <div style={{ padding: window.innerWidth < 768 ? '12px 20px' : '16px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
+                <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#000' }}>Content</Text>
               </div>
               <div style={{ padding: '0 4px 4px' }}>
                 {editorReady ? (
-                  <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing..." />
+                  <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing..." darkMode={darkMode} />
                 ) : (
-                  <div style={{ padding: 40, textAlign: 'center', color: '#8c8c8c' }}>Loading editor...</div>
+                  <div style={{ padding: 40, textAlign: 'center', color: darkMode ? '#94a3b8' : '#8c8c8c' }}>Loading editor...</div>
                 )}
               </div>
             </div>
@@ -262,8 +276,8 @@ const AdminEditContent = () => {
           <div style={{ width: window.innerWidth < 768 ? '100%' : 300, flexShrink: 0 }}>
 
             {/* Tags */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, marginBottom: window.innerWidth < 768 ? 16 : 16, border: '1px solid #e8e8e8' }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, marginBottom: window.innerWidth < 768 ? 16 : 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#000' }}>
                 <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
               </Text>
               <Form.Item name="tags" style={{ marginBottom: 0 }}>
@@ -272,8 +286,8 @@ const AdminEditContent = () => {
             </div>
 
             {/* Schedule */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, marginBottom: window.innerWidth < 768 ? 16 : 16, border: '1px solid #e8e8e8' }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, marginBottom: window.innerWidth < 768 ? 16 : 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#000' }}>
                 <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
               </Text>
               <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }}>
@@ -282,17 +296,17 @@ const AdminEditContent = () => {
             </div>
 
             {/* SEO */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, border: '1px solid #e8e8e8' }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#000' }}>
                 <SettingOutlined style={{ marginRight: 6, color: '#4a7cff' }} />SEO Settings
               </Text>
-              <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12 }}>Meta Title</Text>} style={{ marginBottom: 12 }}>
+              <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#000' }}>Meta Title</Text>} style={{ marginBottom: 12 }}>
                 <Input placeholder="SEO title" size="small" />
               </Form.Item>
-              <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12 }}>Meta Description</Text>} style={{ marginBottom: 12 }}>
+              <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#000' }}>Meta Description</Text>} style={{ marginBottom: 12 }}>
                 <TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', fontSize: 12 }} />
               </Form.Item>
-              <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12 }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
+              <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#000' }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
                 <Input placeholder="keyword1, keyword2, ..." size="small" />
               </Form.Item>
             </div>
@@ -302,13 +316,13 @@ const AdminEditContent = () => {
               const contentType = contentTypes.find(t => t.id === selectedContentType);
               return contentType && contentType.slug === 'case-study';
             })() && (
-              <div style={{ background: '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, border: '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12 }}>
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: window.innerWidth < 768 ? '16px 20px' : 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#000' }}>
                   <MailOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Email Template
                 </Text>
                 <Form.Item
                   name="email_subject"
-                  label={<Text style={{ fontSize: 12 }}>Email Subject</Text>}
+                  label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#000' }}>Email Subject</Text>}
                   style={{ marginBottom: 12 }}
                   tooltip="Subject line for the email sent to users who fill the case study form. Use placeholders: {{name}}, {{title}}"
                 >
@@ -319,7 +333,7 @@ const AdminEditContent = () => {
                 </Form.Item>
                 <Form.Item
                   name="email_template"
-                  label={<Text style={{ fontSize: 12 }}>Email Body (HTML)</Text>}
+                  label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#000' }}>Email Body (HTML)</Text>}
                   style={{ marginBottom: 0 }}
                   tooltip="Custom HTML email body sent to users who fill the case study form. Use placeholders: {{name}}, {{title}}, {{email}}, {{contact}}, {{slug}}"
                 >
@@ -334,7 +348,8 @@ const AdminEditContent = () => {
 
           </div>
         </div>
-      </Form>
+        </Form>
+      </ConfigProvider>
     </div>
   );
 };

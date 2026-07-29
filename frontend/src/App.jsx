@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { Layout, ConfigProvider, App as AntApp } from 'antd';
 import { CookieProvider } from './context/CookieContext';
 import { TrackingProvider } from './context/TrackingContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
@@ -53,12 +53,12 @@ import Uploads from './components/admin/Uploads';
 import Categories from './components/admin/Categories';
 import Integrations from './components/admin/Integrations';
 import AuditLogs from './components/admin/AuditLogs';
-import Menus from './components/admin/Menus';
-import Navigation from './components/admin/Navigation';
 import Forms from './components/admin/Forms';
 import SEO from './components/admin/SEO';
 import Roles from './components/admin/Roles';
 import SessionManagement from './components/admin/SessionManagement';
+import Settings from './components/admin/Settings';
+import Tags from './components/admin/Tags';
 import SearchResults from './components/public/SearchResults';
 import ContactUs from './pages/ContactUs';
 import StandaloneLandingPage from './pages/StandaloneLandingPage';
@@ -78,7 +78,7 @@ const ScrollToTop = () => {
 
 // Simple 404 page
 const NotFound = () => (
-  <div style={{ textAlign: 'center', padding: '80px 24px' }}>
+  <div style={{ textAlign: 'center', padding: '80px 24px', background: '#f8f9fa', minHeight: '100vh' }}>
     <h1 style={{ fontSize: 72, fontWeight: 900, color: 'var(--color-primary)', margin: 0 }}>404</h1>
     <p style={{ fontSize: 20, color: 'var(--color-muted)', marginBottom: 32 }}>Page not found</p>
     <a href="/" style={{ background: 'var(--color-accent)', color: '#fff', padding: '12px 28px', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
@@ -140,6 +140,7 @@ const theme = {
 };
 
 function AppContent() {
+  const { darkMode } = useTheme();
   // All URL prefixes that render as a full-screen standalone landing page (no Navbar/Footer)
   const STANDALONE_PREFIXES = ['/content/', '/lp/', '/landing-page/'];
   const dashboardRoutes = ['/dashboard', '/create-content', '/my-content', '/my-submissions', '/admin', '/admin/users', '/admin/submissions', '/dashboard/analytics', '/dashboard/create-post', '/dashboard/drafts', '/dashboard/scheduled', '/dashboard/categories', '/dashboard/profile', '/dashboard/settings'];
@@ -169,11 +170,11 @@ function AppContent() {
           <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
         </Routes>
       ) : (
-        <Layout className="app-layout" style={{ background: '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Layout className="app-layout" style={{ background: darkMode ? '#0f172a' : '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           {!isAuthRoute && !isDashboardRoute && <Navbar />}
           <Content className="app-content" style={{
             minHeight: isAuthRoute || isDashboardRoute ? '100vh' : 'calc(100vh - 120px)',
-            background: isAuthRoute || isDashboardRoute ? 'transparent' : '#f8f9fa',
+            background: isAuthRoute || isDashboardRoute ? 'transparent' : (darkMode ? '#0f172a' : '#f8f9fa'),
             flex: 1,
             paddingTop: isAuthRoute || isDashboardRoute ? 0 : 61
           }}>
@@ -241,12 +242,10 @@ function AppContent() {
                 <Route path="pending-review" element={<ContentReview />} />
                 <Route path="drafts" element={<ContentListing />} />
                 <Route path="create-post" element={<CreateContent />} />
-                <Route path="tags" element={<Categories />} />
+                <Route path="tags" element={<Tags />} />
                 <Route path="media-library" element={<MediaLibrary />} />
                 <Route path="uploads" element={<Uploads />} />
                 <Route path="categories" element={<Categories />} />
-                <Route path="menus" element={<Menus />} />
-                <Route path="navigation" element={<Navigation />} />
                 <Route path="forms" element={<Forms />} />
                 <Route path="seo" element={<SEO />} />
                 <Route path="users" element={<UserManagement />} />
@@ -257,10 +256,42 @@ function AppContent() {
                 <Route path="sessions" element={<SessionManagement />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="settings" element={<UserProfile />} />
+                <Route path="settings" element={<Settings />} />
                 {/* User sub-routes */}
                 <Route index element={<Dashboard />} />
                 <Route path="my-content" element={<MyContent />} />
                 <Route path="scheduled" element={<MyContent />} />
+              </Route>
+
+              {/* Admin Routes - dedicated admin dashboard route */}
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <DashboardLayout />
+                </AdminRoute>
+              }>
+                <Route index element={<AdminDashboard />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="content" element={<AdminContent />} />
+                <Route path="pending-review" element={<ContentReview />} />
+                <Route path="drafts" element={<ContentListing />} />
+                <Route path="create-post" element={<CreateContent />} />
+                <Route path="tags" element={<Tags />} />
+                <Route path="media-library" element={<MediaLibrary />} />
+                <Route path="uploads" element={<Uploads />} />
+                <Route path="categories" element={<Categories />} />
+                <Route path="forms" element={<Forms />} />
+                <Route path="seo" element={<SEO />} />
+                <Route path="users" element={<UserManagement />} />
+                <Route path="roles" element={<Roles />} />
+                <Route path="permissions" element={<Roles />} />
+                <Route path="audit-logs" element={<AuditLogs />} />
+                <Route path="integrations" element={<Integrations />} />
+                <Route path="sessions" element={<SessionManagement />} />
+                <Route path="profile" element={<UserProfile />} />
+                <Route path="settings" element={<UserProfile />} />
+                <Route path="submissions" element={<AdminSubmissions />} />
+                <Route path="review/:id" element={<ArticleReviewPage />} />
+                <Route path="edit/:id" element={<AdminEditContent />} />
               </Route>
 
               {/* Legacy routes for backward compatibility */}
@@ -289,19 +320,6 @@ function AppContent() {
                   <UserSubmissions />
                 </PrivateRoute>
               } />
-
-              {/* Admin Routes */}
-              <Route path="/admin" element={
-                <AdminRoute>
-                  <DashboardLayout />
-                </AdminRoute>
-              }>
-                <Route index element={<AdminDashboard />} />
-                <Route path="users" element={<UserManagement />} />
-                <Route path="submissions" element={<AdminSubmissions />} />
-                <Route path="review/:id" element={<ArticleReviewPage />} />
-                <Route path="edit/:id" element={<AdminEditContent />} />
-              </Route>
 
               {/* 404 catch-all */}
               <Route path="*" element={<NotFound />} />

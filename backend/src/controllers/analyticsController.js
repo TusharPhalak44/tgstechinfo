@@ -18,8 +18,74 @@ exports.getOverview = async (req, res) => {
         if (start_date) filters.start_date = start_date;
         if (end_date) filters.end_date = end_date;
 
-        // Get session analytics
-        const sessionAnalytics = await VisitorSession.getAnalytics(filters);
+        // Get session analytics - aggregate without grouping
+        let baseWhere = ' WHERE 1=1';
+        const values = [];
+
+        if (filters.start_date) {
+            baseWhere += ' AND session_start >= ?';
+            values.push(filters.start_date);
+        }
+        if (filters.end_date) {
+            baseWhere += ' AND session_start <= ?';
+            values.push(filters.end_date);
+        }
+
+        const sessionQuery = `
+            SELECT 
+                COUNT(*) as totalSessions,
+                AVG(total_session_duration) as avgSessionDuration,
+                AVG(total_pages_visited) as avgPagesPerSession,
+                COUNT(DISTINCT ip_address) as uniqueVisitors,
+                SUM(CASE WHEN total_pages_visited = 1 THEN 1 ELSE 0 END) as bounceCount
+            FROM visitor_sessions
+            ${baseWhere}
+        `;
+        const [sessionRows] = await require('../config/database').pool.query(sessionQuery, values);
+        
+        const sessionData = sessionRows[0] || {};
+        const totalSessions = sessionData.totalSessions || 0;
+        const bounceRate = totalSessions > 0 ? Math.round((sessionData.bounceCount / totalSessions) * 100) : 0;
+
+        const sessionAnalytics = {
+            totalSessions: totalSessions,
+            avgSessionDuration: Math.round(sessionData.avgSessionDuration || 0),
+            avgPagesPerSession: Math.round(sessionData.avgPagesPerSession || 0),
+            uniqueVisitors: sessionData.uniqueVisitors || 0,
+            bounceRate: bounceRate,
+        };
+
+        // Get daily sessions for chart
+        const dailySessionsQuery = `
+            SELECT 
+                DATE(session_start) as date,
+                COUNT(*) as session_count
+            FROM visitor_sessions
+            ${baseWhere}
+            GROUP BY DATE(session_start)
+            ORDER BY date ASC
+        `;
+        const [dailySessionsRows] = await require('../config/database').pool.query(dailySessionsQuery, values);
+        sessionAnalytics.dailySessions = dailySessionsRows;
+
+        // Get landing pages data with real conversion counts
+        const landingPagesQuery = `
+            SELECT 
+                vs.landing_page,
+                COUNT(*) as session_count,
+                COALESCE(COUNT(DISTINCT c.id), 0) as conversion_count
+            FROM visitor_sessions vs
+            LEFT JOIN conversions c ON vs.session_uuid = c.session_uuid 
+                AND c.created_at >= COALESCE(?, '1970-01-01')
+                AND c.created_at <= COALESCE(?, NOW())
+            ${baseWhere}
+            GROUP BY vs.landing_page
+            ORDER BY session_count DESC
+            LIMIT 5
+        `;
+        const landingPagesValues = [start_date || '1970-01-01', end_date || new Date(), ...values];
+        const [landingPagesRows] = await require('../config/database').pool.query(landingPagesQuery, landingPagesValues);
+        sessionAnalytics.landingPages = landingPagesRows;
 
         // Get total page views
         const pageViewQuery = `

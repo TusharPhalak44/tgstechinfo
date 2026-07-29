@@ -1,15 +1,63 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { message } from 'antd';
+import { useAuth } from './AuthContext';
 
 const ChatContext = createContext();
 export const useChat = () => useContext(ChatContext);
 
-export const ChatProvider = ({ children }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
+const serializeMessages = (msgs) => msgs.map(m => ({
+  ...m,
+  timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : m.timestamp,
+  data: m.data ? {
+    ...m.data,
+    onCategoryClick: undefined, onContentClick: undefined,
+    onVisitPage: undefined, onContinueChat: undefined, onStopChat: undefined
+  } : m.data
+}));
 
-  // searchedQuery = the query that was actually submitted (shown in results header)
+// Storage helpers — logged-in users use localStorage with user-specific key, guests use sessionStorage
+const getStorage = (userId) => userId ? localStorage : sessionStorage;
+const getMsgKey = (userId) => userId ? `chatbot_messages_${userId}` : 'chatbot_messages_guest';
+const getEndedKey = (userId) => userId ? `chatbot_ended_${userId}` : 'chatbot_ended_guest';
+
+// For guests: tab_active flag is set once per JS session.
+// On page refresh, JS memory resets but sessionStorage stays —
+// we detect refresh by checking if flag was already set BEFORE this JS load.
+// We use a two-key approach: one in sessionStorage (survives refresh) and
+// one in a module-level variable (resets on refresh).
+let _tabSessionInitialized = false;
+
+const initGuestSession = () => {
+  if (_tabSessionInitialized) return;
+  _tabSessionInitialized = true;
+  // Clear guest chat on every fresh JS load (refresh or new tab)
+  sessionStorage.removeItem('chatbot_messages_guest');
+  sessionStorage.removeItem('chatbot_ended_guest');
+};
+
+const loadMessages = (userId) => {
+  try {
+    const saved = getStorage(userId).getItem(getMsgKey(userId));
+    return saved ? JSON.parse(saved) : [];
+  } catch { return []; }
+};
+
+const loadChatEnded = (userId) => {
+  try {
+    return getStorage(userId).getItem(getEndedKey(userId)) === 'true';
+  } catch { return false; }
+};
+
+export const ChatProvider = ({ children }) => {
+  const { user } = useAuth();
+  const userId = user?.id || null;
+
+  // Clear guest chat on every page refresh/load (module var resets on JS reload)
+  if (!userId) initGuestSession();
+
+  const [isOpen, setIsOpenState] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [searchedQuery, setSearchedQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -17,11 +65,45 @@ export const ChatProvider = ({ children }) => {
   const [knowledgeBaseAnswer, setKnowledgeBaseAnswer] = useState(null);
   const [relatedSuggestions, setRelatedSuggestions] = useState([]);
   const [showQueryForm, setShowQueryForm] = useState(false);
-
+  const [showBusinessInquiryForm, setShowBusinessInquiryForm] = useState(false);
+  const [messages, setMessagesState] = useState(() => loadMessages(null));
+  const [isTyping, setIsTyping] = useState(false);
+  const [chatEnded, setChatEndedState] = useState(() => loadChatEnded(null));
   const [categories, setCategories] = useState([]);
   const [trending, setTrending] = useState([]);
   const [recentSearches, setRecentSearches] = useState([]);
   const [sessionId, setSessionId] = useState(null);
+
+  // When user logs in or out — load their specific chat history
+  useEffect(() => {
+    const savedMsgs = loadMessages(userId);
+    const savedEnded = loadChatEnded(userId);
+    setMessagesState(savedMsgs);
+    setChatEndedState(savedEnded);
+  }, [userId]);
+
+  const saveMessages = useCallback((msgs, uid) => {
+    try {
+      getStorage(uid).setItem(getMsgKey(uid), JSON.stringify(serializeMessages(msgs)));
+    } catch { /* silent */ }
+  }, []);
+
+  const setMessages = useCallback((updater) => {
+    setMessagesState(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      saveMessages(next, userId);
+      return next;
+    });
+  }, [userId, saveMessages]);
+
+  const setChatEnded = useCallback((val) => {
+    setChatEndedState(val);
+    try { getStorage(userId).setItem(getEndedKey(userId), String(val)); } catch { /* silent */ }
+  }, [userId]);
+
+  const setIsOpen = (val) => {
+    setIsOpenState(prev => typeof val === 'function' ? val(prev) : val);
+  };
 
   useEffect(() => {
     let id = localStorage.getItem('chatbot_session_id');
@@ -87,31 +169,25 @@ export const ChatProvider = ({ children }) => {
   const search = async (searchQuery) => {
     const q = searchQuery.trim();
     if (!q) return;
-
     setIsSearching(true);
     setSearchResults([]);
-    setSearchedQuery('');  // clear until results arrive
-
+    setSearchedQuery('');
     try {
       const response = await api.post('/api/chatbot/search', {
         query: q, searchType: 'keyword', sessionId, limit: 10
       });
       const results = response.data.results || [];
       setSearchResults(results);
-      setSearchedQuery(q);  // only set AFTER results are ready
+      setSearchedQuery(q);
       saveRecentSearch(q);
-
-      // fire-and-forget logging
       api.post('/api/chatbot/message', {
         sessionId, messageType: 'user', message: q,
         metadata: { searchType: 'keyword', resultsCount: results.length }
       }).catch(() => {});
-
     } catch (error) {
-      console.error('Search failed:', error);
       message.error('Search failed. Please try again.');
       setSearchResults([]);
-      setSearchedQuery(q);  // still show 404 with correct query
+      setSearchedQuery(q);
     } finally {
       setIsSearching(false);
     }
@@ -120,8 +196,7 @@ export const ChatProvider = ({ children }) => {
   const logClick = async (contentId, position = 0) => {
     try {
       await api.post('/api/chatbot/click', {
-        sessionId, contentId, searchQuery: searchedQuery,
-        searchType: 'keyword', position
+        sessionId, contentId, searchQuery: searchedQuery, searchType: 'keyword', position
       });
     } catch (e) { /* silent */ }
   };
@@ -133,7 +208,33 @@ export const ChatProvider = ({ children }) => {
     setKnowledgeBaseAnswer(null);
     setRelatedSuggestions([]);
     setShowQueryForm(false);
+    setShowBusinessInquiryForm(false);
   };
+
+  const addUserMessage = (text) => {
+    const msg = { id: Date.now(), role: 'user', text, type: 'text', timestamp: new Date() };
+    setMessages(prev => [...prev, msg]);
+  };
+
+  const addBotMessage = (text, type = 'text', data = null) => {
+    const msg = { id: Date.now(), role: 'bot', text, type, data, timestamp: new Date() };
+    setMessages(prev => [...prev, msg]);
+  };
+
+  const showTypingIndicator = () => setIsTyping(true);
+  const hideTypingIndicator = () => setIsTyping(false);
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setChatEnded(false);
+    try {
+      getStorage(userId).removeItem(getMsgKey(userId));
+      getStorage(userId).removeItem(getEndedKey(userId));
+    } catch { /* silent */ }
+    clearSearch();
+  };
+
+  const endChat = () => setChatEnded(true);
 
   const detectIntent = async (query) => {
     try {
@@ -160,10 +261,75 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const handleCategoryClick = async (category) => {
+    if (category === 'Other') {
+      addBotMessage('Please provide your detailed query below:', 'text');
+      setShowQueryForm(true);
+      return;
+    }
+
+    addUserMessage(category);
+    showTypingIndicator();
+
+    try {
+      const contentTypeMap = {
+        'articles': 'article', 'blogs': 'blog', 'news': 'news',
+        'whitepapers': 'whitepaper', 'reports': 'report',
+        'webinars': 'webinar', 'events': 'event', 'resources': 'resource',
+      };
+      const mappedType = contentTypeMap[category.toLowerCase()];
+      let results = [];
+
+      if (mappedType) {
+        const response = await api.post('/api/chatbot/search', {
+          query: mappedType, searchType: 'content_type', sessionId, limit: 10
+        });
+        results = response.data.results || [];
+        if (results.length === 0) {
+          const fallback = await api.post('/api/chatbot/search', {
+            query: mappedType, searchType: 'keyword', sessionId, limit: 10
+          });
+          results = fallback.data.results || [];
+        }
+      } else {
+        const categoriesResponse = await api.get('/api/chatbot/categories');
+        const allCategories = categoriesResponse.data.categories || [];
+        const matchedCategory = allCategories.find(cat =>
+          cat.name.toLowerCase() === category.toLowerCase()
+        );
+        if (matchedCategory) {
+          const response = await api.post('/api/chatbot/search', {
+            query: category, searchType: 'keyword', categoryId: matchedCategory.id, sessionId, limit: 10
+          });
+          results = response.data.results || [];
+        } else {
+          const response = await api.post('/api/chatbot/search', {
+            query: category, searchType: 'keyword', sessionId, limit: 10
+          });
+          results = response.data.results || [];
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+      hideTypingIndicator();
+
+      if (results.length > 0) {
+        addBotMessage(`Found ${results.length} results for "${category}"`, 'content_cards', { results });
+        setSearchResults(results);
+      } else {
+        addBotMessage(`No content found for "${category}". Try searching for a specific topic.`, 'text');
+      }
+    } catch (error) {
+      hideTypingIndicator();
+      addBotMessage('Failed to load content. Please try again.', 'text');
+    }
+  };
+
   const handleSearchWithIntent = async (searchQuery) => {
     const q = searchQuery.trim();
-    if (!q) return;
+    if (!q || chatEnded) return;
 
+    addUserMessage(q);
     setIsSearching(true);
     setSearchResults([]);
     setSearchedQuery('');
@@ -171,132 +337,138 @@ export const ChatProvider = ({ children }) => {
     setKnowledgeBaseAnswer(null);
     setRelatedSuggestions([]);
     setShowQueryForm(false);
+    setShowBusinessInquiryForm(false);
 
     try {
-      // NEW ROUTING PRIORITY: Search database FIRST, then intent detection
-      console.log('[ChatContext] Step 1: Searching database for query:', q);
-      
-      const searchParams = {
-        query: q,
-        searchType: 'keyword',
-        sessionId,
-        limit: 10
-      };
+      const intentResult = await detectIntent(q);
+      setCurrentIntent(intentResult);
 
-      const response = await api.post('/api/chatbot/search', searchParams);
-      const results = response.data.results || [];
-      
-      console.log('[ChatContext] Database search results count:', results.length);
-      
-      // If database has results, return immediately (highest priority)
-      if (results.length > 0) {
-        console.log('[ChatContext] Found results in database, returning search results');
-        setSearchResults(results);
+      showTypingIndicator();
+      await new Promise(resolve => setTimeout(resolve, 800));
+      hideTypingIndicator();
+
+      if (intentResult.intent === 'greeting') {
+        addBotMessage('Hello! 👋\n\nWelcome to our Content Discovery Assistant.\n\nWhat would you like to explore today?', 'category_cards', {
+          categories: ['Articles', 'News', 'Blogs', 'Whitepapers', 'Reports', 'Webinars', 'Events', 'Resources', 'Other'],
+          onCategoryClick: handleCategoryClick
+        });
+        setSearchedQuery(q);
+        setIsSearching(false);
+        return;
+      }
+
+      if (intentResult.intent === 'business_inquiry') {
+        addBotMessage('I can help you with business inquiries. Please provide your details below.', 'text');
+        setShowBusinessInquiryForm(true);
+        setSearchedQuery(q);
+        setIsSearching(false);
+        return;
+      }
+
+      const contentTypeMap = {
+        'articles': 'article', 'article': 'article',
+        'blogs': 'blog', 'blog': 'blog', 'news': 'news',
+        'whitepapers': 'whitepaper', 'whitepaper': 'whitepaper',
+        'ebooks': 'ebook', 'ebook': 'ebook',
+        'reports': 'report', 'report': 'report',
+        'webinars': 'webinar', 'webinar': 'webinar',
+        'events': 'event', 'event': 'event',
+        'resources': 'resource', 'resource': 'resource',
+        'interviews': 'interview', 'interview': 'interview',
+        'case studies': 'case-study', 'case-study': 'case-study',
+      };
+      const mappedContentType = contentTypeMap[q.toLowerCase().trim()];
+      let dbResults = [];
+
+      if (mappedContentType) {
+        const r = await api.post('/api/chatbot/search', {
+          query: mappedContentType, searchType: 'content_type', sessionId, limit: 10
+        });
+        dbResults = r.data.results || [];
+      }
+
+      if (dbResults.length === 0) {
+        const r = await api.post('/api/chatbot/search', {
+          query: q, searchType: 'keyword', sessionId, limit: 10
+        });
+        dbResults = r.data.results || [];
+      }
+
+      if (dbResults.length > 0) {
+        addBotMessage(`Found ${dbResults.length} results for "${q}"`, 'content_cards', { results: dbResults });
+        setSearchResults(dbResults);
         setSearchedQuery(q);
         saveRecentSearch(q);
         setIsSearching(false);
-        
-        // fire-and-forget logging
         api.post('/api/chatbot/message', {
           sessionId, messageType: 'user', message: q,
-          metadata: { intent: 'content_search', resultsCount: results.length }
+          metadata: { intent: intentResult.intent, resultsCount: dbResults.length }
         }).catch(() => {});
         return;
       }
-      
-      // Database has NO results - now run intent detection
-      console.log('[ChatContext] Step 2: No database results, running intent detection');
-      const intentResult = await detectIntent(q);
-      setCurrentIntent(intentResult);
-      console.log('[ChatContext] Detected intent:', intentResult.intent);
 
-      // Handle greeting intent
-      if (intentResult.intent === 'greeting') {
-        setKnowledgeBaseAnswer({
-          title: 'Hello!',
-          content: 'How can I help you today? You can ask me about Articles, Whitepapers, Reports, Services, Contact, and more.',
-          link: null
-        });
-        setSearchedQuery(q);
-        return;
-      }
-
-      // Handle business inquiry intent - show query form
-      if (intentResult.intent === 'business_inquiry') {
-        console.log('[ChatContext] Showing Business Inquiry form - intent: business_inquiry');
-        setShowQueryForm(true);
-        setSearchedQuery(q);
-        return;
-      }
-
-      // Handle unknown intent with too_short reason
-      if (intentResult.intent === 'unknown' && intentResult.reason) {
-        setKnowledgeBaseAnswer({
-          title: 'I\'m sorry',
-          content: 'I didn\'t understand your request. Please provide more details or ask me about Articles, Whitepapers, Services, Contact, etc.',
-          link: null
-        });
-        setSearchedQuery(q);
-        return;
-      }
-
-      // If intent is website_question with answer, show it
       if (intentResult.intent === 'website_question' && intentResult.answer) {
-        console.log('[ChatContext] Showing knowledge base answer for website question');
-        setKnowledgeBaseAnswer(intentResult.answer);
+        addBotMessage(intentResult.answer.content, 'page_info', {
+          title: intentResult.answer.title,
+          summary: intentResult.answer.content,
+          link: intentResult.answer.link
+        });
         setSearchedQuery(q);
         saveRecentSearch(q);
+        setIsSearching(false);
         return;
       }
 
-      // No results and no specific intent - show related suggestions
-      console.log('[ChatContext] No specific intent, getting related suggestions');
+      const trendingTopics = trending.map(t => t.title || t.category || t.name || '').filter(Boolean).slice(0, 5);
       const suggestions = await getRelatedSuggestions(q);
-      console.log('[ChatContext] Related suggestions count:', suggestions.length);
-      if (suggestions.length > 0) {
-        setRelatedSuggestions(suggestions);
-        setSearchedQuery(q);
-      } else {
-        console.log('[ChatContext] No suggestions, showing Business Inquiry form (fallback)');
-        setShowQueryForm(true);
-        setSearchedQuery(q);
-      }
+      const allSuggestions = [...new Set([...trendingTopics, ...suggestions])]
+        .filter(s => typeof s === 'string' && s.trim()).slice(0, 8);
 
-      // fire-and-forget logging
+      addBotMessage(`Sorry, no content found for "${q}".`, 'text');
+      if (allSuggestions.length > 0) {
+        addBotMessage('You might be interested in:', 'category_cards', {
+          categories: allSuggestions,
+          onCategoryClick: (suggestion) => handleSearchWithIntent(suggestion)
+        });
+      }
+      setShowQueryForm(true);
+      setRelatedSuggestions(allSuggestions);
+      setSearchedQuery(q);
+      setIsSearching(false);
       api.post('/api/chatbot/message', {
         sessionId, messageType: 'user', message: q,
         metadata: { intent: intentResult.intent, resultsCount: 0 }
       }).catch(() => {});
 
     } catch (error) {
-      console.error('Search failed:', error);
+      hideTypingIndicator();
+      addBotMessage('Search failed. Please try again.', 'text');
       message.error('Search failed. Please try again.');
       setSearchResults([]);
       setSearchedQuery(q);
-    } finally {
       setIsSearching(false);
     }
   };
 
   const value = {
     isOpen, isMinimized,
-    query: searchedQuery,       // keep 'query' name for compatibility
+    query: searchedQuery,
     searchResults, isSearching,
     categories, trending, recentSearches,
     sessionId,
-    currentIntent,
-    knowledgeBaseAnswer,
-    relatedSuggestions,
-    showQueryForm,
+    currentIntent, knowledgeBaseAnswer, relatedSuggestions,
+    showQueryForm, showBusinessInquiryForm,
+    messages, isTyping, chatEnded,
     toggleChat: () => { setIsOpen(o => !o); setIsMinimized(false); },
     minimizeChat: () => setIsMinimized(m => !m),
     search, clearSearch, logClick, removeRecentSearch,
-    setQuery: setSearchedQuery,  // keep for compatibility
-    handleSearchWithIntent,
-    detectIntent,
-    getRelatedSuggestions,
-    submitQuery,
+    setQuery: setSearchedQuery,
+    handleSearchWithIntent, handleCategoryClick,
+    detectIntent, getRelatedSuggestions, submitQuery,
     setShowQueryForm,
+    addUserMessage, addBotMessage,
+    showTypingIndicator, hideTypingIndicator,
+    startNewConversation, endChat,
     autocomplete: async (q) => {
       try {
         const r = await api.get('/api/chatbot/autocomplete', { params: { query: q, limit: 5 } });

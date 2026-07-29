@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import CookiePreferencesModal from './CookieBanner';
 import axios from 'axios';
+import { useTheme } from '../../context/ThemeContext';
 
 const FooterLink = ({ to, children }) => (
   <Link to={to} style={{
@@ -43,11 +44,12 @@ const ColHead = ({ children, accent = 'var(--color-accent)' }) => (
     <div style={{ fontWeight: 700, fontSize: 12, color: accent, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 4 }}>
       {children}
     </div>
-    <div style={{ width: 24, height: 2, background: accent, borderRadius: 2 }} />
+    <div style={{ width: 12, height: 2, background: accent, borderRadius: 2 }} />
   </div>
 );
 
 const Footer = ({ simplified = false }) => {
+  const { darkMode } = useTheme();
   const year = new Date().getFullYear();
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
@@ -79,7 +81,7 @@ const Footer = ({ simplified = false }) => {
   // Simplified footer for dashboard pages
   if (simplified) {
     return (
-      <footer style={{ background: 'var(--color-primary)', marginTop: 0, borderTop: '1px solid var(--color-border)' }}>
+      <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 13, color: 'var(--color-muted)' }}>
             © {year} <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>TGS Tech Info</span>. All rights reserved.
@@ -123,7 +125,7 @@ const Footer = ({ simplified = false }) => {
 
   // Full footer for public pages
   return (
-    <footer style={{ background: 'var(--color-primary)', marginTop: 0 }}>
+    <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0 }}>
 
       {/* ── Main footer ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 44px' }}>
@@ -222,27 +224,27 @@ const Footer = ({ simplified = false }) => {
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <MailOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>contact@tgstechinfo.com</span>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>info@tgstechinfo.com</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <PhoneOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>+1 (555) 123-4567</span>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>+91 96655-99442</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>123 Tech Park, Silicon Valley, CA</span>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>The Space Business Complex Office No 512-516, Grant Rd, Kharadi, Pune, Maharashtra 411014</span>
               </div>
             </div>
 
             {/* Newsletter */}
-            <div style={{ background: 'var(--color-primary-light)', border: '1px solid var(--color-border)', borderRadius: 12, padding: '16px' }}>
+            <div style={{ background: darkMode ? 'rgba(30, 41, 59, 0.5)' : 'var(--color-primary-light)', border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', borderRadius: 12, padding: '16px' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Newsletter</div>
               <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 10 }}>Weekly tech digest, free.</div>
-              <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--color-border)' }}>
+              <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)' }}>
                 <input
                   type="email"
                   placeholder="your@email.com"
@@ -251,7 +253,7 @@ const Footer = ({ simplified = false }) => {
                   disabled={newsletterLoading}
                   style={{
                     flex: 1, padding: '9px 12px', border: 'none', fontSize: 12,
-                    outline: 'none', background: 'var(--color-surface)', color: 'var(--color-heading)'
+                    outline: 'none', background: darkMode ? '#0f172a' : 'var(--color-surface)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)'
                   }}
                 />
                 <button
@@ -273,7 +275,7 @@ const Footer = ({ simplified = false }) => {
       </div>
 
       {/* ── Divider ── */}
-      <div style={{ height: 1, background: 'var(--color-border)', margin: '0 24px' }} />
+      <div style={{ height: 1, background: darkMode ? '#334155' : 'var(--color-border)', margin: '0 24px' }} />
 
       {/* ── Bottom bar ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>

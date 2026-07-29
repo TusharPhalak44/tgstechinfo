@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Tag, Switch, Button, Space, Typography, message, Modal, Form, Input, Select, Grid } from 'antd';
+import { Table, Card, Tag, Switch, Button, Space, Typography, message, Modal, Form, Input, Select, Grid, ConfigProvider } from 'antd';
 import { UserOutlined, EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import PermissionWrapper from '../common/PermissionWrapper';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -14,6 +15,7 @@ const UserManagement = () => {
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
   const isDesktop = screens.lg;
+  const { darkMode } = useTheme();
 
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -77,6 +79,12 @@ const UserManagement = () => {
     }
   };
 
+    const handleAddUser = () => {
+    setEditingUser(null);
+    form.resetFields();
+    setModalVisible(true);
+  };
+
   const handleEdit = (user) => {
     setEditingUser(user);
     form.setFieldsValue(user);
@@ -85,13 +93,21 @@ const UserManagement = () => {
 
   const handleSave = async (values) => {
     try {
-      await axios.put(`/api/admin/users/${editingUser.id}`, values);
-      message.success('User updated successfully');
+      if (editingUser) {
+        await axios.put(`/api/admin/users/${editingUser.id}`, values);
+        message.success('User updated successfully');
+      } else {
+        await axios.post('/api/admin/users', values);
+        message.success('User created successfully');
+      }
       setModalVisible(false);
+      setEditingUser(null);
+      form.resetFields();
       fetchUsers();
     } catch (error) {
-      console.error('Error updating user:', error);
-      message.error('Failed to update user');
+      console.error('Error saving user:', error);
+      const msg = error.response?.data?.message;
+      message.error(msg || (editingUser ? 'Failed to update user' : 'Failed to create user'));
     }
   };
 
@@ -121,7 +137,7 @@ const UserManagement = () => {
       title: 'Name',
       key: 'name',
       width: isMobile ? 100 : 150,
-      render: (_, record) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{`${record.first_name} ${record.last_name}`}</Text>
+      render: (_, record) => <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{`${record.first_name} ${record.last_name}`}</Text>
     },
     {
       title: 'Email',
@@ -129,7 +145,7 @@ const UserManagement = () => {
       key: 'email',
       width: isMobile ? 120 : 200,
       ellipsis: true,
-      render: (email) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{email}</Text>
+      render: (email) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{email}</Text>
     },
     {
       title: 'Role',
@@ -163,7 +179,7 @@ const UserManagement = () => {
       key: 'created_at',
       width: isMobile ? 90 : 120,
       responsive: ['lg'],
-      render: (date) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{moment(date).format('MMM D, YYYY')}</Text>
+      render: (date) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{moment(date).format('MMM D, YYYY')}</Text>
     },
     {
       title: 'Actions',
@@ -197,144 +213,176 @@ const UserManagement = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <Card>
-        <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <Title level={isMobile ? 4 : 3} style={{ fontSize: isMobile ? 20 : 24 }}>User Management</Title>
-          <Button type="primary" icon={<PlusOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>
-            Add User
-          </Button>
-        </div>
-
-        <Table
-          columns={columns}
-          dataSource={users}
-          loading={loading}
-          rowKey="id"
-          scroll={{ x: isMobile ? 800 : 1000 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: !isMobile,
-            showQuickJumper: !isMobile,
-            showTotal: !isMobile ? (total) => `Total ${total} users` : false,
-            simple: isMobile,
-            size: isMobile ? 'small' : 'default',
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorText: darkMode ? '#cbd5e1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#e5e7eb',
+          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+        },
+      }}
+    >
+      <div className="p-4 md:p-6 lg:p-8">
+        <Card
+          style={{
+            borderRadius: 12,
+            border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+            boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
           }}
-          size={isMobile ? 'small' : 'middle'}
-          style={{ fontSize: isMobile ? 12 : 14 }}
-        />
-      </Card>
-
-      <Modal
-        title={editingUser ? 'Edit User' : 'Add User'}
-        open={modalVisible}
-        onCancel={() => {
-          setModalVisible(false);
-          setEditingUser(null);
-          form.resetFields();
-        }}
-        footer={null}
-        width={isMobile ? '100%' : 600}
-        style={{ top: isMobile ? 0 : 20 }}
-        bodyStyle={{ padding: isMobile ? 16 : 24 }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSave}
         >
-          <Form.Item
-            name="first_name"
-            label="First Name"
-            rules={[{ required: true, message: 'Please enter first name' }]}
-          >
-            <Input />
-          </Form.Item>
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <Title level={isMobile ? 4 : 3} style={{ fontSize: isMobile ? 20 : 24, color: darkMode ? '#f1f5f9' : '#111827' }}>User Management</Title>
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleAddUser} style={{ width: isMobile ? '100%' : 'auto' }}>
+              Add User
+            </Button>
+          </div>
 
-          <Form.Item
-            name="last_name"
-            label="Last Name"
-            rules={[{ required: true, message: 'Please enter last name' }]}
-          >
-            <Input />
-          </Form.Item>
+          <Table
+            columns={columns}
+            dataSource={users}
+            loading={loading}
+            rowKey="id"
+            scroll={{ x: isMobile ? 800 : 1000 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: !isMobile,
+              showQuickJumper: !isMobile,
+              showTotal: !isMobile ? (total) => `Total ${total} users` : false,
+              simple: isMobile,
+              size: isMobile ? 'small' : 'default',
+            }}
+            size={isMobile ? 'small' : 'middle'}
+            style={{ fontSize: isMobile ? 12 : 14 }}
+          />
+        </Card>
 
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: true, message: 'Please enter email' },
-              { type: 'email', message: 'Please enter valid email' }
-            ]}
-          >
-            <Input disabled={!!editingUser} />
-          </Form.Item>
-
-          <Form.Item
-            name="role"
-            label="Role"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="user">User</Option>
-              <Option value="editor">Editor</Option>
-              <Option value="admin">Admin</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item>
-            <Space style={{ width: '100%', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
-              <Button type="primary" htmlType="submit" style={{ width: isMobile ? '100%' : 'auto' }}>
-                Save
-              </Button>
-              <Button onClick={() => {
-                setModalVisible(false);
-                setEditingUser(null);
-                form.resetFields();
-              }} style={{ width: isMobile ? '100%' : 'auto' }}>
-                Cancel
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Role Assignment Modal */}
-      <Modal
-        title={`Manage Roles: ${selectedUser?.first_name} ${selectedUser?.last_name}`}
-        open={roleModalVisible}
-        onCancel={() => {
-          setRoleModalVisible(false);
-          setSelectedUser(null);
-          roleForm.resetFields();
-        }}
-        onOk={() => roleForm.submit()}
-        width={isMobile ? '100%' : 500}
-        style={{ top: isMobile ? 0 : 20 }}
-        bodyStyle={{ padding: isMobile ? 16 : 24 }}
-      >
-        <Form
-          form={roleForm}
-          layout="vertical"
-          onFinish={handleAssignRoles}
+        <Modal
+          title={editingUser ? 'Edit User' : 'Add User'}
+          open={modalVisible}
+          onCancel={() => {
+            setModalVisible(false);
+            setEditingUser(null);
+            form.resetFields();
+          }}
+          footer={null}
+          width={isMobile ? '100%' : 600}
+          style={{ top: isMobile ? 0 : 20 }}
+          bodyStyle={{ padding: isMobile ? 16 : 24 }}
         >
-          <Form.Item
-            name="roles"
-            label="Assign Roles"
-            rules={[{ required: true, message: 'Please select at least one role' }]}
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSave}
           >
-            <Select
-              mode="multiple"
-              placeholder="Select roles"
-              options={roles.map(role => ({
-                label: `${role.name} (Level: ${role.level})`,
-                value: role.id
-              }))}
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+            <Form.Item
+              name="first_name"
+              label="First Name"
+              rules={[{ required: true, message: 'Please enter first name' }]}
+            >
+              <Input style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
+            </Form.Item>
+
+            <Form.Item
+              name="last_name"
+              label="Last Name"
+              rules={[{ required: true, message: 'Please enter last name' }]}
+            >
+              <Input style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { required: true, message: 'Please enter email' },
+                { type: 'email', message: 'Please enter valid email' }
+              ]}
+            >
+              <Input disabled={!!editingUser} style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
+            </Form.Item>
+
+                {!editingUser && (
+            <Form.Item
+              name="password"
+              label="Password"
+              rules={[
+                { required: true, message: 'Please enter a password' },
+                { min: 8, message: 'Password must be at least 8 characters' }
+              ]}
+            >
+              <Input.Password placeholder="Minimum 8 characters" />
+            </Form.Item>
+          )}
+
+            <Form.Item
+              name="role"
+              label="Role"
+              rules={[{ required: true }]}
+            >
+              <Select style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
+                <Option value="user">User</Option>
+                <Option value="editor">Editor</Option>
+                <Option value="admin">Admin</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item>
+              <Space style={{ width: '100%', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
+                <Button type="primary" htmlType="submit" style={{ width: isMobile ? '100%' : 'auto' }}>
+                  Save
+                </Button>
+                <Button onClick={() => {
+                  setModalVisible(false);
+                  setEditingUser(null);
+                  form.resetFields();
+                }} style={{ width: isMobile ? '100%' : 'auto' }}>
+                  Cancel
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Modal>
+
+        {/* Role Assignment Modal */}
+        <Modal
+          title={`Manage Roles: ${selectedUser?.first_name} ${selectedUser?.last_name}`}
+          open={roleModalVisible}
+          onCancel={() => {
+            setRoleModalVisible(false);
+            setSelectedUser(null);
+            roleForm.resetFields();
+          }}
+          onOk={() => roleForm.submit()}
+          width={isMobile ? '100%' : 500}
+          style={{ top: isMobile ? 0 : 20 }}
+          bodyStyle={{ padding: isMobile ? 16 : 24 }}
+        >
+          <Form
+            form={roleForm}
+            layout="vertical"
+            onFinish={handleAssignRoles}
+          >
+            <Form.Item
+              name="roles"
+              label="Assign Roles"
+              rules={[{ required: true, message: 'Please select at least one role' }]}
+            >
+              <Select
+                mode="multiple"
+                placeholder="Select roles"
+                style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
+                options={roles.map(role => ({
+                  label: `${role.name} (Level: ${role.level})`,
+                  value: role.id
+                }))}
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
+      </div>
+    </ConfigProvider>
   );
 };
 

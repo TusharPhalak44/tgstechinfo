@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { Card, CardContent } from '@/components/ui/card';
+import { useTheme } from '../../context/ThemeContext';
 
 // Newsletter Subscribe Form Component
 const NewsletterSubscribeForm = ({ darkMode = false }) => {
@@ -141,19 +142,19 @@ const useCountUp = (target, visible, duration = 1400) => {
 };
 
 // ── Single stat card ───────────────────────────────────────
-const StatCard = ({ s, i, visible }) => {
+const StatCard = ({ s, i, visible, darkMode = false }) => {
   const num = useCountUp(Number(s.value) || 0, visible);
   return (
     <div 
       className="stat-card-modern"
       style={{
-        background: 'rgba(255, 255, 255, 0.75)',
+        background: darkMode ? 'rgba(30, 41, 59, 0.75)' : 'rgba(255, 255, 255, 0.75)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         borderRadius: 'clamp(18px, 2vw, 24px)',
         padding: 'clamp(20px, 2.5vw, 32px) clamp(16px, 2vw, 28px)',
-        border: '1px solid rgba(255, 255, 255, 0.7)',
-        boxShadow: '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+        border: darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.7)',
+        boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)' : '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
@@ -213,7 +214,7 @@ const StatCard = ({ s, i, visible }) => {
         <div className="stat-number-modern" style={{
           fontSize: 'clamp(32px, 3.8vw, 52px)',
           fontWeight: 800,
-          color: '#0b1f4d',
+          color: darkMode ? '#f1f5f9' : '#0b1f4d',
           lineHeight: 1,
           letterSpacing: '-2px',
           marginBottom: 'clamp(6px, 0.8vw, 10px)',
@@ -239,7 +240,7 @@ const StatCard = ({ s, i, visible }) => {
         <div style={{
           fontWeight: 700,
           fontSize: 'clamp(14px, 1.1vw, 17px)',
-          color: '#1e293b',
+          color: darkMode ? '#cbd5e1' : '#1e293b',
           marginBottom: 'clamp(4px, 0.5vw, 8px)',
           letterSpacing: '-0.3px'
         }}>
@@ -251,7 +252,7 @@ const StatCard = ({ s, i, visible }) => {
           alignItems: 'center',
           gap: 6,
           fontSize: 'clamp(11px, 0.8vw, 13px)',
-          color: '#64748b',
+          color: darkMode ? '#94a3b8' : '#64748b',
           fontWeight: 500
         }}>
           <span style={{
@@ -282,7 +283,7 @@ const StatCard = ({ s, i, visible }) => {
   );
 };
 
-const StatsBar = ({ stats }) => {
+const StatsBar = ({ stats, darkMode = false }) => {
   const [ref, visible] = useReveal();
  
   const items = [
@@ -295,7 +296,7 @@ const StatsBar = ({ stats }) => {
   return (
     <div ref={ref} style={{
       margin: '64px -20px', padding: '80px 20px 96px',
-      background: 'linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 55%, #EAF2FF 100%)',
+      background: darkMode ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 55%, #0f172a 100%)' : 'linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 55%, #EAF2FF 100%)',
       borderRadius: 32, position: 'relative', overflow: 'hidden'
     }}>
       {/* Background ambient glowing blobs */}
@@ -304,15 +305,15 @@ const StatsBar = ({ stats }) => {
  
       <div style={{ textAlign: 'center', marginBottom: 54, position: 'relative', zIndex: 1 }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: 3 }}>By The Numbers</span>
-        <h2 style={{ fontSize: 'clamp(28px, 3.2vw, 44px)', fontWeight: 850, color: '#0b1f4d', margin: '10px 0 12px', letterSpacing: '-1px', lineHeight: 1.15 }}>Trusted by Tech Professionals</h2>
-        <p style={{ color: '#4a5568', fontSize: 16, margin: 0, fontWeight: 500 }}>Insights into our growing developer community.</p>
+        <h2 style={{ fontSize: 'clamp(28px, 3.2vw, 44px)', fontWeight: 850, color: darkMode ? '#f1f5f9' : '#0b1f4d', margin: '10px 0 12px', letterSpacing: '-1px', lineHeight: 1.15 }}>Trusted by Tech Professionals</h2>
+        <p style={{ color: darkMode ? '#94a3b8' : '#4a5568', fontSize: 16, margin: 0, fontWeight: 500 }}>Insights into our growing developer community.</p>
       </div>
  
       <div className="glass-stats-grid" style={{
         maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, position: 'relative', zIndex: 1
       }}>
         {items.map((s, i) => (
-          <StatCard key={i} s={s} i={i} visible={visible} />
+          <StatCard key={i} s={s} i={i} visible={visible} darkMode={darkMode} />
         ))}
       </div>
 
@@ -477,68 +478,85 @@ const CAT_TABS = [
   { label: 'Interviews', key: 'interview', param: 'content_type', color: 'var(--color-primary)' },
 ];
 
-const CategoryNav = ({ activeTab, setActiveTab }) => (
-  <div className="category-nav" style={{ margin: '32px 0 24px' }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-      <span style={{ width: 4, height: 20, background: 'var(--color-primary)', borderRadius: 4, display: 'inline-block' }} />
-      <span style={{ fontWeight: 700, fontSize: 'clamp(14px, 1.2vw, 16px)', color: 'var(--color-heading)' }}>Browse by Category</span>
-    </div>
-    <div className="category-tabs" style={{
-      display: 'flex',
-      gap: 10,
-      flexWrap: 'wrap'
-    }}>
-      {CAT_TABS.map(c => {
-        const isActive = activeTab === c.key;
-        return (
-          <button
-            key={c.key}
-            onClick={() => setActiveTab(c.key)}
-            className="category-tab"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: 'clamp(8px, 0.8vw, 12px) clamp(16px, 1.5vw, 22px)',
-              borderRadius: 8,
-              fontSize: 'clamp(12px, 0.8vw, 13px)',
-              fontWeight: 600,
-              background: isActive ? c.color : 'var(--color-surface)',
-              color: isActive ? '#fff' : 'var(--color-heading)',
-              border: isActive ? `1.5px solid ${c.color}` : '1.5px solid var(--color-border)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              boxShadow: isActive ? `0 4px 16px ${c.color}40` : '0 1px 4px rgba(0,0,0,0.06)',
-              transition: 'all .2s ease',
-              transform: isActive ? 'translateY(-2px)' : 'translateY(0)'
-            }}
-            onMouseEnter={e => {
-              if (!isActive) {
-                e.currentTarget.style.borderColor = c.color;
-                e.currentTarget.style.color = c.color;
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = `0 4px 12px ${c.color}25`;
-              }
-            }}
-            onMouseLeave={e => {
-              if (!isActive) {
-                e.currentTarget.style.borderColor = 'var(--color-border)';
-                e.currentTarget.style.color = 'var(--color-heading)';
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
-              }
-            }}
-          >
-            {c.label}
-          </button>
-        );
-      })}
+const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
+  // Merge hardcoded tabs with dynamic categories
+  const allTabs = [...CAT_TABS];
+  
+  // Add dynamic categories that aren't already in CAT_TABS
+  dynamicCategories.forEach(cat => {
+    if (!allTabs.find(tab => tab.key === cat.slug)) {
+      allTabs.push({
+        label: cat.name,
+        key: cat.slug,
+        param: 'category',
+        color: 'var(--color-primary)'
+      });
+    }
+  });
+
+  return (
+    <div className="category-nav" style={{ margin: '32px 0 24px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <span style={{ width: 4, height: 20, background: 'var(--color-primary)', borderRadius: 4, display: 'inline-block' }} />
+        <span style={{ fontWeight: 700, fontSize: 'clamp(14px, 1.2vw, 16px)', color: 'var(--color-heading)' }}>Browse by Category</span>
+      </div>
+      <div className="category-tabs" style={{
+        display: 'flex',
+        gap: 10,
+        flexWrap: 'wrap'
+      }}>
+        {allTabs.map(c => {
+          const isActive = activeTab === c.key;
+          return (
+            <button
+              key={c.key}
+              onClick={() => setActiveTab(c.key)}
+              className="category-tab"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: 'clamp(8px, 0.8vw, 12px) clamp(16px, 1.5vw, 22px)',
+                borderRadius: 8,
+                fontSize: 'clamp(12px, 0.8vw, 13px)',
+                fontWeight: 600,
+                background: isActive ? c.color : 'var(--color-surface)',
+                color: isActive ? '#fff' : 'var(--color-heading)',
+                border: isActive ? `1.5px solid ${c.color}` : '1.5px solid var(--color-border)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                boxShadow: isActive ? `0 4px 16px ${c.color}40` : '0 1px 4px rgba(0,0,0,0.06)',
+                transition: 'all .2s ease',
+                transform: isActive ? 'translateY(-2px)' : 'translateY(0)'
+              }}
+              onMouseEnter={e => {
+                if (!isActive) {
+                  e.currentTarget.style.borderColor = c.color;
+                  e.currentTarget.style.color = c.color;
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = `0 4px 12px ${c.color}25`;
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive) {
+                  e.currentTarget.style.borderColor = 'var(--color-border)';
+                  e.currentTarget.style.color = 'var(--color-heading)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                }
+              }}
+            >
+              {c.label}
+            </button>
+          );
+        })}
     </div>
   </div>
-);
+  );
+};
 
 // ── Case Studies Section ─────────────────────────────────────────
-const CaseStudiesSection = ({ navigate }) => {
+const CaseStudiesSection = ({ navigate, darkMode = false }) => {
   const [ref, visible] = useReveal();
   const [caseStudies, setCaseStudies] = useState([]);
   const [loading, setCsLoading] = useState(true);
@@ -603,9 +621,9 @@ const CaseStudiesSection = ({ navigate }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ width: 4, height: 24, background: 'var(--color-primary)', borderRadius: 4, display: 'inline-block' }} />
           <span style={{ fontSize: 'clamp(18px, 1.5vw, 20px)', color: 'var(--color-primary)', lineHeight: 1 }}>📋</span>
-          <span style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: 'var(--color-heading)' }}>Case Studies</span>
+          <span style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)' }}>Case Studies</span>
         </div>
-        <a href="/case-studies" style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', padding: '5px 16px', borderRadius: 20, border: '1px solid var(--color-border)', background: 'var(--color-primary-light)' }}>
+        <a href="/case-studies" style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', padding: '5px 16px', borderRadius: 20, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', background: darkMode ? '#1e293b' : 'var(--color-primary-light)' }}>
           View All <ArrowRightOutlined style={{ fontSize: 11 }} />
         </a>
       </div>
@@ -614,7 +632,7 @@ const CaseStudiesSection = ({ navigate }) => {
       {loading ? (
         <div className="case-studies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
           {[1, 2].map(i => (
-            <div key={i} style={{ height: 260, background: 'var(--color-surface)', borderRadius: 16, border: '1px solid var(--color-border)', padding: 28 }}>
+            <div key={i} style={{ height: 260, background: darkMode ? '#1e293b' : 'var(--color-surface)', borderRadius: 16, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', padding: 28 }}>
               <div style={{ height: 20, background: '#f0f0f0', borderRadius: 6, marginBottom: 14, width: '60%' }} />
               <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, marginBottom: 8, width: '90%' }} />
               <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, width: '75%' }} />
@@ -633,11 +651,11 @@ const CaseStudiesSection = ({ navigate }) => {
               onClick={() => openGate(cs)}
               className="case-study-card"
               style={{
-                background: 'var(--color-surface)',
+                background: darkMode ? '#1e293b' : 'var(--color-surface)',
                 borderRadius: 16,
                 overflow: 'hidden',
-                border: '1.5px solid var(--color-border)',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                border: darkMode ? '1.5px solid #334155' : '1.5px solid var(--color-border)',
+                boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.05)',
                 display: 'flex',
                 flexDirection: 'column',
                 cursor: 'pointer',
@@ -648,13 +666,13 @@ const CaseStudiesSection = ({ navigate }) => {
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)';
-                e.currentTarget.style.boxShadow = '0 24px 48px rgba(11,31,77,0.10)';
+                e.currentTarget.style.boxShadow = darkMode ? '0 24px 48px rgba(0,0,0,0.4)' : '0 24px 48px rgba(11,31,77,0.10)';
                 e.currentTarget.style.borderColor = 'var(--color-primary)';
               }}
               onMouseLeave={e => {
                 e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.05)';
-                e.currentTarget.style.borderColor = 'var(--color-border)';
+                e.currentTarget.style.boxShadow = darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.05)';
+                e.currentTarget.style.borderColor = darkMode ? '#334155' : 'var(--color-border)';
               }}
             >
               {/* Banner */}
@@ -670,14 +688,14 @@ const CaseStudiesSection = ({ navigate }) => {
 
               {/* Body */}
               <div style={{ padding: 'clamp(16px, 1.5vw, 22px) clamp(16px, 1.5vw, 24px) clamp(18px, 1.5vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <h3 style={{ fontWeight: 800, fontSize: 'clamp(15px, 1.2vw, 18px)', lineHeight: 1.4, color: 'var(--color-heading)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <h3 style={{ fontWeight: 800, fontSize: 'clamp(15px, 1.2vw, 18px)', lineHeight: 1.4, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {cs.case_study_headline || cs.title}
                 </h3>
-                <p style={{ fontSize: 'clamp(13px, 0.9vw, 14px)', color: 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <p style={{ fontSize: 'clamp(13px, 0.9vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {cs.case_study_summary || cs.short_description}
                 </p>
-                <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <span style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <span style={{ fontSize: 12, color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <CalendarOutlined style={{ fontSize: 11 }} />
                     {moment(cs.published_date || cs.created_at).format('MMM D, YYYY')}
                   </span>
@@ -727,7 +745,7 @@ const CaseStudiesSection = ({ navigate }) => {
             onClick={e => e.stopPropagation()}
             className="gate-modal"
             style={{
-              background: '#fff',
+              background: darkMode ? '#1e293b' : '#fff',
               borderRadius: 20,
               width: '100%',
               maxWidth: 460,
@@ -738,47 +756,47 @@ const CaseStudiesSection = ({ navigate }) => {
               overflowY: 'auto'
             }}
           >
-            <button onClick={() => setGateVisible(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#8c8c8c', lineHeight: 1 }}>✕</button>
+            <button onClick={() => setGateVisible(false)} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: darkMode ? '#94a3b8' : '#8c8c8c', lineHeight: 1 }}>✕</button>
 
             <div style={{ textAlign: 'center', marginBottom: 24 }}>
               <div style={{ width: 56, height: 56, background: 'var(--color-primary-light)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: 26 }}>📋</div>
-              <h3 style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: 'var(--color-heading)', margin: '0 0 6px' }}>Download Case Study</h3>
-              <p style={{ fontSize: 'clamp(13px, 0.9vw, 14px)', color: 'var(--color-muted)', margin: 0, lineHeight: 1.5 }}>
+              <h3 style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '0 0 6px' }}>Download Case Study</h3>
+              <p style={{ fontSize: 'clamp(13px, 0.9vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', margin: 0, lineHeight: 1.5 }}>
                 {selectedCs.case_study_headline || selectedCs.title}
               </p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Full Name *</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Full Name *</label>
                 <input
                   type="text"
                   placeholder="Your full name"
                   value={formValues.name}
                   onChange={e => { setFormValues(p => ({ ...p, name: e.target.value })); setFormErrors(p => ({ ...p, name: '' })); }}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.name ? '#ff4d4f' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.name ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
                 />
                 {formErrors.name && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.name}</span>}
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Work Email *</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Work Email *</label>
                 <input
                   type="email"
                   placeholder="you@company.com"
                   value={formValues.email}
                   onChange={e => { setFormValues(p => ({ ...p, email: e.target.value })); setFormErrors(p => ({ ...p, email: '' })); }}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.email ? '#ff4d4f' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.email ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
                 />
                 {formErrors.email && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.email}</span>}
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Phone / Contact *</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Phone / Contact *</label>
                 <input
                   type="tel"
                   placeholder="+1 (555) 000-0000"
                   value={formValues.contact}
                   onChange={e => { setFormValues(p => ({ ...p, contact: e.target.value })); setFormErrors(p => ({ ...p, contact: '' })); }}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
                 />
                 {formErrors.contact && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.contact}</span>}
               </div>
@@ -795,7 +813,7 @@ const CaseStudiesSection = ({ navigate }) => {
                 {submitting ? 'Submitting…' : 'Get Free Access →'}
               </button>
 
-              <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-muted)', margin: 0 }}>
+              <p style={{ textAlign: 'center', fontSize: 11, color: darkMode ? '#94a3b8' : 'var(--color-muted)', margin: 0 }}>
                 By submitting, you agree to our Privacy Policy. No spam, ever.
               </p>
             </div>
@@ -816,7 +834,7 @@ const WHY_ITEMS = [
   { title: 'Dedicated Account Manager', desc: 'White-glove support from strategy to execution, with a single point of contact for your team.' },
 ];
 
-const WhyPublishSection = () => {
+const WhyPublishSection = ({ darkMode = false }) => {
   const [ref, visible] = useReveal();
   return (
     <div ref={ref} className="why-publish-section" style={{
@@ -827,8 +845,8 @@ const WhyPublishSection = () => {
     }}>
       <div style={{ textAlign: 'center', marginBottom: 40 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: 2 }}>Why Choose Us</span>
-        <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 28px)', fontWeight: 900, color: 'var(--color-heading)', margin: '8px 0 12px', lineHeight: 1.2 }}>The Smartest Way to Publish in B2B Tech</h2>
-        <p style={{ color: 'var(--color-muted)', fontSize: 'clamp(14px, 1vw, 15px)', maxWidth: 520, margin: '0 auto', padding: '0 16px' }}>From whitepapers to webinars, we give your content the reach, credibility and conversions it deserves.</p>
+        <h2 style={{ fontSize: 'clamp(22px, 2.5vw, 28px)', fontWeight: 900, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '8px 0 12px', lineHeight: 1.2 }}>The Smartest Way to Publish in B2B Tech</h2>
+        <p style={{ color: darkMode ? '#94a3b8' : 'var(--color-muted)', fontSize: 'clamp(14px, 1vw, 15px)', maxWidth: 520, margin: '0 auto', padding: '0 16px' }}>From whitepapers to webinars, we give your content the reach, credibility and conversions it deserves.</p>
       </div>
       <div className="why-grid" style={{
         display: 'grid',
@@ -837,21 +855,21 @@ const WhyPublishSection = () => {
       }}>
         {WHY_ITEMS.map((item, i) => (
           <div key={i} className="why-item" style={{
-            background: 'var(--color-surface)',
+            background: darkMode ? '#1e293b' : 'var(--color-surface)',
             borderRadius: 16,
             padding: 'clamp(20px, 2vw, 28px) clamp(18px, 1.5vw, 24px)',
-            border: '1px solid #e5e7eb',
-            boxShadow: '0 2px 12px rgba(74,124,255,0.06)',
+            border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb',
+            boxShadow: darkMode ? '0 2px 12px rgba(0,0,0,0.3)' : '0 2px 12px rgba(74,124,255,0.06)',
             transition: 'transform .22s, box-shadow .22s',
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateY(0)' : 'translateY(20px)',
             transitionDelay: `${i * 80}ms`
           }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(74,124,255,0.14)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 12px rgba(74,124,255,0.06)'; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = darkMode ? '0 12px 32px rgba(0,0,0,0.4)' : '0 12px 32px rgba(74,124,255,0.14)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = darkMode ? '0 2px 12px rgba(0,0,0,0.3)' : '0 2px 12px rgba(74,124,255,0.06)'; }}
           >
-            <div style={{ fontWeight: 700, fontSize: 'clamp(15px, 1.1vw, 16px)', color: 'var(--color-heading)', marginBottom: 8 }}>{item.title}</div>
-            <div style={{ fontSize: 'clamp(13px, 0.9vw, 13.5px)', color: 'var(--color-muted)', lineHeight: 1.65 }}>{item.desc}</div>
+            <div style={{ fontWeight: 700, fontSize: 'clamp(15px, 1.1vw, 16px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)', marginBottom: 8 }}>{item.title}</div>
+            <div style={{ fontSize: 'clamp(13px, 0.9vw, 13.5px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.65 }}>{item.desc}</div>
             <div style={{ marginTop: 18, height: 3, borderRadius: 2, background: 'var(--color-primary)', width: '40%' }} />
           </div>
         ))}
@@ -889,7 +907,7 @@ const SOLUTIONS = [
   { accent: 'var(--color-primary)', bg: 'var(--color-primary-light)', label: 'Sponsored News', desc: 'Get your product launches, partnerships and announcements in front of the right audience instantly.', tags: ['Instant Publish', 'Homepage Feature', 'Newsletter Blast'] },
 ];
 
-const PublishingSolutions = () => {
+const PublishingSolutions = ({ darkMode = false }) => {
   const [ref, visible] = useReveal();
   return (
     <div ref={ref} className="solutions-section" style={{
@@ -900,8 +918,8 @@ const PublishingSolutions = () => {
     }}>
       <div style={{ textAlign: 'center', marginBottom: 36 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#6c5ce7', textTransform: 'uppercase', letterSpacing: 2 }}>Publishing Solutions</span>
-        <h2 style={{ fontSize: 'clamp(22px, 2.2vw, 26px)', fontWeight: 900, color: 'var(--color-heading)', margin: '8px 0 10px' }}>Content Formats Built for B2B Impact</h2>
-        <p style={{ color: 'var(--color-muted)', fontSize: 'clamp(14px, 1vw, 14.5px)', maxWidth: 480, margin: '0 auto', padding: '0 16px' }}>Choose the format that fits your marketing goals. We handle the rest.</p>
+        <h2 style={{ fontSize: 'clamp(22px, 2.2vw, 26px)', fontWeight: 900, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '8px 0 10px' }}>Content Formats Built for B2B Impact</h2>
+        <p style={{ color: darkMode ? '#94a3b8' : 'var(--color-muted)', fontSize: 'clamp(14px, 1vw, 14.5px)', maxWidth: 480, margin: '0 auto', padding: '0 16px' }}>Choose the format that fits your marketing goals. We handle the rest.</p>
       </div>
       <div className="solutions-grid" style={{
         display: 'grid',
@@ -910,23 +928,23 @@ const PublishingSolutions = () => {
       }}>
         {SOLUTIONS.map((s, i) => (
           <div key={i} className="solution-card" style={{
-            background: 'var(--color-surface)',
+            background: darkMode ? '#1e293b' : 'var(--color-surface)',
             borderRadius: 18,
             overflow: 'hidden',
             border: `1px solid ${s.accent}22`,
-            boxShadow: `0 4px 18px ${s.accent}0d`,
+            boxShadow: darkMode ? `0 4px 18px ${s.accent}15` : `0 4px 18px ${s.accent}0d`,
             transition: 'transform .22s, box-shadow .22s',
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateY(0)' : 'translateY(24px)',
             transitionDelay: `${i * 90}ms`
           }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = `0 16px 36px ${s.accent}22`; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 4px 18px ${s.accent}0d`; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = darkMode ? `0 16px 36px ${s.accent}33` : `0 16px 36px ${s.accent}22`; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = darkMode ? `0 4px 18px ${s.accent}15` : `0 4px 18px ${s.accent}0d`; }}
           >
             <div style={{ height: 5, background: s.accent }} />
             <div style={{ padding: 'clamp(18px, 1.8vw, 24px) clamp(16px, 1.5vw, 22px) clamp(20px, 1.8vw, 26px)' }}>
-              <div style={{ fontWeight: 800, fontSize: 'clamp(15px, 1.2vw, 16px)', color: 'var(--color-heading)', marginBottom: 10 }}>{s.label}</div>
-              <div style={{ fontSize: 'clamp(13px, 0.85vw, 13.5px)', color: 'var(--color-muted)', lineHeight: 1.65, marginBottom: 18 }}>{s.desc}</div>
+              <div style={{ fontWeight: 800, fontSize: 'clamp(15px, 1.2vw, 16px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)', marginBottom: 10 }}>{s.label}</div>
+              <div style={{ fontSize: 'clamp(13px, 0.85vw, 13.5px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.65, marginBottom: 18 }}>{s.desc}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {s.tags.map(t => (
                   <span key={t} style={{ fontSize: 11, fontWeight: 600, color: s.accent, background: s.bg, borderRadius: 20, padding: '3px 10px', border: `1px solid ${s.accent}33` }}>{t}</span>
@@ -1568,7 +1586,7 @@ const LatestArticlesSection = ({ articles, blogs, navigate }) => {
 };
 
 // ── Trending Topics Section ─────────────────────────────────────
-const TrendingTopicsSection = ({ items, navigate }) => {
+const TrendingTopicsSection = ({ items, navigate, darkMode = false }) => {
   const [ref, visible] = useReveal();
   if (!items.length) return null;
   return (
@@ -1591,8 +1609,8 @@ const TrendingTopicsSection = ({ items, navigate }) => {
           display: 'inline-block',
           marginBottom: 12
         }}>Trending</span>
-        <h2 style={{ fontSize: 'clamp(28px, 3vw, 36px)', fontWeight: 800, color: 'var(--color-heading)', margin: '0 0 10px', letterSpacing: '-0.5px' }}>Related Post</h2>
-        <p style={{ color: 'var(--color-muted)', fontSize: 'clamp(14px, 1vw, 16px)', margin: 0 }}>Expand your knowledge with these hand-picked posts.</p>
+        <h2 style={{ fontSize: 'clamp(28px, 3vw, 36px)', fontWeight: 800, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '0 0 10px', letterSpacing: '-0.5px' }}>Related Post</h2>
+        <p style={{ color: darkMode ? '#94a3b8' : 'var(--color-muted)', fontSize: 'clamp(14px, 1vw, 16px)', margin: 0 }}>Expand your knowledge with these hand-picked posts.</p>
       </div>
 
       <div className="trending-grid" style={{
@@ -1602,10 +1620,10 @@ const TrendingTopicsSection = ({ items, navigate }) => {
       }}>
         {items.map((item, idx) => (
           <div key={item.id || idx} onClick={() => navigateArticle(item, navigate)} style={{
-            background: 'var(--color-surface)',
+            background: darkMode ? '#1e293b' : 'var(--color-surface)',
             borderRadius: 20,
-            border: '1px solid var(--color-border)',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
+            border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)',
+            boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.04)',
             display: 'flex',
             flexDirection: 'column',
             cursor: 'pointer',
@@ -1614,22 +1632,22 @@ const TrendingTopicsSection = ({ items, navigate }) => {
           }}
             onMouseEnter={e => {
               e.currentTarget.style.transform = 'translateY(-8px)';
-              e.currentTarget.style.boxShadow = '0 20px 40px rgba(11,31,77,0.08)';
+              e.currentTarget.style.boxShadow = darkMode ? '0 20px 40px rgba(0,0,0,0.4)' : '0 20px 40px rgba(11,31,77,0.08)';
               e.currentTarget.style.borderColor = 'var(--color-primary)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.04)';
-              e.currentTarget.style.borderColor = 'var(--color-border)';
+              e.currentTarget.style.boxShadow = darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.04)';
+              e.currentTarget.style.borderColor = darkMode ? '#334155' : 'var(--color-border)';
             }}
           >
-            <div style={{ position: 'relative', overflow: 'hidden', paddingTop: '56.25%', background: '#f3f4f6' }}>
+            <div style={{ position: 'relative', overflow: 'hidden', paddingTop: '56.25%', background: darkMode ? '#1e293b' : '#f3f4f6' }}>
               {item.banner_image ? (
                 <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{
                   position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover'
                 }} />
               ) : (
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-primary-light)' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: darkMode ? '#1e293b' : 'var(--color-primary-light)' }}>
                   <ReadOutlined style={{ fontSize: 32, color: 'var(--color-primary)', opacity: 0.5 }} />
                 </div>
               )}
@@ -1638,7 +1656,7 @@ const TrendingTopicsSection = ({ items, navigate }) => {
             <div style={{ padding: 'clamp(18px, 1.8vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 6 }}>
-                  <span style={{ fontSize: 'clamp(12px, 0.8vw, 13px)', color: 'var(--color-muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 'clamp(12px, 0.8vw, 13px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <CalendarOutlined style={{ color: 'var(--color-primary)', fontSize: 13 }} />
                     {moment(item.published_date || item.created_at).format('MMM D, YYYY')}
                   </span>
@@ -1656,34 +1674,34 @@ const TrendingTopicsSection = ({ items, navigate }) => {
                   )}
                 </div>
 
-                <h3 style={{ fontWeight: 800, fontSize: 'clamp(16px, 1.3vw, 18px)', lineHeight: 1.4, color: 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <h3 style={{ fontWeight: 800, fontSize: 'clamp(16px, 1.3vw, 18px)', lineHeight: 1.4, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {item.title}
                 </h3>
-                <p style={{ fontSize: 'clamp(13px, 0.85vw, 14px)', color: 'var(--color-muted)', lineHeight: 1.6, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <p style={{ fontSize: 'clamp(13px, 0.85vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {item.short_description || 'Explore this trending post to learn more about the latest developments and industry best practices.'}
                 </p>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
-                <span style={{ fontWeight: 700, fontSize: 'clamp(13px, 0.9vw, 14px)', color: 'var(--color-heading)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)' }}>
+                <span style={{ fontWeight: 700, fontSize: 'clamp(13px, 0.9vw, 14px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)' }}>
                   {item.author_name || 'Staff Writer'}
                 </span>
                 <div style={{
                   width: 36,
                   height: 36,
                   borderRadius: 8,
-                  background: '#f1f5f9',
+                  background: darkMode ? '#1e293b' : '#f1f5f9',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 16,
-                  color: '#334155',
+                  color: darkMode ? '#94a3b8' : '#334155',
                   fontWeight: 'bold',
                   transition: 'background .2s, color .2s'
                 }}
                   className="arrow-redir"
                   onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#334155'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = darkMode ? '#1e293b' : '#f1f5f9'; e.currentTarget.style.color = darkMode ? '#94a3b8' : '#334155'; }}
                 >
                   ↗
                 </div>
@@ -1699,6 +1717,7 @@ const TrendingTopicsSection = ({ items, navigate }) => {
 // ── Main Home ────────────────────────────────────────────────────
 const Home = () => {
   const navigate = useNavigate();
+  const { darkMode } = useTheme();
   const [data, setData] = useState({ articles: [], blogs: [], news: [], interviews: [] });
   const [stats, setStats] = useState({ totalPublished: 0, totalViews: 0, totalAuthors: 0, totalCategories: 0 });
   const [loading, setLoading] = useState(true);
@@ -1706,6 +1725,7 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState(CAT_TABS[0].key);
   const [tabData, setTabData] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
+  const [dynamicCategories, setDynamicCategories] = useState([]);
   const catSectionRef = useRef(null);
 
   const trendingTopics = React.useMemo(() => {
@@ -1725,15 +1745,36 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
+    // Fetch dynamic categories from API
+    axios.get('/api/public/categories')
+      .then(res => {
+        setDynamicCategories(res.data || []);
+      })
+      .catch(err => {
+        console.error('Failed to fetch categories:', err);
+      });
+  }, []);
+
+  useEffect(() => {
     if (!activeTab) { setTabData([]); return; }
     setTabLoading(true);
-    const tab = CAT_TABS.find(c => c.key === activeTab);
-    const qs = tab?.param === 'content_type' ? `content_type=${tab.key}` : `category=${tab?.key}`;
+    // Check if tab is in CAT_TABS or dynamic categories
+    const hardcodedTab = CAT_TABS.find(c => c.key === activeTab);
+    const dynamicTab = dynamicCategories.find(c => c.slug === activeTab);
+    const tab = hardcodedTab || (dynamicTab ? { key: dynamicTab.slug, param: 'category' } : null);
+    
+    if (!tab) {
+      setTabData([]);
+      setTabLoading(false);
+      return;
+    }
+    
+    const qs = tab.param === 'content_type' ? `content_type=${tab.key}` : `category=${tab.key}`;
     axios.get(`/api/public/content?status=published&${qs}&limit=3`)
       .then(r => setTabData(r.data?.data || []))
       .catch(() => setTabData([]))
       .finally(() => setTabLoading(false));
-  }, [activeTab]);
+  }, [activeTab, dynamicCategories]);
 
   const fetchHomeData = async () => {
     setLoading(true);
@@ -1761,7 +1802,7 @@ const Home = () => {
   return (
     <div className="home-page" style={{
       paddingBottom: 60,
-      background: 'var(--color-bg-alt)',
+      background: darkMode ? '#0f172a' : 'var(--color-bg-alt)',
       minHeight: '100vh',
       overflowX: 'hidden'
     }}>
@@ -1780,12 +1821,12 @@ const Home = () => {
         <LatestArticlesSection articles={data.articles} blogs={data.blogs} navigate={navigate} />
 
         {/* Category chips */}
-        <CategoryNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        <CategoryNav activeTab={activeTab} setActiveTab={setActiveTab} dynamicCategories={dynamicCategories} />
 
         {/* Category filtered content */}
         <div ref={catSectionRef}>
           {activeTab && (() => {
-            const activeCat = CAT_TABS.find(c => c.key === activeTab);
+            const activeCat = CAT_TABS.find(c => c.key === activeTab) || dynamicCategories.find(c => c.slug === activeTab);
             return (
               <div style={{ margin: '0 0 40px', minHeight: 120 }}>
                 <div style={{
@@ -1797,7 +1838,7 @@ const Home = () => {
                   gap: 10
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 700, fontSize: 'clamp(16px, 1.3vw, 18px)', color: 'var(--color-heading)' }}>{activeCat?.label}</span>
+                    <span style={{ fontWeight: 700, fontSize: 'clamp(16px, 1.3vw, 18px)', color: 'var(--color-heading)' }}>{activeCat?.label || activeCat?.name}</span>
                   </div>
                   <Link to={`/category/${activeTab}`} style={{
                     fontSize: 'clamp(12px, 0.8vw, 13px)',
@@ -1840,8 +1881,10 @@ const Home = () => {
                           boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
                           display: 'flex',
                           flexDirection: 'column',
-                          transition: 'all .3s cubic-bezier(0.4, 0, 0.2, 1)'
+                          transition: 'all .3s cubic-bezier(0.4, 0, 0.2, 1)',
+                          cursor: 'pointer'
                         }}
+                          onClick={() => navigateArticle(a, navigate)}
                           onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)'; e.currentTarget.style.boxShadow = `0 24px 48px ${activeCat?.color || 'var(--color-primary)'}33, 0 12px 24px rgba(0,0,0,0.1)`; }}
                           onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)'; }}
                         >
@@ -1874,7 +1917,7 @@ const Home = () => {
                               <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CalendarOutlined />{moment(a.published_date || a.created_at).format('MMM D, YYYY')}</span>
                             </div>
                             <div style={{ marginTop: 'auto', paddingTop: 4 }}>
-                              <button onClick={() => navigateArticle(a, navigate)}
+                              <button onClick={(e) => { e.stopPropagation(); navigateArticle(a, navigate); }}
                                 style={{
                                   display: 'inline-flex',
                                   alignItems: 'center',
@@ -1966,15 +2009,15 @@ const Home = () => {
           </RevealSection>
         )}
 
-        <StatsBar stats={stats} />
+        <StatsBar stats={stats} darkMode={darkMode} />
 
-        <TrendingTopicsSection items={trendingTopics} navigate={navigate} />
+        <TrendingTopicsSection items={trendingTopics} navigate={navigate} darkMode={darkMode} />
 
-        <CaseStudiesSection navigate={navigate} />
+        <CaseStudiesSection navigate={navigate} darkMode={darkMode} />
 
-        <WhyPublishSection />
-        <PublishingSolutions />
-        <NewsletterBox />
+        <WhyPublishSection darkMode={darkMode} />
+        <PublishingSolutions darkMode={darkMode} />
+        <NewsletterBox darkMode={darkMode} />
 
         {data.interviews.length > 0 && (
           <RevealSection delay={80}>

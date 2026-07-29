@@ -4,11 +4,13 @@ import axios from 'axios';
 import { Helmet } from 'react-helmet-async';
 import { Spin, Result, Button } from 'antd';
 import { useCookieConsent } from '../context/CookieContext';
+import { useTheme } from '../context/ThemeContext';
 
 const StandaloneLandingPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { consent, hasAnalyticsConsent } = useCookieConsent();
+  const { darkMode } = useTheme();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -173,7 +175,7 @@ const StandaloneLandingPage = () => {
         justifyContent: 'center', 
         alignItems: 'center', 
         minHeight: '100vh',
-        background: '#f5f5f5'
+        background: darkMode ? '#0f172a' : '#f5f5f5'
       }}>
         <Spin size="large" />
       </div>
@@ -187,7 +189,7 @@ const StandaloneLandingPage = () => {
         justifyContent: 'center', 
         alignItems: 'center', 
         minHeight: '100vh',
-        background: '#f5f5f5'
+        background: darkMode ? '#0f172a' : '#f5f5f5'
       }}>
         <Result
           status="404"
@@ -239,7 +241,7 @@ const StandaloneLandingPage = () => {
         minHeight: '100vh',
         margin: 0,
         padding: 0,
-        background: '#fff'
+        background: darkMode ? '#0f172a' : '#fff'
       }}>
         <div 
           dangerouslySetInnerHTML={{ __html: rawHtml }} 

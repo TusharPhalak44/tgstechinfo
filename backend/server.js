@@ -91,6 +91,8 @@ app.use('/api/chatbot', require('./src/routes/chatbotRoutes'));
 app.use('/api/admin/chatbot/analytics', require('./src/routes/chatbotAnalyticsRoutes'));
 app.use('/api/rbac', require('./src/routes/rbacRoutes'));
 app.use('/api/media', require('./src/routes/mediaRoutes'));
+app.use('/api/seo', require('./src/routes/seoRoutes'));
+app.use('/api/tags', require('./src/routes/tagsRoutes'));
  
 
 // Error handling middleware

@@ -1,36 +1,40 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 
 const UPDATED = 'July 8, 2026';
 
-const Section = ({ title, children }) => (
-  <div style={{ marginBottom: 36 }}>
-    <h2 style={{ fontSize: 17, fontWeight: 700, color: '#1a1a2e', marginBottom: 10, paddingBottom: 8, borderBottom: '2px solid #e8f0ff' }}>{title}</h2>
-    <div style={{ fontSize: 14.5, color: '#374151', lineHeight: 1.85 }}>{children}</div>
+const Section = ({ title, children, darkMode }) => (
+  <div style={{ marginBottom: 'clamp(24px, 4vw, 32px)' }}>
+    <h2 style={{ fontSize: 'clamp(16px, 2.2vw, 19px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', marginBottom: 10, paddingBottom: 8, borderBottom: darkMode ? '2px solid #334155' : '2px solid #e8f0ff' }}>{title}</h2>
+    <div style={{ fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151', lineHeight: 1.85 }}>{children}</div>
   </div>
 );
 
 const Li = ({ children }) => <li style={{ marginBottom: 6, paddingLeft: 4 }}>{children}</li>;
 
-const UserAccountPolicy = () => (
-  <div style={{ background: '#f8f9fa', minHeight: '100vh', padding: '40px 16px' }}>
+const UserAccountPolicy = () => {
+  const { darkMode } = useTheme();
 
-    {/* Hero */}
-    <div style={{ maxWidth: 900, margin: '0 auto 40px', background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)', borderRadius: 16, padding: '48px 40px', color: '#fff', textAlign: 'center' }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Legal</div>
-      <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 10px', color: '#fff' }}>User Account &amp; Platform Usage Policy</h1>
-      <p style={{ fontSize: 14, color: '#94a3b8', margin: 0 }}>Last updated: {UPDATED}</p>
-    </div>
+  return (
+    <div style={{ background: darkMode ? '#0f172a' : '#f8f9fa', minHeight: '100vh', padding: 'clamp(16px, 3vw, 24px) clamp(12px, 2vw, 24px)' }}>
 
-    {/* Content */}
-    <div style={{ maxWidth: 900, margin: '0 auto', background: '#fff', borderRadius: 16, padding: '48px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
+      {/* Hero */}
+      <div style={{ maxWidth: 1200, margin: '0 auto clamp(16px, 3vw, 24px)', background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)', borderRadius: 16, padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', color: '#fff', textAlign: 'center' }}>
+        <div style={{ fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Legal</div>
+        <h1 style={{ fontSize: 'clamp(26px, 4vw, 32px)', fontWeight: 800, margin: '0 0 10px', color: '#fff' }}>User Account &amp; Platform Usage Policy</h1>
+        <p style={{ fontSize: 'clamp(13px, 1.5vw, 14px)', color: '#94a3b8', margin: 0 }}>Last updated: {UPDATED}</p>
+      </div>
 
-      <p style={{ fontSize: 15, color: '#374151', lineHeight: 1.85, marginBottom: 32 }}>
+      {/* Content */}
+      <div style={{ maxWidth: 1200, margin: '0 auto', background: darkMode ? '#1e293b' : '#fff', borderRadius: 16, padding: 'clamp(20px, 4vw, 32px)', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,0.3)' : '0 2px 16px rgba(0,0,0,0.07)' }}>
+
+      <p style={{ fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151', lineHeight: 1.85, marginBottom: 'clamp(24px, 4vw, 32px)' }}>
         This User Account &amp; Platform Usage Policy governs the registration, access, and use of the TGS Tech Info platform (<strong>tgstechinfo.com</strong>). By creating an account or using our platform, you agree to comply with this policy in addition to our <Link to="/terms-of-use" style={{ color: '#4a7cff' }}>Terms of Use</Link> and <Link to="/privacy-policy" style={{ color: '#4a7cff' }}>Privacy Policy</Link>.
       </p>
 
-      <Section title="1. User Registration Requirements">
-        <p style={{ marginBottom: 12 }}>To register an account on TGS Tech Info, you must:</p>
+      <Section title="1. User Registration Requirements" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>To register an account on TGS Tech Info, you must:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>Be at least <strong>18 years of age</strong> or the age of majority in your jurisdiction.</Li>
           <Li>Provide accurate, complete, and current information during registration, including your full name, valid email address, and any other required details.</Li>
@@ -38,11 +42,11 @@ const UserAccountPolicy = () => (
           <Li>Not use a false identity, impersonate any person or entity, or misrepresent your affiliation with any organization.</Li>
           <Li>Agree to receive account-related communications from TGS Tech Info at the email address provided.</Li>
         </ul>
-        <p style={{ marginTop: 12 }}>We reserve the right to reject any registration or suspend any account that does not meet these requirements.</p>
+        <p style={{ marginTop: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>We reserve the right to reject any registration or suspend any account that does not meet these requirements.</p>
       </Section>
 
-      <Section title="2. Account Responsibilities">
-        <p style={{ marginBottom: 12 }}>As a registered user, you are solely responsible for:</p>
+      <Section title="2. Account Responsibilities" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>As a registered user, you are solely responsible for:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>All activities that occur under your account, whether or not authorized by you.</Li>
           <Li>Keeping your account information accurate and up to date.</Li>
@@ -52,8 +56,8 @@ const UserAccountPolicy = () => (
         </ul>
       </Section>
 
-      <Section title="3. Login Credentials and Account Security">
-        <p style={{ marginBottom: 12 }}>You are responsible for maintaining the confidentiality and security of your login credentials. Specifically:</p>
+      <Section title="3. Login Credentials and Account Security" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>You are responsible for maintaining the confidentiality and security of your login credentials. Specifically:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>Choose a strong, unique password and do not reuse passwords from other services.</Li>
           <Li>Do not share your username or password with any third party.</Li>
@@ -61,11 +65,11 @@ const UserAccountPolicy = () => (
           <Li>Log out of your account after each session, especially on shared or public devices.</Li>
           <Li>TGS Tech Info will never ask for your password via email, phone, or any unsolicited communication.</Li>
         </ul>
-        <p style={{ marginTop: 12 }}>TGS Tech Info is not liable for any loss or damage arising from your failure to maintain account security.</p>
+        <p style={{ marginTop: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>TGS Tech Info is not liable for any loss or damage arising from your failure to maintain account security.</p>
       </Section>
 
-      <Section title="4. Acceptable Use of the Platform">
-        <p style={{ marginBottom: 12 }}>You agree to use the TGS Tech Info platform only for lawful purposes and in a manner consistent with this policy. Acceptable uses include:</p>
+      <Section title="4. Acceptable Use of the Platform" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>You agree to use the TGS Tech Info platform only for lawful purposes and in a manner consistent with this policy. Acceptable uses include:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>Creating and submitting original content (articles, blogs, news, interviews, whitepapers, webinars, events, eBooks) for review and publication.</Li>
           <Li>Accessing published content for personal, educational, or professional purposes.</Li>
@@ -74,8 +78,8 @@ const UserAccountPolicy = () => (
         </ul>
       </Section>
 
-      <Section title="5. Prohibited Activities">
-        <p style={{ marginBottom: 12 }}>The following activities are strictly prohibited on the TGS Tech Info platform:</p>
+      <Section title="5. Prohibited Activities" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>The following activities are strictly prohibited on the TGS Tech Info platform:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>Submitting false, misleading, defamatory, obscene, or plagiarized content.</Li>
           <Li>Uploading or distributing malware, viruses, or any harmful code.</Li>
@@ -87,11 +91,11 @@ const UserAccountPolicy = () => (
           <Li>Using the platform for any illegal activity, including but not limited to fraud, copyright infringement, or data theft.</Li>
           <Li>Circumventing any access controls, content restrictions, or security measures implemented by TGS Tech Info.</Li>
         </ul>
-        <p style={{ marginTop: 12 }}>Violation of these prohibitions may result in immediate account suspension or termination and may be reported to relevant authorities.</p>
+        <p style={{ marginTop: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>Violation of these prohibitions may result in immediate account suspension or termination and may be reported to relevant authorities.</p>
       </Section>
 
-      <Section title="6. User-Generated Content">
-        <p style={{ marginBottom: 12 }}>When you submit content to TGS Tech Info, you agree that:</p>
+      <Section title="6. User-Generated Content" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>When you submit content to TGS Tech Info, you agree that:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>You own or have the necessary rights, licenses, and permissions to submit the content.</Li>
           <Li>Your content does not infringe any third-party intellectual property, privacy, or other rights.</Li>
@@ -101,8 +105,8 @@ const UserAccountPolicy = () => (
         </ul>
       </Section>
 
-      <Section title="7. Account Suspension or Termination">
-        <p style={{ marginBottom: 12 }}>TGS Tech Info reserves the right to suspend or permanently terminate your account, with or without prior notice, if:</p>
+      <Section title="7. Account Suspension or Termination" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>TGS Tech Info reserves the right to suspend or permanently terminate your account, with or without prior notice, if:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>You violate any provision of this policy, the Terms of Use, or any applicable law.</Li>
           <Li>You provide false or misleading registration information.</Li>
@@ -110,11 +114,11 @@ const UserAccountPolicy = () => (
           <Li>You engage in repeated submission of content that violates our editorial guidelines.</Li>
           <Li>We are required to do so by law or a regulatory authority.</Li>
         </ul>
-        <p style={{ marginTop: 12 }}>Upon termination, your right to access the platform ceases immediately. Content previously published may be retained or removed at TGS Tech Info's discretion. You may request account deletion by contacting <a href="mailto:support@tgstechinfo.com" style={{ color: '#4a7cff' }}>support@tgstechinfo.com</a>.</p>
+        <p style={{ marginTop: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>Upon termination, your right to access the platform ceases immediately. Content previously published may be retained or removed at TGS Tech Info's discretion. You may request account deletion by contacting <a href="mailto:support@tgstechinfo.com" style={{ color: '#4a7cff' }}>support@tgstechinfo.com</a>.</p>
       </Section>
 
-      <Section title="8. Confidentiality of Account Information">
-        <p style={{ marginBottom: 12 }}>You are responsible for maintaining the confidentiality of all account-related information. This includes:</p>
+      <Section title="8. Confidentiality of Account Information" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>You are responsible for maintaining the confidentiality of all account-related information. This includes:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li>Not disclosing your login credentials to any third party under any circumstances.</Li>
           <Li>Ensuring that any device used to access your account is adequately secured with a password or biometric lock.</Li>
@@ -123,26 +127,27 @@ const UserAccountPolicy = () => (
         </ul>
       </Section>
 
-      <Section title="9. Compliance with Applicable Laws">
-        <p style={{ marginBottom: 12 }}>By using the TGS Tech Info platform, you agree to comply with all applicable local, national, and international laws and regulations, including but not limited to:</p>
+      <Section title="9. Compliance with Applicable Laws" darkMode={darkMode}>
+        <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>By using the TGS Tech Info platform, you agree to comply with all applicable local, national, and international laws and regulations, including but not limited to:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
           <Li><strong>India:</strong> Information Technology Act, 2000; Digital Personal Data Protection Act, 2023; and all rules and regulations thereunder.</Li>
           <Li><strong>Intellectual Property Laws:</strong> Copyright Act and applicable trademark laws governing the content you submit or access.</Li>
           <Li><strong>Anti-Spam Laws:</strong> CAN-SPAM Act, CASL, and equivalent regulations applicable in your jurisdiction.</Li>
           <Li><strong>Data Protection Laws:</strong> GDPR, UK GDPR, CCPA/CPRA, and other applicable privacy regulations.</Li>
         </ul>
-        <p style={{ marginTop: 12 }}>Any use of the platform that violates applicable law is strictly prohibited and may result in account termination and legal action.</p>
+        <p style={{ marginTop: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>Any use of the platform that violates applicable law is strictly prohibited and may result in account termination and legal action.</p>
       </Section>
 
       {/* Contact box */}
-      <div style={{ marginTop: 40, padding: '20px 24px', background: '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
-        <p style={{ margin: '0 0 8px', fontWeight: 700, color: '#1a1a2e' }}>Questions about this policy?</p>
-        <p style={{ margin: '0 0 4px', color: '#374151' }}>Email: <a href="mailto:support@tgstechinfo.com" style={{ color: '#4a7cff' }}>support@tgstechinfo.com</a></p>
-        <p style={{ margin: 0, color: '#374151' }}>Privacy Officer: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
+      <div style={{ marginTop: 'clamp(32px, 5vw, 40px)', padding: 'clamp(16px, 3vw, 20px) clamp(18px, 3vw, 24px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
+        <p style={{ margin: '0 0 8px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Questions about this policy?</p>
+        <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Email: <a href="mailto:support@tgstechinfo.com" style={{ color: '#4a7cff' }}>support@tgstechinfo.com</a></p>
+        <p style={{ margin: 0, color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Privacy Officer: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
       </div>
 
     </div>
   </div>
-);
+  );
+};
 
 export default UserAccountPolicy;

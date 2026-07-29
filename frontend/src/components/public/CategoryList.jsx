@@ -4,6 +4,7 @@ import { Skeleton, Pagination } from 'antd';
 import { CalendarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
+import { useTheme } from '../../context/ThemeContext';
 
 // Detect HTML builder (landing page) content by builder_layout OR content type
 const isHtmlBuilderContent = (item) => {
@@ -118,21 +119,21 @@ const HeroBanner = ({ title, accent, leftImg, rightImg }) => (
 );
 
 // ── Main list item ───────────────────────────────────────────────
-const ListItem = ({ item, navigate, accent }) => {
+const ListItem = ({ item, navigate, accent, darkMode }) => {
   const isLandingPage = isHtmlBuilderContent(item);
   return (
   <div style={{
     display: 'flex', gap: 20, padding: '20px 0',
-    borderBottom: '1px solid #eef0f5', cursor: 'pointer',
+    borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer',
     transition: 'background .15s', borderRadius: 4
   }}
     className="cat-list-item"
     onClick={() => navigateContent(item, navigate)}
-    onMouseEnter={e => e.currentTarget.style.background = '#fafbff'}
+    onMouseEnter={e => e.currentTarget.style.background = darkMode ? '#1e293b' : '#fafbff'}
     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
   >
     {/* Thumbnail */}
-    <div style={{ width: 220, height: 150, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: '#f0f4ff', position: 'relative' }} className="cat-list-item-thumb">
+    <div style={{ width: 220, height: 150, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }} className="cat-list-item-thumb">
       {item.banner_image
         ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .3s', imageRendering: 'auto', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
@@ -159,15 +160,15 @@ const ListItem = ({ item, navigate, accent }) => {
           </span>
         )}
       </div>
-      <h3 style={{ fontWeight: 700, fontSize: 16, color: '#0f172a', margin: '0 0 8px', lineHeight: 1.4,
+      <h3 style={{ fontWeight: 700, fontSize: 16, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 8px', lineHeight: 1.4,
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {item.title}
       </h3>
-      <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.65, margin: '0 0 12px',
+      <p style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.65, margin: '0 0 12px',
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {item.short_description}
       </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: '#94a3b8', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <UserOutlined style={{ fontSize: 11 }} />
           {item.first_name} {item.last_name}
@@ -195,14 +196,14 @@ const ListItem = ({ item, navigate, accent }) => {
 };
 
 // ── Sidebar recent post ──────────────────────────────────────────
-const SidebarPost = ({ item, navigate, accent }) => {
+const SidebarPost = ({ item, navigate, accent, darkMode }) => {
   const isLandingPage = isHtmlBuilderContent(item);
   return (
-  <div style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: '12px 0', borderBottom: '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
+  <div style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
     onClick={() => navigateContent(item, navigate)}
   >
     {/* Thumbnail */}
-    <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: '#f0f4ff', position: 'relative' }}>
+    <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }}>
       {item.banner_image
         ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📄</div>
@@ -215,12 +216,12 @@ const SidebarPost = ({ item, navigate, accent }) => {
     </div>
     {/* Title + Description */}
     <div style={{ flex: 1, minWidth: 0 }}>
-      <h4 style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', margin: '0 0 3px', lineHeight: 1.4,
+      <h4 style={{ fontWeight: 700, fontSize: 13, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 3px', lineHeight: 1.4,
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         transition: 'color .2s'
       }}
         onMouseEnter={e => e.currentTarget.style.color = isLandingPage ? '#6c5ce7' : accent}
-        onMouseLeave={e => e.currentTarget.style.color = '#0f172a'}
+        onMouseLeave={e => e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#0f172a'}
       >
         {item.title}
       </h4>
@@ -239,6 +240,7 @@ const CategoryList = () => {
   const pathSlug = window.location.pathname.replace('/', '');
   const slug = paramSlug || pathSlug;
   const navigate = useNavigate();
+  const { darkMode } = useTheme();
 
   const [contents, setContents] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
@@ -297,7 +299,7 @@ const CategoryList = () => {
   };
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+    <div style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
 
       {/* ── Hero Banner ── */}
       <HeroBanner
@@ -315,17 +317,17 @@ const CategoryList = () => {
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
             {/* Count bar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: 16, borderBottom: `3px solid ${accent}`, flexShrink: 0 }}>
-              <span style={{ fontWeight: 800, fontSize: 18, color: '#0f172a' }}>{pageTitle}</span>
-              <span style={{ fontSize: 13, color: '#94a3b8' }}>{total} posts found</span>
+              <span style={{ fontWeight: 800, fontSize: 18, color: darkMode ? '#f1f5f9' : '#0f172a' }}>{pageTitle}</span>
+              <span style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>{total} posts found</span>
             </div>
 
             <div>
               {loading
                 ? <Skeleton active paragraph={{ rows: 6 }} />
                 : contents.length === 0
-                  ? <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8', fontSize: 15 }}>No content found.</div>
+                  ? <div style={{ textAlign: 'center', padding: '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: 15 }}>No content found.</div>
                   : contents.slice(0, visibleCount).map(item => (
-                      <ListItem key={item.id} item={item} navigate={navigate} accent={accent} />
+                      <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
                     ))
               }
             </div>
@@ -335,9 +337,9 @@ const CategoryList = () => {
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
                 <button
                   onClick={() => setVisibleCount(v => Math.min(v + SEE_MORE_STEP, contents.length))}
-                  style={{ padding: '11px 36px', background: '#fff', color: accent, border: `2px solid ${accent}`, borderRadius: 30, fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ padding: '11px 36px', background: darkMode ? '#1e293b' : '#fff', color: accent, border: `2px solid ${accent}`, borderRadius: 30, fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = accent; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = darkMode ? '#1e293b' : '#fff'; e.currentTarget.style.color = accent; }}
                 >
                   See More
                  </button>
@@ -362,34 +364,34 @@ const CategoryList = () => {
           {/* ── Sidebar ── */}
           <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
             {/* Recent Posts */}
-            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5', marginBottom: 24 }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5', marginBottom: 24 }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
                 Recent Posts
               </div>
               {loading
                 ? <Skeleton active paragraph={{ rows: 6 }} />
                 : recentPosts.map(item => (
-                    <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} />
+                    <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
                   ))
               }
             </div>
 
             {/* Categories with Count */}
-            <div style={{ background: '#fff', borderRadius: 14, padding: '20px', boxShadow: '0 2px 16px rgba(0,0,0,.06)', border: '1px solid #eef0f5' }}>
+            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5' }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
                 Categories
               </div>
               {loading
                 ? <Skeleton active paragraph={{ rows: 5 }} />
                 : categoriesTree.length === 0
-                  ? <div style={{ fontSize: 13, color: '#94a3b8', padding: '8px 0' }}>No categories found.</div>
+                  ? <div style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#94a3b8', padding: '8px 0' }}>No categories found.</div>
                   : categoriesTree.map(parent => (
                       <div key={parent.id} style={{ marginBottom: 10 }}>
                         <div
-                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '6px 0', borderBottom: '1px solid #f1f5f9' }}
+                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '6px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f1f5f9' }}
                           onClick={() => navigate(`/category/${parent.slug}`)}
                         >
-                          <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{parent.name}</span>
+                          <span style={{ fontWeight: 700, fontSize: 13, color: darkMode ? '#f1f5f9' : '#0f172a' }}>{parent.name}</span>
                           <span style={{ fontSize: 11, fontWeight: 700, background: `${accent}18`, color: accent, borderRadius: 20, padding: '2px 8px', minWidth: 24, textAlign: 'center' }}>
                             {parent.count}
                           </span>
@@ -400,8 +402,8 @@ const CategoryList = () => {
                             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0 4px 14px' }}
                             onClick={() => navigate(`/category/${sub.slug}`)}
                           >
-                            <span style={{ fontSize: 12, color: '#475569' }}>↳ {sub.name}</span>
-                            <span style={{ fontSize: 11, fontWeight: 600, background: '#f1f5f9', color: '#64748b', borderRadius: 20, padding: '1px 7px', minWidth: 20, textAlign: 'center' }}>
+                            <span style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#475569' }}>↳ {sub.name}</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, background: darkMode ? '#334155' : '#f1f5f9', color: darkMode ? '#94a3b8' : '#64748b', borderRadius: 20, padding: '1px 7px', minWidth: 20, textAlign: 'center' }}>
                               {sub.count}
                             </span>
                           </div>

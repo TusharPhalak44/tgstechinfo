@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Statistic, Grid } from 'antd';
+import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Statistic, Grid, ConfigProvider } from 'antd';
 import {
   FormOutlined,
   PlusOutlined,
@@ -8,6 +8,7 @@ import {
   EyeOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -18,6 +19,7 @@ const Forms = () => {
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
   const isDesktop = screens.lg;
+  const { darkMode } = useTheme();
 
   const [forms, setForms] = useState([
     {
@@ -106,7 +108,7 @@ const Forms = () => {
       dataIndex: 'name',
       key: 'name',
       width: isMobile ? 120 : 150,
-      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{text}</Text>,
+      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'Type',
@@ -121,14 +123,14 @@ const Forms = () => {
       key: 'fields',
       width: isMobile ? 60 : 80,
       responsive: ['md'],
-      render: (count) => <Text style={{ fontSize: isMobile ? 12 : 14 }}>{count} fields</Text>,
+      render: (count) => <Text style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{count} fields</Text>,
     },
     {
       title: 'Submissions',
       dataIndex: 'submissions',
       key: 'submissions',
       width: isMobile ? 90 : 110,
-      render: (count) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{count.toLocaleString()}</Text>,
+      render: (count) => <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{count.toLocaleString()}</Text>,
     },
     {
       title: 'Last Submission',
@@ -136,7 +138,7 @@ const Forms = () => {
       key: 'lastSubmission',
       width: isMobile ? 90 : 120,
       responsive: ['lg'],
-      render: (date) => <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14 }}>{date || 'N/A'}</Text>,
+      render: (date) => <Text type="secondary" style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#94a3b8' : '#6B7280' }}>{date || 'N/A'}</Text>,
     },
     {
       title: 'Status',
@@ -221,16 +223,27 @@ const Forms = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="w-full sm:w-auto">
-          <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
-            <FormOutlined /> Forms
-          </Title>
-          <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
-            Create and manage website forms
-          </Text>
-        </div>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorText: darkMode ? '#cbd5e1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#e5e7eb',
+          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+        },
+      }}
+    >
+      <div className="p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="w-full sm:w-auto">
+            <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 8 }}>
+              <FormOutlined /> Forms
+            </Title>
+            <Text style={{ fontSize: isMobile ? 13 : 15, color: darkMode ? '#94a3b8' : '#6B7280' }}>
+              Create and manage website forms
+            </Text>
+          </div>
         <Button 
           type="primary" 
           icon={<PlusOutlined />} 
@@ -247,17 +260,17 @@ const Forms = () => {
           <Card
             style={{
               borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
               margin: isMobile ? '0 4px' : '0',
             }}
             bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Total Forms</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Total Forms</Text>}
               value={forms.length}
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}
             />
           </Card>
         </Col>
@@ -265,17 +278,17 @@ const Forms = () => {
           <Card
             style={{
               borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
               margin: isMobile ? '0 4px' : '0',
             }}
             bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Total Submissions</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Total Submissions</Text>}
               value={forms.reduce((acc, f) => acc + f.submissions, 0)}
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}
             />
           </Card>
         </Col>
@@ -283,17 +296,17 @@ const Forms = () => {
           <Card
             style={{
               borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
               margin: isMobile ? '0 4px' : '0',
             }}
             bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Active Forms</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Active Forms</Text>}
               value={forms.filter(f => f.status === 'active').length}
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}
             />
           </Card>
         </Col>
@@ -301,17 +314,17 @@ const Forms = () => {
           <Card
             style={{
               borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
               margin: isMobile ? '0 4px' : '0',
             }}
             bodyStyle={{ padding: isMobile ? '16px 8px' : '20px' }}
           >
             <Statistic
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Avg Fields</Text>}
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Avg Fields</Text>}
               value={Math.round(forms.reduce((acc, f) => acc + f.fields, 0) / forms.length) || 0}
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }}
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}
             />
           </Card>
         </Col>
@@ -320,8 +333,8 @@ const Forms = () => {
       <Card
         style={{
           borderRadius: 12,
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+          boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
         }}
         bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
       >
@@ -358,7 +371,7 @@ const Forms = () => {
             label="Form Name"
             rules={[{ required: true, message: 'Please enter form name' }]}
           >
-            <Input placeholder="Enter form name" />
+            <Input placeholder="Enter form name" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
           </Form.Item>
 
           <Form.Item
@@ -366,7 +379,7 @@ const Forms = () => {
             label="Form Type"
             rules={[{ required: true, message: 'Please select form type' }]}
           >
-            <Select placeholder="Select form type">
+            <Select placeholder="Select form type" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
               <Option value="Contact">Contact</Option>
               <Option value="Newsletter">Newsletter</Option>
               <Option value="Feedback">Feedback</Option>
@@ -381,7 +394,7 @@ const Forms = () => {
             label="Status"
             rules={[{ required: true, message: 'Please select status' }]}
           >
-            <Select placeholder="Select status">
+            <Select placeholder="Select status" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
               <Option value="active">Active</Option>
               <Option value="inactive">Inactive</Option>
             </Select>
@@ -389,6 +402,7 @@ const Forms = () => {
         </Form>
       </Modal>
     </div>
+    </ConfigProvider>
   );
 };
 

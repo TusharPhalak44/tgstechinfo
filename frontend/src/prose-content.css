@@ -9,6 +9,110 @@
   width: 100%;
 }
 
+/* ── Dark mode support ── */
+[data-theme="dark"] .prose-content,
+.dark-mode .prose-content {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .prose-content p,
+.dark-mode .prose-content p {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .prose-content h1,
+[data-theme="dark"] .prose-content h2,
+[data-theme="dark"] .prose-content h3,
+[data-theme="dark"] .prose-content h4,
+[data-theme="dark"] .prose-content h5,
+[data-theme="dark"] .prose-content h6,
+.dark-mode .prose-content h1,
+.dark-mode .prose-content h2,
+.dark-mode .prose-content h3,
+.dark-mode .prose-content h4,
+.dark-mode .prose-content h5,
+.dark-mode .prose-content h6 {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .prose-content h2,
+.dark-mode .prose-content h2 {
+  border-bottom-color: #334155;
+}
+
+[data-theme="dark"] .prose-content h5,
+.dark-mode .prose-content h5 {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .prose-content h6,
+.dark-mode .prose-content h6 {
+  color: #64748b;
+}
+
+[data-theme="dark"] .prose-content li,
+.dark-mode .prose-content li {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .prose-content blockquote,
+.dark-mode .prose-content blockquote {
+  background: rgba(30, 41, 59, 0.5);
+  border-left-color: #4a7cff;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .prose-content strong,
+[data-theme="dark"] .prose-content b,
+.dark-mode .prose-content strong,
+.dark-mode .prose-content b {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .prose-content code,
+.dark-mode .prose-content code {
+  background: #1e293b;
+  color: #f472b6;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .prose-content pre,
+.dark-mode .prose-content pre {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .prose-content th,
+.dark-mode .prose-content th {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .prose-content td,
+.dark-mode .prose-content td {
+  color: #cbd5e1;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .prose-content tr:nth-child(even) td,
+.dark-mode .prose-content tr:nth-child(even) td {
+  background: rgba(30, 41, 59, 0.3);
+}
+
+[data-theme="dark"] .prose-content hr,
+.dark-mode .prose-content hr {
+  border-top-color: #334155;
+}
+
+[data-theme="dark"] .prose-content .two-col-text,
+[data-theme="dark"] .prose-content [data-two-col] > div,
+.dark-mode .prose-content .two-col-text,
+.dark-mode .prose-content [data-two-col] > div {
+  color: #cbd5e1;
+}
+
 /* ── Paragraphs ── */
 .prose-content p {
   margin: 0 0 0.85em 0;

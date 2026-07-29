@@ -23,11 +23,10 @@ const isValidBusinessEmail = (email) => {
 };
 
 const QuerySubmissionForm = () => {
-  const { submitQuery, query, setShowQueryForm } = useChat();
+  const { submitQuery, query, setShowQueryForm, addUserMessage, addBotMessage, endChat } = useChat();
   const [email, setEmail] = useState('');
   const [userQuery, setUserQuery] = useState(query || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim() || !userQuery.trim()) {
@@ -44,7 +43,12 @@ const QuerySubmissionForm = () => {
     setIsSubmitting(true);
     try {
       await submitQuery(email.trim(), userQuery.trim());
-      setSubmitted(true);
+      
+      setShowQueryForm(false);
+      addBotMessage('✅ Thank you for your query.\n\nYour query has been submitted successfully.\n\nOur administrator has received your request.\n\nYou will receive a response on your registered email address shortly.', 'query_success', {
+        onContinueChat: () => {},
+        onStopChat: () => { endChat(); }
+      });
     } catch (error) {
       console.error('Failed to submit query:', error);
       message.error('Failed to submit query. Please try again.');
@@ -56,53 +60,6 @@ const QuerySubmissionForm = () => {
   const handleClose = () => {
     setShowQueryForm(false);
   };
-
-  if (submitted) {
-    return (
-      <div style={{
-        textAlign: 'center',
-        padding: '40px 20px',
-        background: 'linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%)',
-        borderRadius: 12,
-        border: '1px solid #a5d6a7',
-        marginBottom: 20
-      }}>
-        <div style={{
-          fontSize: 48,
-          marginBottom: 16
-        }}>
-          ✓
-        </div>
-        <h4 style={{
-          fontSize: 18,
-          fontWeight: 600,
-          color: '#2e7d32',
-          margin: '0 0 8px 0'
-        }}>
-          Thank You
-        </h4>
-        <p style={{
-          fontSize: 14,
-          color: '#388e3c',
-          margin: '0 0 20px 0'
-        }}>
-          Your query has been submitted successfully.
-          <br />
-          Our support team will contact you soon.
-        </p>
-        <Button
-          onClick={handleClose}
-          style={{
-            background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
-            borderColor: 'transparent',
-            color: '#fff'
-          }}
-        >
-          Close
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div style={{

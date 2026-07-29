@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Space, Typography, message, Tag, Popconfirm, Tooltip } from 'antd';
+import { Card, Table, Button, Space, Typography, message, Tag, Popconfirm, Tooltip, Grid } from 'antd';
 import { 
   LaptopOutlined, 
   MobileOutlined, 
@@ -13,8 +13,13 @@ import axios from 'axios';
 import moment from 'moment';
 
 const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
 
 const SessionManagement = () => {
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -60,12 +65,12 @@ const SessionManagement = () => {
   const getDeviceIcon = (deviceType) => {
     switch (deviceType?.toLowerCase()) {
       case 'mobile':
-        return <MobileOutlined style={{ fontSize: 20 }} />;
+        return <MobileOutlined style={{ fontSize: isMobile ? 16 : 20 }} />;
       case 'tablet':
-        return <TabletOutlined style={{ fontSize: 20 }} />;
+        return <TabletOutlined style={{ fontSize: isMobile ? 16 : 20 }} />;
       case 'desktop':
       default:
-        return <DesktopOutlined style={{ fontSize: 20 }} />;
+        return <DesktopOutlined style={{ fontSize: isMobile ? 16 : 20 }} />;
     }
   };
 
@@ -80,12 +85,12 @@ const SessionManagement = () => {
       title: 'Device',
       key: 'device',
       render: (_, record) => (
-        <Space>
+        <Space size={isMobile ? 4 : 8}>
           {getDeviceIcon(record.device_type)}
           <div>
-            <Text strong>{record.device_name || 'Unknown Device'}</Text>
+            <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{record.device_name || 'Unknown Device'}</Text>
             <br />
-            <Text type="secondary" style={{ fontSize: 12 }}>
+            <Text type="secondary" style={{ fontSize: isMobile ? 10 : 12 }}>
               {record.browser} on {record.os}
             </Text>
           </div>
@@ -96,28 +101,29 @@ const SessionManagement = () => {
       title: 'Location',
       dataIndex: 'ip_address',
       key: 'ip_address',
-      render: (ip) => <Text code>{ip}</Text>
+      responsive: ['md'],
+      render: (ip) => <Text code style={{ fontSize: isMobile ? 11 : 13 }}>{ip}</Text>
     },
     {
       title: 'Last Activity',
       dataIndex: 'last_activity',
       key: 'last_activity',
-      render: (date) => moment(date).fromNow()
+      render: (date) => <Text style={{ fontSize: isMobile ? 11 : 13 }}>{moment(date).fromNow()}</Text>
     },
     {
       title: 'Status',
       key: 'status',
       render: (_, record) => (
-        <Space>
+        <Space size={isMobile ? 2 : 4} wrap>
           {isCurrentSession(record) ? (
-            <Tag color="blue" icon={<SafetyOutlined />}>Current Session</Tag>
+            <Tag color="blue" icon={<SafetyOutlined />} style={{ fontSize: isMobile ? 10 : 12 }}>Current</Tag>
           ) : (
-            <Tag color={record.is_active ? 'green' : 'red'}>
+            <Tag color={record.is_active ? 'green' : 'red'} style={{ fontSize: isMobile ? 10 : 12 }}>
               {record.is_active ? 'Active' : 'Inactive'}
             </Tag>
           )}
           {moment(record.expires_at).isBefore(moment()) && (
-            <Tag color="orange">Expired</Tag>
+            <Tag color="orange" style={{ fontSize: isMobile ? 10 : 12 }}>Expired</Tag>
           )}
         </Space>
       )
@@ -141,8 +147,9 @@ const SessionManagement = () => {
                 danger 
                 icon={<LogoutOutlined />}
                 disabled={!record.is_active}
+                style={{ padding: isMobile ? '0 4px' : '0 8px' }}
               >
-                Revoke
+                {!isMobile && 'Revoke'}
               </Button>
             </Popconfirm>
           )}
@@ -152,10 +159,10 @@ const SessionManagement = () => {
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: isMobile ? '12px' : '24px' }}>
       <Card>
-        <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Title level={3}>Active Sessions</Title>
+        <div style={{ marginBottom: isMobile ? 12 : 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: isMobile ? 8 : 0 }}>
+          <Title level={isMobile ? 4 : 3} style={{ fontSize: isMobile ? 18 : 24, marginBottom: 0 }}>Active Sessions</Title>
           <Popconfirm
             title="Revoke All Other Sessions"
             description="This will sign you out from all other devices except your current one. Continue?"
@@ -164,8 +171,13 @@ const SessionManagement = () => {
             cancelText="Cancel"
             okType="danger"
           >
-            <Button danger icon={<LogoutOutlined />}>
-              Revoke All Other Sessions
+            <Button 
+              danger 
+              icon={<LogoutOutlined />}
+              size={isMobile ? 'small' : 'middle'}
+              style={{ width: isMobile ? '100%' : 'auto' }}
+            >
+              {!isMobile && 'Revoke All Other Sessions'}
             </Button>
           </Popconfirm>
         </div>
@@ -176,10 +188,12 @@ const SessionManagement = () => {
           loading={loading}
           rowKey="id"
           pagination={false}
+          scroll={{ x: isMobile ? 600 : 800 }}
+          size={isMobile ? 'small' : 'middle'}
         />
 
-        <div style={{ marginTop: 16 }}>
-          <Text type="secondary">
+        <div style={{ marginTop: isMobile ? 12 : 16 }}>
+          <Text type="secondary" style={{ fontSize: isMobile ? 11 : 13 }}>
             <SafetyOutlined /> Sessions are automatically revoked after 7 days of inactivity.
           </Text>
         </div>

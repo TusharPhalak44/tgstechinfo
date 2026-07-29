@@ -29,7 +29,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Privacy Policy',
       content: 'We take your privacy seriously. Our Privacy Policy explains how we collect, use, and protect your personal information. We comply with GDPR and other data protection regulations.',
-      link: '/privacy'
+      link: '/privacy-policy'
     }
   },
   terms: {
@@ -37,7 +37,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Terms of Service',
       content: 'Our Terms of Service outline the rules and guidelines for using our platform. By using our services, you agree to these terms.',
-      link: '/terms'
+      link: '/terms-of-use'
     }
   },
   cookies: {
@@ -45,7 +45,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Cookie Policy',
       content: 'We use cookies to improve your browsing experience and analyze site traffic. You can manage your cookie preferences through our cookie consent banner.',
-      link: '/cookies'
+      link: '/cookie-policy'
     }
   },
   download: {
@@ -61,7 +61,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Lead Generation',
       content: 'Our platform helps businesses generate qualified leads through gated content. Users provide their contact information to access premium content, enabling you to build your sales pipeline.',
-      link: '/services/lead-generation'
+      link: '/contact'
     }
   },
   demand_generation: {
@@ -69,7 +69,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Demand Generation',
       content: 'We help create market demand for your products and services through strategic content marketing. Our approach focuses on educating prospects and nurturing them through the buyer journey.',
-      link: '/services/demand-generation'
+      link: '/contact'
     }
   },
   newsletter: {
@@ -85,7 +85,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Support',
       content: 'For technical support or account-related issues, please contact our support team. You can also submit a query through this chatbot, and our team will get back to you.',
-      link: '/support'
+      link: '/contact'
     }
   },
   career: {
@@ -93,7 +93,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Careers',
       content: 'We are always looking for talented individuals to join our team. Check our careers page for current job openings and application details.',
-      link: '/careers'
+      link: '/contact'
     }
   },
   pricing: {
@@ -101,7 +101,7 @@ const WEBSITE_KNOWLEDGE_BASE = {
     answer: {
       title: 'Pricing',
       content: 'For enterprise pricing and custom solutions, please contact our sales team. We offer flexible plans based on your business needs.',
-      link: '/pricing'
+      link: '/contact'
     }
   }
 };

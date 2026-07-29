@@ -33,7 +33,27 @@ function detectIntent(query) {
     };
   }
   
-  // Reject very short meaningless inputs (single character)
+  // Greeting detection - check BEFORE short input rejection
+  const greetings = [
+    'hi', 'hii', 'hiii', 'hello', 'hey', 'heyy', 'heyyy', 'greetings', 'good morning', 'good afternoon',
+    'good evening', 'how are you', 'howdy', 'thanks', 'thank you', 'ok',
+    'okay', 'bye', 'goodbye', 'sure', 'yes', 'no', 'maybe', 'sup', 'wassup', 'whatsup'
+  ];
+
+  const isGreeting = greetings.some(greeting =>
+    lowerQuery === greeting ||
+    lowerQuery === greeting + '!' ||
+    lowerQuery === greeting + '.' ||
+    lowerQuery === greeting + '!!' ||
+    lowerQuery === greeting + '...'
+  );
+
+  if (isGreeting) {
+    console.log('[detectIntent] Detected intent: greeting');
+    return { intent: 'greeting', confidence: 'high' };
+  }
+
+  // Reject very short meaningless inputs (single character) - AFTER greeting check
   if (wordCount === 1 && lowerQuery.length <= 2) {
     console.log('[detectIntent] Detected intent: unknown (too_short)');
     return {
@@ -67,28 +87,6 @@ function detectIntent(query) {
   }
   
   const queryToCheck = normalizedQuery;
-  
-  // Greeting detection - highest priority
-  const greetings = [
-    'hi', 'hello', 'hey', 'greetings', 'good morning', 'good afternoon', 
-    'good evening', 'how are you', 'howdy', 'thanks', 'thank you', 'ok', 
-    'okay', 'bye', 'goodbye', 'sure', 'yes', 'no', 'maybe'
-  ];
-  
-  const isGreeting = greetings.some(greeting => 
-    lowerQuery === greeting || 
-    lowerQuery.startsWith(greeting) || 
-    lowerQuery === greeting + '!' ||
-    lowerQuery === greeting + '.'
-  );
-  
-  if (isGreeting) {
-    console.log('[detectIntent] Detected intent: greeting');
-    return {
-      intent: 'greeting',
-      confidence: 'high'
-    };
-  }
   
   // Business inquiry detection - high priority
   // Use word boundaries to avoid matching content-related terms like "AI pricing" or "Cloud enterprise"

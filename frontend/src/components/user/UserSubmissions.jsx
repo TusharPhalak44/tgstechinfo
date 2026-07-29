@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Select, Input, Button, message, Tooltip } from 'antd';
+import { Table, Select, Input, Button, message, Tooltip, ConfigProvider, theme } from 'antd';
 import { SearchOutlined, ReloadOutlined, FileTextOutlined } from '@ant-design/icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const getDisplayName = (extra_fields) => {
   if (!extra_fields) return '—';
@@ -25,6 +26,7 @@ import moment from 'moment';
 const { Option } = Select;
 
 const UserSubmissions = () => {
+  const { darkMode } = useTheme();
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
@@ -81,9 +83,9 @@ const UserSubmissions = () => {
         const email = getEmail(r.extra_fields);
         return (
           <div>
-            <div style={{ fontWeight: 600, fontSize: 13 }}>{name}</div>
+            <div style={{ fontWeight: 600, fontSize: 13, color: darkMode ? '#f1f5f9' : '#1a1a2e' }}>{name}</div>
             {email && <a href={`mailto:${email}`} style={{ fontSize: 11, color: '#4a7cff' }}>{email}</a>}
-            <div style={{ fontSize: 11, color: '#8c8c8c' }}>ID #{r.id}</div>
+            <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>ID #{r.id}</div>
           </div>
         );
       },
@@ -95,26 +97,26 @@ const UserSubmissions = () => {
       render: v => v ? (
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
           <FileTextOutlined style={{ color: '#4a7cff', fontSize: 13, marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: '#1a1a2e', lineHeight: 1.4 }}>{v}</span>
+          <span style={{ fontSize: 12, color: darkMode ? '#e2e8f0' : '#1a1a2e', lineHeight: 1.4 }}>{v}</span>
         </div>
-      ) : <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>,
+      ) : <span style={{ color: darkMode ? '#4b5563' : '#d9d9d9', fontSize: 12 }}>—</span>,
     },
     {
       title: 'Extra Fields',
       dataIndex: 'extra_fields',
       width: 220,
       render: (val) => {
-        if (!val) return <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>;
+        if (!val) return <span style={{ color: darkMode ? '#4b5563' : '#d9d9d9', fontSize: 12 }}>—</span>;
         let data;
-        try { data = typeof val === 'string' ? JSON.parse(val) : val; } catch { return <span style={{ color: '#d9d9d9' }}>—</span>; }
+        try { data = typeof val === 'string' ? JSON.parse(val) : val; } catch { return <span style={{ color: darkMode ? '#4b5563' : '#d9d9d9' }}>—</span>; }
         const entries = Object.entries(data);
-        if (!entries.length) return <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>;
+        if (!entries.length) return <span style={{ color: darkMode ? '#4b5563' : '#d9d9d9', fontSize: 12 }}>—</span>;
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {entries.map(([k, v]) => (
               <div key={k} style={{ fontSize: 11 }}>
-                <span style={{ display: 'inline-block', background: '#f0f5ff', color: '#4a7cff', borderRadius: 4, padding: '1px 6px', fontWeight: 600, marginRight: 4 }}>{k}</span>
-                <span style={{ color: '#1a1a2e' }}>{String(v)}</span>
+                <span style={{ display: 'inline-block', background: darkMode ? '#1e3a8a' : '#f0f5ff', color: '#4a7cff', borderRadius: 4, padding: '1px 6px', fontWeight: 600, marginRight: 4 }}>{k}</span>
+                <span style={{ color: darkMode ? '#e2e8f0' : '#1a1a2e' }}>{String(v)}</span>
               </div>
             ))}
           </div>
@@ -147,19 +149,30 @@ const UserSubmissions = () => {
       width: 130,
       render: v => (
         <div>
-          <div style={{ fontSize: 12, fontWeight: 500 }}>{moment(v).format('MMM D, YYYY')}</div>
-          <div style={{ fontSize: 11, color: '#8c8c8c' }}>{moment(v).format('h:mm A')}</div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: darkMode ? '#f1f5f9' : '#1a1a2e' }}>{moment(v).format('MMM D, YYYY')}</div>
+          <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>{moment(v).format('h:mm A')}</div>
         </div>
       ),
     },
   ];
 
   return (
-    <div style={{ padding: '24px', background: '#f7f8fa', minHeight: '100vh' }}>
+    <ConfigProvider
+      theme={{
+        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          colorBgContainer: darkMode ? '#1a1a1a' : '#ffffff',
+          colorBorder: darkMode ? '#334155' : '#E5E7EB',
+          colorText: darkMode ? '#e2e8f0' : '#1a1a1a',
+          colorTextSecondary: darkMode ? '#94a3b8' : '#6B7280',
+        },
+      }}
+    >
+      <div style={{ padding: '24px', background: darkMode ? '#0f172a' : '#f7f8fa', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a2e', margin: 0 }}>My Article Submissions</h1>
-          <p style={{ fontSize: 13, color: '#8c8c8c', margin: '4px 0 0' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', margin: 0 }}>My Article Submissions</h1>
+          <p style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#8c8c8c', margin: '4px 0 0' }}>
             Visitors who submitted the landing page form for your articles
           </p>
         </div>
@@ -172,18 +185,18 @@ const UserSubmissions = () => {
           { label: 'Total Submissions', value: total, color: '#4a7cff' },
           { label: 'Articles Tracked', value: articles.length, color: '#e17055' },
         ].map(s => (
-          <div key={s.label} style={{ background: '#fff', borderRadius: 12, padding: '16px 24px', border: '1px solid #f0f0f0', minWidth: 160 }}>
+          <div key={s.label} style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '16px 24px', border: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', minWidth: 160 }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: '#8c8c8c' }}>{s.label}</div>
+            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Filters */}
-      <div style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', border: '1px solid #f0f0f0', marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '16px 20px', border: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <Input
           placeholder="Search by name, email or phone..."
-          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+          prefix={<SearchOutlined style={{ color: darkMode ? '#64748b' : '#bfbfbf' }} />}
           value={search}
           onChange={e => setSearch(e.target.value)}
           allowClear
@@ -200,19 +213,19 @@ const UserSubmissions = () => {
         >
           {articles.map(c => <Option key={c.id} value={c.id}>{c.title}</Option>)}
         </Select>
-        <div style={{ marginLeft: 'auto', fontSize: 13, color: '#8c8c8c' }}>
-          Showing <strong style={{ color: '#1a1a2e' }}>{filtered.length}</strong> of <strong style={{ color: '#1a1a2e' }}>{total}</strong>
+        <div style={{ marginLeft: 'auto', fontSize: 13, color: darkMode ? '#94a3b8' : '#8c8c8c' }}>
+          Showing <strong style={{ color: darkMode ? '#f1f5f9' : '#1a1a2e' }}>{filtered.length}</strong> of <strong style={{ color: darkMode ? '#f1f5f9' : '#1a1a2e' }}>{total}</strong>
         </div>
       </div>
 
       {/* Table */}
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #f0f0f0', overflow: 'hidden' }}>
+      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', overflow: 'hidden' }}>
         <Table
           dataSource={filtered}
           columns={columns}
           rowKey="id"
           loading={loading}
-          scroll={{ x: 1000 }}
+          scroll={{ x: 1000, y: 500 }}
           pagination={{
             current: page,
             pageSize,
@@ -225,7 +238,8 @@ const UserSubmissions = () => {
           size="middle"
         />
       </div>
-    </div>
+      </div>
+    </ConfigProvider>
   );
 };
 

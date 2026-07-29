@@ -1140,7 +1140,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
   }
 };
 
-const SectionRenderer = ({ type, props }) => {
+const SectionRenderer = ({ type, props, darkMode = false }) => {
   const {
     form, categories, contentTypes, setSelectedTypeName,
     fileList, setFileList, pdfList, setPdfList,
@@ -1148,13 +1148,19 @@ const SectionRenderer = ({ type, props }) => {
     onAddContentElement, contentElements, onRemoveContentElement, onUpdateContentElement
   } = props;
 
-  const sectionStyle = { background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' };
+  const sectionStyle = { 
+    background: darkMode ? '#1e293b' : '#fff', 
+    borderRadius: 12, 
+    padding: '24px 28px', 
+    marginBottom: 20, 
+    border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' 
+  };
 
   switch (type) {
     case 'content_type_category':
       return (
         <div style={sectionStyle}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</span>
           <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
             <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
               <AntSelect placeholder="Select type" size="large" onChange={val => {
@@ -1178,12 +1184,12 @@ const SectionRenderer = ({ type, props }) => {
         <div style={sectionStyle}>
           <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
             <AntInput placeholder="Article title..." size="large"
-              style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: '#1a1a1a' }} />
+              style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
           </Form.Item>
           <Form.Item name="short_description"
-            label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><Info className="ml-2" style={{ color: '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+            label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><Info className="ml-2" style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
             rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
-            <AntInput.TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7 }} />
+            <AntInput.TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
           </Form.Item>
         </div>
       );
@@ -1196,21 +1202,21 @@ const SectionRenderer = ({ type, props }) => {
         <div style={sectionStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div>
-              <span style={{ fontSize: 14, fontWeight: 600 }}><Image className="inline mr-2" style={{ color: '#4a7cff' }} />Banner Image</span>
-              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><Image className="inline mr-2" style={{ color: '#4a7cff' }} />Banner Image</span>
+              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
             </div>
             <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
               <Button size="small" icon={<UploadIcon className="w-4 h-4" />}>{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
             </Upload>
           </div>
           {bannerUrl ? (
-            <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+            <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
               <img src={bannerUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
             </div>
           ) : (
-            <div style={{ border: '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: '#fafafa' }}>
-              <Image style={{ fontSize: 32, color: '#bfbfbf', marginBottom: 8, display: 'block' }} />
-              <span style={{ color: '#8c8c8c', fontSize: 13 }}>No banner image</span>
+            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+              <Image style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+              <span style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner image</span>
             </div>
           )}
         </div>
@@ -1222,23 +1228,23 @@ const SectionRenderer = ({ type, props }) => {
         <div style={sectionStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div>
-              <span style={{ fontSize: 14, fontWeight: 600 }}><FileText className="inline mr-2" style={{ color: '#ff4d4f' }} />PDF Attachment</span>
-              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>This PDF will be downloaded when user submits the access form</div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><FileText className="inline mr-2" style={{ color: '#ff4d4f' }} />PDF Attachment</span>
+              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This PDF will be downloaded when user submits the access form</div>
             </div>
             <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
               <Button size="small" icon={<UploadIcon className="w-4 h-4" />}>{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
             </Upload>
           </div>
           {pdfList.length > 0 ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: '#fff2f0', borderRadius: 8, border: '1px solid #ffccc7' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0', borderRadius: 8, border: darkMode ? '1px solid #ef4444' : '1px solid #ffccc7' }}>
               <FileText style={{ color: '#ff4d4f', fontSize: 20 }} />
-              <span style={{ flex: 1, fontSize: 13 }}>{pdfList[0].name}</span>
+              <span style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{pdfList[0].name}</span>
               <Button type="text" size="small" danger icon={<Trash2 className="w-4 h-4" />} onClick={() => setPdfList([])} />
             </div>
           ) : (
-            <div style={{ border: '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: '#fff2f0' }}>
+            <div style={{ border: darkMode ? '2px dashed #ef4444' : '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0' }}>
               <FileText style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
-              <span style={{ color: '#8c8c8c', fontSize: 13 }}>No PDF attached</span>
+              <span style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No PDF attached</span>
             </div>
           )}
         </div>
@@ -1250,13 +1256,13 @@ const SectionRenderer = ({ type, props }) => {
       const isMobile = window.innerWidth < 768;
       return (
         <div style={sectionStyle}>
-          <div style={{ padding: '14px 28px', borderBottom: '1px solid #f0f0f0' }}>
-            <span style={{ fontSize: 14, fontWeight: 600 }}>Content</span>
+          <div style={{ padding: '14px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}>Content</span>
           </div>
           <div style={{ display: 'flex', gap: 16, padding: '16px 28px', flexDirection: isMobile ? 'column' : 'row' }}>
             {/* Left sidebar for content elements */}
             <div style={{ width: isMobile ? '100%' : 180, flexShrink: 0 }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                 Content Blocks
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : '1fr', gap: isMobile ? 8 : 0 }}>
@@ -1274,24 +1280,24 @@ const SectionRenderer = ({ type, props }) => {
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       padding: '8px 10px', marginBottom: 6,
-                      background: '#fff', borderRadius: 8,
-                      border: '1px solid #e8e8e8', cursor: isMobile ? 'pointer' : 'grab',
+                      background: darkMode ? '#0f172a' : '#fff', borderRadius: 8,
+                      border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: isMobile ? 'pointer' : 'grab',
                       transition: 'all 0.15s'
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = '#f0f4ff'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = '#fff'; }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fff'; }}
                   >
                     <span style={{ width: 24, height: 24, borderRadius: 6, background: '#e6f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7cff', fontSize: 11, fontWeight: 600 }}>
                       {el.icon}
                     </span>
-                    <span style={{ fontSize: 12, color: '#1a1a2e', fontWeight: 500, flex: 1 }}>
+                    <span style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', fontWeight: 500, flex: 1 }}>
                       {el.label}
                     </span>
                   </div>
                 ))}
               </div>
               {isMobile && (
-                <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 8, fontStyle: 'italic' }}>
+                <div style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 8, fontStyle: 'italic' }}>
                   Tap blocks to add them
                 </div>
               )}
@@ -1301,7 +1307,7 @@ const SectionRenderer = ({ type, props }) => {
             <div style={{ flex: 1, minWidth: 0 }}>
               {props.contentElements && props.contentElements.length > 0 ? (
                 <div 
-                  style={{ minHeight: 200, border: '1px solid #e8e8e8', borderRadius: 8, padding: 16, background: '#fafafa' }}
+                  style={{ minHeight: 200, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', borderRadius: 8, padding: 16, background: darkMode ? '#0f172a' : '#fafafa' }}
                   onDragOver={e => !isMobile && e.preventDefault()}
                   onDrop={(e) => {
                     if (isMobile) return;
@@ -1317,20 +1323,21 @@ const SectionRenderer = ({ type, props }) => {
                     <div
                       key={element.id}
                       onDragEnter={() => !isMobile && props.onContentDragEnter?.(index)}
-                      onDragEnd={!isMobile ? props.onContentDragEnd : undefined}
+                    
                       onDragOver={e => !isMobile && e.preventDefault()}
                       style={{
-                        marginBottom: 12, padding: 12, background: '#fff',
-                        borderRadius: 8, border: '1px solid #e8e8e8', cursor: 'default'
+                        marginBottom: 12, padding: 12, background: darkMode ? '#1e293b' : '#fff',
+                        borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'default'
                       }}
                     >
                       <div
                         draggable={!isMobile}
                         onDragStart={() => !isMobile && props.onContentDragStart?.(index)}
+                       onDragEnd={!isMobile ? props.onContentDragEnd : undefined}
                         style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: isMobile ? 'default' : 'grab' }}
                       >
-                        {!isMobile && <GripVertical style={{ color: '#bfbfbf', width: 16, height: 16 }} />}
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        {!isMobile && <GripVertical style={{ color: darkMode ? '#475569' : '#bfbfbf', width: 16, height: 16 }} />}
+                        <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                           {element.label}
                         </span>
                         <Button
@@ -1349,9 +1356,9 @@ const SectionRenderer = ({ type, props }) => {
               ) : (
                 <div 
                   style={{
-                    minHeight: 200, border: '2px dashed #e8e8e8', borderRadius: 8,
+                    minHeight: 200, border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 8, background: '#fafafa'
+                    gap: 8, background: darkMode ? '#0f172a' : '#fafafa'
                   }}
                   onDragOver={e => !isMobile && e.preventDefault()}
                   onDrop={(e) => {
@@ -1365,10 +1372,10 @@ const SectionRenderer = ({ type, props }) => {
                   }}
                 >
                   <div style={{ fontSize: 32 }}>📝</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#595959' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#595959' }}>
                     {isMobile ? 'Tap blocks above to add them' : 'Drag blocks from the left panel to add them'}
                   </div>
-                  <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c' }}>
                     {isMobile ? 'Use desktop to drag and reorder' : 'Drag to reorder after adding'}
                   </div>
                 </div>
@@ -1381,8 +1388,8 @@ const SectionRenderer = ({ type, props }) => {
     case 'tags':
       return (
         <div style={sectionStyle}>
-          <Form.Item name="tags" label="Tags" style={{ marginBottom: 0 }}>
-            <AntSelect mode="tags" placeholder="Add tags and press Enter..." />
+          <Form.Item name="tags" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Tags</span>} style={{ marginBottom: 0 }}>
+            <AntSelect mode="tags" placeholder="Add tags and press Enter..." style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
           </Form.Item>
         </div>
       );
@@ -1390,8 +1397,8 @@ const SectionRenderer = ({ type, props }) => {
     case 'schedule':
       return (
         <div style={sectionStyle}>
-          <Form.Item name="scheduled_publish_date" label="Schedule" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
-            <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
+          <Form.Item name="scheduled_publish_date" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Schedule</span>} style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
+            <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
           </Form.Item>
         </div>
       );
@@ -1399,8 +1406,8 @@ const SectionRenderer = ({ type, props }) => {
     case 'reorder_layout':
       return (
         <div style={sectionStyle}>
-          <span style={{ fontSize: 14, fontWeight: 600 }}>Reorder Layout</span>
-          <div style={{ marginTop: 16, padding: '16px', background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8', color: '#8c8c8c', fontSize: 13 }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}>Reorder Layout</span>
+          <div style={{ marginTop: 16, padding: '16px', background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>
             Layout reordering functionality - drag sections to reorder
           </div>
         </div>
@@ -1409,16 +1416,16 @@ const SectionRenderer = ({ type, props }) => {
     case 'seo':
       return (
         <div style={sectionStyle}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO Settings</span>
+          <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO Settings</span>
           <div style={{ marginTop: 16 }}>
-            <Form.Item name="seo_meta_title" label="Meta Title" style={{ marginBottom: 16 }}>
-              <AntInput placeholder="SEO title" />
+            <Form.Item name="seo_meta_title" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Title</span>} style={{ marginBottom: 16 }}>
+              <AntInput placeholder="SEO title" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
             </Form.Item>
-            <Form.Item name="seo_meta_description" label="Meta Description" style={{ marginBottom: 16 }}>
-              <AntInput.TextArea rows={3} placeholder="SEO description" style={{ resize: 'none' }} />
+            <Form.Item name="seo_meta_description" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Description</span>} style={{ marginBottom: 16 }}>
+              <AntInput.TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
             </Form.Item>
-            <Form.Item name="seo_meta_keywords" label="Meta Keywords" style={{ marginBottom: 0 }}>
-              <AntSelect mode="tags" placeholder="Add keyword and press Enter..." />
+            <Form.Item name="seo_meta_keywords" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Keywords</span>} style={{ marginBottom: 0 }}>
+              <AntSelect mode="tags" placeholder="Add keyword and press Enter..." style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
             </Form.Item>
           </div>
         </div>
@@ -1430,7 +1437,7 @@ const SectionRenderer = ({ type, props }) => {
 
 const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook'];
 
-const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [], setCustomFields, fieldTypes = [], sections, onSectionsChange, onContentElementsChange, contentElements: externalContentElements, onAddContentElement: externalAddElement, onRemoveContentElement: externalRemoveElement, onUpdateContentElement: externalUpdateElement }) => {
+const DragDropBuilder = ({ darkMode = false, sectionProps, selectedTypeName = '', customFields = [], setCustomFields, fieldTypes = [], sections, onSectionsChange, onContentElementsChange, contentElements: externalContentElements, onAddContentElement: externalAddElement, onRemoveContentElement: externalRemoveElement, onUpdateContentElement: externalUpdateElement }) => {
   const dragItem = useRef(null);
   const dragOver = useRef(null);
   const [internalContentElements, setInternalContentElements] = useState([]);
@@ -1715,6 +1722,7 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
           <SectionRenderer 
             key={sec.id}
             type={sec.type} 
+            darkMode={darkMode}
             props={{
               ...sectionProps,
               onAddContentElement: addContentElement,
@@ -1732,10 +1740,10 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
       {/* Landing Page Form Fields — auto shown for webinar/whitepaper/event */}
       {showLandingFields && (
         <>
-          <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
-                <span style={{ fontSize: 14, fontWeight: 600 }}><Menu className="inline mr-2" style={{ color: '#4a7cff' }} />Client Webhook URL</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><Menu className="inline mr-2" style={{ color: '#4a7cff' }} />Client Webhook URL</span>
               </div>
             </div>
             <Form.Item name="webhook_url" className="mb-0"
@@ -1745,16 +1753,17 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
                 <Input
                   placeholder="https://client-api.example.com/webhook"
                   className="pl-10 transition-shadow focus:ring-2 focus:ring-blue-500"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }}
                 />
               </div>
             </Form.Item>
           </div>
 
-          <div style={{ background: '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: '1px solid #e8e8e8' }}>
+          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div>
-                <span style={{ fontSize: 14, fontWeight: 600 }}><Menu className="inline mr-2" style={{ color: '#4a7cff' }} />Landing Page Form Fields</span>
-                <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>Add all form fields with their label, API key, and type.</div>
+                <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><Menu className="inline mr-2" style={{ color: '#4a7cff' }} />Landing Page Form Fields</span>
+                <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Add all form fields with their label, API key, and type.</div>
               </div>
               <Button size="small" variant="outline" className="gap-2" onClick={addField}>
                 <Plus className="w-4 h-4" />
@@ -1762,7 +1771,7 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
               </Button>
             </div>
             {customFields.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '20px', color: '#8c8c8c', fontSize: 13, border: '2px dashed #e8e8e8', borderRadius: 8 }}>
+              <div style={{ textAlign: 'center', padding: '20px', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13, border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8 }}>
                 No fields added. Click "Add Field" to add form fields.
               </div>
             )}
@@ -1774,16 +1783,18 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
                 onDragEnter={() => onFieldDragEnter(index)}
                 onDragEnd={onFieldDragEnd}
                 onDragOver={e => e.preventDefault()}
-                style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', marginBottom: 10, background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8', cursor: 'grab' }}
+                style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', marginBottom: 10, background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab' }}
               >
-                <GripVertical className="text-gray-300 mt-2 cursor-grab flex-shrink-0 w-4 h-4" />
+                <GripVertical className="text-gray-300 mt-2 cursor-grab flex-shrink-0 w-4 h-4" style={{ color: darkMode ? '#475569' : '#d1d5db' }} />
                 <div className="flex-1 flex gap-2 flex-wrap">
                   <Input placeholder="Field Label (e.g. First Name)" value={field.label}
                     onChange={e => updateField(field.id, 'label', e.target.value)}
-                    className="flex-[1_1_140px]" />
+                    className="flex-[1_1_140px]"
+                    style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   <Input placeholder="API Key (e.g. firstname)" value={field.webhook_key || ''}
                     onChange={e => updateField(field.id, 'webhook_key', e.target.value)}
-                    className="flex-[1_1_130px]" />
+                    className="flex-[1_1_130px]"
+                    style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   <Select value={field.type} onValueChange={v => updateField(field.id, 'type', v)}>
                     <SelectTrigger className="w-[110px]">
                       <SelectValue />
@@ -1794,14 +1805,16 @@ const DragDropBuilder = ({ sectionProps, selectedTypeName = '', customFields = [
                   </Select>
                   <Input placeholder="Placeholder text" value={field.placeholder}
                     onChange={e => updateField(field.id, 'placeholder', e.target.value)}
-                    className="flex-[1_1_130px]" />
+                    className="flex-[1_1_130px]"
+                    style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   {field.type === 'select' && (
                     <Input placeholder="Options (comma separated)" value={field.options}
                       onChange={e => updateField(field.id, 'options', e.target.value)}
-                      className="flex-[1_1_180px]" />
+                      className="flex-[1_1_180px]"
+                      style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   )}
                 </div>
-                <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-100 flex-shrink-0" onClick={() => removeField(field.id)}>
+                <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 hover:bg-red-100 flex-shrink-0" onClick={() => removeField(field.id)} style={{ color: darkMode ? '#ef4444' : undefined }}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>

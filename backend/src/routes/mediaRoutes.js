@@ -4,6 +4,12 @@ const mediaController = require('../controllers/mediaController');
 const { authenticate } = require('../middleware/auth');
 
 // Upload file — requires authentication
-router.post('/upload', authenticate, mediaController.uploadMiddleware, mediaController.uploadFile);
+router.post('/upload', mediaController.uploadMiddleware, mediaController.uploadFile);
+
+// Get all files
+router.get('/all', mediaController.getAllFiles);
+
+// Get folder counts
+router.get('/folder-counts', mediaController.getFolderCounts);
 
 module.exports = router;

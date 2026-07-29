@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Button, Space, Tag, Badge, message, Popconfirm, Typography, Tabs, Empty, Spin, Avatar, Pagination, Grid } from 'antd';
+import { Row, Col, Card, Button, Space, Tag, Badge, message, Popconfirm, Typography, Tabs, Empty, Spin, Avatar, Pagination, Grid, ConfigProvider, theme } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
   CheckCircleOutlined, CloseCircleOutlined, ClockCircleOutlined,
@@ -9,6 +9,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -39,11 +40,12 @@ const CONTENT_TABS = [
   { key: 'event',      label: 'Event' },
 ];
 
-const ITEMS_PER_PAGE = 15;
-const INITIAL_SHOW = 9;
-const LOAD_MORE_COUNT = 3;
+const ITEMS_PER_PAGE = 24;
+const INITIAL_SHOW = 16;
+const LOAD_MORE_COUNT = 4;
 
 const MyContent = () => {
+  const { darkMode } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const screens = useBreakpoint();
@@ -151,8 +153,8 @@ const MyContent = () => {
           {count > 0 && (
             <span style={{
               marginLeft: 6,
-              background: activeTab === tab.key ? '#4a7cff' : '#f0f0f0',
-              color: activeTab === tab.key ? '#fff' : '#595959',
+              background: activeTab === tab.key ? '#4a7cff' : (darkMode ? '#334155' : '#f0f0f0'),
+              color: activeTab === tab.key ? '#fff' : (darkMode ? '#94a3b8' : '#595959'),
               borderRadius: 10, 
               padding: isMobile ? '1px 5px' : '1px 7px', 
               fontSize: isMobile ? 10 : 11, 
@@ -166,7 +168,7 @@ const MyContent = () => {
     };
   });
 
-  const ArticleCard = ({ article }) => {
+  const ArticleCard = ({ article, darkMode }) => {
     const status = statusConfig[article.status] || { color: 'default', text: article.status };
     const tags = parseTags(article.tags);
     const canEdit = article.status === 'draft' || article.status === 'changes_requested';
@@ -180,12 +182,13 @@ const MyContent = () => {
           style={{ 
             borderRadius: 12, 
             height: '100%',
-            border: '1px solid #f0f0f0',
-            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+            border: darkMode ? '1px solid #334155' : '1px solid #f0f0f0',
+            boxShadow: darkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.04)',
             transition: 'all 0.3s ease',
             overflow: 'hidden',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            background: darkMode ? '#1e293b' : '#fff'
           }}
           bodyStyle={{ 
             padding: 0,
@@ -206,7 +209,7 @@ const MyContent = () => {
                   height: isMobile ? 160 : 180, 
                   objectFit: 'cover', 
                   display: 'block', 
-                  background: '#f0f4ff' 
+                  background: darkMode ? '#1e293b' : '#f0f4ff' 
                 }} 
               />
             ) : (
@@ -215,25 +218,25 @@ const MyContent = () => {
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
-                background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
+                background: darkMode ? 'linear-gradient(135deg,#1e293b,#0f172a)' : 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
               }}>
-                <FileTextOutlined style={{ fontSize: 40, color: '#bfbfbf' }} />
+                <FileTextOutlined style={{ fontSize: 40, color: darkMode ? '#64748b' : '#bfbfbf' }} />
               </div>
             )}
             <div style={{ 
               position: 'absolute', 
               top: 12, 
               left: 12,
-              background: 'rgba(255,255,255,0.95)',
+              background: darkMode ? 'rgba(30,41,59,0.95)' : 'rgba(255,255,255,0.95)',
               padding: '4px 12px',
               borderRadius: 6,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+              boxShadow: darkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.12)',
               display: 'inline-flex',
               alignItems: 'center',
               gap: 6
             }}>
               <Badge status={status.color} />
-              <span style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500 }}>{status.text}</span>
+              <span style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500, color: darkMode ? '#e2e8f0' : '#1a1a1a' }}>{status.text}</span>
             </div>
           </div>
 
@@ -264,7 +267,7 @@ const MyContent = () => {
               fontSize: isMobile ? 14 : 15, 
               lineHeight: 1.4, 
               marginBottom: 6, 
-              color: '#1a1a1a',
+              color: darkMode ? '#f1f5f9' : '#1a1a1a',
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -278,7 +281,7 @@ const MyContent = () => {
             {article.short_description && (
               <div style={{
                 fontSize: 12, 
-                color: '#595959', 
+                color: darkMode ? '#94a3b8' : '#595959', 
                 lineHeight: 1.6, 
                 marginBottom: 8,
                 display: '-webkit-box',
@@ -301,25 +304,25 @@ const MyContent = () => {
                 alignItems: 'center',
                 minHeight: 26
               }}>
-                <TagOutlined style={{ fontSize: 11, color: '#8c8c8c' }} />
+                <TagOutlined style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }} />
                 {displayTags.map((tag, i) => (
                   <Tag key={i} color="geekblue" style={{ fontSize: 11, margin: 0 }}>
                     {tag.length > 15 ? tag.substring(0, 15) + '...' : tag}
                   </Tag>
                 ))}
                 {hasMoreTags && (
-                  <Text style={{ fontSize: 11, color: '#8c8c8c' }}>+{tags.length - 4}</Text>
+                  <Text style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>+{tags.length - 4}</Text>
                 )}
               </div>
             )}
 
             {/* Admin feedback - Only show if present */}
             {article.status === 'changes_requested' && article.admin_comment && (
-              <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#d46b08', marginBottom: 2 }}>
+              <div style={{ background: darkMode ? '#451a03' : '#fff7e6', border: darkMode ? '1px solid #8c4b0a' : '1px solid #ffd591', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: darkMode ? '#fbbf24' : '#d46b08', marginBottom: 2 }}>
                   <EditOutlined style={{ marginRight: 4 }} />Feedback
                 </div>
-                <div style={{ fontSize: 11, color: '#614700', 
+                <div style={{ fontSize: 11, color: darkMode ? '#fef3c7' : '#614700', 
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
@@ -330,11 +333,11 @@ const MyContent = () => {
               </div>
             )}
             {article.status === 'rejected' && article.admin_comment && (
-              <div style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 600, color: '#cf1322', marginBottom: 2 }}>
+              <div style={{ background: darkMode ? '#450a0a' : '#fff2f0', border: darkMode ? '1px solid #7f1d1d' : '1px solid #ffccc7', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: darkMode ? '#f87171' : '#cf1322', marginBottom: 2 }}>
                   <CloseCircleOutlined style={{ marginRight: 4 }} />Rejected
                 </div>
-                <div style={{ fontSize: 11, color: '#820014',
+                <div style={{ fontSize: 11, color: darkMode ? '#fecaca' : '#820014',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
@@ -413,7 +416,7 @@ const MyContent = () => {
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'space-between', 
-              borderTop: '1px solid #f0f0f0', 
+              borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', 
               paddingTop: 8,
               marginTop: 'auto'
             }}>
@@ -425,7 +428,7 @@ const MyContent = () => {
                 />
                 <Text style={{ 
                   fontSize: 11, 
-                  color: '#595959',
+                  color: darkMode ? '#94a3b8' : '#595959',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -434,8 +437,8 @@ const MyContent = () => {
                 </Text>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                <CalendarOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
-                <Text style={{ fontSize: 11, color: '#8c8c8c' }}>
+                <CalendarOutlined style={{ fontSize: 10, color: darkMode ? '#64748b' : '#8c8c8c' }} />
+                <Text style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>
                   {moment(article.created_at).format('MMM D, YYYY')}
                 </Text>
               </div>
@@ -447,12 +450,23 @@ const MyContent = () => {
   };
 
   return (
-    <div style={{ 
-      padding: isMobile ? '12px' : isTablet ? '16px' : '24px',
-      width: '100%',
-      background: '#F8FAFC',
-      minHeight: '100vh'
-    }}>
+    <ConfigProvider
+      theme={{
+        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          colorBgContainer: darkMode ? '#1a1a1a' : '#ffffff',
+          colorBorder: darkMode ? '#334155' : '#E5E7EB',
+          colorText: darkMode ? '#e2e8f0' : '#1a1a1a',
+          colorTextSecondary: darkMode ? '#94a3b8' : '#6B7280',
+        },
+      }}
+    >
+      <div style={{ 
+        padding: isMobile ? '12px' : isTablet ? '16px' : '24px',
+        width: '100%',
+        background: darkMode ? '#0f172a' : '#F8FAFC',
+        minHeight: '100vh'
+      }}>
       {/* Header */}
       <div style={{ 
         marginBottom: isMobile ? '16px' : '24px', 
@@ -467,7 +481,7 @@ const MyContent = () => {
             margin: 0, 
             fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
             fontWeight: 700,
-            color: '#111827'
+            color: darkMode ? '#f1f5f9' : '#111827'
           }}>
             My Content
           </h2>
@@ -522,7 +536,7 @@ const MyContent = () => {
         <>
           <Row gutter={[isMobile ? 12 : 16, isMobile ? 12 : 16]}>
             {visibleItems.map(article => (
-              <ArticleCard key={article.id} article={article} />
+              <ArticleCard key={article.id} article={article} darkMode={darkMode} />
             ))}
           </Row>
 
@@ -550,7 +564,7 @@ const MyContent = () => {
                   borderColor: '#4a7cff'
                 }}
               >
-                Show More ({visibleCount}/{currentPageItems.length})
+                Show More ({visibleCount}/{ITEMS_PER_PAGE})
               </Button>
             )}
 
@@ -619,7 +633,7 @@ const MyContent = () => {
             {totalItems > 0 && (
               <div style={{ 
                 fontSize: isMobile ? 11 : 13, 
-                color: '#8c8c8c',
+                color: darkMode ? '#64748b' : '#8c8c8c',
                 textAlign: 'center'
               }}>
                 Showing {startIndex + 1}-{Math.min(startIndex + visibleCount, endIndex)} of {totalItems} items
@@ -696,7 +710,8 @@ const MyContent = () => {
           box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
         }
       `}</style>
-    </div>
+      </div>
+    </ConfigProvider>
   );
 };
 

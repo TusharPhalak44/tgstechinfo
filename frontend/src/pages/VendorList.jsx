@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTheme } from '../context/ThemeContext';
 
 const UPDATED = 'July 8, 2026';
 
@@ -41,6 +42,7 @@ const getCatColor = (cat) => {
 };
 
 const VendorList = () => {
+  const { darkMode } = useTheme();
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
 
@@ -51,20 +53,20 @@ const VendorList = () => {
   });
 
   return (
-    <div style={{ background: '#f8f9fa', minHeight: '100vh', padding: '40px 16px' }}>
+    <div style={{ background: darkMode ? '#0f172a' : '#f8f9fa', minHeight: '100vh', padding: 'clamp(16px, 3vw, 24px) clamp(12px, 2vw, 24px)' }}>
       {/* Hero */}
-      <div style={{ maxWidth: 1000, margin: '0 auto 40px', background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)', borderRadius: 16, padding: '48px 40px', color: '#fff', textAlign: 'center' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Legal</div>
-        <h1 style={{ fontSize: 32, fontWeight: 800, margin: '0 0 10px', color: '#fff' }}>Vendor &amp; Sub-Processor List</h1>
-        <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 16px' }}>Third-party service providers and data processors | Last updated: {UPDATED}</p>
-        <div style={{ display: 'inline-block', background: 'rgba(96,165,250,.15)', color: '#93c5fd', fontSize: 12, fontWeight: 700, padding: '6px 18px', borderRadius: 20, border: '1px solid rgba(96,165,250,.3)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto clamp(16px, 3vw, 24px)', background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)', borderRadius: 16, padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', color: '#fff', textAlign: 'center' }}>
+        <div style={{ fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Legal</div>
+        <h1 style={{ fontSize: 'clamp(26px, 4vw, 32px)', fontWeight: 800, margin: '0 0 10px', color: '#fff' }}>Vendor &amp; Sub-Processor List</h1>
+        <p style={{ fontSize: 'clamp(13px, 1.5vw, 14px)', color: '#94a3b8', margin: '0 0 16px' }}>Third-party service providers and data processors | Last updated: {UPDATED}</p>
+        <div style={{ display: 'inline-block', background: 'rgba(96,165,250,.15)', color: '#93c5fd', fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, padding: 'clamp(4px, 0.8vw, 6px) clamp(14px, 2.5vw, 18px)', borderRadius: 20, border: '1px solid rgba(96,165,250,.3)' }}>
           {VENDORS.length} Active Sub-Processors
         </div>
       </div>
 
-      <div style={{ maxWidth: 1000, margin: '0 auto', background: '#fff', borderRadius: 16, padding: '40px 40px', boxShadow: '0 2px 16px rgba(0,0,0,0.07)' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', background: darkMode ? '#1e293b' : '#fff', borderRadius: 16, padding: 'clamp(20px, 4vw, 32px)', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,0.3)' : '0 2px 16px rgba(0,0,0,0.07)' }}>
 
-        <p style={{ fontSize: 14.5, color: '#374151', lineHeight: 1.85, marginBottom: 32 }}>
+        <p style={{ fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151', lineHeight: 1.85, marginBottom: 'clamp(24px, 4vw, 32px)' }}>
           TGS Tech Info uses the following third-party service providers and sub-processors to operate our platform and deliver our services. All sub-processors are contractually required to process data only as instructed, maintain appropriate security measures, and comply with applicable data protection laws including GDPR and CCPA/CPRA.
         </p>
 
@@ -74,50 +76,50 @@ const VendorList = () => {
             placeholder="Search vendors..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ padding: '9px 14px', border: '1px solid #dde2ee', borderRadius: 8, fontSize: 13.5, outline: 'none', minWidth: 220 }}
+            style={{ padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px)', border: darkMode ? '1px solid #334155' : '1px solid #dde2ee', borderRadius: 8, fontSize: 'clamp(13px, 1.5vw, 14px)', outline: 'none', minWidth: 200, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#1a1a2e' }}
           />
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {CATEGORIES.map(cat => (
               <button key={cat} onClick={() => setFilter(cat)} style={{
-                padding: '6px 14px', border: '1px solid', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .2s',
-                background: filter === cat ? '#4a7cff' : '#f0f4ff',
-                color: filter === cat ? '#fff' : '#4a7cff',
-                borderColor: filter === cat ? '#4a7cff' : '#dce6ff',
+                padding: 'clamp(4px, 0.8vw, 6px) clamp(12px, 2vw, 14px)', border: '1px solid', borderRadius: 20, fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 600, cursor: 'pointer', transition: 'all .2s',
+                background: filter === cat ? '#4a7cff' : (darkMode ? '#0f172a' : '#f0f4ff'),
+                color: filter === cat ? '#fff' : (darkMode ? '#94a3b8' : '#4a7cff'),
+                borderColor: filter === cat ? '#4a7cff' : (darkMode ? '#334155' : '#dce6ff'),
               }}>{cat}</button>
             ))}
           </div>
         </div>
 
-        <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>Showing {filtered.length} of {VENDORS.length} vendors</div>
+        <div style={{ fontSize: 'clamp(12px, 1.4vw, 13px)', color: darkMode ? '#94a3b8' : '#6b7280', marginBottom: 16 }}>Showing {filtered.length} of {VENDORS.length} vendors</div>
 
         {/* Table */}
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(12px, 1.4vw, 13px)' }}>
             <thead>
-              <tr style={{ background: '#f0f4ff' }}>
+              <tr style={{ background: darkMode ? '#1e293b' : '#f0f4ff' }}>
                 {['Vendor', 'Category', 'Purpose', 'Data Location', 'Transfer Mechanism'].map(h => (
-                  <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1a1a2e', borderBottom: '2px solid #dde2ee', whiteSpace: 'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px)', textAlign: 'left', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', borderBottom: darkMode ? '2px solid #334155' : '2px solid #dde2ee', whiteSpace: 'nowrap', fontSize: 'clamp(12px, 1.4vw, 13px)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((v, i) => (
-                <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#fafbff' }}>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                    <a href={v.link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: '#1a1a2e', textDecoration: 'none' }}
+                <tr key={i} style={{ background: i % 2 === 0 ? (darkMode ? '#0f172a' : '#fff') : (darkMode ? '#1e293b' : '#fafbff') }}>
+                  <td style={{ padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px)', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
+                    <a href={v.link} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', textDecoration: 'none' }}
                       onMouseEnter={e => e.currentTarget.style.color = '#4a7cff'}
-                      onMouseLeave={e => e.currentTarget.style.color = '#1a1a2e'}
+                      onMouseLeave={e => e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#1a1a2e'}
                     >{v.name}</a>
                   </td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                    <span style={{ background: `${getCatColor(v.category)}18`, color: getCatColor(v.category), fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, border: `1px solid ${getCatColor(v.category)}33`, whiteSpace: 'nowrap' }}>
+                  <td style={{ padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px)', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
+                    <span style={{ background: darkMode ? `${getCatColor(v.category)}33` : `${getCatColor(v.category)}18`, color: getCatColor(v.category), fontSize: 'clamp(10px, 1.2vw, 11px)', fontWeight: 700, padding: 'clamp(2px, 0.4vw, 3px) clamp(8px, 1.5vw, 10px)', borderRadius: 20, border: `1px solid ${getCatColor(v.category)}33`, whiteSpace: 'nowrap' }}>
                       {v.category}
                     </span>
                   </td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0', color: '#6b7280', maxWidth: 280 }}>{v.purpose}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0', whiteSpace: 'nowrap', color: '#374151' }}>{v.location}</td>
-                  <td style={{ padding: '10px 12px', borderBottom: '1px solid #f0f0f0' }}>
-                    <span style={{ background: '#e8faf5', color: '#00b894', fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 20, border: '1px solid #00b89433' }}>{v.transfer}</span>
+                  <td style={{ padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px)', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', color: darkMode ? '#94a3b8' : '#6b7280', maxWidth: 280, fontSize: 'clamp(11px, 1.3vw, 12px)' }}>{v.purpose}</td>
+                  <td style={{ padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px)', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', whiteSpace: 'nowrap', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(11px, 1.3vw, 12px)' }}>{v.location}</td>
+                  <td style={{ padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 14px)', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
+                    <span style={{ background: darkMode ? 'rgba(0, 184, 148, 0.15)' : '#e8faf5', color: '#00b894', fontSize: 'clamp(10px, 1.2vw, 11px)', fontWeight: 700, padding: 'clamp(2px, 0.4vw, 3px) clamp(8px, 1.5vw, 10px)', borderRadius: 20, border: '1px solid #00b89433' }}>{v.transfer}</span>
                   </td>
                 </tr>
               ))}
@@ -125,9 +127,9 @@ const VendorList = () => {
           </table>
         </div>
 
-        <div style={{ marginTop: 40, padding: '20px 24px', background: '#f8faff', borderRadius: 12, border: '1px solid #e8f0ff' }}>
-          <div style={{ fontWeight: 700, fontSize: 14, color: '#1a1a2e', marginBottom: 8 }}>Transfer Mechanism Key</div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 13, color: '#374151' }}>
+        <div style={{ marginTop: 'clamp(24px, 4vw, 32px)', padding: 'clamp(16px, 3vw, 20px) clamp(18px, 3vw, 24px)', background: darkMode ? '#0f172a' : '#f8faff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8f0ff' }}>
+          <div style={{ fontWeight: 700, fontSize: 'clamp(13px, 1.5vw, 14px)', color: darkMode ? '#f1f5f9' : '#1a1a2e', marginBottom: 8 }}>Transfer Mechanism Key</div>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 'clamp(12px, 1.4vw, 13px)', color: darkMode ? '#cbd5e1' : '#374151' }}>
             <span><strong>SCCs</strong> — Standard Contractual Clauses (EU Commission approved)</span>
             <span><strong>BCRs</strong> — Binding Corporate Rules</span>
             <span><strong>EU-based</strong> — Data processed within the EU/EEA</span>
@@ -135,7 +137,7 @@ const VendorList = () => {
           </div>
         </div>
 
-        <div style={{ marginTop: 24, padding: '16px 20px', background: '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff', fontSize: 13.5, color: '#374151' }}>
+        <div style={{ marginTop: 'clamp(20px, 3vw, 24px)', padding: 'clamp(14px, 2.5vw, 16px) clamp(16px, 3vw, 20px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff', fontSize: 'clamp(13px, 1.5vw, 14px)', color: darkMode ? '#cbd5e1' : '#374151' }}>
           <strong>Updates:</strong> This list is reviewed and updated quarterly. We will notify users of material changes to our sub-processor list in accordance with our contractual obligations. For questions, contact <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a>.
         </div>
 

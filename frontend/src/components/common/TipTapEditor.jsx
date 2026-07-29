@@ -64,7 +64,7 @@ const RawHtmlBlock = Node.create({
   },
 });
 
-const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here...', initialContent }) => {
+const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here...', initialContent, darkMode = false }) => {
   const editorContainerRef = useRef(null);
   const imageInputRef = useRef(null);
   const [currentHeading, setCurrentHeading] = useState('paragraph');
@@ -241,7 +241,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
       disabled={disabled} title={title} size="small"
       style={{ padding: '4px 8px', height: 32, minWidth: 32, borderRadius: 4,
         border: active ? '1px solid #1890ff' : '1px solid transparent',
-        background: active ? '#e6f7ff' : 'transparent', color: active ? '#1890ff' : '#333' }} />
+        background: active ? '#e6f7ff' : 'transparent', color: active ? '#1890ff' : (darkMode ? '#cbd5e1' : '#333') }} />
   );
 
   const handleImageFile = (file) => {
@@ -366,14 +366,14 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
   };
 
   return (
-    <div className="tiptap-editor-wrapper" ref={editorContainerRef}>
+    <div className={`tiptap-editor-wrapper ${darkMode ? 'dark-mode' : ''}`} ref={editorContainerRef}>
       {/* Toolbar */}
       <div className="tiptap-toolbar">
         <Space size={4} wrap>
           <TB icon={<UndoOutlined />} onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} title="Undo" />
           <TB icon={<RedoOutlined />} onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} title="Redo" />
 
-          <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
+          <Divider style={{ height: 24, margin: '0 4px', borderColor: darkMode ? '#334155' : '#d9d9d9' }} />
 
           <TB icon={<BoldOutlined />} onClick={() => editor.chain().focus().toggleBold().run()} active={isBold} title="Bold" />
           <TB icon={<ItalicOutlined />} onClick={() => editor.chain().focus().toggleItalic().run()} active={isItalic} title="Italic" />
@@ -381,7 +381,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
           <TB icon={<StrikethroughOutlined />} onClick={() => editor.chain().focus().toggleStrike().run()} active={isStrike} title="Strikethrough" />
           <TB icon={<CodeOutlined />} onClick={() => editor.chain().focus().toggleCode().run()} active={isCode} title="Inline Code" />
 
-          <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
+          <Divider style={{ height: 24, margin: '0 4px', borderColor: darkMode ? '#334155' : '#d9d9d9' }} />
 
           <Select size="small" style={{ width: 110 }} value={currentHeading}
             onChange={(v) => {
@@ -392,9 +392,11 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                 editor.chain().focus().toggleHeading({ level: parseInt(v.replace('h', '')) }).run();
               }
               setTimeout(() => updateStates(editor), 10);
-            }} popupMatchSelectWidth={false}>
-            <Option value="paragraph">Paragraph</Option>
-            {[1,2,3,4,5,6].map(i => <Option key={i} value={`h${i}`}>Heading {i}</Option>)}
+            }} popupMatchSelectWidth={false}
+            dropdownStyle={{ background: darkMode ? '#1e293b' : '#fff' }}
+          >
+            <Option value="paragraph" style={{ color: darkMode ? '#cbd5e1' : '#333' }}>Paragraph</Option>
+            {[1,2,3,4,5,6].map(i => <Option key={i} value={`h${i}`} style={{ color: darkMode ? '#cbd5e1' : '#333' }}>Heading {i}</Option>)}
           </Select>
 
           <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
@@ -402,20 +404,20 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
           <TB icon={<UnorderedListOutlined />} onClick={() => editor.chain().focus().toggleBulletList().run()} active={isBulletList} title="Bullet List" />
           <TB icon={<OrderedListOutlined />} onClick={() => editor.chain().focus().toggleOrderedList().run()} active={isOrderedList} title="Numbered List" />
 
-          <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
+          <Divider style={{ height: 24, margin: '0 4px', borderColor: darkMode ? '#334155' : '#d9d9d9' }} />
 
           <TB icon={<AlignLeftOutlined />} onClick={() => editor.chain().focus().setTextAlign('left').run()} title="Align Left" />
           <TB icon={<AlignCenterOutlined />} onClick={() => editor.chain().focus().setTextAlign('center').run()} title="Align Center" />
           <TB icon={<AlignRightOutlined />} onClick={() => editor.chain().focus().setTextAlign('right').run()} title="Align Right" />
           <TB icon={<span style={{ fontSize: 14, fontWeight: 700 }}>≡</span>} onClick={() => editor.chain().focus().setTextAlign('justify').run()} title="Justify" />
 
-          <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
+          <Divider style={{ height: 24, margin: '0 4px', borderColor: darkMode ? '#334155' : '#d9d9d9' }} />
 
           <TB icon={<LinkOutlined />} onClick={openLinkModal} active={isLink} title="Insert / Edit Link" />
 
           <input ref={imageInputRef} type="file" accept="image/*" style={{ display: 'none' }}
             onChange={(e) => { if (e.target.files[0]) { handleImageFile(e.target.files[0]); e.target.value = ''; } }} />
-          <Button size="small" icon={<PictureOutlined />} onClick={() => imageInputRef.current.click()} title="Insert Image (upload)">
+          <Button size="small" icon={<PictureOutlined />} onClick={() => imageInputRef.current.click()} title="Insert Image (upload)" style={{ color: darkMode ? '#cbd5e1' : undefined }}>
             Image
           </Button>
 
@@ -423,9 +425,9 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
             open={tableDropdownOpen}
             onOpenChange={setTableDropdownOpen}
             dropdownRender={() => (
-              <div style={{ padding: 12, minWidth: 200 }}>
+              <div style={{ padding: 12, minWidth: 200, background: darkMode ? '#1e293b' : '#fff' }}>
                 <div style={{ marginBottom: 8 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Rows</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Rows</label>
                   <Input
                     type="number"
                     min="1"
@@ -434,10 +436,11 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                     onChange={(e) => setTableRowCount(parseInt(e.target.value) || 1)}
                     placeholder="Rows"
                     size="small"
+                    style={{ background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#333' }}
                   />
                 </div>
                 <div style={{ marginBottom: 8 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Columns</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Columns</label>
                   <Input
                     type="number"
                     min="1"
@@ -446,6 +449,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                     onChange={(e) => setTableColCount(parseInt(e.target.value) || 1)}
                     placeholder="Columns"
                     size="small"
+                    style={{ background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#333' }}
                   />
                 </div>
                 <Button type="primary" size="small" onClick={insertTable} style={{ width: '100%' }}>
@@ -455,7 +459,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
             )}
             trigger={['click']}
           >
-            <Button size="small" icon={<TableOutlined />}>Table</Button>
+            <Button size="small" icon={<TableOutlined />} style={{ color: darkMode ? '#cbd5e1' : undefined }}>Table</Button>
           </Dropdown>
 
           {editor && isInTable && (
@@ -463,8 +467,8 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
               open={tableEditDropdownOpen}
               onOpenChange={setTableEditDropdownOpen}
               dropdownRender={() => (
-                <div style={{ padding: 12, minWidth: 280 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Add Rows</div>
+                <div style={{ padding: 12, minWidth: 280, background: darkMode ? '#1e293b' : '#fff' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', marginBottom: 8 }}>Add Rows</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <Input
                       type="number"
@@ -474,7 +478,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                       onChange={(e) => setAddTableRowCount(parseInt(e.target.value) || 1)}
                       placeholder="Count"
                       size="small"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#333' }}
                     />
                     <Button 
                       size="small" 
@@ -489,7 +493,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                     </Button>
                   </div>
 
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Add Columns</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', marginBottom: 8 }}>Add Columns</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <Input
                       type="number"
@@ -499,7 +503,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                       onChange={(e) => setAddTableColCount(parseInt(e.target.value) || 1)}
                       placeholder="Count"
                       size="small"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#333' }}
                     />
                     <Button 
                       size="small" 
@@ -514,7 +518,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                     </Button>
                   </div>
 
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Delete Rows</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', marginBottom: 8 }}>Delete Rows</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <Input
                       type="number"
@@ -524,7 +528,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                       onChange={(e) => setRemoveTableRowCount(parseInt(e.target.value) || 1)}
                       placeholder="Count"
                       size="small"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#333' }}
                     />
                     <Button 
                       size="small" 
@@ -539,7 +543,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                     </Button>
                   </div>
 
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#595959', marginBottom: 8 }}>Delete Columns</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', marginBottom: 8 }}>Delete Columns</div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                     <Input
                       type="number"
@@ -549,7 +553,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                       onChange={(e) => setRemoveTableColCount(parseInt(e.target.value) || 1)}
                       placeholder="Count"
                       size="small"
-                      style={{ flex: 1 }}
+                      style={{ flex: 1, background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#333' }}
                     />
                     <Button 
                       size="small" 
@@ -575,16 +579,16 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
             </Dropdown>
           )}
 
-          <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
+          <Divider style={{ height: 24, margin: '0 4px', borderColor: darkMode ? '#334155' : '#d9d9d9' }} />
 
           <TB icon={<span style={{ fontSize: 16 }}>"</span>} onClick={() => editor.chain().focus().toggleBlockquote().run()} active={isBlockquote} title="Blockquote" />
           <TB icon={<CodeOutlined />} onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={isCodeBlock} title="Code Block" />
           <TB icon={<span style={{ fontSize: 16 }}>—</span>} onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule" />
           <TB icon={<ClearOutlined />} onClick={() => editor.chain().focus().unsetAllMarks().run()} title="Clear Formatting" />
 
-          <Divider style={{ height: 24, margin: '0 4px', borderColor: '#d9d9d9' }} />
+          <Divider style={{ height: 24, margin: '0 4px', borderColor: darkMode ? '#334155' : '#d9d9d9' }} />
 
-          <Button size="small" icon={<LayoutOutlined />} onClick={openMultiColModal} title="Insert Multi-Column Layout">
+          <Button size="small" icon={<LayoutOutlined />} onClick={openMultiColModal} title="Insert Multi-Column Layout" style={{ color: darkMode ? '#cbd5e1' : undefined }}>
             Multi-Col
           </Button>
         </Space>
@@ -600,10 +604,16 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
         onCancel={() => setMultiColModal(false)}
         okText="Insert"
         width={700}
+        styles={{
+          content: { background: darkMode ? '#1e293b' : '#fff' },
+          header: { background: darkMode ? '#1e293b' : '#fff' },
+          title: { color: darkMode ? '#f1f5f9' : '#000' },
+          body: { background: darkMode ? '#1e293b' : '#fff' }
+        }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
           <div>
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Number of Columns</div>
+            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginBottom: 4 }}>Number of Columns</div>
             <Select 
               value={columnCount} 
               onChange={handleColumnCountChange}
@@ -617,7 +627,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
             </Select>
           </div>
 
-          <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 4 }}>
+          <div style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 4 }}>
             Drag sections to reorder. Each section can be text or image.
           </div>
 
@@ -632,15 +642,15 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                 onDrop={(e) => onSectionDrop(e, index)}
                 style={{
                   padding: 12,
-                  background: '#fafafa',
+                  background: darkMode ? '#0f172a' : '#fafafa',
                   borderRadius: 8,
-                  border: '1px solid #e8e8e8',
+                  border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
                   cursor: 'move',
                   transition: 'all 0.2s'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#595959' }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#595959' }}>
                     Column {index + 1}
                   </span>
                   <Radio.Group
@@ -659,7 +669,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                     placeholder="Enter text content..."
                     value={section.content}
                     onChange={(e) => updateSection(section.id, { content: e.target.value })}
-                    style={{ fontSize: 13 }}
+                    style={{ fontSize: 13, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#000', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                   />
                 ) : (
                   <div>
@@ -676,7 +686,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                       <img
                         src={section.imageSrc}
                         alt="preview"
-                        style={{ marginTop: 8, maxHeight: 100, borderRadius: 6, border: '1px solid #eee' }}
+                        style={{ marginTop: 8, maxHeight: 100, borderRadius: 6, border: darkMode ? '1px solid #334155' : '1px solid #eee' }}
                       />
                     )}
                   </div>
@@ -686,8 +696,8 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
           </div>
 
           {/* Preview */}
-          <div style={{ border: '1px dashed #d9d9d9', borderRadius: 8, padding: 12, background: '#fafafa' }}>
-            <div style={{ fontSize: 11, color: '#aaa', marginBottom: 6 }}>Preview ({columnCount} columns)</div>
+          <div style={{ border: darkMode ? '1px dashed #475569' : '1px dashed #d9d9d9', borderRadius: 8, padding: 12, background: darkMode ? '#0f172a' : '#fafafa' }}>
+            <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#aaa', marginBottom: 6 }}>Preview ({columnCount} columns)</div>
             <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
               {sections.map((section, index) => (
                 <div key={section.id} style={{ flex: 1, minWidth: 0 }}>
@@ -698,7 +708,7 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
                       style={{ width: '100%', borderRadius: 6 }}
                     />
                   ) : (
-                    <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6, opacity: section.content ? 1 : 0.5 }}>
+                    <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6, opacity: section.content ? 1 : 0.5, color: darkMode ? '#cbd5e1' : '#000' }}>
                       {section.content || 'Empty text column'}
                     </p>
                   )}
@@ -711,16 +721,25 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
 
       {/* Link Modal */}
       <Modal title="Insert Link" open={linkModal} onOk={applyLink} onCancel={() => setLinkModal(false)}
-        okText="Apply" width={420}>
+        okText="Apply" width={420}
+        styles={{
+          content: { background: darkMode ? '#1e293b' : '#fff' },
+          header: { background: darkMode ? '#1e293b' : '#fff' },
+          title: { color: darkMode ? '#f1f5f9' : '#000' },
+          body: { background: darkMode ? '#1e293b' : '#fff' }
+        }}
+      >
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
           <div>
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>Link Text (optional)</div>
-            <Input placeholder="e.g. Click here" value={linkText} onChange={e => setLinkText(e.target.value)} />
+            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginBottom: 4 }}>Link Text (optional)</div>
+            <Input placeholder="e.g. Click here" value={linkText} onChange={e => setLinkText(e.target.value)} 
+              style={{ background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#000' }} />
           </div>
           <div>
-            <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 4 }}>URL *</div>
+            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginBottom: 4 }}>URL *</div>
             <Input placeholder="https://example.com" value={linkUrl} onChange={e => setLinkUrl(e.target.value)}
-              onPressEnter={applyLink} prefix={<LinkOutlined style={{ color: '#bfbfbf' }} />} />
+              onPressEnter={applyLink} prefix={<LinkOutlined style={{ color: darkMode ? '#64748b' : '#bfbfbf' }} />}
+              style={{ background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#d9d9d9', color: darkMode ? '#cbd5e1' : '#000' }} />
           </div>
           {linkUrl && (
             <Button type="link" danger size="small" style={{ alignSelf: 'flex-start', padding: 0 }}

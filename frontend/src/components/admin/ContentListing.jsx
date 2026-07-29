@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Table, Typography, Tag, Button, Dropdown,
   Input, Select, Space, Avatar, Checkbox, message,
-  Card, Row, Col
+  Card, Row, Col, ConfigProvider
 } from 'antd';
 import {
   EditOutlined, EyeOutlined, DeleteOutlined, MoreOutlined,
@@ -14,6 +14,7 @@ import axios from 'axios';
 import moment from 'moment';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -22,6 +23,7 @@ const ContentListing = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { darkMode } = useTheme();
 
   const [loading, setLoading] = useState(true);
   const [content, setContent] = useState([]);
@@ -154,23 +156,23 @@ const ContentListing = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: 8, flexShrink: 0,
-            background: '#F1F5F9', overflow: 'hidden',
+            background: darkMode ? '#0f172a' : '#F1F5F9', overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {record.banner_image
               ? <img src={`/uploads/${record.banner_image}`} alt={text}
                   style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, objectFit: 'cover' }} />
-              : <FileTextOutlined style={{ fontSize: isMobile ? 18 : 20, color: '#6B7280' }} />
+              : <FileTextOutlined style={{ fontSize: isMobile ? 18 : 20, color: darkMode ? '#475569' : '#6B7280' }} />
             }
           </div>
           <div style={{ minWidth: 0 }}>
             <Text strong style={{
-              fontSize: isMobile ? 12 : 13, color: '#111827', display: 'block',
+              fontSize: isMobile ? 12 : 13, color: darkMode ? '#f1f5f9' : '#111827', display: 'block',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: isMobile ? 140 : isTablet ? 200 : 240
             }}>
               {text}
             </Text>
-            <Text style={{ fontSize: isMobile ? 11 : 12, color: '#6B7280' }}>
+            <Text style={{ fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#6B7280' }}>
               {record.category_name || '—'}
               {record.content_type_name && !isMobile && (
                 <Tag color="purple" style={{ marginLeft: 6, fontSize: 10 }}>
@@ -192,7 +194,7 @@ const ContentListing = () => {
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Avatar size={26} icon={<UserOutlined />} style={{ background: '#4a7cff', flexShrink: 0 }} />
-            <Text style={{ fontSize: 13, color: '#111827' }}>{name}</Text>
+            <Text style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#111827' }}>{name}</Text>
           </div>
         );
       },
@@ -226,7 +228,7 @@ const ContentListing = () => {
       render: (views) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <EyeIcon style={{ color: '#6B7280', fontSize: 14 }} />
-          <Text style={{ fontSize: 13, color: '#111827' }}>{(views || 0).toLocaleString()}</Text>
+          <Text style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#111827' }}>{(views || 0).toLocaleString()}</Text>
         </div>
       ),
     },
@@ -257,7 +259,7 @@ const ContentListing = () => {
       width: 120,
       responsive: ['lg', 'xl'],
       render: (date) => (
-        <Text style={{ fontSize: 13, color: '#6B7280' }}>
+        <Text style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#6B7280' }}>
           {date ? moment(date).fromNow() : '—'}
         </Text>
       ),
@@ -301,7 +303,7 @@ const ContentListing = () => {
           <Button
             type="text"
             icon={<MoreOutlined />}
-            style={{ color: '#6B7280' }}
+            style={{ color: darkMode ? '#94a3b8' : '#6B7280' }}
             onClick={e => e.stopPropagation()}
           />
         </Dropdown>
@@ -321,9 +323,10 @@ const ContentListing = () => {
         style={{
           marginBottom: 12,
           borderRadius: 8,
-          border: '1px solid #E5E7EB',
+          border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
           cursor: 'pointer',
           transition: 'all 0.2s',
+          background: darkMode ? '#1e293b' : '#fff',
         }}
         hoverable
         onClick={() => handleEdit(record)}
@@ -332,24 +335,24 @@ const ContentListing = () => {
         <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
           <div style={{
             width: 60, height: 60, borderRadius: 8, flexShrink: 0,
-            background: '#F1F5F9', overflow: 'hidden',
+            background: darkMode ? '#0f172a' : '#F1F5F9', overflow: 'hidden',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {record.banner_image
               ? <img src={`/uploads/${record.banner_image}`} alt={record.title}
                   style={{ width: 60, height: 60, objectFit: 'cover' }} />
-              : <FileTextOutlined style={{ fontSize: 24, color: '#6B7280' }} />
+              : <FileTextOutlined style={{ fontSize: 24, color: darkMode ? '#475569' : '#6B7280' }} />
             }
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Text strong style={{
-              fontSize: 13, color: '#111827', display: 'block',
+              fontSize: 13, color: darkMode ? '#f1f5f9' : '#111827', display: 'block',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               marginBottom: 4
             }}>
               {record.title}
             </Text>
-            <Text style={{ fontSize: 11, color: '#6B7280', display: 'block', marginBottom: 4 }}>
+            <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6B7280', display: 'block', marginBottom: 4 }}>
               {record.category_name || '—'}
             </Text>
             <div style={{
@@ -365,18 +368,18 @@ const ContentListing = () => {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <Text style={{ fontSize: 11, color: '#6B7280' }}>
+          <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6B7280' }}>
             <UserOutlined style={{ marginRight: 4 }} />
             {name}
           </Text>
-          <Text style={{ fontSize: 11, color: '#6B7280' }}>
+          <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6B7280' }}>
             <EyeIcon style={{ marginRight: 4 }} />
             {(record.view_count || 0).toLocaleString()}
           </Text>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: 11, color: '#6B7280' }}>
+          <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6B7280' }}>
             {record.updated_at ? moment(record.updated_at).fromNow() : '—'}
           </Text>
           <Dropdown
@@ -412,7 +415,7 @@ const ContentListing = () => {
             <Button
               type="text"
               icon={<MoreOutlined />}
-              style={{ color: '#6B7280', padding: '4px 8px' }}
+              style={{ color: darkMode ? '#94a3b8' : '#6B7280', padding: '4px 8px' }}
               onClick={e => e.stopPropagation()}
             />
           </Dropdown>
@@ -422,12 +425,23 @@ const ContentListing = () => {
   };
 
   return (
-    <div style={{ padding: isMobile ? '16px' : '24px' }}>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorText: darkMode ? '#cbd5e1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#d9d9d9',
+          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+        },
+      }}
+    >
+      <div style={{ padding: isMobile ? '16px' : '24px', background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
       <div style={{ marginBottom: isMobile ? 16 : 24 }}>
-        <Title level={2} style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: '#111827', marginBottom: 4 }}>
+        <Title level={2} style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 4 }}>
           Content
         </Title>
-        <Text style={{ fontSize: isMobile ? 12 : 14, color: '#6B7280' }}>
+        <Text style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#94a3b8' : '#6B7280' }}>
           Manage all your pages, blogs, and landing pages
         </Text>
       </div>
@@ -435,7 +449,7 @@ const ContentListing = () => {
       {/* Filters */}
       <div style={{
         marginBottom: 24, padding: isMobile ? '12px 16px' : '16px 20px',
-        background: '#fff', borderRadius: 12, border: '1px solid #E5E7EB',
+        background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
         display: 'flex', justifyContent: isMobile ? 'flex-start' : 'space-between',
         alignItems: isMobile ? 'flex-start' : 'center', 
         flexWrap: 'wrap', gap: isMobile ? 12 : 16,
@@ -443,7 +457,7 @@ const ContentListing = () => {
         <Space size={isMobile ? 8 : 12} wrap>
           <Input
             placeholder="Search content..."
-            prefix={<SearchOutlined style={{ color: '#9CA3AF' }} />}
+            prefix={<SearchOutlined style={{ color: darkMode ? '#64748b' : '#9CA3AF' }} />}
             style={{ width: isMobile ? '100%' : 260, borderRadius: 8 }}
             value={filters.search}
             onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
@@ -464,7 +478,7 @@ const ContentListing = () => {
         </Space>
         <Space size={isMobile ? 8 : 12} style={{ width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
           {selectedRowKeys.length > 0 && (
-            <Text style={{ color: '#6B7280', fontSize: 13 }}>{selectedRowKeys.length} selected</Text>
+            <Text style={{ color: darkMode ? '#94a3b8' : '#6B7280', fontSize: 13 }}>{selectedRowKeys.length} selected</Text>
           )}
           <Button
             type="primary"
@@ -479,14 +493,14 @@ const ContentListing = () => {
 
       {/* Table/Card */}
       <div style={{
-        background: '#fff', borderRadius: 12,
-        border: '1px solid #E5E7EB', overflow: 'hidden',
+        background: darkMode ? '#1e293b' : '#fff', borderRadius: 12,
+        border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB', overflow: 'hidden',
       }}>
         {isMobile ? (
           <div style={{ padding: '12px 16px' }}>
             {content.map(renderMobileCard)}
             {content.length === 0 && !loading && (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#6B7280' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: darkMode ? '#94a3b8' : '#6B7280' }}>
                 No content found
               </div>
             )}
@@ -534,13 +548,14 @@ const ContentListing = () => {
             onRow={(record) => ({
               onClick: () => handleEdit(record),
               style: { cursor: 'pointer', transition: 'background 0.15s' },
-              onMouseEnter: (e) => { e.currentTarget.style.background = '#F8FAFC'; },
+              onMouseEnter: (e) => { e.currentTarget.style.background = darkMode ? '#334155' : '#F8FAFC'; },
               onMouseLeave: (e) => { e.currentTarget.style.background = 'transparent'; },
             })}
           />
         )}
       </div>
     </div>
+    </ConfigProvider>
   );
 };
 

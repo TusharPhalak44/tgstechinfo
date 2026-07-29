@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Button, Typography, Tag, Badge, Avatar, Empty, Spin, Space, message, Tabs, Grid } from 'antd';
+import { Row, Col, Card, Statistic, Button, Typography, Tag, Badge, Avatar, Empty, Spin, Space, message, Tabs, Grid, ConfigProvider, theme } from 'antd';
 import {
   FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined,
   PlusOutlined, UserOutlined, CalendarOutlined, EditOutlined,
@@ -9,6 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 const { useBreakpoint } = Grid;
@@ -44,7 +45,7 @@ const ITEMS_PER_PAGE = 18;
 const INITIAL_SHOW = 12;
 const LOAD_MORE_COUNT = 3;
 
-const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
+const ArticleCard = ({ article, submitting, onSubmit, navigate, darkMode }) => {
   const status = statusConfig[article.status] || { color: 'default', text: article.status };
   const tags = parseTags(article.tags);
   const canEdit = article.status === 'changes_requested' || article.status === 'draft';
@@ -71,12 +72,13 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
         style={{ 
           borderRadius: 12, 
           height: '100%',
-          border: '1px solid #f0f0f0',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+          border: darkMode ? '1px solid #334155' : '1px solid #f0f0f0',
+          boxShadow: darkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.04)',
           transition: 'all 0.3s ease',
           overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          background: darkMode ? '#1e293b' : '#fff'
         }}
         bodyStyle={{ 
           padding: 0,
@@ -97,7 +99,7 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
                 height: isMobile ? 160 : 180, 
                 objectFit: 'cover', 
                 display: 'block', 
-                background: '#f0f4ff' 
+                background: darkMode ? '#1e293b' : '#f0f4ff' 
               }} 
             />
           ) : (
@@ -106,25 +108,25 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center', 
-              background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
+              background: darkMode ? 'linear-gradient(135deg,#1e293b,#0f172a)' : 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
             }}>
-              <FileTextOutlined style={{ fontSize: 40, color: '#bfbfbf' }} />
+              <FileTextOutlined style={{ fontSize: 40, color: darkMode ? '#64748b' : '#bfbfbf' }} />
             </div>
           )}
           <div style={{ 
             position: 'absolute', 
             top: 12, 
             left: 12,
-            background: 'rgba(255,255,255,0.95)',
+            background: darkMode ? 'rgba(30,41,59,0.95)' : 'rgba(255,255,255,0.95)',
             padding: '4px 12px',
             borderRadius: 6,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+            boxShadow: darkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.12)',
             display: 'inline-flex',
             alignItems: 'center',
             gap: 6
           }}>
             <Badge status={status.color} />
-            <span style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500 }}>{status.text}</span>
+            <span style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500, color: darkMode ? '#e2e8f0' : '#1a1a1a' }}>{status.text}</span>
           </div>
         </div>
 
@@ -155,7 +157,7 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
             fontSize: isMobile ? 14 : 15, 
             lineHeight: 1.4, 
             marginBottom: 6, 
-            color: '#1a1a1a',
+            color: darkMode ? '#f1f5f9' : '#1a1a1a',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
@@ -169,7 +171,7 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
           {article.short_description && (
             <div style={{
               fontSize: 12, 
-              color: '#595959', 
+              color: darkMode ? '#94a3b8' : '#595959', 
               lineHeight: 1.6, 
               marginBottom: 8,
               display: '-webkit-box',
@@ -192,25 +194,25 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
               alignItems: 'center',
               minHeight: 26
             }}>
-              <TagOutlined style={{ fontSize: 11, color: '#8c8c8c' }} />
+              <TagOutlined style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }} />
               {displayTags.map((tag, i) => (
                 <Tag key={i} color="geekblue" style={{ fontSize: 11, margin: 0 }}>
                   {tag.length > 15 ? tag.substring(0, 15) + '...' : tag}
                 </Tag>
               ))}
               {hasMoreTags && (
-                <Text style={{ fontSize: 11, color: '#8c8c8c' }}>+{tags.length - 4}</Text>
+                <Text style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>+{tags.length - 4}</Text>
               )}
             </div>
           )}
 
           {/* Admin feedback - Only show if present */}
           {article.status === 'changes_requested' && article.admin_comment && (
-            <div style={{ background: '#fff7e6', border: '1px solid #ffd591', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#d46b08', marginBottom: 2 }}>
+            <div style={{ background: darkMode ? '#451a03' : '#fff7e6', border: darkMode ? '1px solid #8c4b0a' : '1px solid #ffd591', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: darkMode ? '#fbbf24' : '#d46b08', marginBottom: 2 }}>
                 <EditOutlined style={{ marginRight: 4 }} />Feedback
               </div>
-              <div style={{ fontSize: 11, color: '#614700', 
+              <div style={{ fontSize: 11, color: darkMode ? '#fef3c7' : '#614700', 
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
@@ -221,11 +223,11 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
             </div>
           )}
           {article.status === 'rejected' && article.admin_comment && (
-            <div style={{ background: '#fff2f0', border: '1px solid #ffccc7', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#cf1322', marginBottom: 2 }}>
+            <div style={{ background: darkMode ? '#450a0a' : '#fff2f0', border: darkMode ? '1px solid #7f1d1d' : '1px solid #ffccc7', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: darkMode ? '#f87171' : '#cf1322', marginBottom: 2 }}>
                 <CloseCircleOutlined style={{ marginRight: 4 }} />Rejected
               </div>
-              <div style={{ fontSize: 11, color: '#820014',
+              <div style={{ fontSize: 11, color: darkMode ? '#fecaca' : '#820014',
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
@@ -267,7 +269,7 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between', 
-            borderTop: '1px solid #f0f0f0', 
+            borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', 
             paddingTop: 8,
             marginTop: 'auto'
           }}>
@@ -279,7 +281,7 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
               />
               <Text style={{ 
                 fontSize: 11, 
-                color: '#595959',
+                color: darkMode ? '#94a3b8' : '#595959',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
@@ -288,7 +290,7 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
               </Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-              <CalendarOutlined style={{ fontSize: 10, color: '#8c8c8c' }} />
+              <CalendarOutlined style={{ fontSize: 10, color: darkMode ? '#64748b' : '#8c8c8c' }} />
               <Text style={{ fontSize: 11, color: '#8c8c8c' }}>
                 {moment(article.created_at).format('MMM D, YYYY')}
               </Text>
@@ -301,6 +303,7 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate }) => {
 };
 
 const Dashboard = () => {
+  const { darkMode } = useTheme();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
@@ -384,8 +387,8 @@ const Dashboard = () => {
           {count > 0 && (
             <span style={{
               marginLeft: 6, 
-              background: activeTab === tab.key ? '#4a7cff' : '#f0f0f0',
-              color: activeTab === tab.key ? '#fff' : '#595959',
+              background: activeTab === tab.key ? '#4a7cff' : (darkMode ? '#334155' : '#f0f0f0'),
+              color: activeTab === tab.key ? '#fff' : (darkMode ? '#94a3b8' : '#595959'),
               borderRadius: 10, 
               padding: '1px 7px', 
               fontSize: 11, 
@@ -406,12 +409,23 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ 
-      padding: isMobile ? '12px' : isTablet ? '20px' : '24px',
-      width: '100%',
-      background: '#F8FAFC',
-      minHeight: '100vh'
-    }}>
+    <ConfigProvider
+      theme={{
+        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          colorBgContainer: darkMode ? '#1a1a1a' : '#ffffff',
+          colorBorder: darkMode ? '#334155' : '#E5E7EB',
+          colorText: darkMode ? '#e2e8f0' : '#1a1a1a',
+          colorTextSecondary: darkMode ? '#94a3b8' : '#6B7280',
+        },
+      }}
+    >
+      <div style={{ 
+        padding: isMobile ? '12px' : isTablet ? '20px' : '24px',
+        width: '100%',
+        background: darkMode ? '#0f172a' : '#F8FAFC',
+        minHeight: '100vh'
+      }}>
       {/* Header */}
       <div style={{ 
         marginBottom: isMobile ? '16px' : '24px', 
@@ -426,13 +440,13 @@ const Dashboard = () => {
             margin: 0, 
             fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
             fontWeight: 700,
-            color: '#111827'
+            color: darkMode ? '#f1f5f9' : '#111827'
           }}>
             Dashboard
           </Title>
           <Text style={{ 
             fontSize: isMobile ? 13 : 15, 
-            color: '#6B7280'
+            color: darkMode ? '#94a3b8' : '#6B7280'
           }}>
             Welcome back! Here's your content overview
           </Text>
@@ -477,18 +491,18 @@ const Dashboard = () => {
           <Card 
             style={{ 
               borderRadius: 12, 
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
-              background: '#FFFFFF'
+              background: darkMode ? '#1e293b' : '#FFFFFF'
             }}
             bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
             <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Total Content</Text>} 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Total Content</Text>} 
               value={stats.total} 
               prefix={<FileTextOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#4a7cff' }} />} 
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#111827' }} 
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }} 
             />
           </Card>
         </Col>
@@ -496,18 +510,18 @@ const Dashboard = () => {
           <Card 
             style={{ 
               borderRadius: 12, 
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
-              background: '#FFFFFF'
+              background: darkMode ? '#1e293b' : '#FFFFFF'
             }}
             bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
             <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Drafts</Text>} 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Drafts</Text>} 
               value={stats.draft} 
               prefix={<FileTextOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#8c8c8c' }} />} 
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#8c8c8c' }} 
+              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c' }} 
             />
           </Card>
         </Col>
@@ -515,15 +529,15 @@ const Dashboard = () => {
           <Card 
             style={{ 
               borderRadius: 12, 
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
-              background: '#FFFFFF'
+              background: darkMode ? '#1e293b' : '#FFFFFF'
             }}
             bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
             <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Pending Review</Text>} 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Pending Review</Text>} 
               value={stats.pending} 
               prefix={<ClockCircleOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#faad14' }} />} 
               valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#faad14' }} 
@@ -534,15 +548,15 @@ const Dashboard = () => {
           <Card 
             style={{ 
               borderRadius: 12, 
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
-              background: '#FFFFFF'
+              background: darkMode ? '#1e293b' : '#FFFFFF'
             }}
             bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
             <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: '#6B7280', fontWeight: 500 }}>Published</Text>} 
+              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Published</Text>} 
               value={stats.published} 
               prefix={<CheckCircleOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#52c41a' }} />} 
               valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#52c41a' }} 
@@ -585,6 +599,7 @@ const Dashboard = () => {
                 submitting={submitting}
                 onSubmit={handleSubmitForReview}
                 navigate={navigate}
+                darkMode={darkMode}
               />
             ))}
           </Row>
@@ -680,7 +695,7 @@ const Dashboard = () => {
             {totalItems > 0 && (
               <div style={{ 
                 fontSize: isMobile ? 11 : 13, 
-                color: '#8c8c8c',
+                color: darkMode ? '#64748b' : '#8c8c8c',
                 textAlign: 'center'
               }}>
                 Showing {startIndex + 1}-{Math.min(startIndex + visibleCount, endIndex)} of {totalItems} items
@@ -757,7 +772,8 @@ const Dashboard = () => {
           box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
         }
       `}</style>
-    </div>
+      </div>
+    </ConfigProvider>
   );
 };
 

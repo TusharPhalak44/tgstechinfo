@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Typography, Select, DatePicker, Tag, Space, Input, Button, Grid } from 'antd';
+import { Card, Table, Typography, Select, DatePicker, Tag, Space, Input, Button, Grid, ConfigProvider } from 'antd';
 import {
   HistoryOutlined,
   SearchOutlined,
   FilterOutlined,
   DownloadOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -17,6 +18,7 @@ const AuditLogs = () => {
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
   const isDesktop = screens.lg;
+  const { darkMode } = useTheme();
 
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([
@@ -73,7 +75,7 @@ const AuditLogs = () => {
       dataIndex: 'action',
       key: 'action',
       width: isMobile ? 100 : 150,
-      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{text}</Text>,
+      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'User',
@@ -81,7 +83,7 @@ const AuditLogs = () => {
       key: 'user',
       width: isMobile ? 120 : 180,
       ellipsis: true,
-      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'IP Address',
@@ -89,7 +91,7 @@ const AuditLogs = () => {
       key: 'ip',
       width: isMobile ? 100 : 130,
       responsive: ['md'],
-      render: (ip) => <Text code style={{ fontSize: isMobile ? 11 : 14 }}>{ip}</Text>,
+      render: (ip) => <Text code style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{ip}</Text>,
     },
     {
       title: 'Timestamp',
@@ -97,7 +99,7 @@ const AuditLogs = () => {
       key: 'timestamp',
       width: isMobile ? 120 : 150,
       sorter: (a, b) => new Date(a.timestamp) - new Date(b.timestamp),
-      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'Status',
@@ -116,73 +118,85 @@ const AuditLogs = () => {
       key: 'details',
       width: isMobile ? 100 : 150,
       ellipsis: true,
-      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
   ];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div className="w-full sm:w-auto">
-          <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
-            <HistoryOutlined /> Audit Logs
-          </Title>
-          <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
-            Track all system activities and user actions
-          </Text>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorText: darkMode ? '#cbd5e1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#e5e7eb',
+          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+        },
+      }}
+    >
+      <div className="p-4 md:p-6 lg:p-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div className="w-full sm:w-auto">
+            <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 8 }}>
+              <HistoryOutlined /> Audit Logs
+            </Title>
+            <Text style={{ fontSize: isMobile ? 13 : 15, color: darkMode ? '#94a3b8' : '#6B7280' }}>
+              Track all system activities and user actions
+            </Text>
+          </div>
+          <Button icon={<DownloadOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>Export Logs</Button>
         </div>
-        <Button icon={<DownloadOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>Export Logs</Button>
-      </div>
 
-      <Card
-        style={{
-          borderRadius: 12,
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-        }}
-        bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
-      >
-        <Space style={{ marginBottom: isMobile ? 12 : 16, width: '100%' }} direction={isMobile ? 'vertical' : 'horizontal'} size={isMobile ? 8 : 16}>
-          <Space style={{ width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }} size={isMobile ? 8 : 16}>
-            <Input
-              placeholder="Search logs..."
-              prefix={<SearchOutlined />}
-              style={{ width: isMobile ? '100%' : 250 }}
-            />
-            <Select placeholder="Filter by action" style={{ width: isMobile ? '100%' : 150 }} allowClear>
-              <Option value="login">Login</Option>
-              <Option value="create">Create</Option>
-              <Option value="update">Update</Option>
-              <Option value="delete">Delete</Option>
-            </Select>
-            <Select placeholder="Filter by status" style={{ width: isMobile ? '100%' : 120 }} allowClear>
-              <Option value="success">Success</Option>
-              <Option value="failed">Failed</Option>
-            </Select>
-            <RangePicker style={{ width: isMobile ? '100%' : 250 }} />
-          </Space>
-          <Button icon={<FilterOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>Apply Filters</Button>
-        </Space>
-
-        <Table
-          columns={columns}
-          dataSource={logs}
-          loading={loading}
-          rowKey="id"
-          scroll={{ x: isMobile ? 800 : 1000 }}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: !isMobile,
-            showQuickJumper: !isMobile,
-            showTotal: !isMobile ? (total) => `Total ${total} logs` : false,
-            simple: isMobile,
-            size: isMobile ? 'small' : 'default',
+        <Card
+          style={{
+            borderRadius: 12,
+            border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+            boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
           }}
-          size={isMobile ? 'small' : 'middle'}
-          style={{ fontSize: isMobile ? 12 : 14 }}
-        />
-      </Card>
-    </div>
+          bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
+        >
+          <Space style={{ marginBottom: isMobile ? 12 : 16, width: '100%' }} direction={isMobile ? 'vertical' : 'horizontal'} size={isMobile ? 8 : 16}>
+            <Space style={{ width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }} size={isMobile ? 8 : 16}>
+              <Input
+                placeholder="Search logs..."
+                prefix={<SearchOutlined />}
+                style={{ width: isMobile ? '100%' : 250, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
+              />
+              <Select placeholder="Filter by action" style={{ width: isMobile ? '100%' : 150, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} allowClear>
+                <Option value="login">Login</Option>
+                <Option value="create">Create</Option>
+                <Option value="update">Update</Option>
+                <Option value="delete">Delete</Option>
+              </Select>
+              <Select placeholder="Filter by status" style={{ width: isMobile ? '100%' : 120, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} allowClear>
+                <Option value="success">Success</Option>
+                <Option value="failed">Failed</Option>
+              </Select>
+              <RangePicker style={{ width: isMobile ? '100%' : 250 }} />
+            </Space>
+            <Button icon={<FilterOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>Apply Filters</Button>
+          </Space>
+
+          <Table
+            columns={columns}
+            dataSource={logs}
+            loading={loading}
+            rowKey="id"
+            scroll={{ x: isMobile ? 800 : 1000 }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: !isMobile,
+              showQuickJumper: !isMobile,
+              showTotal: !isMobile ? (total) => `Total ${total} logs` : false,
+              simple: isMobile,
+              size: isMobile ? 'small' : 'default',
+            }}
+            size={isMobile ? 'small' : 'middle'}
+            style={{ fontSize: isMobile ? 12 : 14 }}
+          />
+        </Card>
+      </div>
+    </ConfigProvider>
   );
 };
 

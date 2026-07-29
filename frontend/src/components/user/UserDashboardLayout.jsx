@@ -233,9 +233,12 @@ const UserDashboardLayout = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-            position: 'sticky',
+            position: 'fixed',
             top: 0,
+            right: 0,
+            left: isMobile ? 0 : (collapsed ? 80 : 280),
             zIndex: isMobile ? 999 : 10,
+            transition: isMobile ? 'none' : 'left 0.2s',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 16 }}>
@@ -333,8 +336,8 @@ const UserDashboardLayout = () => {
         <Content
           style={{
             margin: 0,
-            padding: isMobile ? 0 : '24px',
-            minHeight: 'calc(100vh - 64px)',
+            padding: isMobile ? '64px 0 0 0' : '88px 24px 24px 24px',
+            minHeight: '100vh',
             background: darkMode ? '#0F172A' : '#F8FAFC',
             width: '100%',
           }}

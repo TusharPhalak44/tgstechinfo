@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Card, Row, Col, Typography, Form, Input, Button, Space, Tag, Alert, Table, Progress, Grid } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Card, Row, Col, Typography, Form, Input, Button, Space, Tag, Alert, Table, Progress, Grid, ConfigProvider, message, Tooltip } from 'antd';
 import {
   LineChartOutlined,
   SaveOutlined,
@@ -7,6 +7,8 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '../../context/ThemeContext';
+import axios from 'axios';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -17,25 +19,55 @@ const SEO = () => {
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
   const isDesktop = screens.lg;
+  const { darkMode } = useTheme();
 
   const [form] = Form.useForm();
+  const [loading, setLoading] = useState(false);
   const [seoScore, setSeoScore] = useState(75);
+  const [seoIssues, setSeoIssues] = useState([]);
+  const [pages, setPages] = useState([]);
 
-  const seoIssues = [
-    { type: 'warning', message: 'Meta description is too short (recommended: 150-160 characters)' },
-    { type: 'success', message: 'Title tag has optimal length (50-60 characters)' },
-    { type: 'warning', message: 'Missing alt text on 3 images' },
-    { type: 'success', message: 'H1 tag is present and unique' },
-    { type: 'warning', message: 'Internal links could be improved' },
-  ];
+  useEffect(() => {
+    fetchSeoData();
+  }, []);
 
-  const pages = [
-    { id: 1, page: 'Home', title: 'TgsTechInfo - Technology Solutions', status: 'Good', score: 85 },
-    { id: 2, page: 'About Us', title: 'About TgsTechInfo - Our Story', status: 'Good', score: 78 },
-    { id: 3, page: 'Services', title: 'Our Services - TgsTechInfo', status: 'Warning', score: 65 },
-    { id: 4, page: 'Contact', title: 'Contact Us - TgsTechInfo', status: 'Good', score: 82 },
-    { id: 5, page: 'Blog', title: 'Blog - Technology Insights', status: 'Warning', score: 58 },
-  ];
+  const fetchSeoData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch SEO settings
+      const settingsResponse = await axios.get('/api/seo/settings');
+      form.setFieldsValue(settingsResponse.data);
+      
+      // Fetch SEO score and issues
+      const scoreResponse = await axios.get('/api/seo/score');
+      setSeoScore(scoreResponse.data.score);
+      setSeoIssues(scoreResponse.data.issues || []);
+      
+      // Fetch page analysis
+      const analysisResponse = await axios.get('/api/seo/analysis');
+      setPages(analysisResponse.data || []);
+    } catch (error) {
+      console.error('Error fetching SEO data:', error);
+      // Use default data if API fails
+      setSeoIssues([
+        { type: 'warning', message: 'Meta description is too short (recommended: 150-160 characters)' },
+        { type: 'success', message: 'Title tag has optimal length (50-60 characters)' },
+        { type: 'warning', message: 'Missing alt text on 3 images' },
+        { type: 'success', message: 'H1 tag is present and unique' },
+        { type: 'warning', message: 'Internal links could be improved' },
+      ]);
+      setPages([
+        { id: 1, page: 'Home', title: 'TgsTechInfo - Technology Solutions', status: 'Good', score: 85 },
+        { id: 2, page: 'About Us', title: 'About TgsTechInfo - Our Story', status: 'Good', score: 78 },
+        { id: 3, page: 'Services', title: 'Our Services - TgsTechInfo', status: 'Warning', score: 65 },
+        { id: 4, page: 'Contact', title: 'Contact Us - TgsTechInfo', status: 'Good', score: 82 },
+        { id: 5, page: 'Blog', title: 'Blog - Technology Insights', status: 'Warning', score: 58 },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const columns = [
     {
@@ -43,7 +75,7 @@ const SEO = () => {
       dataIndex: 'page',
       key: 'page',
       width: isMobile ? 80 : 100,
-      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14 }}>{text}</Text>,
+      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'Title Tag',
@@ -51,17 +83,22 @@ const SEO = () => {
       key: 'title',
       ellipsis: true,
       width: isMobile ? 120 : 200,
-      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14 }}>{text}</Text>,
+      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: isMobile ? 70 : 90,
-      render: (status) => (
-        <Tag color={status === 'Good' ? 'green' : 'orange'} icon={status === 'Good' ? <CheckCircleOutlined /> : <WarningOutlined />} style={{ fontSize: isMobile ? 11 : 14 }}>
-          {status}
-        </Tag>
+      render: (status, record) => (
+        <Tooltip 
+          title={record.issues && record.issues.length > 0 ? record.issues.join(', ') : 'No issues'}
+          placement="top"
+        >
+          <Tag color={status === 'Good' ? 'green' : 'orange'} icon={status === 'Good' ? <CheckCircleOutlined /> : <WarningOutlined />} style={{ fontSize: isMobile ? 11 : 14, cursor: 'pointer' }}>
+            {status}
+          </Tag>
+        </Tooltip>
       ),
     },
     {
@@ -77,42 +114,96 @@ const SEO = () => {
     },
   ];
 
-  const handleSave = () => {
-    form.validateFields().then((values) => {
-      console.log('SEO settings saved:', values);
-    });
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+      await axios.put('/api/seo/settings', values);
+      message.success('SEO settings saved successfully');
+      fetchSeoData(); // Refresh data
+    } catch (error) {
+      console.error('Error saving SEO settings:', error);
+      message.error('Failed to save SEO settings');
+    }
+  };
+
+  const handleGenerateSitemap = async () => {
+    try {
+      const response = await axios.get('/api/seo/sitemap');
+      const blob = new Blob([response.data], { type: 'application/xml' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sitemap.xml';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      message.success('Sitemap generated successfully');
+    } catch (error) {
+      console.error('Error generating sitemap:', error);
+      message.error('Failed to generate sitemap');
+    }
+  };
+
+  const handleCopyMetaTags = async () => {
+    try {
+      const settings = form.getFieldsValue();
+      const metaTags = `
+<title>${settings.siteTitle}</title>
+<meta name="description" content="${settings.metaDescription}">
+<meta name="keywords" content="${settings.metaKeywords}">
+${settings.ogImage ? `<meta property="og:image" content="${settings.ogImage}">` : ''}
+      `.trim();
+      
+      await navigator.clipboard.writeText(metaTags);
+      message.success('Meta tags copied to clipboard');
+    } catch (error) {
+      console.error('Error copying meta tags:', error);
+      message.error('Failed to copy meta tags');
+    }
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <div style={{ marginBottom: isMobile ? 16 : 32 }}>
-        <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>
-          <LineChartOutlined /> SEO Settings
-        </Title>
-        <Text style={{ fontSize: isMobile ? 13 : 15, color: '#6B7280' }}>
-          Manage search engine optimization settings for your website
-        </Text>
-      </div>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorText: darkMode ? '#cbd5e1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#e5e7eb',
+          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+        },
+      }}
+    >
+      <div className="p-4 md:p-6 lg:p-8">
+        <div style={{ marginBottom: isMobile ? 16 : 32 }}>
+          <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 8 }}>
+            <LineChartOutlined /> SEO Settings
+          </Title>
+          <Text style={{ fontSize: isMobile ? 13 : 15, color: darkMode ? '#94a3b8' : '#6B7280' }}>
+            Manage search engine optimization settings for your website
+          </Text>
+        </div>
 
       <Row gutter={[isMobile ? 16 : 24, isMobile ? 16 : 24]} style={{ marginBottom: 24 }}>
         <Col xs={24} sm={12} md={8} style={{ padding: isMobile ? '0 6px' : '0' }}>
           <Card
             style={{
               borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
             }}
             bodyStyle={{ padding: isMobile ? '16px' : '20px' }}
           >
-            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
+            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: darkMode ? '#f1f5f9' : '#111827', fontSize: isMobile ? 16 : 18 }}>
               Overall SEO Score
             </Title>
             <div style={{ textAlign: 'center', padding: isMobile ? '12px 0' : '20px 0' }}>
               <div style={{ fontSize: isMobile ? 48 : 64, fontWeight: 600, color: seoScore >= 70 ? '#10B981' : seoScore >= 50 ? '#F59E0B' : '#EF4444' }}>
                 {seoScore}
               </div>
-              <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14 }}>out of 100</Text>
+              <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#94a3b8' : '#6B7280' }}>out of 100</Text>
             </div>
           </Card>
         </Col>
@@ -120,13 +211,13 @@ const SEO = () => {
           <Card
             style={{
               borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
             }}
             bodyStyle={{ padding: isMobile ? '16px' : '20px' }}
           >
-            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
+            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: darkMode ? '#f1f5f9' : '#111827', fontSize: isMobile ? 16 : 18 }}>
               SEO Issues
             </Title>
             <Space direction="vertical" style={{ width: '100%' }} size={isMobile ? 4 : 8}>
@@ -137,7 +228,7 @@ const SEO = () => {
                   ) : (
                     <WarningOutlined style={{ color: '#F59E0B', marginTop: 4, fontSize: isMobile ? 12 : 14 }} />
                   )}
-                  <Text style={{ fontSize: isMobile ? 11 : 13 }}>{issue.message}</Text>
+                  <Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#cbd5e1' : '#111827' }}>{issue.message}</Text>
                 </div>
               ))}
             </Space>
@@ -147,24 +238,24 @@ const SEO = () => {
           <Card
             style={{
               borderRadius: 12,
-              border: '1px solid #E5E7EB',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               height: '100%',
             }}
             bodyStyle={{ padding: isMobile ? '16px' : '20px' }}
           >
-            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: '#111827', fontSize: isMobile ? 16 : 18 }}>
+            <Title level={isMobile ? 5 : 4} style={{ marginBottom: isMobile ? 12 : 16, color: darkMode ? '#f1f5f9' : '#111827', fontSize: isMobile ? 16 : 18 }}>
               Quick Actions
             </Title>
             <Space direction="vertical" style={{ width: '100%' }} size={isMobile ? 4 : 8}>
-              <Button type="primary" icon={<SaveOutlined />} block size={isMobile ? 'small' : 'middle'}>
+              <Button type="primary" icon={<SaveOutlined />} block size={isMobile ? 'small' : 'middle'} onClick={handleGenerateSitemap}>
                 Generate Sitemap
               </Button>
-              <Button icon={<CopyOutlined />} block size={isMobile ? 'small' : 'middle'}>
+              <Button icon={<CopyOutlined />} block size={isMobile ? 'small' : 'middle'} onClick={handleCopyMetaTags}>
                 Copy Meta Tags
               </Button>
-              <Button block size={isMobile ? 'small' : 'middle'}>
-                Analyze Keywords
+              <Button block size={isMobile ? 'small' : 'middle'} onClick={fetchSeoData} loading={loading}>
+                Refresh Analysis
               </Button>
             </Space>
           </Card>
@@ -173,10 +264,11 @@ const SEO = () => {
 
       <Card
         title="Global SEO Settings"
+        loading={loading}
         style={{
           borderRadius: 12,
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+          boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
           marginBottom: 24,
         }}
         bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
@@ -190,7 +282,7 @@ const SEO = () => {
                 initialValue="TgsTechInfo - Technology Solutions"
                 rules={[{ required: true, message: 'Please enter site title' }]}
               >
-                <Input placeholder="Enter site title" />
+                <Input placeholder="Enter site title" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
               </Form.Item>
             </Col>
             <Col xs={24} sm={24} md={12}>
@@ -199,7 +291,7 @@ const SEO = () => {
                 label="Title Separator"
                 initialValue=" - "
               >
-                <Input placeholder="Title separator" />
+                <Input placeholder="Title separator" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
               </Form.Item>
             </Col>
           </Row>
@@ -210,7 +302,7 @@ const SEO = () => {
             initialValue="TgsTechInfo provides cutting-edge technology solutions for businesses. Discover our innovative services and products."
             rules={[{ required: true, message: 'Please enter meta description' }]}
           >
-            <TextArea rows={3} placeholder="Enter meta description (150-160 characters)" />
+            <TextArea rows={3} placeholder="Enter meta description (150-160 characters)" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
           </Form.Item>
 
           <Row gutter={isMobile ? 12 : 16}>
@@ -220,7 +312,7 @@ const SEO = () => {
                 label="Meta Keywords"
                 initialValue="technology, solutions, software, development"
               >
-                <Input placeholder="Enter meta keywords (comma-separated)" />
+                <Input placeholder="Enter meta keywords (comma-separated)" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
               </Form.Item>
             </Col>
             <Col xs={24} sm={24} md={12}>
@@ -228,7 +320,7 @@ const SEO = () => {
                 name="ogImage"
                 label="Open Graph Image"
               >
-                <Input placeholder="Enter OG image URL" />
+                <Input placeholder="Enter OG image URL" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
               </Form.Item>
             </Col>
           </Row>
@@ -246,24 +338,28 @@ const SEO = () => {
 
       <Card
         title="Page SEO Analysis"
+        loading={loading}
         style={{
           borderRadius: 12,
-          border: '1px solid #E5E7EB',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+          boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
         }}
         bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
       >
-        <Table
-          columns={columns}
-          dataSource={pages}
-          rowKey="id"
-          scroll={{ x: isMobile ? 600 : 800 }}
-          pagination={false}
-          size={isMobile ? 'small' : 'middle'}
-          style={{ fontSize: isMobile ? 12 : 14 }}
-        />
+        <div style={{ maxHeight: isMobile ? 400 : 500, overflowY: 'auto' }}>
+          <Table
+            columns={columns}
+            dataSource={pages}
+            rowKey="id"
+            scroll={{ x: isMobile ? 600 : 800 }}
+            pagination={false}
+            size={isMobile ? 'small' : 'middle'}
+            style={{ fontSize: isMobile ? 12 : 14 }}
+          />
+        </div>
       </Card>
     </div>
+    </ConfigProvider>
   );
 };
 

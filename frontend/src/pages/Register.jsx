@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { User, Mail, Lock, Phone, ArrowRight, Eye, EyeOff, Newspaper, Mic, Mail as MailIcon, Trophy, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 const PERKS = [
@@ -11,6 +12,7 @@ const PERKS = [
 ];
 
 const Register = () => {
+  const { darkMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -110,7 +112,7 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-alt)] flex">
+    <div className="min-h-screen flex" style={{ background: darkMode ? '#0f172a' : 'var(--color-bg-alt)' }}>
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-accent-hover)] to-[var(--color-success)]">
         {/* Background decorations */}

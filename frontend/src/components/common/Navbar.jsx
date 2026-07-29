@@ -312,7 +312,7 @@ const Navbar = () => {
     axios.get('/api/public/categories').then(({ data }) => {
       const toChildren = (type) =>
         data
-          .filter(c => c.type === type)
+          .filter(c => c.type === type || (!c.type && type === 'technology'))
           .map(c => ({ label: c.name, to: `/category/${c.slug}` }));
 
       setNavItems(STATIC_NAV.map(item => {

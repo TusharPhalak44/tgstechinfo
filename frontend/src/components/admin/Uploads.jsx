@@ -8,9 +8,10 @@ import {
   Space, 
   List, 
   Tag, 
-  message,
+  App,
   Row,
-  Col
+  Col,
+  ConfigProvider
 } from 'antd';
 import {
   CloudUploadOutlined,
@@ -20,13 +21,19 @@ import {
   PictureOutlined,
   VideoCameraOutlined,
   FileTextOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
+import { useTheme } from '../../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 const { Dragger } = Upload;
 
 const Uploads = () => {
+  const { darkMode } = useTheme();
+  const { message } = App.useApp();
+  const navigate = useNavigate();
   const [fileList, setFileList] = useState([]);
   const [uploadProgress, setUploadProgress] = useState({});
   const [uploading, setUploading] = useState(false);
@@ -83,6 +90,10 @@ const Uploads = () => {
     setUploadProgress({});
   };
 
+  const handleViewMediaLibrary = () => {
+    navigate('/admin/media-library');
+  };
+
   const getFileIcon = (type) => {
     if (type.startsWith('image/')) return <PictureOutlined style={{ fontSize: 24, color: '#0AAEEF' }} />;
     if (type.startsWith('video/')) return <VideoCameraOutlined style={{ fontSize: 24, color: '#F59E0B' }} />;
@@ -99,14 +110,25 @@ const Uploads = () => {
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Title level={3} style={{ marginBottom: 24 }}>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorText: darkMode ? '#cbd5e1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#d9d9d9',
+          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+        },
+      }}
+    >
+      <div style={{ padding: '24px', background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
+      <Title level={3} style={{ marginBottom: 24, color: darkMode ? '#f1f5f9' : '#111827' }}>
         <CloudUploadOutlined /> Upload Files
       </Title>
 
       <Row gutter={16}>
         <Col span={16}>
-          <Card>
+          <Card style={{ background: darkMode ? '#1e293b' : '#fff', border: darkMode ? '1px solid #334155' : '#1px solid #e8e8e8' }}>
             <Dragger {...uploadProps} style={{ marginBottom: 16 }}>
               <p className="ant-upload-drag-icon">
                 <CloudUploadOutlined style={{ fontSize: 48, color: '#0AAEEF' }} />
@@ -114,13 +136,16 @@ const Uploads = () => {
               <p className="ant-upload-text" style={{ fontSize: 16, fontWeight: 500 }}>
                 Click or drag files to this area to upload
               </p>
-              <p className="ant-upload-hint" style={{ color: '#6B7280' }}>
+              <p className="ant-upload-hint" style={{ color: darkMode ? '#94a3b8' : '#6B7280' }}>
                 Support for single or bulk upload. Images, videos, documents up to 10MB.
               </p>
             </Dragger>
 
             {fileList.length > 0 && (
-              <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Button icon={<FolderOpenOutlined />} onClick={handleViewMediaLibrary}>
+                  View in Media Library
+                </Button>
                 <Button onClick={handleClearAll} disabled={uploading}>
                   Clear All
                 </Button>
@@ -130,9 +155,9 @@ const Uploads = () => {
         </Col>
 
         <Col span={8}>
-          <Card title="Upload Queue" style={{ minHeight: 400 }}>
+          <Card title="Upload Queue" style={{ minHeight: 400, background: darkMode ? '#1e293b' : '#fff', border: darkMode ? '1px solid #334155' : '#1px solid #e8e8e8' }}>
             {fileList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: '#9CA3AF' }}>
+              <div style={{ textAlign: 'center', padding: '40px 0', color: darkMode ? '#64748b' : '#9CA3AF' }}>
                 <CloudUploadOutlined style={{ fontSize: 48, marginBottom: 16 }} />
                 <p>No files in queue</p>
               </div>
@@ -163,7 +188,7 @@ const Uploads = () => {
                       }
                       description={
                         <div>
-                          <Text type="secondary" style={{ fontSize: 12 }}>
+                          <Text type="secondary" style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#6B7280' }}>
                             {formatFileSize(file.size)}
                           </Text>
                           {file.status === 'uploading' && uploadProgress[file.uid] && (
@@ -192,6 +217,7 @@ const Uploads = () => {
         </Col>
       </Row>
     </div>
+    </ConfigProvider>
   );
 };
 

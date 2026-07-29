@@ -4,6 +4,7 @@ const Category = require('../models/Category');
 const { validationResult } = require('express-validator');
 const { sendEmail, accessGrantEmailTemplate } = require('../config/email');
 const { notifyAdmins } = require('./notificationController');
+const { updateTagUsage, decreaseTagUsage } = require('./tagsController');
 
 // Replace em-dash (—) with hyphen (-) in any string or object
 const stripEmDash = (val) => {
@@ -37,10 +38,26 @@ exports.createContent = async (req, res) => {
                     console.error('Error parsing builder_content_elements:', e);
                     return null;
                 }
+            })() : null,
+            builder_page_data: req.body.builder_page_data ? (() => {
+                try {
+                    return typeof req.body.builder_page_data === 'string'
+                        ? req.body.builder_page_data   // keep as JSON string — model handles it
+                        : JSON.stringify(req.body.builder_page_data);
+                } catch (e) {
+                    console.error('Error processing builder_page_data:', e);
+                    return null;
+                }
             })() : null
         });
 
         const content = await Content.create(contentData);
+        
+        // Update tag usage counts
+        if (contentData.tags && contentData.tags.length > 0) {
+            await updateTagUsage(contentData.tags);
+        }
+        
         res.status(201).json({ message: 'Content created successfully', content });
     } catch (error) {
         console.error('Create content error:', error);
@@ -98,8 +115,25 @@ exports.updateContent = async (req, res) => {
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
         if (req.body.builder_layout !== undefined) updateData.builder_layout = req.body.builder_layout;
         if (req.body.builder_content_elements !== undefined) updateData.builder_content_elements = req.body.builder_content_elements;
+       if (req.body.builder_page_data !== undefined) updateData.builder_page_data = req.body.builder_page_data;
         if (req.body.tags) updateData.tags = JSON.stringify(req.body.tags.split(',').map(t => t.trim()).filter(Boolean));
         updateData = stripEmDash(updateData);
+
+        // Handle tag usage updates
+        const oldTags = content.tags ? (typeof content.tags === 'string' ? JSON.parse(content.tags) : content.tags) : [];
+        const newTags = updateData.tags ? (typeof updateData.tags === 'string' ? JSON.parse(updateData.tags) : updateData.tags) : [];
+        
+        // Decrease usage for removed tags
+        const removedTags = oldTags.filter(tag => !newTags.includes(tag));
+        if (removedTags.length > 0) {
+            await decreaseTagUsage(removedTags);
+        }
+        
+        // Increase usage for new tags
+        const addedTags = newTags.filter(tag => !oldTags.includes(tag));
+        if (addedTags.length > 0) {
+            await updateTagUsage(addedTags);
+        }
 
         const updatedContent = await Content.update(id, updateData);
         res.json({ message: 'Content updated successfully', content: updatedContent });

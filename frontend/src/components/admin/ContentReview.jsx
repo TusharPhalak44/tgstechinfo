@@ -22,8 +22,9 @@ import {
   Popconfirm,
   Alert,
   Segmented,
-  Drawer,
-  Grid
+  Grid,
+  ConfigProvider,
+  theme
 } from 'antd';
 import { 
   CheckOutlined, 
@@ -42,12 +43,12 @@ import {
   AppstoreOutlined,
   UnorderedListOutlined,
   DeleteOutlined,
-  FilterOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -57,12 +58,14 @@ const { useBreakpoint } = Grid;
 const ContentReview = () => {
   const { id: reviewId } = useParams();
   const navigate = useNavigate();
+  const { darkMode } = useTheme();
   const screens = useBreakpoint();
   const isMobile = !screens.md;
   const isTablet = screens.md && !screens.lg;
   const isDesktop = screens.lg;
 
   const [contents, setContents] = useState([]);
+  const [allContents, setAllContents] = useState([]); // Store all contents for client-side filtering
   const [loading, setLoading] = useState(false);
   const [selectedContent, setSelectedContent] = useState(null);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
@@ -75,11 +78,33 @@ const ContentReview = () => {
   const [pageSize, setPageSize] = useState(10);
   const [publishingId, setPublishingId] = useState(null);
   const [viewMode, setViewMode] = useState('table');
-  const [filtersVisible, setFiltersVisible] = useState(false);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchContents();
+  }, [activeTab, filterStatus]);
 
   useEffect(() => {
     fetchContents();
-  }, [activeTab, currentPage, pageSize, filterStatus]);
+  }, [currentPage, pageSize]);
+
+  // Client-side search filtering
+  useEffect(() => {
+    let filtered = [...allContents];
+    if (searchText && searchText.trim()) {
+      const searchLower = searchText.toLowerCase().trim();
+      filtered = filtered.filter(item => 
+        (item.title && item.title.toLowerCase().includes(searchLower)) ||
+        (item.first_name && item.first_name.toLowerCase().includes(searchLower)) ||
+        (item.last_name && item.last_name.toLowerCase().includes(searchLower)) ||
+        (item.content_type_name && item.content_type_name.toLowerCase().includes(searchLower)) ||
+        (item.category_name && item.category_name.toLowerCase().includes(searchLower))
+      );
+    }
+    setContents(filtered);
+    setTotalItems(filtered.length);
+    setCurrentPage(1);
+  }, [searchText, allContents]);
 
   useEffect(() => {
     if (reviewId && contents.length > 0) {
@@ -100,14 +125,21 @@ const ContentReview = () => {
   const fetchContents = async () => {
     setLoading(true);
     try {
-      const params = { limit: pageSize, offset: (currentPage - 1) * pageSize };
+      // When searching, fetch all data without pagination for better client-side filtering
+      const shouldFetchAll = searchText && searchText.trim();
+      const params = shouldFetchAll ? {} : { limit: pageSize, offset: (currentPage - 1) * pageSize };
       const statusToFetch = filterStatus !== 'all' ? filterStatus : (activeTab !== 'all' ? activeTab : null);
       if (statusToFetch) params.status = statusToFetch;
+      console.log('Fetching contents with params:', params);
       const response = await axios.get('/api/admin/content/pending', { params });
       const result = response.data?.data || response.data || [];
+      setAllContents(Array.isArray(result) ? result : []);
+      
+      // Initial set without search filter (search filter is applied in separate useEffect)
       setContents(Array.isArray(result) ? result : []);
-      setTotalItems(response.data?.total || result.length || 0);
+      setTotalItems(Array.isArray(result) ? result.length : 0);
     } catch (error) {
+      console.error('Fetch error:', error);
       message.error('Failed to load contents');
     } finally {
       setLoading(false);
@@ -182,11 +214,7 @@ const ContentReview = () => {
       width: isMobile ? 150 : 250,
       render: (text, record) => (
         <div>
-          <strong className="text-sm">{text}</strong>
-          <div className="mt-1 flex flex-wrap gap-1">
-            <Tag color="blue" className="text-xs">{record.content_type_name}</Tag>
-            {!isMobile && <Tag className="text-xs">{record.category_name}</Tag>}
-          </div>
+          <strong className="text-sm" style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{text}</strong>
         </div>
       )
     },
@@ -199,11 +227,25 @@ const ContentReview = () => {
         <Space>
           <Avatar size="small" icon={<UserOutlined />} />
           <div>
-            <div className="font-medium">{record.first_name} {record.last_name}</div>
+            <div className="font-medium" style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{record.first_name} {record.last_name}</div>
             {!isMobile && <Text type="secondary" className="text-xs">{record.author_email}</Text>}
           </div>
         </Space>
       )
+    },
+    {
+      title: 'Content Type',
+      dataIndex: 'content_type_name',
+      key: 'content_type_name',
+      width: 120,
+      render: (text) => <Tag color="blue" style={{ fontSize: 13 }}>{text || 'N/A'}</Tag>
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category_name',
+      key: 'category_name',
+      width: 120,
+      render: (text) => <Tag color="geekblue" style={{ fontSize: 13 }}>{text || 'N/A'}</Tag>
     },
     {
       title: 'Status',
@@ -229,7 +271,7 @@ const ContentReview = () => {
       key: 'view_count',
       width: 80,
       responsive: ['lg'],
-      render: (views) => views || 0
+      render: (views) => <span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{views || 0}</span>
     },
     {
       title: 'Actions',
@@ -339,10 +381,15 @@ const ContentReview = () => {
         <Card 
           size={isMobile ? 'small' : 'default'} 
           className="mb-4 rounded-lg shadow-sm"
+          style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
         >
           <Row gutter={[16, 16]}>
             <Col span={24}>
-              <Title level={isMobile ? 4 : 3}>{selectedContent.title}</Title>
+              <div style={{ marginBottom: 12 }}>
+                <Tag color="blue">{selectedContent.content_type_name}</Tag>
+                <Tag>{selectedContent.category_name}</Tag>
+              </div>
+              <Title level={isMobile ? 4 : 3} style={{ color: darkMode ? '#f1f5f9' : '#111827' }}>{selectedContent.title}</Title>
             </Col>
           </Row>
           
@@ -350,13 +397,8 @@ const ContentReview = () => {
             bordered 
             column={isMobile ? 1 : 2} 
             size={isMobile ? 'small' : 'default'}
+            style={{ background: darkMode ? '#1e293b' : '#fff' }}
           >
-            <Descriptions.Item label="Content Type" span={1}>
-              <Tag color="blue">{selectedContent.content_type_name}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Category" span={1}>
-              <Tag>{selectedContent.category_name}</Tag>
-            </Descriptions.Item>
             <Descriptions.Item label="Author" span={1}>
               <Space>
                 <Avatar size="small" icon={<UserOutlined />} />
@@ -379,7 +421,7 @@ const ContentReview = () => {
 
           {tags.length > 0 && (
             <div className="mt-3">
-              <Text strong>Tags: </Text>
+              <Text strong style={{ color: darkMode ? '#f1f5f9' : '#111827' }}>Tags: </Text>
               {tags.map((tag, index) => (
                 <Tag key={index} color="geekblue">{tag}</Tag>
               ))}
@@ -392,14 +434,15 @@ const ContentReview = () => {
           size={isMobile ? 'small' : 'default'} 
           title="Short Description" 
           className="mb-4 rounded-lg shadow-sm"
+          style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
         >
-          <Paragraph>{selectedContent.short_description}</Paragraph>
+          <Paragraph style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{selectedContent.short_description}</Paragraph>
         </Card>
 
         {/* Banner Image */}
         {selectedContent.banner_image && (
           <div className="mb-4">
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>Banner Image</Text>
+            <Text strong style={{ display: 'block', marginBottom: 8, color: darkMode ? '#f1f5f9' : '#111827' }}>Banner Image</Text>
             <img 
               src={`/uploads/${selectedContent.banner_image}`} 
               alt={selectedContent.title}
@@ -410,7 +453,7 @@ const ContentReview = () => {
                 objectFit: 'contain',
                 display: 'block', 
                 borderRadius: 8,
-                background: '#f5f5f5'
+                background: darkMode ? '#0f172a' : '#f5f5f5'
               }}
             />
           </div>
@@ -421,13 +464,17 @@ const ContentReview = () => {
           size={isMobile ? 'small' : 'default'} 
           title="Content" 
           className="mb-4 rounded-lg shadow-sm"
+          style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
         >
           <div 
             className="content-preview p-4 bg-gray-50 rounded-lg border border-gray-200 leading-relaxed"
             style={{ 
               maxHeight: isMobile ? 300 : 400,
               overflowY: 'auto',
-              fontSize: isMobile ? 14 : 16
+              fontSize: isMobile ? 14 : 16,
+              background: darkMode ? '#0f172a' : '#f9fafb',
+              borderColor: darkMode ? '#334155' : '#e5e7eb',
+              color: darkMode ? '#cbd5e1' : '#1a1a2e'
             }}
             dangerouslySetInnerHTML={{ 
               __html: selectedContent.content || 'No content available'
@@ -441,8 +488,9 @@ const ContentReview = () => {
             size={isMobile ? 'small' : 'default'} 
             title="SEO Settings" 
             className="mb-4 rounded-lg shadow-sm"
+            style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
           >
-            <Descriptions bordered column={1} size={isMobile ? 'small' : 'default'}>
+            <Descriptions bordered column={1} size={isMobile ? 'small' : 'default'} style={{ background: darkMode ? '#1e293b' : '#fff' }}>
               {selectedContent.seo_meta_title && (
                 <Descriptions.Item label="Meta Title">
                   {selectedContent.seo_meta_title}
@@ -467,6 +515,7 @@ const ContentReview = () => {
           size={isMobile ? 'small' : 'default'} 
           title="Admin Comment" 
           className="mb-4 rounded-lg shadow-sm"
+          style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
         >
           <TextArea
             rows={isMobile ? 3 : 4}
@@ -474,11 +523,12 @@ const ContentReview = () => {
             onChange={(e) => setAdminComment(e.target.value)}
             placeholder="Add comment for the author (optional)..."
             className="rounded-lg border-gray-300 focus:border-primary-500 focus:ring-primary-500"
+            style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d1d5db' }}
           />
           {selectedContent.admin_comment && (
-            <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
-              <Text strong className="text-yellow-600">Previous Comment: </Text>
-              <Text>{selectedContent.admin_comment}</Text>
+            <div className="mt-2 p-2 bg-yellow-50 rounded border border-yellow-200" style={{ background: darkMode ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', borderColor: darkMode ? '#f59e0b' : '#fcd34d' }}>
+              <Text strong className="text-yellow-600" style={{ color: darkMode ? '#fbbf24' : '#b45309' }}>Previous Comment: </Text>
+              <Text style={{ color: darkMode ? '#fcd34d' : '#92400e' }}>{selectedContent.admin_comment}</Text>
             </div>
           )}
         </Card>
@@ -586,7 +636,7 @@ const ContentReview = () => {
       <Modal
         title={
           <Space style={{ fontSize: isMobile ? 16 : 18 }}>
-            <span className="font-semibold">Review Content</span>
+            <span className="font-semibold" style={{ color: darkMode ? '#f1f5f9' : '#111827' }}>Review Content</span>
             <Badge status={statusInfo.color} text={statusInfo.text} />
           </Space>
         }
@@ -603,7 +653,8 @@ const ContentReview = () => {
         bodyStyle={{ 
           padding: isMobile ? 12 : 24,
           maxHeight: isMobile ? 'calc(100vh - 120px)' : 'calc(100vh - 200px)',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          background: darkMode ? '#1e293b' : '#fff'
         }}
         destroyOnClose
       >
@@ -621,78 +672,56 @@ const ContentReview = () => {
     { key: 'all', label: 'All Content' }
   ];
 
-  // Filter component for mobile
-  const FilterDrawer = () => (
-    <Drawer
-      title="Filters"
-      placement="right"
-      onClose={() => setFiltersVisible(false)}
-      open={filtersVisible}
-      width={300}
-      bodyStyle={{ padding: '16px' }}
-    >
-      <div className="flex flex-col gap-4">
-        <Input.Search
-          placeholder="Search content..."
-          allowClear
-          onSearch={setSearchText}
-          size="large"
-        />
-        <Select
-          value={filterStatus}
-          onChange={(val) => { setFilterStatus(val); setActiveTab('all'); setCurrentPage(1); }}
-          size="large"
-          placeholder="Filter by status"
-          style={{ width: '100%' }}
-        >
-          <Option value="all">All Status</Option>
-          <Option value="pending">Pending</Option>
-          <Option value="approved">Approved</Option>
-          <Option value="published">Published</Option>
-          <Option value="rejected">Rejected</Option>
-          <Option value="changes_requested">Changes Requested</Option>
-        </Select>
-        <Button onClick={fetchContents} icon={<ReloadOutlined />} size="large" block>
-          Refresh
-        </Button>
-      </div>
-    </Drawer>
-  );
-
   return (
-    <div className="p-4 md:p-6 lg:p-8">
-      <Card className="rounded-xl shadow-soft border border-gray-200">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div className="w-full sm:w-auto">
-            <Title level={isMobile ? 3 : 2} className="mb-1" style={{ fontSize: isMobile ? 20 : 24 }}>
-              Content Review
-            </Title>
-            <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14 }}>
-              Review, approve, reject, and manage content submissions
-            </Text>
+    <ConfigProvider theme={{
+      algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+      token: {
+        colorBgContainer: darkMode ? '#1e293b' : '#fff',
+        colorBorder: darkMode ? '#334155' : '#e5e7eb',
+        colorText: darkMode ? '#cbd5e1' : '#1a1a2e',
+        colorTextSecondary: darkMode ? '#94a3b8' : '#6b7280',
+        colorBgElevated: darkMode ? '#1e293b' : '#fff',
+        colorFillAlter: darkMode ? '#0f172a' : '#fafafa',
+        colorFillContent: darkMode ? '#0f172a' : '#fff',
+        colorFillQuaternary: darkMode ? '#0f172a' : '#f5f5f5',
+      }
+    }}>
+      <div className="p-4 md:p-6 lg:p-8" style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
+        <Card className="rounded-xl shadow-soft border border-gray-200" style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div className="w-full sm:w-auto">
+              <Title level={isMobile ? 3 : 2} className="mb-1" style={{ fontSize: isMobile ? 20 : 24, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                Content Review
+              </Title>
+              <Text type="secondary" style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#94a3b8' : '#6b7280' }}>
+                Review, approve, reject, and manage content submissions
+              </Text>
+            </div>
+            <div className="w-full sm:w-auto flex justify-start sm:justify-end">
+              <Badge count={contents.filter(c => c.status === 'pending').length} overflowCount={99}>
+                <Button 
+                  type="primary" 
+                  icon={<ClockCircleOutlined />} 
+                  className="rounded-lg"
+                  style={{ 
+                    width: isMobile ? '100%' : 'auto',
+                    background: darkMode ? '#4a7cff' : undefined
+                  }}
+                >
+                  {!isMobile && 'Pending Items'}
+                  {isMobile && `${contents.filter(c => c.status === 'pending').length} Pending`}
+                </Button>
+              </Badge>
+            </div>
           </div>
-          <div className="w-full sm:w-auto flex justify-start sm:justify-end">
-            <Badge count={contents.filter(c => c.status === 'pending').length} overflowCount={99}>
-              <Button 
-                type="primary" 
-                icon={<ClockCircleOutlined />} 
-                className="rounded-lg"
-                style={{ width: isMobile ? '100%' : 'auto' }}
-              >
-                {!isMobile && 'Pending Items'}
-                {isMobile && `${contents.filter(c => c.status === 'pending').length} Pending`}
-              </Button>
-            </Badge>
-          </div>
-        </div>
 
         {/* Admin Info Alert */}
         <Alert
           message={
             <Space>
               <CheckCircleOutlined className="text-blue-500" />
-              <Text strong>Admin Review Mode</Text>
+              <Text strong style={{ color: darkMode ? '#f1f5f9' : '#111827' }}>Admin Review Mode</Text>
             </Space>
           }
           description="You can review, approve, reject, or request changes for content."
@@ -700,69 +729,47 @@ const ContentReview = () => {
           showIcon
           closable
           className="mb-4 rounded-lg"
-          style={{ fontSize: isMobile ? 12 : 14 }}
+          style={{ 
+            fontSize: isMobile ? 12 : 14,
+            background: darkMode ? '#1e293b' : '#fff',
+            borderColor: darkMode ? '#334155' : '#e5e7eb'
+          }}
         />
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
-          {!isMobile ? (
-            <>
-              <Input.Search
-                placeholder="Search content..."
-                allowClear
-                onSearch={setSearchText}
-                style={{ width: isMobile ? '100%' : 256 }}
-              />
-              <Select
-                value={filterStatus}
-                onChange={(val) => { setFilterStatus(val); setActiveTab('all'); setCurrentPage(1); }}
-                style={{ width: isMobile ? '100%' : 160 }}
-              >
-                <Option value="all">All Status</Option>
-                <Option value="pending">Pending</Option>
-                <Option value="approved">Approved</Option>
-                <Option value="published">Published</Option>
-                <Option value="rejected">Rejected</Option>
-                <Option value="changes_requested">Changes Requested</Option>
-              </Select>
-              <Button onClick={fetchContents} icon={<RollbackOutlined />} className="rounded-lg">
-                Refresh
-              </Button>
-            </>
-          ) : (
-            <div className="flex gap-2 w-full">
-              <Button 
-                icon={<FilterOutlined />} 
-                onClick={() => setFiltersVisible(true)}
-                className="flex-1"
-              >
-                Filters
-              </Button>
-              <Button 
-                icon={<ReloadOutlined />} 
-                onClick={fetchContents}
-                className="flex-1"
-              >
-                Refresh
-              </Button>
-            </div>
-          )}
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 items-center">
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <Input.Search
+              placeholder="Search..."
+              allowClear
+              value={searchText}
+              onSearch={(value) => { setSearchText(value); setCurrentPage(1); }}
+              onChange={(e) => { setSearchText(e.target.value); }}
+              onClear={() => { setSearchText(''); setCurrentPage(1); }}
+              style={{ width: isMobile ? 200 : 250, background: darkMode ? '#0f172a' : '#fff' }}
+            />
+            <Button onClick={() => { setSearchText(''); setFilterStatus('all'); setActiveTab('all'); setCurrentPage(1); fetchContents(); }} icon={<RollbackOutlined />} className="rounded-lg">
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
+        <style>{`.content-review-tabs .ant-tabs-nav { overflow: hidden !important; } .content-review-tabs .ant-tabs-nav-wrap { overflow: hidden !important; }`}</style>
         <Tabs
           activeKey={activeTab}
           onChange={(key) => { setActiveTab(key); setFilterStatus('all'); setCurrentPage(1); }}
           type={isMobile ? 'line' : 'card'}
-          className="mb-4"
+          className="mb-4 content-review-tabs"
           style={{ 
             overflowX: isMobile ? 'auto' : 'visible',
+            overflowY: 'hidden',
             fontSize: isMobile ? 12 : 14
           }}
           items={tabItems.map(tab => ({
             key: tab.key,
             label: (
-              <span style={{ fontSize: isMobile ? 12 : 14 }}>
+              <span style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>
                 {isMobile ? (
                   <Badge 
                     status={tab.key === 'pending' ? 'processing' : 'default'} 
@@ -786,6 +793,7 @@ const ContentReview = () => {
               { value: 'card', icon: <AppstoreOutlined /> },
             ]}
             size={isMobile ? 'small' : 'default'}
+            style={{ background: darkMode ? '#1e293b' : '#f5f5f5' }}
           />
         </div>
 
@@ -799,7 +807,7 @@ const ContentReview = () => {
                   <Card 
                     hoverable 
                     styles={{ body: { padding: 0 } }} 
-                    style={{ borderRadius: 12 }}
+                    style={{ borderRadius: 12, background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
                     onClick={() => navigate(`/admin/review/${record.id}`)}
                   >
                     <div style={{ position: 'relative', lineHeight: 0 }}>
@@ -822,10 +830,10 @@ const ContentReview = () => {
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center', 
-                          background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', 
+                          background: darkMode ? '#0f172a' : 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', 
                           borderRadius: '8px 8px 0 0' 
                         }}>
-                          <FileTextOutlined style={{ fontSize: 40, color: '#bfbfbf' }} />
+                          <FileTextOutlined style={{ fontSize: 40, color: darkMode ? '#475569' : '#bfbfbf' }} />
                         </div>
                       )}
                       <div style={{ position: 'absolute', top: 10, left: 10 }}>
@@ -833,12 +841,13 @@ const ContentReview = () => {
                           display: 'inline-flex', 
                           alignItems: 'center', 
                           gap: 6, 
-                          background: 'rgba(255,255,255,0.95)', 
+                          background: darkMode ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255,255,255,0.95)', 
                           borderRadius: 6, 
                           padding: '3px 10px', 
                           fontSize: isMobile ? 10 : 12, 
                           fontWeight: 500, 
-                          boxShadow: '0 1px 4px rgba(0,0,0,0.12)' 
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                          color: darkMode ? '#f1f5f9' : '#111827'
                         }}>
                           <Badge status={s.color} />{s.text}
                         </span>
@@ -846,15 +855,15 @@ const ContentReview = () => {
                     </div>
                     <div style={{ padding: isMobile ? '10px 12px' : '14px 16px' }}>
                       <div style={{ marginBottom: 6 }}>
-                        <Tag color="blue" style={{ fontSize: isMobile ? 10 : 11 }}>{record.content_type_name}</Tag>
-                        {!isMobile && <Tag style={{ fontSize: 11 }}>{record.category_name}</Tag>}
+                        <Tag color="blue" style={{ fontSize: isMobile ? 10 : 11, color: darkMode ? '#60a5fa' : undefined }}>{record.content_type_name}</Tag>
+                        {!isMobile && <Tag style={{ fontSize: 11, color: darkMode ? '#a78bfa' : undefined }}>{record.category_name}</Tag>}
                       </div>
                       <div style={{ 
                         fontWeight: 700, 
                         fontSize: isMobile ? 13 : 14, 
                         lineHeight: 1.4, 
                         marginBottom: 8, 
-                        color: '#1a1a1a', 
+                        color: darkMode ? '#f1f5f9' : '#1a1a1a', 
                         display: '-webkit-box', 
                         WebkitLineClamp: 2, 
                         WebkitBoxOrient: 'vertical', 
@@ -866,12 +875,12 @@ const ContentReview = () => {
                         display: 'flex', 
                         justifyContent: 'space-between', 
                         alignItems: 'center', 
-                        borderTop: '1px solid #f0f0f0', 
+                        borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', 
                         paddingTop: 10 
                       }}>
                         <Space size={4}>
                           <Avatar size={isMobile ? 20 : 22} icon={<UserOutlined />} />
-                          <Text style={{ fontSize: isMobile ? 11 : 12, color: '#595959' }}>
+                          <Text style={{ fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#595959' }}>
                             {record.first_name} {record.last_name}
                           </Text>
                         </Space>
@@ -932,7 +941,7 @@ const ContentReview = () => {
               total: totalItems,
               showSizeChanger: !isMobile,
               showQuickJumper: !isMobile,
-              showTotal: !isMobile ? (total) => `Total ${total} items` : false,
+              showTotal: !isMobile ? (total) => <span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Total {total} items</span> : false,
               onChange: (page, size) => {
                 setCurrentPage(page);
                 setPageSize(size);
@@ -943,18 +952,21 @@ const ContentReview = () => {
               simple: isMobile
             }}
             className="border border-gray-200 rounded-lg overflow-hidden"
-            style={{ fontSize: isMobile ? 12 : 14 }}
+            style={{ 
+              fontSize: isMobile ? 12 : 14,
+              background: darkMode ? '#1e293b' : '#fff',
+              borderColor: darkMode ? '#334155' : '#e5e7eb'
+            }}
             size={isMobile ? 'small' : 'middle'}
+            rowClassName={(record, index) => index % 2 === 0 ? (darkMode ? 'bg-dark-even' : '') : ''}
           />
         )}
       </Card>
 
       {/* Review Modal */}
       {renderReviewModal()}
-
-      {/* Filter Drawer for Mobile */}
-      <FilterDrawer />
     </div>
+    </ConfigProvider>
   );
 };
 

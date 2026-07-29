@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import { ArrowLeftOutlined } from '@ant-design/icons';
+import { useTheme } from '../context/ThemeContext';
 
 const CaseStudyPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { darkMode } = useTheme();
   const [caseStudy, setCaseStudy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -29,10 +31,10 @@ const CaseStudyPage = () => {
   // ── Loading ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={styles.fullPage}>
-        <div style={styles.spinnerWrap}>
-          <div style={styles.spinner} />
-          <p style={styles.spinnerText}>Loading case study…</p>
+      <div style={getStyles(darkMode).fullPage}>
+        <div style={getStyles(darkMode).spinnerWrap}>
+          <div style={getStyles(darkMode).spinner} />
+          <p style={getStyles(darkMode).spinnerText}>Loading case study…</p>
         </div>
       </div>
     );
@@ -41,12 +43,12 @@ const CaseStudyPage = () => {
   // ── Error ────────────────────────────────────────────────────────
   if (error || !caseStudy) {
     return (
-      <div style={styles.fullPage}>
-        <div style={styles.errorBox}>
+      <div style={getStyles(darkMode).fullPage}>
+        <div style={getStyles(darkMode).errorBox}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-          <h2 style={styles.errorTitle}>Oops!</h2>
-          <p style={styles.errorMsg}>{error || 'Case study not found.'}</p>
-          <button style={styles.backBtn} onClick={() => navigate('/')}>
+          <h2 style={getStyles(darkMode).errorTitle}>Oops!</h2>
+          <p style={getStyles(darkMode).errorMsg}>{error || 'Case study not found.'}</p>
+          <button style={getStyles(darkMode).backBtn} onClick={() => navigate('/')}>
             ← Back to Home
           </button>
         </div>
@@ -57,21 +59,23 @@ const CaseStudyPage = () => {
   // ── No PDF ───────────────────────────────────────────────────────
   if (!pdfUrl) {
     return (
-      <div style={styles.fullPage}>
-        <div style={styles.errorBox}>
+      <div style={getStyles(darkMode).fullPage}>
+        <div style={getStyles(darkMode).errorBox}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
-          <h2 style={styles.errorTitle}>PDF Not Available</h2>
-          <p style={styles.errorMsg}>
+          <h2 style={getStyles(darkMode).errorTitle}>PDF Not Available</h2>
+          <p style={getStyles(darkMode).errorMsg}>
             The PDF for <strong>{caseStudy.case_study_headline || caseStudy.title}</strong> hasn't been attached yet.
             Please check back soon.
           </p>
-          <button style={styles.backBtn} onClick={() => navigate('/')}>
+          <button style={getStyles(darkMode).backBtn} onClick={() => navigate('/')}>
             ← Back to Home
           </button>
         </div>
       </div>
     );
   }
+
+  const styles = getStyles(darkMode);
 
   // ── PDF Viewer ───────────────────────────────────────────────────
   return (
@@ -157,16 +161,16 @@ const CaseStudyPage = () => {
 };
 
 // ── Styles ───────────────────────────────────────────────────────
-const styles = {
+const getStyles = (darkMode) => ({
   page: {
     minHeight: '100vh',
-    background: '#f0f2f5',
+    background: darkMode ? '#0f172a' : '#f0f2f5',
     display: 'flex',
     flexDirection: 'column',
   },
   fullPage: {
     minHeight: '100vh',
-    background: '#f0f2f5',
+    background: darkMode ? '#0f172a' : '#f0f2f5',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -177,34 +181,34 @@ const styles = {
   spinner: {
     width: 44,
     height: 44,
-    border: '4px solid #e8e8e8',
+    border: `4px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
     borderTop: '4px solid #0AAEEF',
     borderRadius: '50%',
     animation: 'spin 0.8s linear infinite',
     margin: '0 auto 16px',
   },
   spinnerText: {
-    color: '#8c8c8c',
+    color: darkMode ? '#94a3b8' : '#8c8c8c',
     fontSize: 15,
   },
   errorBox: {
-    background: '#fff',
+    background: darkMode ? '#1e293b' : '#fff',
     borderRadius: 16,
     padding: '48px 40px',
     textAlign: 'center',
     maxWidth: 420,
     width: '100%',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+    boxShadow: darkMode ? '0 4px 24px rgba(0,0,0,0.3)' : '0 4px 24px rgba(0,0,0,0.08)',
   },
   errorTitle: {
     fontSize: 24,
     fontWeight: 800,
-    color: '#0D2B4E',
+    color: darkMode ? '#f1f5f9' : '#0D2B4E',
     margin: '0 0 10px',
   },
   errorMsg: {
     fontSize: 15,
-    color: '#6b7280',
+    color: darkMode ? '#cbd5e1' : '#6b7280',
     lineHeight: 1.6,
     margin: '0 0 24px',
   },
@@ -219,12 +223,12 @@ const styles = {
     cursor: 'pointer',
   },
   topBar: {
-    background: '#fff',
-    borderBottom: '1px solid #e8e8e8',
+    background: darkMode ? '#1e293b' : '#fff',
+    borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
     position: 'sticky',
     top: 0,
     zIndex: 100,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
   },
   topBarInner: {
     maxWidth: 1200,
@@ -237,11 +241,11 @@ const styles = {
   },
   topBackBtn: {
     background: 'none',
-    border: '1px solid #e8e8e8',
+    border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
     borderRadius: 8,
     padding: '6px 14px',
     fontSize: 13,
-    color: '#595959',
+    color: darkMode ? '#cbd5e1' : '#595959',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -257,7 +261,7 @@ const styles = {
     overflow: 'hidden',
   },
   typeBadge: {
-    background: '#e8f4fd',
+    background: darkMode ? 'rgba(10, 174, 239, 0.15)' : '#e8f4fd',
     color: '#0AAEEF',
     fontSize: 11,
     fontWeight: 700,
@@ -269,7 +273,7 @@ const styles = {
   topTitle: {
     fontWeight: 700,
     fontSize: 15,
-    color: '#0D2B4E',
+    color: darkMode ? '#f1f5f9' : '#0D2B4E',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
@@ -325,8 +329,8 @@ const styles = {
     minHeight: 600,
     border: 'none',
     borderRadius: 12,
-    background: '#fff',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+    background: darkMode ? '#1e293b' : '#fff',
+    boxShadow: darkMode ? '0 4px 24px rgba(0,0,0,0.3)' : '0 4px 24px rgba(0,0,0,0.10)',
   },
   pdfFallback: {
     flex: 1,
@@ -335,14 +339,14 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '60px 20px',
-    background: '#fff',
+    background: darkMode ? '#1e293b' : '#fff',
     borderRadius: 12,
-    boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+    boxShadow: darkMode ? '0 4px 24px rgba(0,0,0,0.3)' : '0 4px 24px rgba(0,0,0,0.08)',
     textAlign: 'center',
   },
   pdfFallbackText: {
     fontSize: 15,
-    color: '#6b7280',
+    color: darkMode ? '#cbd5e1' : '#6b7280',
     marginBottom: 20,
   },
   openPdfBtn: {
@@ -354,7 +358,7 @@ const styles = {
     fontWeight: 700,
     textDecoration: 'none',
   },
-};
+});
 
 // Inject spinner keyframe once
 if (typeof document !== 'undefined' && !document.getElementById('cs-spin-style')) {
