@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }) => {
   const fetchUser = async () => {
     try {
       const response = await axios.get('/api/auth/profile');
-      setUser(response.data);
+      setUser(response.data.user);
     } catch (error) {
       console.error('Fetch user error:', error);
       setUser(null);

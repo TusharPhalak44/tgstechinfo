@@ -49,7 +49,11 @@ const UserManagement = () => {
   const fetchRoles = async () => {
     try {
       const response = await axios.get('/api/rbac/roles');
-      setRoles(response.data.roles);
+      // Filter to only show Admin and User roles
+      const filteredRoles = response.data.roles.filter(role => 
+        role.name.toLowerCase() === 'admin' || role.name.toLowerCase() === 'user'
+      );
+      setRoles(filteredRoles);
     } catch (error) {
       console.error('Error fetching roles:', error);
       message.error('Failed to load roles');
@@ -323,7 +327,6 @@ const UserManagement = () => {
             >
               <Select style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
                 <Option value="user">User</Option>
-                <Option value="editor">Editor</Option>
                 <Option value="admin">Admin</Option>
               </Select>
             </Form.Item>

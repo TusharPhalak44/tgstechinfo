@@ -39,6 +39,7 @@ const STATIC_NAV = [
     ]
   },
   { key: 'technology', label: 'Technology', dynamic: true },
+  
   { key: 'industries', label: 'Industries', dynamic: true },
   { key: 'contact', label: 'Contact', to: '/contact' },
 ];
@@ -305,6 +306,7 @@ const Navbar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
   const [isLaptop, setIsLaptop] = useState(window.innerWidth > 900 && window.innerWidth <= 1200);
   const [navItems, setNavItems] = useState(STATIC_NAV);
+  const [websiteLogo, setWebsiteLogo] = useState('/logo.jpg');
   const searchRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -321,6 +323,21 @@ const Navbar = () => {
         return item;
       }));
     }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const fetchWebsiteLogo = async () => {
+      try {
+        const response = await axios.get('/api/site-settings/public');
+        const settings = response.data.settings;
+        if (settings && settings.website_logo) {
+          setWebsiteLogo(settings.website_logo);
+        }
+      } catch (error) {
+        console.error('Failed to fetch website logo:', error);
+      }
+    };
+    fetchWebsiteLogo();
   }, []);
 
   useEffect(() => {
@@ -420,8 +437,8 @@ const Navbar = () => {
 
           {/* Logo */}
           <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-            <img src="/logo.jpg" alt="TGS TechInfo" style={{ 
-              height: isMobile ? 40 : isLaptop ? 44 : 52, 
+            <img src={websiteLogo} alt="TGS TechInfo" style={{ 
+              height: isMobile ? 50 : isLaptop ? 55 : 65, 
               width: 'auto', 
               display: 'block' 
             }} />

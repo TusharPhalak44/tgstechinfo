@@ -38,12 +38,41 @@ class User {
 
     static async update(id, userData) {
         const { first_name, last_name, email, is_active } = userData;
+        
+        // Build dynamic update query with only provided fields
+        const updates = [];
+        const values = [];
+        
+        if (first_name !== undefined) {
+            updates.push('first_name = ?');
+            values.push(first_name);
+        }
+        if (last_name !== undefined) {
+            updates.push('last_name = ?');
+            values.push(last_name);
+        }
+        if (email !== undefined) {
+            updates.push('email = ?');
+            values.push(email);
+        }
+        if (is_active !== undefined) {
+            updates.push('is_active = ?');
+            values.push(is_active);
+        }
+        
+        if (updates.length === 0) {
+            return await User.findById(id);
+        }
+        
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(id);
+        
         const query = `
             UPDATE users 
-            SET first_name = ?, last_name = ?, email = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+            SET ${updates.join(', ')}
             WHERE id = ?
         `;
-        await pool.query(query, [first_name, last_name, email, is_active, id]);
+        await pool.query(query, values);
         return await User.findById(id);
     }
 

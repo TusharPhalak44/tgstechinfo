@@ -235,8 +235,51 @@ const renderCaseStudyEmail = (customTemplate, vars = {}) => {
         .replace(/\{\{slug\}\}/gi, vars.slug || '');
 };
 
+/**
+ * Send templated email using database template
+ * @param {string} templateType - Type of template (registration, content_submitted, etc.)
+ * @param {string} to - Recipient email
+ * @param {object} variables - Variables to replace in template
+ */
+const sendTemplatedEmail = async (templateType, to, variables = {}) => {
+    try {
+        const EmailTemplate = require('../models/EmailTemplate');
+        const template = await EmailTemplate.findByType(templateType);
+
+        if (!template) {
+            console.warn(`No active template found for type: ${templateType}`);
+            return { skipped: true, reason: 'template_not_found' };
+        }
+
+        // Add default variables
+        const defaultVars = {
+            year: new Date().getFullYear(),
+            ...variables
+        };
+
+        // Render template with variables
+        let renderedSubject = template.subject;
+        let renderedHtml = template.html_body;
+
+        Object.keys(defaultVars).forEach(key => {
+            const placeholder = `{{${key}}}`;
+            const value = defaultVars[key] || '';
+            renderedSubject = renderedSubject.replace(new RegExp(placeholder, 'g'), value);
+            renderedHtml = renderedHtml.replace(new RegExp(placeholder, 'g'), value);
+        });
+
+        // Send email
+        const result = await sendEmail(to, renderedSubject, renderedHtml);
+        return result;
+    } catch (error) {
+        console.error('Error sending templated email:', error);
+        throw error;
+    }
+};
+
 module.exports = {
     sendEmail,
+    sendTemplatedEmail,
     accessGrantEmailTemplate,
     subscriptionEmailTemplate,
     renderCaseStudyEmail,

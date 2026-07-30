@@ -44,7 +44,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       const result = await login(email, password);
       if (result.success) {
@@ -62,11 +62,6 @@ const Login = () => {
     }
   };
 
-  const handleSocialLogin = (provider) => {
-    // Placeholder for social login
-    console.log(`${provider} login clicked`);
-  };
-
   return (
     <div className="min-h-screen flex" style={{ background: darkMode ? '#0f172a' : 'var(--color-bg-alt)' }}>
       {/* Left Panel - Branding */}
@@ -75,7 +70,7 @@ const Login = () => {
         <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-[rgba(255,255,255,0.1)] blur-3xl pointer-events-none" />
         <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-[rgba(255,255,255,0.08)] blur-2xl pointer-events-none" />
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
-        
+
         {/* Floating glass cards */}
         <div className="absolute top-20 right-20 w-32 h-32 bg-[rgba(255,255,255,0.05)] backdrop-blur-sm rounded-2xl border border-[rgba(255,255,255,0.1)] pointer-events-none" />
         <div className="absolute bottom-32 left-16 w-24 h-24 bg-[rgba(255,255,255,0.04)] backdrop-blur-sm rounded-xl border border-[rgba(255,255,255,0.08)] pointer-events-none" />
@@ -125,7 +120,7 @@ const Login = () => {
             <h1 className="text-3xl font-bold tracking-tight text-[var(--color-heading)]">Sign In</h1>
             <p className="text-sm text-[var(--color-muted)]">Enter your credentials to access your account</p>
           </div>
-          
+
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -227,34 +222,6 @@ const Login = () => {
               )}
             </button>
           </form>
-
-          {/* Social Login Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[var(--color-border)]"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-[var(--color-bg-alt)] text-[var(--color-muted)]">Or continue with</span>
-            </div>
-          </div>
-
-          {/* Social Login Buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => handleSocialLogin('google')}
-              className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md border border-[var(--color-border)] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <span>Google</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSocialLogin('github')}
-              className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md border border-[var(--color-border)] bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              <span>GitHub</span>
-            </button>
-          </div>
 
           <div className="flex flex-col space-y-4">
             <div className="text-center text-sm">

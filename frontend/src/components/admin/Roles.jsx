@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Checkbox, Grid, ConfigProvider } from 'antd';
 import {
   SecurityScanOutlined,
@@ -7,6 +7,7 @@ import {
   DeleteOutlined,
   UserOutlined,
 } from '@ant-design/icons';
+import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 
 const { Title, Text } = Typography;
@@ -20,44 +21,33 @@ const Roles = () => {
   const isDesktop = screens.lg;
   const { darkMode } = useTheme();
 
-  const [roles, setRoles] = useState([
-    {
-      id: 1,
-      name: 'Administrator',
-      description: 'Full access to all features',
-      permissions: ['all'],
-      userCount: 2,
-      status: 'active',
-    },
-    {
-      id: 2,
-      name: 'Editor',
-      description: 'Can create and edit content',
-      permissions: ['content.create', 'content.edit', 'content.delete'],
-      userCount: 5,
-      status: 'active',
-    },
-    {
-      id: 3,
-      name: 'Author',
-      description: 'Can create and edit own content',
-      permissions: ['content.create', 'content.edit.own'],
-      userCount: 12,
-      status: 'active',
-    },
-    {
-      id: 4,
-      name: 'Viewer',
-      description: 'Read-only access',
-      permissions: ['content.read'],
-      userCount: 45,
-      status: 'active',
-    },
-  ]);
+  const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingRole, setEditingRole] = useState(null);
   const [form] = Form.useForm();
+
+  useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  const fetchRoles = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('/api/rbac/roles');
+      // Filter to only show Admin and User roles
+      const filteredRoles = response.data.roles.filter(role =>
+        role.name.toLowerCase() === 'admin' || role.name.toLowerCase() === 'user'
+      );
+      setRoles(filteredRoles);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      message.error('Failed to load roles');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const availablePermissions = [
     { label: 'Content: Create', value: 'content.create' },

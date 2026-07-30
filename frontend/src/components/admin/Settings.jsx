@@ -1,96 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Upload, Button, message, Typography, Space, Divider, Input, Switch } from 'antd';
+import { Card, Form, Upload, Button, message, Typography, Space, Divider, Input, Switch, Tabs } from 'antd';
 import { UploadOutlined, DeleteOutlined, PictureOutlined, SaveOutlined } from '@ant-design/icons';
 import { useTheme } from '../../context/ThemeContext';
+import axios from 'axios';
 
 const { Title, Text } = Typography;
 
 const Settings = () => {
   const { darkMode } = useTheme();
-  const [sidebarLogo1Url, setSidebarLogo1Url] = useState('');
-  const [sidebarLogo2Url, setSidebarLogo2Url] = useState('');
-  const [faviconUrl, setFaviconUrl] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [cmsLogo1Url, setCmsLogo1Url] = useState('');
+  const [cmsLogo2Url, setCmsLogo2Url] = useState('');
+  const [cmsFaviconUrl, setCmsFaviconUrl] = useState('');
+  const [websiteLogoUrl, setWebsiteLogoUrl] = useState('');
+  const [websiteFaviconUrl, setWebsiteFaviconUrl] = useState('');
   const [siteName, setSiteName] = useState('TgsTechInfo');
+  const [siteDescription, setSiteDescription] = useState('');
+  const [siteKeywords, setSiteKeywords] = useState('');
 
   useEffect(() => {
-    // Load saved settings
-    const savedSidebarLogo1 = localStorage.getItem('cmsSidebarLogo1Url');
-    const savedSidebarLogo2 = localStorage.getItem('cmsSidebarLogo2Url');
-    const savedFavicon = localStorage.getItem('cmsFaviconUrl');
-    const savedSiteName = localStorage.getItem('cmsSiteName');
-    if (savedSidebarLogo1) setSidebarLogo1Url(savedSidebarLogo1);
-    if (savedSidebarLogo2) setSidebarLogo2Url(savedSidebarLogo2);
-    if (savedFavicon) setFaviconUrl(savedFavicon);
-    if (savedSiteName) setSiteName(savedSiteName);
+    fetchSettings();
   }, []);
 
-  const handleSidebarLogo1Upload = (info) => {
-    if (info.file.status === 'uploading') {
-      setUploading(true);
-      return;
-    }
-    if (info.file.status === 'done') {
-      setUploading(false);
-      const reader = new FileReader();
-      reader.readAsDataURL(info.file.originFileObj);
-      reader.onload = () => {
-        const base64Url = reader.result;
-        localStorage.setItem('cmsSidebarLogo1Url', base64Url);
-        localStorage.setItem('cmsLogoUrl', base64Url); // Keep for backward compatibility
-        setSidebarLogo1Url(base64Url);
-        message.success('Sidebar Logo 1 uploaded successfully');
-      };
-    }
-    if (info.file.status === 'error') {
-      setUploading(false);
-      message.error('Logo upload failed');
-    }
-  };
-
-  const handleSidebarLogo2Upload = (info) => {
-    if (info.file.status === 'uploading') {
-      setUploading(true);
-      return;
-    }
-    if (info.file.status === 'done') {
-      setUploading(false);
-      const reader = new FileReader();
-      reader.readAsDataURL(info.file.originFileObj);
-      reader.onload = () => {
-        const base64Url = reader.result;
-        localStorage.setItem('cmsSidebarLogo2Url', base64Url);
-        setSidebarLogo2Url(base64Url);
-        message.success('Sidebar Logo 2 uploaded successfully');
-      };
-    }
-    if (info.file.status === 'error') {
-      setUploading(false);
-      message.error('Logo upload failed');
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('/api/site-settings');
+      const settings = response.data.settings;
+      if (settings) {
+        setCmsLogo1Url(settings.cms_logo1 || '');
+        setCmsLogo2Url(settings.cms_logo2 || '');
+        setCmsFaviconUrl(settings.cms_favicon || '');
+        setWebsiteLogoUrl(settings.website_logo || '');
+        setWebsiteFaviconUrl(settings.website_favicon || '');
+        setSiteName(settings.site_name || 'TgsTechInfo');
+        setSiteDescription(settings.site_description || '');
+        setSiteKeywords(settings.site_keywords || '');
+      }
+    } catch (error) {
+      console.error('Fetch settings error:', error);
+      message.error('Failed to load settings');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleFaviconUpload = (info) => {
-    if (info.file.status === 'uploading') {
-      setUploading(true);
-      return;
-    }
-    if (info.file.status === 'done') {
-      setUploading(false);
+  const handleImageUpload = async (file, type) => {
+    setLoading(true);
+    try {
       const reader = new FileReader();
-      reader.readAsDataURL(info.file.originFileObj);
-      reader.onload = () => {
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
         const base64Url = reader.result;
-        localStorage.setItem('cmsFaviconUrl', base64Url);
-        setFaviconUrl(base64Url);
-        // Update favicon in document
-        updateFavicon(base64Url);
-        message.success('Favicon uploaded successfully');
+        await axios.put(`/api/site-settings/logo/${type}`, { imageData: base64Url });
+        
+        // Update local state
+        switch (type) {
+          case 'cms_logo1':
+            setCmsLogo1Url(base64Url);
+            break;
+          case 'cms_logo2':
+            setCmsLogo2Url(base64Url);
+            break;
+          case 'cms_favicon':
+            setCmsFaviconUrl(base64Url);
+            updateFavicon(base64Url);
+            break;
+          case 'website_logo':
+            setWebsiteLogoUrl(base64Url);
+            break;
+          case 'website_favicon':
+            setWebsiteFaviconUrl(base64Url);
+            break;
+        }
+        message.success('Image uploaded successfully');
       };
-    }
-    if (info.file.status === 'error') {
-      setUploading(false);
-      message.error('Favicon upload failed');
+    } catch (error) {
+      console.error('Upload error:', error);
+      message.error('Failed to upload image');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,289 +107,374 @@ const Settings = () => {
     return true;
   };
 
-  const handleRemoveSidebarLogo1 = () => {
-    localStorage.removeItem('cmsSidebarLogo1Url');
-    localStorage.removeItem('cmsLogoUrl');
-    setSidebarLogo1Url('');
-    message.success('Sidebar Logo 1 removed');
+  const handleRemoveImage = async (type) => {
+    setLoading(true);
+    try {
+      await axios.put(`/api/site-settings/logo/${type}`, { imageData: '' });
+      
+      switch (type) {
+        case 'cms_logo1':
+          setCmsLogo1Url('');
+          break;
+        case 'cms_logo2':
+          setCmsLogo2Url('');
+          break;
+        case 'cms_favicon':
+          setCmsFaviconUrl('');
+          break;
+        case 'website_logo':
+          setWebsiteLogoUrl('');
+          break;
+        case 'website_favicon':
+          setWebsiteFaviconUrl('');
+          break;
+      }
+      message.success('Image removed successfully');
+    } catch (error) {
+      console.error('Remove error:', error);
+      message.error('Failed to remove image');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemoveSidebarLogo2 = () => {
-    localStorage.removeItem('cmsSidebarLogo2Url');
-    setSidebarLogo2Url('');
-    message.success('Sidebar Logo 2 removed');
+  const handleSaveSettings = async () => {
+    setLoading(true);
+    try {
+      await axios.put('/api/site-settings', {
+        site_name: siteName,
+        site_description: siteDescription,
+        site_keywords: siteKeywords
+      });
+      message.success('Settings saved successfully');
+    } catch (error) {
+      console.error('Save settings error:', error);
+      message.error('Failed to save settings');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRemoveFavicon = () => {
-    localStorage.removeItem('cmsFaviconUrl');
-    setFaviconUrl('');
-    message.success('Favicon removed');
-  };
-
-  const handleSaveSiteName = () => {
-    localStorage.setItem('cmsSiteName', siteName);
-    message.success('Site name saved');
-  };
-
-  const sidebarLogo1UploadProps = {
-    name: 'sidebarLogo1',
-    customRequest: ({ onSuccess }) => {
-      setTimeout(() => {
-        onSuccess('ok');
-      }, 1000);
+  const createUploadProps = (type) => ({
+    customRequest: ({ file, onSuccess }) => {
+      handleImageUpload(file, type);
+      setTimeout(() => onSuccess('ok'), 100);
     },
     beforeUpload,
-    onChange: handleSidebarLogo1Upload,
     showUploadList: false,
-  };
-
-  const sidebarLogo2UploadProps = {
-    name: 'sidebarLogo2',
-    customRequest: ({ onSuccess }) => {
-      setTimeout(() => {
-        onSuccess('ok');
-      }, 1000);
-    },
-    beforeUpload,
-    onChange: handleSidebarLogo2Upload,
-    showUploadList: false,
-  };
-
-  const faviconUploadProps = {
-    name: 'favicon',
-    customRequest: ({ onSuccess }) => {
-      setTimeout(() => {
-        onSuccess('ok');
-      }, 1000);
-    },
-    beforeUpload: (file) => {
-      const isImage = file.type.startsWith('image/');
-      if (!isImage) {
-        message.error('You can only upload image files!');
-        return false;
-      }
-      const isLt500K = file.size / 1024 < 500;
-      if (!isLt500K) {
-        message.error('Favicon must be smaller than 500KB!');
-        return false;
-      }
-      return true;
-    },
-    onChange: handleFaviconUpload,
-    showUploadList: false,
-  };
+  });
 
   return (
-    <div style={{ padding: '24px', maxWidth: 800 }}>
+    <div style={{ padding: '24px', maxWidth: 1200 }}>
       <Title level={3} style={{ marginBottom: 24 }}>
-        Settings
+        Site Settings
       </Title>
 
-      <Card 
-        title="Branding" 
-        style={{ marginBottom: 24 }}
-        extra={<PictureOutlined />}
-      >
-        <div style={{ marginBottom: 32 }}>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
-            Sidebar Logos
-          </Text>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            Upload two logos to display side by side in the sidebar. Recommended size: 70x40px each, max 2MB.
-          </Text>
+      <Tabs
+        defaultActiveKey="cms"
+        items={[
+          {
+            key: 'cms',
+            label: 'CMS Settings',
+            children: (
+              <Card
+                title="CMS Branding"
+                extra={<PictureOutlined />}
+                style={{ marginBottom: 24 }}
+              >
+                <div style={{ marginBottom: 32 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    CMS Logos
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    Upload logos for the CMS sidebar. Recommended size: 70x40px each, max 2MB.
+                  </Text>
 
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            {/* Combined preview */}
-            {(sidebarLogo1Url || sidebarLogo2Url) && (
-              <div style={{ 
-                padding: 16, 
-                border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                borderRadius: 8,
-                background: darkMode ? '#1E293B' : '#F8FAFC',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 16
-              }}>
-                {sidebarLogo1Url && (
-                  <img 
-                    src={sidebarLogo1Url} 
-                    alt="Sidebar Logo 1" 
-                    style={{ 
-                      height: 40, 
-                      maxWidth: 70,
-                      objectFit: 'contain' 
-                    }} 
+                  <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                    {(cmsLogo1Url || cmsLogo2Url) && (
+                      <div style={{
+                        padding: 16,
+                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                        borderRadius: 8,
+                        background: darkMode ? '#1E293B' : '#F8FAFC',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 16
+                      }}>
+                        {cmsLogo1Url && (
+                          <img
+                            src={cmsLogo1Url}
+                            alt="CMS Logo 1"
+                            style={{
+                              height: 40,
+                              maxWidth: 70,
+                              objectFit: 'contain'
+                            }}
+                          />
+                        )}
+                        {cmsLogo2Url && (
+                          <img
+                            src={cmsLogo2Url}
+                            alt="CMS Logo 2"
+                            style={{
+                              height: 60,
+                              maxWidth: 100,
+                              objectFit: 'contain'
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
+
+                    <div>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Logo 1 (Left)
+                      </Text>
+                      <Space>
+                        <Upload {...createUploadProps('cms_logo1')}>
+                          <Button icon={<UploadOutlined />} loading={loading}>
+                            {cmsLogo1Url ? 'Change Logo 1' : 'Upload Logo 1'}
+                          </Button>
+                        </Upload>
+                        {cmsLogo1Url && (
+                          <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('cms_logo1')}>
+                            Remove
+                          </Button>
+                        )}
+                      </Space>
+                    </div>
+
+                    <div>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Logo 2 (Right)
+                      </Text>
+                      <Space>
+                        <Upload {...createUploadProps('cms_logo2')}>
+                          <Button icon={<UploadOutlined />} loading={loading}>
+                            {cmsLogo2Url ? 'Change Logo 2' : 'Upload Logo 2'}
+                          </Button>
+                        </Upload>
+                        {cmsLogo2Url && (
+                          <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('cms_logo2')}>
+                            Remove
+                          </Button>
+                        )}
+                      </Space>
+                    </div>
+                  </Space>
+                </div>
+
+                <Divider />
+
+                <div style={{ marginBottom: 32 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    CMS Favicon
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    Upload a favicon for the CMS browser tab. Recommended size: 32x32px, max 500KB.
+                  </Text>
+
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {cmsFaviconUrl && (
+                      <div style={{
+                        padding: 16,
+                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                        borderRadius: 8,
+                        background: darkMode ? '#1E293B' : '#F8FAFC',
+                        display: 'inline-block'
+                      }}>
+                        <img
+                          src={cmsFaviconUrl}
+                          alt="CMS Favicon"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <Space>
+                      <Upload {...createUploadProps('cms_favicon')}>
+                        <Button icon={<UploadOutlined />} loading={loading}>
+                          {cmsFaviconUrl ? 'Change Favicon' : 'Upload Favicon'}
+                        </Button>
+                      </Upload>
+                      {cmsFaviconUrl && (
+                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('cms_favicon')}>
+                          Remove
+                        </Button>
+                      )}
+                    </Space>
+                  </Space>
+                </div>
+              </Card>
+            )
+          },
+          {
+            key: 'website',
+            label: 'Website Settings',
+            children: (
+              <Card
+                title="Website Branding"
+                extra={<PictureOutlined />}
+                style={{ marginBottom: 24 }}
+              >
+                <div style={{ marginBottom: 32 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Website Logo
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    Upload the main logo for your website. Recommended size: 200x60px, max 2MB.
+                  </Text>
+
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {websiteLogoUrl && (
+                      <div style={{
+                        padding: 16,
+                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                        borderRadius: 8,
+                        background: darkMode ? '#1E293B' : '#F8FAFC',
+                        display: 'inline-block'
+                      }}>
+                        <img
+                          src={websiteLogoUrl}
+                          alt="Website Logo"
+                          style={{
+                            maxHeight: 60,
+                            maxWidth: 200,
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <Space>
+                      <Upload {...createUploadProps('website_logo')}>
+                        <Button icon={<UploadOutlined />} loading={loading}>
+                          {websiteLogoUrl ? 'Change Logo' : 'Upload Logo'}
+                        </Button>
+                      </Upload>
+                      {websiteLogoUrl && (
+                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_logo')}>
+                          Remove
+                        </Button>
+                      )}
+                    </Space>
+                  </Space>
+                </div>
+
+                <Divider />
+
+                <div style={{ marginBottom: 32 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Website Favicon
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    Upload a favicon for the website browser tab. Recommended size: 32x32px, max 500KB.
+                  </Text>
+
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {websiteFaviconUrl && (
+                      <div style={{
+                        padding: 16,
+                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                        borderRadius: 8,
+                        background: darkMode ? '#1E293B' : '#F8FAFC',
+                        display: 'inline-block'
+                      }}>
+                        <img
+                          src={websiteFaviconUrl}
+                          alt="Website Favicon"
+                          style={{
+                            width: 32,
+                            height: 32,
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <Space>
+                      <Upload {...createUploadProps('website_favicon')}>
+                        <Button icon={<UploadOutlined />} loading={loading}>
+                          {websiteFaviconUrl ? 'Change Favicon' : 'Upload Favicon'}
+                        </Button>
+                      </Upload>
+                      {websiteFaviconUrl && (
+                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_favicon')}>
+                          Remove
+                        </Button>
+                      )}
+                    </Space>
+                  </Space>
+                </div>
+              </Card>
+            )
+          },
+          {
+            key: 'general',
+            label: 'General Settings',
+            children: (
+              <Card
+                title="Site Information"
+                extra={<PictureOutlined />}
+              >
+                <div style={{ marginBottom: 24 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Site Name
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    The name of your site displayed throughout the application.
+                  </Text>
+                  <Input
+                    value={siteName}
+                    onChange={(e) => setSiteName(e.target.value)}
+                    placeholder="Enter site name"
+                    style={{ marginBottom: 16 }}
                   />
-                )}
-                {sidebarLogo2Url && (
-                  <img 
-                    src={sidebarLogo2Url} 
-                    alt="Sidebar Logo 2" 
-                    style={{ 
-                      height: 60, 
-                      maxWidth: 100,
-                      objectFit: 'contain' 
-                    }} 
+                </div>
+
+                <div style={{ marginBottom: 24 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Site Description
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    A brief description of your site for SEO and metadata.
+                  </Text>
+                  <Input.TextArea
+                    value={siteDescription}
+                    onChange={(e) => setSiteDescription(e.target.value)}
+                    placeholder="Enter site description"
+                    rows={4}
+                    style={{ marginBottom: 16 }}
                   />
-                )}
-              </div>
-            )}
+                </div>
 
-            {/* Logo 1 Upload */}
-            <div>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                Logo 1 (Left)
-              </Text>
-              <Space>
-                <Upload {...sidebarLogo1UploadProps}>
-                  <Button 
-                    icon={<UploadOutlined />} 
-                    loading={uploading}
-                  >
-                    {sidebarLogo1Url ? 'Change Logo 1' : 'Upload Logo 1'}
-                  </Button>
-                </Upload>
+                <div style={{ marginBottom: 24 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Site Keywords
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    Comma-separated keywords for SEO (e.g., tech, news, blog).
+                  </Text>
+                  <Input
+                    value={siteKeywords}
+                    onChange={(e) => setSiteKeywords(e.target.value)}
+                    placeholder="Enter keywords separated by commas"
+                    style={{ marginBottom: 16 }}
+                  />
+                </div>
 
-                {sidebarLogo1Url && (
-                  <Button 
-                    danger 
-                    icon={<DeleteOutlined />}
-                    onClick={handleRemoveSidebarLogo1}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </Space>
-            </div>
-
-            {/* Logo 2 Upload */}
-            <div>
-              <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                Logo 2 (Right)
-              </Text>
-              <Space>
-                <Upload {...sidebarLogo2UploadProps}>
-                  <Button 
-                    icon={<UploadOutlined />} 
-                    loading={uploading}
-                  >
-                    {sidebarLogo2Url ? 'Change Logo 2' : 'Upload Logo 2'}
-                  </Button>
-                </Upload>
-
-                {sidebarLogo2Url && (
-                  <Button 
-                    danger 
-                    icon={<DeleteOutlined />}
-                    onClick={handleRemoveSidebarLogo2}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </Space>
-            </div>
-          </Space>
-        </div>
-
-        <Divider />
-
-        <div style={{ marginBottom: 32 }}>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
-            Favicon
-          </Text>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            Upload a favicon for the browser tab. Recommended size: 32x32px or 16x16px, max 500KB.
-          </Text>
-
-          <Space direction="vertical" style={{ width: '100%' }}>
-            {faviconUrl && (
-              <div style={{ 
-                padding: 16, 
-                border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                borderRadius: 8,
-                background: darkMode ? '#1E293B' : '#F8FAFC',
-                display: 'inline-block'
-              }}>
-                <img 
-                  src={faviconUrl} 
-                  alt="Current Favicon" 
-                  style={{ 
-                    width: 32, 
-                    height: 32,
-                    objectFit: 'contain' 
-                  }} 
-                />
-              </div>
-            )}
-
-            <Space>
-              <Upload {...faviconUploadProps}>
-                <Button 
-                  icon={<UploadOutlined />} 
-                  loading={uploading}
-                >
-                  {faviconUrl ? 'Change Favicon' : 'Upload Favicon'}
+                <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveSettings} loading={loading}>
+                  Save Settings
                 </Button>
-              </Upload>
-
-              {faviconUrl && (
-                <Button 
-                  danger 
-                  icon={<DeleteOutlined />}
-                  onClick={handleRemoveFavicon}
-                >
-                  Remove
-                </Button>
-              )}
-            </Space>
-          </Space>
-        </div>
-
-        <Divider />
-
-        <div>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
-            Site Name
-          </Text>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            The name displayed in the sidebar when no logo is uploaded.
-          </Text>
-
-          <Space.Compact style={{ width: '100%' }}>
-            <Input
-              value={siteName}
-              onChange={(e) => setSiteName(e.target.value)}
-              placeholder="Enter site name"
-              style={{ flex: 1 }}
-            />
-            <Button 
-              type="primary" 
-              icon={<SaveOutlined />}
-              onClick={handleSaveSiteName}
-            >
-              Save
-            </Button>
-          </Space.Compact>
-        </div>
-      </Card>
-
-      <Card title="Appearance" extra={<PictureOutlined />}>
-        <div style={{ marginBottom: 16 }}>
-          <Text strong style={{ display: 'block', marginBottom: 8 }}>
-            Dark Mode
-          </Text>
-          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            Toggle dark mode for the entire dashboard.
-          </Text>
-          <Switch 
-            checked={darkMode}
-            disabled
-          />
-          <Text type="secondary" style={{ marginLeft: 8 }}>
-            (Use the toggle in the header)
-          </Text>
-        </div>
-      </Card>
+              </Card>
+            )
+          }
+        ]}
+      />
     </div>
   );
 };

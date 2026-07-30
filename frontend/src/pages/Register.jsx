@@ -31,7 +31,7 @@ const Register = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.email.trim()) {
@@ -119,7 +119,7 @@ const Register = () => {
         <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-[rgba(255,255,255,0.1)] blur-3xl pointer-events-none" />
         <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-[rgba(255,255,255,0.08)] blur-2xl pointer-events-none" />
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
-        
+
         {/* Floating glass cards */}
         <div className="absolute top-24 right-16 w-28 h-28 bg-[rgba(255,255,255,0.05)] backdrop-blur-sm rounded-2xl border border-[rgba(255,255,255,0.1)] pointer-events-none" />
         <div className="absolute bottom-28 left-20 w-20 h-20 bg-[rgba(255,255,255,0.04)] backdrop-blur-sm rounded-xl border border-[rgba(255,255,255,0.08)] pointer-events-none" />
@@ -176,7 +176,7 @@ const Register = () => {
             <h1 className="text-3xl font-bold tracking-tight text-[var(--color-heading)]">Create Account</h1>
             <p className="text-sm text-[var(--color-muted)]">Join the TGS Tech Info community today</p>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -268,7 +268,7 @@ const Register = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div 
+                      <div
                         className="h-full transition-all duration-300"
                         style={{
                           width: `${(getPasswordStrength(formData.password) / 6) * 100}%`,
@@ -276,7 +276,7 @@ const Register = () => {
                         }}
                       />
                     </div>
-                    <span 
+                    <span
                       className="text-xs font-medium"
                       style={{ color: getStrengthColor(getPasswordStrength(formData.password)) }}
                     >

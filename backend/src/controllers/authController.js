@@ -4,6 +4,7 @@ const LoginHistory = require('../models/LoginHistory');
 const { hashPassword, comparePassword, generateToken, generateRefreshToken, generateCSRFToken } = require('../config/auth');
 const { parseUserAgent, generateSessionToken, generateRefreshToken: genRefreshToken, getClientIP } = require('../utils/deviceFingerprint');
 const { validationResult } = require('express-validator');
+const { sendTemplatedEmail } = require('../config/email');
  
 exports.register = async (req, res) => {
     try {
@@ -97,7 +98,24 @@ exports.register = async (req, res) => {
  
         // Remove password from response
         delete user.password_hash;
- 
+
+        // Send registration email
+        try {
+            const { pool } = require('../config/database');
+            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+            const frontendUrl = rawFrontend.split(',')[0].trim();
+            
+            await sendTemplatedEmail('registration', user.email, {
+                first_name: user.first_name,
+                last_name: user.last_name,
+                email: user.email,
+                login_url: `${frontendUrl}/login`
+            });
+        } catch (emailError) {
+            console.error('Registration email error:', emailError);
+            // Don't fail registration if email fails
+        }
+
         res.status(201).json({
             message: 'User registered successfully',
             user,
@@ -322,7 +340,7 @@ exports.getProfile = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json(user);
+        res.json({ user });
     } catch (error) {
         console.error('Get profile error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -563,7 +581,13 @@ exports.forgotPassword = async (req, res) => {
             </html>
         `;
 
-        await sendEmail(user.email, 'Password Reset – TGS Tech Info', html);
+        try {
+            await sendEmail(user.email, 'Password Reset – TGS Tech Info', html);
+        } catch (emailError) {
+            console.error('Forgot password email error:', emailError);
+            // Don't fail the request if email fails - still return success to prevent email enumeration
+        }
+        
         res.json({ message: 'If that email exists, a reset link has been sent.' });
     } catch (error) {
         console.error('Forgot password error:', error);

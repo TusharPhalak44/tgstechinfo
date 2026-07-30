@@ -77,7 +77,7 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
           padding: '12px 24px',
           borderRadius: 10,
           border: 'none',
-          background: darkMode ? 'var(--color-heading)' : 'var(--color-accent)',
+          background: darkMode ? 'var(--color-primary)' : 'var(--color-accent)',
           color: '#fff',
           fontWeight: 600,
           fontSize: 14,
@@ -503,7 +503,29 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
       <div className="category-tabs" style={{
         display: 'flex',
         gap: 10,
-        flexWrap: 'wrap'
+        flexWrap: 'nowrap',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        paddingBottom: 8,
+        scrollbarWidth: 'thin',
+        scrollbarColor: 'var(--color-primary) transparent',
+        WebkitOverflowScrolling: 'touch'
+      }}
+      css={{
+        '&::-webkit-scrollbar': {
+          height: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'transparent',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: 'var(--color-primary)',
+          borderRadius: '3px',
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          background: 'var(--color-accent)',
+        }
       }}>
         {allTabs.map(c => {
           const isActive = activeTab === c.key;
@@ -620,7 +642,7 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ width: 4, height: 24, background: 'var(--color-primary)', borderRadius: 4, display: 'inline-block' }} />
-          <span style={{ fontSize: 'clamp(18px, 1.5vw, 20px)', color: 'var(--color-primary)', lineHeight: 1 }}>📋</span>
+          <span style={{ fontSize: 'clamp(18px, 1.5vw, 20px)', color: 'var(--color-primary)', lineHeight: 1 }}></span>
           <span style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)' }}>Case Studies</span>
         </div>
         <a href="/case-studies" style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', padding: '5px 16px', borderRadius: 20, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', background: darkMode ? '#1e293b' : 'var(--color-primary-light)' }}>
@@ -990,6 +1012,34 @@ const HERO_SLIDES = [
   { img: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80', tag: 'Data Analytics', title: 'Real-Time Data Processing: The Shift Every Business Must Make' },
 ];
 
+// ── Hero quotes with shimmer words ─────────────────────────────────
+const HERO_QUOTES = [
+  { 
+    text: 'Your Gateway to', 
+    shimmerWord: 'Tech Insights', 
+    afterText: '& Innovation',
+    fullText: 'Your Gateway to Tech Insights & Innovation'
+  },
+  { 
+    text: 'Where', 
+    shimmerWord: 'Technology', 
+    afterText: ' Meets Business Growth',
+    fullText: 'Where Technology Meets Business Growth'
+  },
+  { 
+    text: 'The', 
+    shimmerWord: 'Knowledge Hub', 
+    afterText: 'for Modern Businesses',
+    fullText: 'The Knowledge Hub for Modern Businesses'
+  },
+  { 
+    text: 'Turning Industry Knowledge into', 
+    shimmerWord: 'Business Value', 
+    afterText: '',
+    fullText: 'Turning Industry Knowledge into Business Value'
+  },
+];
+
 // ── Hero Section (ONLY HEIGHT REDUCED - CONTENT UNCHANGED) ──
 const HeroSection = () => {
   const [active, setActive] = useState(0);
@@ -1053,10 +1103,25 @@ const HeroSection = () => {
             margin: '0 0 clamp(14px, 1.5vw, 22px)',
             letterSpacing: -0.8,
             textAlign: 'left',
-            width: '100%'
+            width: '100%',
+            position: 'relative',
+            minHeight: 'clamp(56px, 7.6vw, 104px)'
           }}>
-            Your Gateway to<br />
-            <span className="orange-shimmer-text">Tech Insights</span> & Innovation
+            {HERO_QUOTES.map((quote, i) => (
+              <div key={i} style={{
+                position: active === i ? 'relative' : 'absolute',
+                left: 0,
+                top: 0,
+                opacity: active === i ? 1 : 0,
+                transform: active === i ? 'translateY(0)' : 'translateY(20px)',
+                transition: 'opacity 1.2s ease, transform 1.2s ease',
+                width: '100%',
+                pointerEvents: active === i ? 'auto' : 'none'
+              }}>
+                {quote.text}<br />
+                <span className="orange-shimmer-text">{quote.shimmerWord}</span>{quote.afterText && <>{quote.afterText}</>}
+              </div>
+            ))}
           </h1>
           <p style={{
             color: 'rgba(255,255,255,.75)',
@@ -1103,7 +1168,7 @@ const HeroSection = () => {
                 inset: 0,
                 opacity: active === i ? 1 : 0,
                 transform: active === i ? 'scale(1)' : 'scale(1.05)',
-                transition: 'opacity 0.8s ease, transform 0.8s ease',
+                transition: 'opacity 1.5s ease, transform 1.5s ease',
                 pointerEvents: active === i ? 'auto' : 'none'
               }}>
                 <img src={slide.img} alt={slide.tag} style={{ 

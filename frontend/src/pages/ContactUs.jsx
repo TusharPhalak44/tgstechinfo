@@ -31,15 +31,15 @@ const infoItems = [
     icon: <MapPin className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />,
     title: 'Office Address',
     lines: [
-      <span key="name" style={{ color: 'var(--color-body)', fontWeight: 500 }}>TGS Tech Info</span>,
-      <span key="addr" style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>City, State, Country</span>,
+      <span key="name" style={{ color: 'var(--color-body)', fontWeight: 500 }}>The Space Business Complex Office No 512, 513, 514, Grant Rd, Kharadi, 411014</span>,
+      <span key="addr" style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>Pune, MH, India</span>,
     ],
   },
   {
     icon: <Phone className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />,
     title: 'Phone Support',
     lines: [
-      <span key="num" style={{ color: 'var(--color-body)', fontWeight: 500 }}>+1 (800) 000-0000</span>,
+      <span key="num" style={{ color: 'var(--color-body)', fontWeight: 500 }}>+91 96655-99442</span>,
       <span key="hrs" style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>Mon–Fri, 9 AM–6 PM EST</span>,
     ],
   },
@@ -65,7 +65,7 @@ export const ContactUs = () => {
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 mt-12">
         <div className="space-y-6">
           <ContactForm agreed={agreed} setAgreed={setAgreed} />
-          <SocialMediaIcons />
+          {/* <SocialMediaIcons /> */}
         </div>
         <ContactSideImage />
       </div>

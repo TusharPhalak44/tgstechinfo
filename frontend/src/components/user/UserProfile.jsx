@@ -42,9 +42,11 @@ const UserProfile = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordStrengthText, setPasswordStrengthText] = useState('');
+  const [stats, setStats] = useState({ contentCreated: 0, totalViews: 0 });
 
   useEffect(() => {
     fetchUserProfile();
+    fetchUserStats();
   }, []);
 
   const fetchUserProfile = async () => {
@@ -59,6 +61,20 @@ const UserProfile = () => {
       message.error('Failed to load profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await axios.get('/api/user/stats');
+      setStats({
+        contentCreated: response.data.contentCreated || 0,
+        totalViews: response.data.totalViews || 0
+      });
+    } catch (error) {
+      console.error('Fetch user stats error:', error);
+      // Set default values if API fails
+      setStats({ contentCreated: 0, totalViews: 0 });
     }
   };
 
@@ -270,10 +286,10 @@ const UserProfile = () => {
             >
               <Row gutter={isMobile ? 12 : 16}>
                 <Col span={12}>
-                  <Statistic title="Content Created" value={0} valueStyle={{ fontSize: isMobile ? 20 : 24, color: darkMode ? '#f1f5f9' : '#111827' }} />
+                  <Statistic title="Content Created" value={stats.contentCreated} valueStyle={{ fontSize: isMobile ? 20 : 24, color: darkMode ? '#f1f5f9' : '#111827' }} />
                 </Col>
                 <Col span={12}>
-                  <Statistic title="Total Views" value={0} valueStyle={{ fontSize: isMobile ? 20 : 24, color: darkMode ? '#f1f5f9' : '#111827' }} />
+                  <Statistic title="Total Views" value={stats.totalViews} valueStyle={{ fontSize: isMobile ? 20 : 24, color: darkMode ? '#f1f5f9' : '#111827' }} />
                 </Col>
               </Row>
             </Card>
@@ -455,16 +471,6 @@ const UserProfile = () => {
                       </Button>
                     </Form.Item>
                   </Form>
-
-                  <Divider />
-
-                  <div>
-                    <Title level={5} style={{ color: darkMode ? '#f1f5f9' : '#111827' }}>Two-Factor Authentication</Title>
-                    <Space>
-                      <Switch disabled />
-                      <Text type="secondary" style={{ color: darkMode ? '#94a3b8' : '#6B7280' }}>Coming Soon</Text>
-                    </Space>
-                  </div>
                 </>
                   ),
                 },

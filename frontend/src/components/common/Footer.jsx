@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { message } from 'antd';
 import {
@@ -24,7 +24,7 @@ const FooterLink = ({ to, children }) => (
   </Link>
 );
 
-const SocialBtn = ({ href, icon, label, color }) => (
+const SocialBtn = ({ href, icon, label, color, logoUrl }) => (
   <a href={href} aria-label={label} target="_blank" rel="noopener noreferrer" style={{
     width: 38, height: 38, borderRadius: 10,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -32,10 +32,14 @@ const SocialBtn = ({ href, icon, label, color }) => (
     background: 'var(--color-primary-light)', border: '1px solid var(--color-border)',
     transition: 'all .22s'
   }}
-    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-primary-light)'; e.currentTarget.style.color = 'var(--color-muted)'; e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.transform = 'none'; }}
+    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-primary-light)'; e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.transform = 'none'; }}
   >
-    {icon}
+    {logoUrl ? (
+      <img src={logoUrl} alt={label} style={{ width: 20, height: 20, objectFit: 'contain' }} />
+    ) : (
+      icon
+    )}
   </a>
 );
 
@@ -54,6 +58,22 @@ const Footer = ({ simplified = false }) => {
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [websiteLogo, setWebsiteLogo] = useState('/logo.jpg');
+
+  useEffect(() => {
+    const fetchWebsiteLogo = async () => {
+      try {
+        const response = await axios.get('/api/site-settings/public');
+        const settings = response.data.settings;
+        if (settings && settings.website_logo) {
+          setWebsiteLogo(settings.website_logo);
+        }
+      } catch (error) {
+        console.error('Failed to fetch website logo:', error);
+      }
+    };
+    fetchWebsiteLogo();
+  }, []);
 
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
@@ -125,8 +145,7 @@ const Footer = ({ simplified = false }) => {
 
   // Full footer for public pages
   return (
-    <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0 }}>
-
+  <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, position: 'relative', zIndex: 1 }}>
       {/* ── Main footer ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 44px' }}>
         <style>{`
@@ -153,16 +172,13 @@ const Footer = ({ simplified = false }) => {
           {/* Brand */}
           <div>
             <div style={{ marginBottom: 16 }}>
-              <img src="/logo.jpg" alt="TGS Tech Info" style={{ height: 70, objectFit: 'contain' }} />
+              <img src={websiteLogo} alt="TGS Tech Info" style={{ height: 90, objectFit: 'contain' }} />
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-muted)', lineHeight: 1.8, marginBottom: 22, maxWidth: 240 }}>
               Your gateway to technology insights, news, and resources for IT and B2B professionals worldwide.
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
-              <SocialBtn href="#" icon={<LinkedinOutlined />} label="LinkedIn" color="#0077b5" />
-              <SocialBtn href="#" icon={<TwitterOutlined />} label="Twitter" color="#1da1f2" />
-              <SocialBtn href="#" icon={<FacebookOutlined />} label="Facebook" color="#1877f2" />
-              <SocialBtn href="#" icon={<YoutubeOutlined />} label="YouTube" color="#ff0000" />
+              <SocialBtn href="https://www.linkedin.com/company/taraj-global/" icon={<LinkedinOutlined />} label="LinkedIn" color="#0077b5" logoUrl="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" />
             </div>
             {/* Mini stats */}
             <div style={{ display: 'flex', gap: 20 }}>
@@ -260,7 +276,7 @@ const Footer = ({ simplified = false }) => {
                   type="submit"
                   disabled={newsletterLoading}
                   style={{
-                    padding: '9px 14px', background: 'var(--color-accent)',
+                    padding: '9px 14px', background: darkMode ? '#F7941D' : 'var(--color-accent)',
                     border: 'none', color: '#fff', fontSize: 14, cursor: newsletterLoading ? 'not-allowed' : 'pointer',
                     opacity: newsletterLoading ? 0.7 : 1
                   }}
