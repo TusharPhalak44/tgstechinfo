@@ -337,28 +337,6 @@ const ArticleDetail = () => {
         {/* Main Content - 70% */}
         <Col xs={24} lg={17} style={{ order: 1 }}>
           <div style={{ background: darkMode ? '#1e293b' : '#fff', padding: 32, borderRadius: 8, boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)' }} className="article-content-card">
-            {/* Back Button + Breadcrumb */}
-            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-              <button
-                onClick={() => navigate(-1)}
-                style={{
-                  background: 'none', border: darkMode ? '1.5px solid #475569' : '1.5px solid #d9d9d9', borderRadius: 8,
-                  padding: '4px 12px', cursor: 'pointer', fontSize: 13,
-                  color: darkMode ? '#cbd5e1' : '#374151', display: 'flex', alignItems: 'center', gap: 6,
-                  flexShrink: 0
-                }}
-              >← Back</button>
-              <div style={{ fontSize: 14 }}>
-                <Link to="/" style={{ color: '#1890ff' }}>Home</Link>
-              <span style={{ margin: '0 8px', color: darkMode ? '#64748b' : '#999' }}>/</span>
-              <Link to={`/category/${content.category_slug}`} style={{ color: '#1890ff' }}>
-                {content.category_name}
-              </Link>
-              <span style={{ margin: '0 8px', color: darkMode ? '#64748b' : '#999' }}>/</span>
-              <span style={{ color: darkMode ? '#f1f5f9' : '#000' }}>{content.title}</span>
-            </div>
-            </div>
-
             {/* Category */}
             <Tag color="blue" style={{ marginBottom: 12 }}>{content.category_name}</Tag>
 
@@ -367,14 +345,15 @@ const ArticleDetail = () => {
               <Space size="middle" wrap>
                 <Space>
                   <Avatar icon={<UserOutlined />} size="small" />
-                  <Text strong>{`${content.first_name || ''} ${content.last_name || ''}`}</Text>
+                  <Text strong style={{ color: darkMode ? '#f1f5f9' : '#000' }}>{`${content.first_name || ''} ${content.last_name || ''}`}</Text>
                 </Space>
                 <Space>
-                  <CalendarOutlined />
-                  {moment(content.published_date || content.created_at).format('MMMM D, YYYY')}
+                  <CalendarOutlined style={{ color: darkMode ? '#94a3b8' : '#666' }} />
+                  <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{moment(content.published_date || content.created_at).format('MMMM D, YYYY')}</Text>
                 </Space>
                 <Space>
-                  <ClockCircleOutlined /> {content.reading_time || 0} min read
+                  <ClockCircleOutlined style={{ color: darkMode ? '#94a3b8' : '#666' }} />
+                  <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{content.reading_time || 0} min read</Text>
                 </Space>
               </Space>
             </div>
