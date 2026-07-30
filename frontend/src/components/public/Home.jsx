@@ -646,122 +646,124 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
   };
 
   return (
-    <div ref={ref} className="case-studies-section" style={{
-      margin: '56px 0',
-      opacity: visible ? 1 : 0,
-      transform: visible ? 'translateY(0)' : 'translateY(32px)',
-      transition: 'opacity .6s ease, transform .6s ease'
-    }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ width: 4, height: 24, background: 'var(--color-primary)', borderRadius: 4, display: 'inline-block' }} />
-          <span style={{ fontSize: 'clamp(18px, 1.5vw, 20px)', color: 'var(--color-primary)', lineHeight: 1 }}></span>
-          <span style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)' }}>Case Studies</span>
+    <>
+      <div ref={ref} className="case-studies-section" style={{
+        margin: '56px 0',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(32px)',
+        transition: 'opacity .6s ease, transform .6s ease'
+      }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ width: 4, height: 24, background: 'var(--color-primary)', borderRadius: 4, display: 'inline-block' }} />
+            <span style={{ fontSize: 'clamp(18px, 1.5vw, 20px)', color: 'var(--color-primary)', lineHeight: 1 }}></span>
+            <span style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)' }}>Case Studies</span>
+          </div>
+          <a href="/case-studies" style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', padding: '5px 16px', borderRadius: 20, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', background: darkMode ? '#1e293b' : 'var(--color-primary-light)' }}>
+            View All <ArrowRightOutlined style={{ fontSize: 11 }} />
+          </a>
         </div>
-        <a href="/case-studies" style={{ fontSize: 13, color: 'var(--color-primary)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 4, textDecoration: 'none', padding: '5px 16px', borderRadius: 20, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', background: darkMode ? '#1e293b' : 'var(--color-primary-light)' }}>
-          View All <ArrowRightOutlined style={{ fontSize: 11 }} />
-        </a>
-      </div>
 
-      {/* Cards */}
-      {loading ? (
-        <div className="case-studies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
-          {[1, 2].map(i => (
-            <div key={i} style={{ height: 260, background: darkMode ? '#1e293b' : 'var(--color-surface)', borderRadius: 16, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', padding: 28 }}>
-              <div style={{ height: 20, background: '#f0f0f0', borderRadius: 6, marginBottom: 14, width: '60%' }} />
-              <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, marginBottom: 8, width: '90%' }} />
-              <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, width: '75%' }} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="case-studies-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 24
-        }}>
-          {caseStudies.map((cs, idx) => (
-            <div
-              key={cs.id}
-              onClick={() => openGate(cs)}
-              className="case-study-card"
-              style={{
-                background: darkMode ? '#1e293b' : 'var(--color-surface)',
-                borderRadius: 16,
-                overflow: 'hidden',
-                border: darkMode ? '1.5px solid #334155' : '1.5px solid var(--color-border)',
-                boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.05)',
-                display: 'flex',
-                flexDirection: 'column',
-                cursor: 'pointer',
-                transition: 'all .3s cubic-bezier(0.4,0,0.2,1)',
-                opacity: visible ? 1 : 0,
-                transform: visible ? 'translateY(0)' : 'translateY(28px)',
-                transitionDelay: `${idx * 120}ms`,
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)';
-                e.currentTarget.style.boxShadow = darkMode ? '0 24px 48px rgba(0,0,0,0.4)' : '0 24px 48px rgba(11,31,77,0.10)';
-                e.currentTarget.style.borderColor = 'var(--color-primary)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.05)';
-                e.currentTarget.style.borderColor = darkMode ? '#334155' : 'var(--color-border)';
-              }}
-            >
-              {/* Banner */}
-              <div style={{ position: 'relative', overflow: 'hidden', height: 'clamp(140px, 15vw, 180px)', background: 'linear-gradient(135deg, #0b2a5e 0%, #0AAEEF 100%)' }}>
-                {cs.banner_image ? (
-                  <img src={`/uploads/${cs.banner_image}`} alt={cs.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: 48, opacity: 0.4 }}>📋</span>
-                  </div>
-                )}
+        {/* Cards */}
+        {loading ? (
+          <div className="case-studies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+            {[1, 2].map(i => (
+              <div key={i} style={{ height: 260, background: darkMode ? '#1e293b' : 'var(--color-surface)', borderRadius: 16, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', padding: 28 }}>
+                <div style={{ height: 20, background: '#f0f0f0', borderRadius: 6, marginBottom: 14, width: '60%' }} />
+                <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, marginBottom: 8, width: '90%' }} />
+                <div style={{ height: 14, background: '#f0f0f0', borderRadius: 4, width: '75%' }} />
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="case-studies-grid" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: 24
+          }}>
+            {caseStudies.map((cs, idx) => (
+              <div
+                key={cs.id}
+                onClick={() => openGate(cs)}
+                className="case-study-card"
+                style={{
+                  background: darkMode ? '#1e293b' : 'var(--color-surface)',
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  border: darkMode ? '1.5px solid #334155' : '1.5px solid var(--color-border)',
+                  boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  cursor: 'pointer',
+                  transition: 'all .3s cubic-bezier(0.4,0,0.2,1)',
+                  opacity: visible ? 1 : 0,
+                  transform: visible ? 'translateY(0)' : 'translateY(28px)',
+                  transitionDelay: `${idx * 120}ms`,
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)';
+                  e.currentTarget.style.boxShadow = darkMode ? '0 24px 48px rgba(0,0,0,0.4)' : '0 24px 48px rgba(11,31,77,0.10)';
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.05)';
+                  e.currentTarget.style.borderColor = darkMode ? '#334155' : 'var(--color-border)';
+                }}
+              >
+                {/* Banner */}
+                <div style={{ position: 'relative', overflow: 'hidden', height: 'clamp(140px, 15vw, 180px)', background: 'linear-gradient(135deg, #0b2a5e 0%, #0AAEEF 100%)' }}>
+                  {cs.banner_image ? (
+                    <img src={`/uploads/${cs.banner_image}`} alt={cs.title} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.85 }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: 48, opacity: 0.4 }}>📋</span>
+                    </div>
+                  )}
+                </div>
 
-              {/* Body */}
-              <div style={{ padding: 'clamp(16px, 1.5vw, 22px) clamp(16px, 1.5vw, 24px) clamp(18px, 1.5vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <h3 style={{ fontWeight: 800, fontSize: 'clamp(15px, 1.2vw, 18px)', lineHeight: 1.4, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {cs.case_study_headline || cs.title}
-                </h3>
-                <p style={{ fontSize: 'clamp(13px, 0.9vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {cs.case_study_summary || cs.short_description}
-                </p>
-                <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <span style={{ fontSize: 12, color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <CalendarOutlined style={{ fontSize: 11 }} />
-                    {moment(cs.published_date || cs.created_at).format('MMM D, YYYY')}
-                  </span>
-                  <button className="download-btn" style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 18px',
-                    background: 'var(--color-primary)',
-                    color: '#fff',
-                    fontWeight: 700,
-                    fontSize: 'clamp(12px, 0.8vw, 13px)',
-                    border: 'none',
-                    borderRadius: 20,
-                    cursor: 'pointer',
-                    transition: 'opacity .2s'
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                  >
-                    View <ArrowRightOutlined style={{ fontSize: 11 }} />
-                  </button>
+                {/* Body */}
+                <div style={{ padding: 'clamp(16px, 1.5vw, 22px) clamp(16px, 1.5vw, 24px) clamp(18px, 1.5vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <h3 style={{ fontWeight: 800, fontSize: 'clamp(15px, 1.2vw, 18px)', lineHeight: 1.4, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {cs.case_study_headline || cs.title}
+                  </h3>
+                  <p style={{ fontSize: 'clamp(13px, 0.9vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {cs.case_study_summary || cs.short_description}
+                  </p>
+                  <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                    <span style={{ fontSize: 12, color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CalendarOutlined style={{ fontSize: 11 }} />
+                      {moment(cs.published_date || cs.created_at).format('MMM D, YYYY')}
+                    </span>
+                    <button className="download-btn" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '8px 18px',
+                      background: 'var(--color-primary)',
+                      color: '#fff',
+                      fontWeight: 700,
+                      fontSize: 'clamp(12px, 0.8vw, 13px)',
+                      border: 'none',
+                      borderRadius: 20,
+                      cursor: 'pointer',
+                      transition: 'opacity .2s'
+                    }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                      View <ArrowRightOutlined style={{ fontSize: 11 }} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Gate Modal */}
+      {/* Gate Modal - Rendered outside section to avoid transform issues */}
       {gateVisible && selectedCs && (
         <div
           onClick={() => setGateVisible(false)}
@@ -770,11 +772,15 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
             position: 'fixed',
             inset: 0,
             background: 'rgba(0,0,0,0.55)',
-            zIndex: 9000,
+            zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px'
+            padding: '20px',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
           }}
         >
           <div
@@ -856,7 +862,7 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
