@@ -337,6 +337,25 @@ const ArticleDetail = () => {
         {/* Main Content - 70% */}
         <Col xs={24} lg={17} style={{ order: 1 }}>
           <div style={{ background: darkMode ? '#1e293b' : '#fff', padding: 32, borderRadius: 8, boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)' }} className="article-content-card">
+            {/* Back Button */}
+            <div style={{ marginBottom: 16 }}>
+              <button
+                onClick={() => navigate(-1)}
+                style={{
+                  background: 'none', border: darkMode ? '1.5px solid #475569' : '1.5px solid #d9d9d9', borderRadius: 8,
+                  padding: '4px 12px', cursor: 'pointer', fontSize: 13,
+                  color: darkMode ? '#cbd5e1' : '#374151', display: 'flex', alignItems: 'center', gap: 6,
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = darkMode ? '#334155' : '#f5f5f5';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'none';
+                }}
+              >← Back</button>
+            </div>
+
             {/* Category */}
             <Tag color="blue" style={{ marginBottom: 12 }}>{content.category_name}</Tag>
 
