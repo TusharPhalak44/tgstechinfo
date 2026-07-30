@@ -24,8 +24,8 @@ exports.uploadLogo = async (req, res) => {
     try {
         const { type } = req.params;
         const { imageData } = req.body;
-        
-        if (!imageData) {
+
+        if (!imageData && imageData !== '') {
             return res.status(400).json({ message: 'Image data is required' });
         }
 
@@ -33,6 +33,6 @@ exports.uploadLogo = async (req, res) => {
         res.json({ message: 'Logo updated successfully', settings });
     } catch (error) {
         console.error('Upload logo error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

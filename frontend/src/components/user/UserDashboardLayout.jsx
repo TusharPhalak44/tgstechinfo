@@ -118,11 +118,6 @@ const UserDashboardLayout = () => {
             icon: <UserOutlined />,
             label: 'Profile',
           },
-          {
-            key: '/dashboard/settings',
-            icon: <SettingOutlined />,
-            label: 'Settings',
-          },
         ],
       },
     ];
@@ -149,12 +144,6 @@ const UserDashboardLayout = () => {
       icon: <UserOutlined />,
       label: 'Profile',
       onClick: () => navigate('/dashboard/profile'),
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-      onClick: () => navigate('/dashboard/settings'),
     },
     {
       type: 'divider',
