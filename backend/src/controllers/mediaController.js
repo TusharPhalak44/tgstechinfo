@@ -172,8 +172,9 @@ exports.getFolderCounts = async (req, res) => {
 exports.serveFile = async (req, res) => {
     try {
         const { filename } = req.params;
+        const { download } = req.query;
         const [rows] = await require('../config/database').pool.query(
-            'SELECT file_data, mime_type FROM media_files WHERE filename = ? LIMIT 1',
+            'SELECT file_data, mime_type, original_name FROM media_files WHERE filename = ? LIMIT 1',
             [filename]
         );
         if (!rows[0] || !rows[0].file_data) {
@@ -183,12 +184,47 @@ exports.serveFile = async (req, res) => {
             return res.status(404).json({ message: 'File not found' });
         }
         const mime = rows[0].mime_type || 'application/octet-stream';
+        const originalName = rows[0].original_name || filename;
         res.setHeader('Content-Type', mime);
         res.setHeader('Cache-Control', 'public, max-age=31536000');
+        if (download === '1') {
+            res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+        }
         res.send(rows[0].file_data);
     } catch (error) {
         console.error('Serve file error:', error);
         res.status(500).json({ message: 'Failed to serve file' });
+    }
+};
+
+exports.deleteFile = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Get media record before deletion
+        const media = await Media.findById(id);
+        if (!media) {
+            return res.status(404).json({ message: 'Media not found' });
+        }
+        
+        // Delete from database
+        const deleted = await Media.delete(id);
+        
+        if (deleted) {
+            // Try to delete from filesystem as well
+            const filePath = path.join(uploadDir, media.filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                console.log('File deleted from filesystem:', media.filename);
+            }
+            
+            res.json({ message: 'Media deleted successfully' });
+        } else {
+            res.status(404).json({ message: 'Media not found' });
+        }
+    } catch (error) {
+        console.error('Delete file error:', error);
+        res.status(500).json({ message: 'Failed to delete file' });
     }
 };
 

@@ -15,4 +15,7 @@ router.get('/folder-counts', mediaController.getFolderCounts);
 // Serve file from DB (filesystem-independent)
 router.get('/file/:filename', mediaController.serveFile);
 
+// Delete file — requires authentication
+router.delete('/:id', authenticate, mediaController.deleteFile);
+
 module.exports = router;

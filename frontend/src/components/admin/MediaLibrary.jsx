@@ -148,14 +148,20 @@ const MediaLibrary = () => {
     },
   };
 
-  const handleDelete = (id) => {
-    setMedia(media.filter(item => item.id !== id));
-    message.success('Media deleted successfully');
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/api/media/${id}`);
+      setMedia(media.filter(item => item.id !== id));
+      message.success('Media deleted successfully');
+    } catch (error) {
+      console.error('Delete error:', error);
+      message.error('Failed to delete media');
+    }
   };
 
   const handleDownload = (item) => {
     const link = document.createElement('a');
-    link.href = item.url;
+    link.href = `/api/media/file/${item.filename}?download=1`;
     link.download = item.name;
     document.body.appendChild(link);
     link.click();
