@@ -13,6 +13,11 @@ const CaseStudyPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pdfError, setPdfError] = useState(false);
+  const [gateVisible, setGateVisible] = useState(true);
+  const [gateSubmitted, setGateSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formValues, setFormValues] = useState({ name: '', email: '', contact: '' });
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     if (!slug) { setError('Invalid case study.'); setLoading(false); return; }
@@ -27,6 +32,33 @@ const CaseStudyPage = () => {
   }, [slug]);
 
   const pdfUrl = caseStudy?.pdf_file ? `/uploads/${caseStudy.pdf_file}` : null;
+
+  const validate = () => {
+    const errs = {};
+    if (!formValues.name.trim()) errs.name = 'Name is required';
+    if (!formValues.email.trim()) errs.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email)) errs.email = 'Invalid email';
+    if (!formValues.contact.trim()) errs.contact = 'Contact is required';
+    return errs;
+  };
+
+  const handleSubmit = async () => {
+    const errs = validate();
+    if (Object.keys(errs).length) { setFormErrors(errs); return; }
+    setSubmitting(true);
+    try {
+      await axios.post('/api/public/case-study-gate', {
+        slug: slug,
+        ...formValues,
+      });
+      setGateVisible(false);
+      setGateSubmitted(true);
+    } catch (err) {
+      setFormErrors({ submit: err.response?.data?.message || 'Submission failed. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // ── Loading ──────────────────────────────────────────────────────
   if (loading) {
@@ -76,6 +108,120 @@ const CaseStudyPage = () => {
   }
 
   const styles = getStyles(darkMode);
+
+  // ── Gate Modal ─────────────────────────────────────────────────────
+  if (gateVisible && caseStudy && !gateSubmitted) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: darkMode ? '#0f172a' : '#f0f2f5',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}>
+        <div
+          onClick={() => setGateVisible(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            zIndex: 9000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: darkMode ? '#1e293b' : '#fff',
+              borderRadius: 20,
+              width: '100%',
+              maxWidth: 460,
+              padding: 'clamp(24px, 3vw, 36px)',
+              position: 'relative',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+          >
+            <button onClick={() => navigate('/')} style={{ position: 'absolute', top: 14, right: 14, background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: darkMode ? '#94a3b8' : '#8c8c8c', lineHeight: 1 }}>✕</button>
+
+            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+              <div style={{ width: 56, height: 56, background: 'var(--color-primary-light)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: 26 }}>📋</div>
+              <h3 style={{ fontWeight: 800, fontSize: 'clamp(18px, 1.5vw, 20px)', color: darkMode ? '#f1f5f9' : '#0D2B4E', margin: '0 0 6px' }}>Download Case Study</h3>
+              <p style={{ fontSize: 'clamp(13px, 0.9vw, 14px)', color: darkMode ? '#94a3b8' : '#6b7280', margin: 0, lineHeight: 1.5 }}>
+                {caseStudy.case_study_headline || caseStudy.title}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#0D2B4E', display: 'block', marginBottom: 5 }}>Full Name *</label>
+                <input
+                  type="text"
+                  placeholder="Your full name"
+                  value={formValues.name}
+                  onChange={e => { setFormValues(p => ({ ...p, name: e.target.value })); setFormErrors(p => ({ ...p, name: '' })); }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.name ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
+                />
+                {formErrors.name && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.name}</span>}
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#0D2B4E', display: 'block', marginBottom: 5 }}>Work Email *</label>
+                <input
+                  type="email"
+                  placeholder="you@company.com"
+                  value={formValues.email}
+                  onChange={e => { setFormValues(p => ({ ...p, email: e.target.value })); setFormErrors(p => ({ ...p, email: '' })); }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.email ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
+                />
+                {formErrors.email && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.email}</span>}
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#0D2B4E', display: 'block', marginBottom: 5 }}>Phone / Contact *</label>
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 000-0000"
+                  value={formValues.contact}
+                  onChange={e => { setFormValues(p => ({ ...p, contact: e.target.value })); setFormErrors(p => ({ ...p, contact: '' })); }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
+                />
+                {formErrors.contact && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.contact}</span>}
+              </div>
+
+              {formErrors.submit && <span style={{ fontSize: 12, color: '#ff4d4f', textAlign: 'center', display: 'block' }}>{formErrors.submit}</span>}
+
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                style={{
+                  padding: '12px 24px',
+                  background: '#0AAEEF',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  opacity: submitting ? 0.7 : 1,
+                  transition: 'opacity .2s'
+                }}
+              >
+                {submitting ? 'Submitting...' : 'Download Case Study'}
+              </button>
+
+              <p style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', textAlign: 'center', margin: 0, lineHeight: 1.4 }}>
+                By submitting, you agree to receive communications from TgsTechInfo.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ── PDF Viewer ───────────────────────────────────────────────────
   return (
