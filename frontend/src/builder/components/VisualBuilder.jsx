@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Layout, Button, Tooltip, Modal } from 'antd';
+import { Layout, Button, Tooltip, Modal, ConfigProvider, theme } from 'antd';
+import { useTheme } from '../../context/ThemeContext';
 import {
   DesktopOutlined, TabletOutlined, MobileOutlined,
   EyeOutlined, EditOutlined, MenuOutlined, SaveOutlined, CloseOutlined,
@@ -22,7 +23,7 @@ import KeyboardShortcuts from './KeyboardShortcuts';
 const { Sider, Content } = Layout;
 
 // ─── Responsive-mode button group ────────────────────────────────────────────
-function ResponsiveButtons({ mode, onChange }) {
+function ResponsiveButtons({ mode, onChange, darkMode = false }) {
   const btn = (icon, value, label) => (
     <Tooltip title={label} key={value}>
       <Button
@@ -35,7 +36,7 @@ function ResponsiveButtons({ mode, onChange }) {
     </Tooltip>
   );
   return (
-    <div style={{ display: 'flex', border: '1px solid #d9d9d9', borderRadius: 6, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', border: `1px solid ${darkMode ? '#334155' : '#d9d9d9'}`, borderRadius: 6, overflow: 'hidden' }}>
       {btn(<DesktopOutlined />, 'desktop', 'Desktop')}
       {btn(<TabletOutlined />,  'tablet',  'Tablet')}
       {btn(<MobileOutlined />,  'mobile',  'Mobile')}
@@ -45,20 +46,24 @@ function ResponsiveButtons({ mode, onChange }) {
 
 // ─── Outer wrapper that provides context ─────────────────────────────────────
 export default function VisualBuilder({ initialData, onSave, onCancel, embedded = false }) {
+  const { darkMode } = useTheme();
   return (
-    <BuilderProvider>
-      <VisualBuilderContent
-        initialData={initialData}
-        onSave={onSave}
-        onCancel={onCancel}
-        embedded={embedded}
-      />
-    </BuilderProvider>
+    <ConfigProvider theme={{ algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
+      <BuilderProvider>
+        <VisualBuilderContent
+          initialData={initialData}
+          onSave={onSave}
+          onCancel={onCancel}
+          embedded={embedded}
+          darkMode={darkMode}
+        />
+      </BuilderProvider>
+    </ConfigProvider>
   );
 }
 
 // ─── Inner component (has access to builder context) ─────────────────────────
-function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false }) {
+function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false, darkMode = false }) {
   const actions = useBuilderActions();
   const state   = useBuilderState();
 
@@ -110,7 +115,7 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
         display: 'flex',
         flexDirection: 'column',
         minHeight: embedded ? 600 : undefined,
-        background: '#f0f2f5',
+        background: darkMode ? '#0f172a' : '#f0f2f5',
       }}
     >
       <KeyboardShortcuts />
@@ -119,19 +124,19 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
         className="builder-header"
         style={{
           height: 52,
-          borderBottom: '1px solid #e8e8e8',
+          borderBottom: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 12px',
-          background: '#fff',
+          background: darkMode ? '#1e293b' : '#fff',
           flexShrink: 0,
           gap: 8,
           zIndex: 10,
         }}
       >
         {/* Left: title */}
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a2e', minWidth: 80 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#1a1a2e', minWidth: 80 }}>
           Page Builder
         </div>
 
@@ -139,6 +144,7 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
         <ResponsiveButtons
           mode={state.responsiveMode}
           onChange={actions.setResponsiveMode}
+          darkMode={darkMode}
         />
 
         {/* Right: preview + save/cancel */}
@@ -170,20 +176,20 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
       </div>
 
       {/* ── Three-panel layout ──────────────────────────────────────────── */}
-      <Layout style={{ flex: 1, overflow: 'hidden' }}>
+      <Layout style={{ flex: 1, overflow: 'hidden', background: darkMode ? '#0f172a' : '#f0f2f5' }}>
         {/* Left sidebar — widgets */}
         {!sidebarCollapsed && (
           <Sider
             width={260}
             theme="light"
             style={{
-              borderRight: '1px solid #e8e8e8',
+              borderRight: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
               overflow: 'auto',
-              background: '#fafafa',
+              background: darkMode ? '#1e293b' : '#fafafa',
               flexShrink: 0,
             }}
           >
-            <WidgetSidebar collapsed={false} />
+            <WidgetSidebar collapsed={false} darkMode={darkMode} />
           </Sider>
         )}
 
@@ -192,14 +198,14 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
           onClick={() => setSidebarCollapsed(c => !c)}
           style={{
             width: 16,
-            background: '#f0f0f0',
-            borderRight: '1px solid #e8e8e8',
+            background: darkMode ? '#334155' : '#f0f0f0',
+            borderRight: `1px solid ${darkMode ? '#475569' : '#e8e8e8'}`,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 10,
-            color: '#999',
+            color: darkMode ? '#94a3b8' : '#999',
             userSelect: 'none',
             flexShrink: 0,
           }}
@@ -209,7 +215,7 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
         </div>
 
         {/* Center — canvas */}
-        <Content style={{ flex: 1, overflow: 'auto', background: '#f0f2f5', position: 'relative' }}>
+        <Content style={{ flex: 1, overflow: 'auto', background: darkMode ? '#0f172a' : '#f0f2f5', position: 'relative' }}>
           <VisualCanvas />
         </Content>
 
@@ -218,14 +224,14 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
           onClick={() => setPropertyPanelCollapsed(c => !c)}
           style={{
             width: 16,
-            background: '#f0f0f0',
-            borderLeft: '1px solid #e8e8e8',
+            background: darkMode ? '#334155' : '#f0f0f0',
+            borderLeft: `1px solid ${darkMode ? '#475569' : '#e8e8e8'}`,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 10,
-            color: '#999',
+            color: darkMode ? '#94a3b8' : '#999',
             userSelect: 'none',
             flexShrink: 0,
           }}
@@ -240,13 +246,13 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
             width={300}
             theme="light"
             style={{
-              borderLeft: '1px solid #e8e8e8',
+              borderLeft: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
               overflow: 'auto',
-              background: '#fafafa',
+              background: darkMode ? '#1e293b' : '#fafafa',
               flexShrink: 0,
             }}
           >
-            <PropertyPanel collapsed={false} />
+            <PropertyPanel collapsed={false} darkMode={darkMode} />
           </Sider>
         )}
       </Layout>
@@ -256,8 +262,8 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
         <div
           style={{
             height: embedded ? 120 : 180,
-            borderTop: '1px solid #e8e8e8',
-            background: '#fff',
+            borderTop: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
+            background: darkMode ? '#1e293b' : '#fff',
             display: 'flex',
             flexDirection: 'column',
             flexShrink: 0,
@@ -266,13 +272,14 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false 
           <div
             style={{
               height: 36,
-              borderBottom: '1px solid #e8e8e8',
+              borderBottom: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               padding: '0 12px',
               fontWeight: 600,
               fontSize: 13,
+              color: darkMode ? '#f1f5f9' : '#1a1a2e',
             }}
           >
             <span>Navigator</span>

@@ -12,6 +12,7 @@ import CanvasNode from './CanvasNode';
 import TemplateGallery from './TemplateGallery';
 import { deviceConfig } from '../utils/types';
 import dragState from '../utils/dragState';
+import { useTheme } from '../../context/ThemeContext';
 
 const LAYOUT_TYPES = ['page', 'section', 'container', 'column', 'column-1', 'column-2', 'column-3', 'column-4'];
 
@@ -21,6 +22,7 @@ const LAYOUT_TYPES = ['page', 'section', 'container', 'column', 'column-1', 'col
  */
 const VisualCanvas = memo(function VisualCanvas() {
   const page = useBuilderPage();
+  const { darkMode } = useTheme();
   const {
     selectNode, clearSelection, addNode, loadTemplate, appendTemplate,
     ensurePage, findNode, findParentNode, findNodeIndex, moveNode,
@@ -203,14 +205,15 @@ const VisualCanvas = memo(function VisualCanvas() {
             alignItems: 'center',
             justifyContent: 'center',
             padding: 40,
+            background: darkMode ? '#0f172a' : undefined,
           }}
         >
-          <Card style={{ maxWidth: 600, width: '100%', textAlign: 'center' }}>
+          <Card style={{ maxWidth: 600, width: '100%', textAlign: 'center', background: darkMode ? '#1e293b' : undefined, borderColor: darkMode ? '#334155' : undefined }}>
             <div style={{ marginBottom: 24 }}>
-              <AppstoreOutlined style={{ fontSize: 64, color: '#d9d9d9' }} />
+              <AppstoreOutlined style={{ fontSize: 64, color: darkMode ? '#475569' : '#d9d9d9' }} />
             </div>
-            <h2 style={{ marginBottom: 8 }}>Start Building Your Page</h2>
-            <p style={{ color: '#666', marginBottom: 24 }}>
+            <h2 style={{ marginBottom: 8, color: darkMode ? '#f1f5f9' : undefined }}>Start Building Your Page</h2>
+            <p style={{ color: darkMode ? '#94a3b8' : '#666', marginBottom: 24 }}>
               Choose a template to get started quickly, or drag widgets from the sidebar to build from scratch
             </p>
             <Row gutter={16} style={{ marginBottom: 16 }}>
@@ -237,11 +240,11 @@ const VisualCanvas = memo(function VisualCanvas() {
               </Col>
             </Row>
             <div style={{ 
-              borderTop: '1px solid #e8e8e8', 
+              borderTop: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`, 
               paddingTop: 16, 
               marginTop: 16 
             }}>
-              <p style={{ color: '#999', fontSize: 13, marginBottom: 12 }}>Quick Start Templates</p>
+              <p style={{ color: darkMode ? '#94a3b8' : '#999', fontSize: 13, marginBottom: 12 }}>Quick Start Templates</p>
               <Row gutter={8}>
                 <Col span={8}>
                   <Button
@@ -306,7 +309,7 @@ const VisualCanvas = memo(function VisualCanvas() {
         padding: '24px',
         overflow: 'auto',
         transition: 'background-color 0.2s',
-        backgroundColor: isDraggingOver ? '#f0f7ff' : 'transparent',
+        backgroundColor: isDraggingOver ? (darkMode ? 'rgba(24,144,255,0.08)' : '#f0f7ff') : 'transparent',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',
@@ -328,20 +331,20 @@ const VisualCanvas = memo(function VisualCanvas() {
           <div
             style={{
               minHeight: 360,
-              border: isDraggingOver ? '2px dashed #1890ff' : '2px dashed #d9d9d9',
+              border: isDraggingOver ? '2px dashed #1890ff' : `2px dashed ${darkMode ? '#334155' : '#d9d9d9'}`,
               borderRadius: 12,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: isDraggingOver ? '#f0f7ff' : '#fafafa',
+              background: isDraggingOver ? (darkMode ? 'rgba(24,144,255,0.1)' : '#f0f7ff') : (darkMode ? '#0f172a' : '#fafafa'),
               padding: 40,
               marginBottom: 16,
             }}
           >
-            <AppstoreOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
-            <h3 style={{ marginBottom: 8, color: '#666' }}>Empty Canvas</h3>
-            <p style={{ color: '#999', marginBottom: 16, textAlign: 'center' }}>
+            <AppstoreOutlined style={{ fontSize: 48, color: darkMode ? '#475569' : '#d9d9d9', marginBottom: 16 }} />
+            <h3 style={{ marginBottom: 8, color: darkMode ? '#94a3b8' : '#666' }}>Empty Canvas</h3>
+            <p style={{ color: darkMode ? '#64748b' : '#999', marginBottom: 16, textAlign: 'center' }}>
               Drag widgets from the sidebar or choose a template to get started
             </p>
             <Button

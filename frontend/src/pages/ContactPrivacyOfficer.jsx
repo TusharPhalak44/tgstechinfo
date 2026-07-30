@@ -44,7 +44,7 @@ const ContactPrivacyOfficer = () => {
 
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'clamp(1fr, 2fr, 1fr 1.6fr)', gap: 28, alignItems: 'start' }}>
 
-        {/* Left — Contact Info */}
+        {/* Left - Contact Info */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* DPO Card */}
@@ -110,7 +110,7 @@ const ContactPrivacyOfficer = () => {
           </div>
         </div>
 
-        {/* Right — Contact Form */}
+        {/* Right - Contact Form */}
         <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 16, padding: 'clamp(28px, 4vw, 36px)', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,0.3)' : '0 2px 16px rgba(0,0,0,0.07)' }}>
           {submitted ? (
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>

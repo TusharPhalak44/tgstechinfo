@@ -16,6 +16,7 @@ import { Button, message } from 'antd';
 import VisualBuilder from './VisualBuilder';
 import { convertDatabaseToBuilder, isLegacyFormat } from '../utils/compatibility';
 import { registerAllWidgets } from '../registry/registerWidgets';
+import { useTheme } from '../../context/ThemeContext';
 
 /**
  * BuilderIntegration Component
@@ -24,8 +25,11 @@ export default function BuilderIntegration({
   existingData,
   onSave,
   onCancel,
-  enableNewBuilder = false
+  enableNewBuilder = false,
+  darkMode: darkModeProp,
 }) {
+  const { darkMode: darkModeCtx } = useTheme();
+  const darkMode = darkModeProp !== undefined ? darkModeProp : darkModeCtx;
   const [builderData, setBuilderData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -94,9 +98,10 @@ export default function BuilderIntegration({
         height: 780,
         display: 'flex',
         flexDirection: 'column',
-        border: '1px solid #e8e8e8',
+        border: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
         borderRadius: 12,
         overflow: 'hidden',
+        background: darkMode ? '#0f172a' : '#f0f2f5',
       }}
     >
       <VisualBuilder

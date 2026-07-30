@@ -77,13 +77,27 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
           padding: '12px 24px',
           borderRadius: 10,
           border: 'none',
-          background: darkMode ? 'var(--color-primary)' : 'var(--color-accent)',
+          background: darkMode ? '#F7941D' : 'var(--color-accent)',
           color: '#fff',
           fontWeight: 600,
           fontSize: 14,
           cursor: loading ? 'not-allowed' : 'pointer',
           whiteSpace: 'nowrap',
-          opacity: loading ? 0.7 : 1
+          opacity: loading ? 0.7 : 1,
+          boxShadow: darkMode ? '0 4px 16px rgba(247, 148, 29, 0.4)' : '0 4px 16px rgba(247, 148, 29, 0.3)',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={e => {
+          if (!loading) {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = darkMode ? '0 6px 20px rgba(247, 148, 29, 0.5)' : '0 6px 20px rgba(247, 148, 29, 0.4)';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!loading) {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = darkMode ? '0 4px 16px rgba(247, 148, 29, 0.4)' : '0 4px 16px rgba(247, 148, 29, 0.3)';
+          }
         }}
       >
         {loading ? 'Subscribing...' : 'Subscribe Free'}
@@ -1521,8 +1535,7 @@ const HeroCard = ({ article, navigate, onImgClick, accent = 'var(--color-primary
       {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 11px)', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
       <div style={{ fontWeight: 700, fontSize: 'clamp(14px, 1vw, 15px)', lineHeight: 1.45, color: 'var(--color-heading)', marginBottom: 8, flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
       <div style={{ fontSize: 'clamp(12px, 0.8vw, 12.5px)', color: 'var(--color-muted)', lineHeight: 1.6, marginBottom: 12, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.short_description}</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
-        <span><CalendarOutlined style={{ marginRight: 4 }} />{moment(article.published_date || article.created_at).format('MMM D, YYYY')}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><EyeOutlined />{article.view_count || 0}</span>
       </div>
     </div>
@@ -1624,15 +1637,15 @@ const LatestArticlesSection = ({ articles, blogs, navigate }) => {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(11,31,77,0.16)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
             >
-              <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(160px, 14vw, 180px)', background: '#f3f4f6' }}>
+                    <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(140px, 12vw, 160px)', background: '#f3f4f6' }}>
                 {article.banner_image
                   ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center top', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
                   : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 36, color: 'var(--color-primary)', opacity: 0.5 }} /></div>
                 }
                 {article.content_type_name && <span style={{ position: 'absolute', top: 10, left: 10, background: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase' }}>{article.content_type_name}</span>}
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(11,31,77,0.72) 0%, transparent 100%)', padding: '24px 12px 8px' }}>
+                {/* <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(11,31,77,0.72) 0%, transparent 100%)', padding: '24px 12px 8px' }}>
                   <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.88)', display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined />{moment(article.published_date || article.created_at).format('MMM D, YYYY')}</span>
-                </div>
+                </div> */}
               </div>
               <CardContent style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)' }}>
                 {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 10.5px)', fontWeight: 700, color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}

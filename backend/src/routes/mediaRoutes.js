@@ -12,4 +12,7 @@ router.get('/all', mediaController.getAllFiles);
 // Get folder counts
 router.get('/folder-counts', mediaController.getFolderCounts);
 
+// Serve file from DB (filesystem-independent)
+router.get('/file/:filename', mediaController.serveFile);
+
 module.exports = router;

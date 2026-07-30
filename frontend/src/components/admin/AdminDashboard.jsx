@@ -206,7 +206,7 @@ const AdminDashboard = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
               <StatCard title="Total Content" value={stats.totalContent} icon={<FileTextOutlined />} color="primary" />
               <StatCard title="Pending Review" value={stats.pendingReview} icon={<ClockCircleOutlined />} color="warning" valueColor={darkMode ? '#F7941D' : '#F59E0B'} />
-              <StatCard title="Published" value={stats.published} icon={<CheckCircleOutlined />} color="success" valueColor={darkMode ? '#5BBD2B' : '#10B981'} />
+              <StatCard title="Published" value={stats.totalPublished || stats.published} icon={<CheckCircleOutlined />} color="success" valueColor={darkMode ? '#5BBD2B' : '#10B981'} />
               <StatCard title="Total Users" value={stats.totalUsers} icon={<UserOutlined />} color="primary" />
             </div>
 

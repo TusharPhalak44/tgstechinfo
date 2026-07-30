@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const contentController = require('../controllers/contentController');
 const notificationController = require('../controllers/notificationController');
 const Category = require('../models/Category');
 const { authenticate } = require('../middleware/auth');
@@ -19,6 +20,18 @@ router.get('/content/all', adminController.getAllContent);
 router.get('/content/pending', adminController.getPendingContent);
 router.put('/content/:id/review', hasPermission('content.publish'), adminController.reviewContent);
 router.get('/content/:id', adminController.getContentDetails);
+
+// Admin content creation and submission
+router.post('/content',
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]),
+    contentController.createContent
+);
+router.post('/content/:id/submit', hasPermission('content.publish'), contentController.submitForReview);
+router.put('/content/:id', 
+    hasPermission('content.update'), 
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), 
+    contentController.updateContent
+);
 
 // User management
 router.get('/users', hasPermission('user.read'), adminController.getAllUsers);

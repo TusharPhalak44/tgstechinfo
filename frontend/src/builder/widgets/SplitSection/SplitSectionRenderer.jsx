@@ -4,8 +4,10 @@
  */
 
 import React from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function SplitSectionRenderer({ node, children }) {
+  const { darkMode } = useTheme();
   const settings = node.settings || {};
   const styles = node.styles || {};
 
@@ -29,9 +31,10 @@ export default function SplitSectionRenderer({ node, children }) {
   const containerStyles = {
     display: 'flex',
     gap: `${gap}px`,
-    backgroundColor: backgroundColor,
+    backgroundColor: backgroundColor === 'transparent' ? (darkMode ? '#1e293b' : 'transparent') : backgroundColor,
     padding: `${padding}px`,
     alignItems: verticalAlign === 'stretch' ? 'stretch' : verticalAlign,
+    color: darkMode ? '#cbd5e1' : undefined,
     ...styles,
   };
 

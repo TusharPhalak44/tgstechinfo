@@ -15,15 +15,21 @@ class SiteSettings {
             website_logo,
             website_favicon,
             site_description,
-            site_keywords
+            site_keywords,
+            seo_site_title,
+            seo_site_separator,
+            seo_meta_description,
+            seo_meta_keywords,
+            seo_og_image
         } = settingsData;
 
         const query = `
             INSERT INTO site_settings (
                 id, site_name, cms_logo1, cms_logo2, cms_favicon, 
-                website_logo, website_favicon, site_description, site_keywords, updated_at
+                website_logo, website_favicon, site_description, site_keywords,
+                seo_site_title, seo_site_separator, seo_meta_description, seo_meta_keywords, seo_og_image, updated_at
             )
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON DUPLICATE KEY UPDATE
                 site_name = VALUES(site_name),
                 cms_logo1 = VALUES(cms_logo1),
@@ -33,6 +39,11 @@ class SiteSettings {
                 website_favicon = VALUES(website_favicon),
                 site_description = VALUES(site_description),
                 site_keywords = VALUES(site_keywords),
+                seo_site_title = VALUES(seo_site_title),
+                seo_site_separator = VALUES(seo_site_separator),
+                seo_meta_description = VALUES(seo_meta_description),
+                seo_meta_keywords = VALUES(seo_meta_keywords),
+                seo_og_image = VALUES(seo_og_image),
                 updated_at = CURRENT_TIMESTAMP
         `;
 
@@ -44,7 +55,12 @@ class SiteSettings {
             website_logo,
             website_favicon,
             site_description,
-            site_keywords
+            site_keywords,
+            seo_site_title,
+            seo_site_separator,
+            seo_meta_description,
+            seo_meta_keywords,
+            seo_og_image
         ]);
 
         return await SiteSettings.getSettings();

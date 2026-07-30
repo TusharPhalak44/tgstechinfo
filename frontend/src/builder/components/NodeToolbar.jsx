@@ -13,11 +13,13 @@ import {
   SaveOutlined, MoreOutlined
 } from '@ant-design/icons';
 import { useBuilderActions } from '../core/BuilderStore.jsx';
+import { useTheme } from '../../context/ThemeContext';
 
 /**
  * NodeToolbar Component
  */
 export default function NodeToolbar({ node, isSelected }) {
+  const { darkMode } = useTheme();
   const { duplicateNode, deleteNode, copyNodes, moveNode } = useBuilderActions();
   const [isLocked, setIsLocked] = useState(node.settings?.locked || false);
   const [isHidden, setIsHidden] = useState(node.settings?.hidden || false);
@@ -83,11 +85,11 @@ export default function NodeToolbar({ node, isSelected }) {
         right: 0,
         display: 'flex',
         gap: 4,
-        background: '#fff',
-        border: '1px solid #e8e8e8',
+        background: darkMode ? '#1e293b' : '#fff',
+        border: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
         borderRadius: 6,
         padding: 4,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
         zIndex: 100,
       }}
     >

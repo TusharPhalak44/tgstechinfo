@@ -140,7 +140,7 @@ const AcceptableUsePolicy = () => {
       <Section title="10. Reporting Violations" darkMode={darkMode}>
         <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>If you become aware of any violation of this policy, please report it to us immediately:</p>
         <div style={{ padding: '16px 20px', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
-          <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e' }}>TGS Tech Info — Trust &amp; Safety</p>
+          <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e' }}>TGS Tech Info - Trust &amp; Safety</p>
           <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151' }}>Email: <a href="mailto:abuse@tgstechinfo.com" style={{ color: '#4a7cff' }}>abuse@tgstechinfo.com</a></p>
           <p style={{ margin: 0, color: darkMode ? '#cbd5e1' : '#374151' }}>Security issues: <a href="mailto:security@tgstechinfo.com" style={{ color: '#4a7cff' }}>security@tgstechinfo.com</a></p>
         </div>

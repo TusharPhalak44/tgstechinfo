@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function ImageRenderer({ node }) {
+  const { darkMode } = useTheme();
   // Handle malformed data where URL is stored as a key instead of value
   let content = safeParseJsonContent(node.content, { url: '', alt: '', link: '', caption: '' });
   
@@ -37,10 +39,10 @@ export default function ImageRenderer({ node }) {
   if (!content.url) {
     return (
       <div style={{
-        width: '100%', minHeight: 120, background: '#f5f5f5',
-        border: '2px dashed #d9d9d9', borderRadius: 8,
+        width: '100%', minHeight: 120, background: darkMode ? '#0f172a' : '#f5f5f5',
+        border: `2px dashed ${darkMode ? '#334155' : '#d9d9d9'}`, borderRadius: 8,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', color: '#bfbfbf', fontSize: 13,
+        justifyContent: 'center', color: darkMode ? '#475569' : '#bfbfbf', fontSize: 13,
         padding: 16,
       }}>
         <span style={{ fontSize: 32, marginBottom: 8 }}>🖼️</span>

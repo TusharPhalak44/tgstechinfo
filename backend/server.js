@@ -72,12 +72,27 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // Body parser middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Static files
+// Static files - serve from filesystem, fallback to DB
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads/:filename', async (req, res, next) => {
+    try {
+        const { pool } = require('./src/config/database');
+        const [rows] = await pool.query(
+            'SELECT file_data, mime_type FROM media_files WHERE filename = ? LIMIT 1',
+            [req.params.filename]
+        );
+        if (!rows[0] || !rows[0].file_data) return res.status(404).send('Not found');
+        res.setHeader('Content-Type', rows[0].mime_type || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        res.send(rows[0].file_data);
+    } catch (e) { next(e); }
+});
 
 // Routes
 app.use('/api/auth', require('./src/routes/authRoutes'));
@@ -93,7 +108,8 @@ app.use('/api/rbac', require('./src/routes/rbacRoutes'));
 app.use('/api/media', require('./src/routes/mediaRoutes'));
 app.use('/api/seo', require('./src/routes/seoRoutes'));
 app.use('/api/tags', require('./src/routes/tagsRoutes'));
- 
+app.use('/api/email-templates', require('./src/routes/emailTemplateRoutes'));
+app.use('/api/site-settings', require('./src/routes/siteSettingsRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

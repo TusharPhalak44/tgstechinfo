@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function PDFRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, { url: '', fileName: '' });
   const settings = node.settings || {};
   const styles = node.styles || {};

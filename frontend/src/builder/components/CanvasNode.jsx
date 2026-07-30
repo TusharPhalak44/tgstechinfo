@@ -13,6 +13,7 @@ import WidgetErrorBoundary from './WidgetErrorBoundary';
 import FallbackRenderer from './FallbackRenderer';
 import { useBuilderActions, useBuilderSelection } from '../core/BuilderStore.jsx';
 import dragState from '../utils/dragState';
+import { useTheme } from '../../context/ThemeContext';
 
 const LAYOUT_TYPES = ['page', 'section', 'container', 'column', 'column-1', 'column-2', 'column-3', 'column-4'];
 const WIDGET_SAFE_PARENTS = ['container', 'column'];
@@ -61,7 +62,7 @@ function hasColumnChildren(node) {
   return false;
 }
 
-function getLayoutContainerStyle(type, isDragOverInside) {
+function getLayoutContainerStyle(type, isDragOverInside, darkMode) {
   const base = {
     width: '100%',
     boxSizing: 'border-box',
@@ -71,8 +72,8 @@ function getLayoutContainerStyle(type, isDragOverInside) {
       ...base,
       padding: '24px 16px',
       marginBottom: 16,
-      background: isDragOverInside ? 'rgba(74, 124, 255, 0.04)' : '#ffffff',
-      border: isDragOverInside ? '2px dashed #4a7cff' : '1px solid #f0f0f0',
+      background: isDragOverInside ? 'rgba(74, 124, 255, 0.08)' : (darkMode ? '#1e293b' : '#ffffff'),
+      border: isDragOverInside ? '2px dashed #4a7cff' : `1px solid ${darkMode ? '#334155' : '#f0f0f0'}`,
       borderRadius: 12,
     };
   }
@@ -80,8 +81,8 @@ function getLayoutContainerStyle(type, isDragOverInside) {
     return {
       ...base,
       padding: '16px',
-      background: isDragOverInside ? 'rgba(74, 124, 255, 0.04)' : '#fafafa',
-      border: isDragOverInside ? '2px dashed #4a7cff' : '1px dashed #e5e7eb',
+      background: isDragOverInside ? 'rgba(74, 124, 255, 0.08)' : (darkMode ? '#0f172a' : '#fafafa'),
+      border: isDragOverInside ? '2px dashed #4a7cff' : `1px dashed ${darkMode ? '#334155' : '#e5e7eb'}`,
       borderRadius: 8,
       minHeight: 80,
     };
@@ -89,8 +90,8 @@ function getLayoutContainerStyle(type, isDragOverInside) {
   if (type === 'column' || type.startsWith('column-')) {
     return {
       ...base,
-      background: isDragOverInside ? 'rgba(74, 124, 255, 0.04)' : 'transparent',
-      border: isDragOverInside ? '2px dashed #4a7cff' : '1px dashed #e5e7eb',
+      background: isDragOverInside ? 'rgba(74, 124, 255, 0.08)' : 'transparent',
+      border: isDragOverInside ? '2px dashed #4a7cff' : `1px dashed ${darkMode ? '#334155' : '#e5e7eb'}`,
       borderRadius: 6,
       minHeight: 80,
       padding: '12px 8px',
@@ -99,7 +100,7 @@ function getLayoutContainerStyle(type, isDragOverInside) {
   return base;
 }
 
-function getLayoutLabelStyle(type) {
+function getLayoutLabelStyle(type, darkMode) {
   return {
     display: 'inline-flex',
     alignItems: 'center',
@@ -108,8 +109,8 @@ function getLayoutLabelStyle(type) {
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
-    color: '#6b7280',
-    background: '#f3f4f6',
+    color: darkMode ? '#94a3b8' : '#6b7280',
+    background: darkMode ? '#0f172a' : '#f3f4f6',
     padding: '2px 8px',
     borderRadius: 4,
     marginBottom: 8,
@@ -127,6 +128,7 @@ const CanvasNode = memo(function CanvasNode({
   ownIndex = 0,
   onRootDragOverIndex,
 }) {
+  const { darkMode } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dropPosition, setDropPosition] = useState(null);
@@ -351,7 +353,7 @@ const CanvasNode = memo(function CanvasNode({
   };
 
   const layoutWrapStyle = isLayoutNode
-    ? getLayoutContainerStyle(node.type, isDragOver && dropPosition === 'inside')
+    ? getLayoutContainerStyle(node.type, isDragOver && dropPosition === 'inside', darkMode)
     : {};
 
   const draggableAttr = true;
@@ -385,7 +387,7 @@ const CanvasNode = memo(function CanvasNode({
       )}
 
       {isLayoutNode && (
-        <div style={getLayoutLabelStyle(node.type)}>
+        <div style={getLayoutLabelStyle(node.type, darkMode)}>
           <span>{node.label || node.type}</span>
         </div>
       )}
@@ -434,14 +436,14 @@ const CanvasNode = memo(function CanvasNode({
           className="empty-container"
           style={{
             minHeight: 100,
-            border: isDragOver && dropPosition === 'inside' ? '2px dashed #4a7cff' : '2px dashed #d9d9d9',
+            border: isDragOver && dropPosition === 'inside' ? '2px dashed #4a7cff' : `2px dashed ${darkMode ? '#334155' : '#d9d9d9'}`,
             borderRadius: 8,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: isDragOver && dropPosition === 'inside' ? '#4a7cff' : '#9ca3af',
+            color: isDragOver && dropPosition === 'inside' ? '#4a7cff' : (darkMode ? '#475569' : '#9ca3af'),
             fontSize: 13,
-            background: isDragOver && dropPosition === 'inside' ? 'rgba(74, 124, 255, 0.05)' : '#fafafa',
+            background: isDragOver && dropPosition === 'inside' ? 'rgba(74, 124, 255, 0.05)' : (darkMode ? '#0f172a' : '#fafafa'),
             fontWeight: 500,
           }}
         >

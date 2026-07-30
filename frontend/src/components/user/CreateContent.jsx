@@ -103,6 +103,7 @@ const CreateContent = () => {
   ]);
   const [contentElements, setContentElements] = useState([]);
   const contentElementsRef = React.useRef([]);
+  const [duplicateWarning, setDuplicateWarning] = useState(null);
 
   // Keep ref in sync with state for use in closures (preview, save)
   useEffect(() => {
@@ -127,7 +128,8 @@ const CreateContent = () => {
 
   const fetchExistingContent = async () => {
     try {
-      const res = await axios.get(`/api/user/content/${id}`);
+      const apiBase = isAdmin ? '/api/admin' : '/api/user';
+      const res = await axios.get(`${apiBase}/content/${id}`);
       const data = res.data;
       const tags = (() => {
         if (!data.tags) return [];
@@ -262,6 +264,53 @@ const CreateContent = () => {
     }
   };
 
+  const checkDuplicateContent = async (title, shortDescription, tags) => {
+    if (!title || title.length < 3) {
+      setDuplicateWarning(null);
+      return;
+    }
+
+    try {
+      const response = await axios.get('/api/public/content', {
+        params: {
+          title: title.substring(0, 50),
+          limit: 5
+        }
+      });
+
+      const existingContent = response.data?.data || [];
+      
+      if (existingContent.length > 0) {
+        const similarContent = existingContent.filter(content => {
+          const titleMatch = content.title?.toLowerCase().includes(title.toLowerCase()) || 
+                            title.toLowerCase().includes(content.title?.toLowerCase());
+          const descMatch = shortDescription && content.short_description && 
+                          (content.short_description.toLowerCase().includes(shortDescription.toLowerCase()) ||
+                           shortDescription.toLowerCase().includes(content.short_description.toLowerCase()));
+          const tagMatch = tags && content.tags && 
+                         tags.some(tag => content.tags.includes(tag));
+          
+          return titleMatch || descMatch || tagMatch;
+        });
+
+        if (similarContent.length > 0) {
+          setDuplicateWarning({
+            found: true,
+            count: similarContent.length,
+            titles: similarContent.map(c => c.title).slice(0, 3)
+          });
+        } else {
+          setDuplicateWarning(null);
+        }
+      } else {
+        setDuplicateWarning(null);
+      }
+    } catch (error) {
+      console.error('Error checking duplicate content:', error);
+      setDuplicateWarning(null);
+    }
+  };
+
   const parseFormFieldsFromHtml = (html) => {
     if (!html) return [];
     try {
@@ -364,23 +413,25 @@ const CreateContent = () => {
       const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
 
+      const apiBase = isAdmin ? '/api/admin' : '/api/user';
+
       if (savedContentId) {
-        const existing = (await axios.get(`/api/user/content/${savedContentId}`)).data;
+        const existing = (await axios.get(`${apiBase}/content/${savedContentId}`)).data;
         if (existing.status === 'published') {
           const finalCustomFields = activeTab === 'html' ? parseFormFieldsFromHtml(htmlContent) : customFields;
-          await axios.put(`/api/user/content/${savedContentId}/webhook`, {
+          await axios.put(`${apiBase}/content/${savedContentId}/webhook`, {
             webhook_url: values.webhook_url || '',
             ...(finalCustomFields.length > 0 ? { custom_fields: JSON.stringify(finalCustomFields) } : {})
           });
           message.success('Settings updated successfully!');
         } else {
-          await axios.put(`/api/user/content/${savedContentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+          await axios.put(`${apiBase}/content/${savedContentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
           setContentStatus(existing.status);
           setDraftSaved(true);
           message.success(`${typeName} updated! Edit anytime before submitting.`);
         }
       } else {
-        const response = await axios.post('/api/user/content', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const response = await axios.post(`${apiBase}/content`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         setSavedContentId(response.data.content.id);
         setContentStatus('draft');
         setDraftSaved(true);
@@ -401,17 +452,22 @@ const handleSubmit = async () => {
       setSubmitLoading(true);
       const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
- 
-      if (savedContentId) {
-        const response = await axios.put(`/api/user/content/${savedContentId}/submit`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        setContentStatus(response.data.content.status);
-        message.success(`${typeName} submitted for review!`);
+
+      const apiBase = isAdmin ? '/api/admin' : '/api/user';
+      const redirectPath = isAdmin ? '/admin' : '/dashboard';
+
+      let contentId = savedContentId;
+      if (contentId) {
+        await axios.put(`${apiBase}/content/${contentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       } else {
-        const response = await axios.post('/api/user/content', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-        setSavedContentId(response.data.content.id);
-        setContentStatus(response.data.content.status);
-        message.success(`${typeName} submitted for review!`);
+        const createRes = await axios.post(`${apiBase}/content`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        contentId = createRes.data.content.id;
+        setSavedContentId(contentId);
       }
+      const response = await axios.post(`${apiBase}/content/${contentId}/submit`);
+      setContentStatus(response.data.content.status);
+      message.success(`${typeName} submitted for review!`);
+      navigate(redirectPath);
     } catch (error) {
       console.error('Error submitting content:', error);
       message.error(error.response?.data?.message || 'Failed to submit content');
@@ -712,8 +768,8 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
             }
             
             setPreviewData({
-              content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || 'Article',
-              category: categories.find(c => c.id === v.category_id)?.name || 'Category',
+              content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
+              category: categories.find(c => c.id === v.category_id)?.name || '',
               title: v.title || 'Untitled',
               scheduled_publish_date: v.scheduled_publish_date ? v.scheduled_publish_date.format('MMMM D, YYYY') : null,
               reading_time: Math.ceil(wordCount / 200) || 1,
@@ -898,14 +954,48 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                 ),
                 title: (
                   <div key="title" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                    {duplicateWarning && duplicateWarning.found && (
+                      <div style={{ 
+                        background: '#FFF7ED', 
+                        border: '1px solid #FDBA74', 
+                        borderRadius: 8, 
+                        padding: '12px 16px', 
+                        marginBottom: 16 
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                          <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
+                              Similar content already exists
+                            </div>
+                            <div style={{ fontSize: 13, color: '#9A3412' }}>
+                              Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
                       <Input placeholder="Article title..." size="large"
+                        onChange={(e) => {
+                          const title = e.target.value;
+                          const shortDesc = form.getFieldValue('short_description');
+                          const tags = form.getFieldValue('tags');
+                          checkDuplicateContent(title, shortDesc, tags);
+                        }}
                         style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
                     </Form.Item>
                     <Form.Item name="short_description"
                       label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
                       rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
-                      <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      <TextArea rows={3} placeholder="Write a compelling summary..." 
+                        onChange={(e) => {
+                          const shortDesc = e.target.value;
+                          const title = form.getFieldValue('title');
+                          const tags = form.getFieldValue('tags');
+                          checkDuplicateContent(title, shortDesc, tags);
+                        }}
+                        style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                     </Form.Item>
                   </div>
                 ),
@@ -1111,15 +1201,50 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                       </Select>
                     </Form.Item>
                   </div>
+                  {duplicateWarning && duplicateWarning.found && (
+                    <div style={{ 
+                      background: '#FFF7ED', 
+                      border: '1px solid #FDBA74', 
+                      borderRadius: 8, 
+                      padding: '12px 16px', 
+                      marginTop: 16,
+                      marginBottom: 16 
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
+                            Similar content already exists
+                          </div>
+                          <div style={{ fontSize: 13, color: '#9A3412' }}>
+                            Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginTop: 16, marginBottom: 0 }}>
                     <Input placeholder="Article title..." size="large"
+                      onChange={(e) => {
+                        const title = e.target.value;
+                        const shortDesc = form.getFieldValue('short_description');
+                        const tags = form.getFieldValue('tags');
+                        checkDuplicateContent(title, shortDesc, tags);
+                      }}
                       style={{ fontSize: 20, fontWeight: 600, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }}
                     />
                   </Form.Item>
                   <Form.Item name="short_description"
                     label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
                     rules={[{ required: true, message: 'Required' }]} style={{ marginTop: 16, marginBottom: 0 }}>
-                    <TextArea rows={2} placeholder="Write a compelling summary..." style={{ resize: 'none', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                    <TextArea rows={2} placeholder="Write a compelling summary..." 
+                      onChange={(e) => {
+                        const shortDesc = e.target.value;
+                        const title = form.getFieldValue('title');
+                        const tags = form.getFieldValue('tags');
+                        checkDuplicateContent(title, shortDesc, tags);
+                      }}
+                      style={{ resize: 'none', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   </Form.Item>
                 </div>
  
@@ -1297,14 +1422,48 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
 
                 {/* Title & Description */}
                 <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                  {duplicateWarning && duplicateWarning.found && (
+                    <div style={{ 
+                      background: '#FFF7ED', 
+                      border: '1px solid #FDBA74', 
+                      borderRadius: 8, 
+                      padding: '12px 16px', 
+                      marginBottom: 16 
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
+                        <div>
+                          <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
+                            Similar content already exists
+                          </div>
+                          <div style={{ fontSize: 13, color: '#9A3412' }}>
+                            Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
                     <Input placeholder="Landing page title..." size="large"
+                      onChange={(e) => {
+                        const title = e.target.value;
+                        const shortDesc = form.getFieldValue('short_description');
+                        const tags = form.getFieldValue('tags');
+                        checkDuplicateContent(title, shortDesc, tags);
+                      }}
                       style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
                   </Form.Item>
                   <Form.Item name="short_description"
                     label={<span>Short Description <Tooltip title="Brief summary shown in listing cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
                     rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 16 }}>
-                    <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                    <TextArea rows={3} placeholder="Write a compelling summary..." 
+                      onChange={(e) => {
+                        const shortDesc = e.target.value;
+                        const title = form.getFieldValue('title');
+                        const tags = form.getFieldValue('tags');
+                        checkDuplicateContent(title, shortDesc, tags);
+                      }}
+                      style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   </Form.Item>
                   {/* Auto slug preview */}
                   <Form.Item noStyle shouldUpdate={(prev, cur) => prev.title !== cur.title}>
@@ -1483,7 +1642,13 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                 <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
               </Text>
               <Form.Item name="tags" style={{ marginBottom: 0 }}>
-                <Select mode="tags" placeholder="Add tags..." style={{ width: '100%' }} tokenSeparators={[',']} />
+                <Select mode="tags" placeholder="Add tags..." style={{ width: '100%' }} tokenSeparators={[',']} 
+                  onChange={(tags) => {
+                    const title = form.getFieldValue('title');
+                    const shortDesc = form.getFieldValue('short_description');
+                    checkDuplicateContent(title, shortDesc, tags);
+                  }}
+                />
               </Form.Item>
             </div>
 
@@ -1526,8 +1691,8 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
           <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, width: '100%', maxWidth: 860, padding: 'clamp(20px, 3vw, 40px)', position: 'relative', border: darkMode ? '1px solid #334155' : 'none' }}
             onClick={e => e.stopPropagation()}>
             <Button type="text" onClick={() => setPreviewVisible(false)} style={{ position: 'absolute', top: 'clamp(12px, 1.5vw, 16px)', right: 'clamp(12px, 1.5vw, 16px)', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 'clamp(14px, 1.2vw, 16px)' }}>✕ Close</Button>
-            <Tag color="blue" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.category}</Tag>
-            <Tag color="purple" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.content_type}</Tag>
+            {previewData.category && <Tag color="blue" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)', marginRight: 8 }}>{previewData.category}</Tag>}
+            {previewData.content_type && <Tag color="purple" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.content_type}</Tag>}
             <h1 style={{ fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a1a', margin: 'clamp(12px, 1.5vw, 16px) 0', lineHeight: 1.3 }}>{previewData.title}</h1>
             {previewData.banner_image && (
               <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden' }}>

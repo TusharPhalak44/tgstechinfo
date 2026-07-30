@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function BulletListRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, { items: ['List item 1', 'List item 2'] });
   const settings = node.settings || {};
   const styles = node.styles || {};
@@ -18,6 +20,7 @@ export default function BulletListRenderer({ node }) {
     paddingLeft: '20px',
     margin: '16px 0',
     listStyleType: listStyle,
+    color: darkMode ? '#cbd5e1' : '#262626',
     ...styles,
   };
 

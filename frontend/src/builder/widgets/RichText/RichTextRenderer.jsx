@@ -5,12 +5,15 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function RichTextRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, { html: '' });
   const styles = node.styles || {};
 
   const containerStyles = {
+    color: darkMode ? '#cbd5e1' : undefined,
     ...styles,
   };
 

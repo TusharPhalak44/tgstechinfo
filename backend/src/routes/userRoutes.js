@@ -8,10 +8,37 @@ const { upload, uploadWithPdf } = require('../middleware/upload');
 
 // All user routes require authentication
 router.use(authenticate);
-
-// Notifications
-router.get('/notifications', hasPermission('settings.read'), notificationController.getNotifications);
-router.put('/notifications/:id/read', hasPermission('settings.update'), notificationController.markAsRead);
+// User stats
+router.get('/stats', async (req, res) => {
+    try {
+        const Content = require('../models/Content');
+        const userId = req.user.id;
+       
+        // Get content created count
+        const [contentResult] = await Content.pool.query(
+            'SELECT COUNT(*) as count FROM content WHERE user_id = ?',
+            [userId]
+        );
+       
+        // Get total views (sum of view counts for user's content)
+        const [viewsResult] = await Content.pool.query(
+            'SELECT COALESCE(SUM(view_count), 0) as total_views FROM content WHERE user_id = ?',
+            [userId]
+        );
+       
+        res.json({
+            contentCreated: contentResult[0].count,
+            totalViews: viewsResult[0].total_views
+        });
+    } catch (error) {
+        console.error('Get user stats error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+ 
+// Notifications - any authenticated user can access their own notifications
+router.get('/notifications', notificationController.getNotifications);
+router.put('/notifications/:id/read', notificationController.markAsRead);
 
 // Content creation — any authenticated user can create content
 router.post('/content',

@@ -6,11 +6,13 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Select, Radio, Checkbox, DatePicker, Upload, message } from 'antd';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 const { TextArea } = Input;
 const { Option } = Select;
 
 export default function FormRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, { fields: [], formName: 'Contact Form', submitText: 'Submit', successMessage: 'Thank you for your submission!' });
   const settings = node.settings || {};
   const styles = node.styles || {};
@@ -118,8 +120,8 @@ export default function FormRenderer({ node }) {
   }
 
   return (
-    <div style={{ padding: '24px', background: '#fafafa', borderRadius: '8px', ...styles }}>
-      <h3 style={{ marginBottom: '24px', marginTop: 0 }}>{formName}</h3>
+    <div style={{ padding: '24px', background: darkMode ? '#1e293b' : '#fafafa', borderRadius: '8px', ...styles }}>
+      <h3 style={{ marginBottom: '24px', marginTop: 0, color: darkMode ? '#f1f5f9' : undefined }}>{formName}</h3>
       <Form
         form={form}
         layout="vertical"

@@ -4,14 +4,16 @@
  */
 
 import React from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function SectionBreakRenderer({ node }) {
+  const { darkMode } = useTheme();
   const settings = node.settings || {};
   const styles = node.styles || {};
 
   const style = settings.style || 'line';
   const thickness = settings.thickness || 1;
-  const color = settings.color || '#e8e8e8';
+  const color = settings.color || (darkMode ? '#334155' : '#e8e8e8');
   const width = settings.width === 'custom' ? `${settings.customWidth || 200}px` : settings.width || '100%';
   const alignment = settings.alignment || 'center';
   const spacingAbove = settings.spacingAbove || 20;

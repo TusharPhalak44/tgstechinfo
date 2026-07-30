@@ -9,7 +9,7 @@ import React, { useState } from 'react';
 import { Tooltip } from 'antd';
 import dragState from '../utils/dragState';
 
-export default function DraggableWidget({ type, label, icon, hint, disabled }) {
+export default function DraggableWidget({ type, label, icon, hint, disabled, darkMode = false }) {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragStart = (e) => {
@@ -57,9 +57,9 @@ export default function DraggableWidget({ type, label, icon, hint, disabled }) {
         justifyContent: 'center',
         padding: '10px 4px',
         borderRadius: 8,
-        border: `1px solid ${isDragging ? '#4a7cff' : '#e8e8e8'}`,
+        border: `1px solid ${isDragging ? '#4a7cff' : (darkMode ? '#334155' : '#e8e8e8')}`,
         cursor: disabled ? 'not-allowed' : (isDragging ? 'grabbing' : 'grab'),
-        background: isDragging ? '#e8f0ff' : '#fff',
+        background: isDragging ? (darkMode ? '#1e3a5f' : '#e8f0ff') : (darkMode ? '#0f172a' : '#fff'),
         fontSize: 12,
         textAlign: 'center',
         gap: 4,
@@ -71,18 +71,18 @@ export default function DraggableWidget({ type, label, icon, hint, disabled }) {
       onMouseEnter={e => {
         if (!disabled && !isDragging) {
           e.currentTarget.style.borderColor = '#4a7cff';
-          e.currentTarget.style.background  = '#f0f4ff';
+          e.currentTarget.style.background  = darkMode ? '#1e293b' : '#f0f4ff';
         }
       }}
       onMouseLeave={e => {
         if (!isDragging) {
-          e.currentTarget.style.borderColor = '#e8e8e8';
-          e.currentTarget.style.background  = '#fff';
+          e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8';
+          e.currentTarget.style.background  = darkMode ? '#0f172a' : '#fff';
         }
       }}
     >
       <span style={{ fontSize: 22, lineHeight: 1 }}>{icon}</span>
-      <span style={{ fontSize: 11, color: '#595959', fontWeight: 500, lineHeight: 1.2 }}>{label}</span>
+      <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#595959', fontWeight: 500, lineHeight: 1.2 }}>{label}</span>
     </div>
   );
 

@@ -6,6 +6,7 @@ import {
   CopyOutlined,
   CheckCircleOutlined,
   WarningOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
@@ -26,6 +27,7 @@ const SEO = () => {
   const [seoScore, setSeoScore] = useState(75);
   const [seoIssues, setSeoIssues] = useState([]);
   const [pages, setPages] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchSeoData();
@@ -337,7 +339,19 @@ ${settings.ogImage ? `<meta property="og:image" content="${settings.ogImage}">` 
       </Card>
 
       <Card
-        title="Page SEO Analysis"
+        title={
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>Page SEO Analysis</span>
+            <Input
+              placeholder="Search pages..."
+              prefix={<SearchOutlined />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ width: isMobile ? 150 : 250, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
+              size={isMobile ? 'small' : 'middle'}
+            />
+          </div>
+        }
         loading={loading}
         style={{
           borderRadius: 12,
@@ -349,7 +363,10 @@ ${settings.ogImage ? `<meta property="og:image" content="${settings.ogImage}">` 
         <div style={{ maxHeight: isMobile ? 400 : 500, overflowY: 'auto' }}>
           <Table
             columns={columns}
-            dataSource={pages}
+            dataSource={pages.filter(page => 
+              page.page.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              page.title.toLowerCase().includes(searchQuery.toLowerCase())
+            )}
             rowKey="id"
             scroll={{ x: isMobile ? 600 : 800 }}
             pagination={false}

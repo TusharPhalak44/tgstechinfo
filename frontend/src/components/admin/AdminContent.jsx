@@ -82,6 +82,7 @@ const AdminContent = () => {
       await axios.post(`/api/admin/content/${contentId}/submit`);
       message.success('Content submitted for review!');
       fetchContents();
+      navigate('/admin/dashboard');
     } catch {
       message.error('Failed to submit for review');
     } finally {
@@ -162,7 +163,7 @@ const AdminContent = () => {
             <h2 style={{ margin: 0, fontSize: 'clamp(18px, 2.2vw, 22px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#111827' }}>All Content</h2>
             <Text type="secondary" style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#6b7280' }}>Manage all uploaded content</Text>
           </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/dashboard/create-post')}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/admin/create-post')}>
             Create New
           </Button>
         </div>

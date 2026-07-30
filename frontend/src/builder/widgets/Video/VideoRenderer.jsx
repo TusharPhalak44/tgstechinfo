@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function VideoRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, { source: 'youtube', url: '' });
   const settings = node.settings || {};
   const styles = node.styles || {};
@@ -49,7 +51,7 @@ export default function VideoRenderer({ node }) {
 
   const renderYouTube = () => {
     const videoId = getYouTubeId(url);
-    if (!videoId) return <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>Invalid YouTube URL</div>;
+    if (!videoId) return <div style={{ padding: '20px', textAlign: 'center', color: darkMode ? '#475569' : '#999' }}>Invalid YouTube URL</div>;
 
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=${settings.autoplay ? 1 : 0}&mute=${settings.mute ? 1 : 0}&controls=${settings.controls !== false ? 1 : 0}&loop=${settings.loop ? 1 : 0}&rel=0`;
 
@@ -66,7 +68,7 @@ export default function VideoRenderer({ node }) {
 
   const renderVimeo = () => {
     const videoId = getVimeoId(url);
-    if (!videoId) return <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>Invalid Vimeo URL</div>;
+    if (!videoId) return <div style={{ padding: '20px', textAlign: 'center', color: darkMode ? '#475569' : '#999' }}>Invalid Vimeo URL</div>;
 
     const embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=${settings.autoplay ? 1 : 0}&muted=${settings.mute ? 1 : 0}&controls=${settings.controls !== false ? 1 : 0}&loop=${settings.loop ? 1 : 0}`;
 
@@ -82,7 +84,7 @@ export default function VideoRenderer({ node }) {
   };
 
   const renderDirect = () => {
-    if (!url) return <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>No video URL provided</div>;
+    if (!url) return <div style={{ padding: '20px', textAlign: 'center', color: darkMode ? '#475569' : '#999' }}>No video URL provided</div>;
 
     return (
       <video

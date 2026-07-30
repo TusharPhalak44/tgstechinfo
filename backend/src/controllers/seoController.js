@@ -1,17 +1,19 @@
 const Content = require('../models/Content');
 const Category = require('../models/Category');
+const SiteSettings = require('../models/SiteSettings');
 
 // Get SEO settings
 exports.getSeoSettings = async (req, res) => {
     try {
-        // For now, return default SEO settings
-        // In a real implementation, these would be stored in a database table
+        // Get SEO settings from database
+        const settings = await SiteSettings.getSettings();
+        
         const seoSettings = {
-            siteTitle: 'TgsTechInfo - Technology Solutions',
-            siteSeparator: ' - ',
-            metaDescription: 'TgsTechInfo provides cutting-edge technology solutions for businesses. Discover our innovative services and products.',
-            metaKeywords: 'technology, solutions, software, development',
-            ogImage: null,
+            siteTitle: settings?.seo_site_title || 'TgsTechInfo - Technology Solutions',
+            siteSeparator: settings?.seo_site_separator || ' - ',
+            metaDescription: settings?.seo_meta_description || 'TgsTechInfo provides cutting-edge technology solutions for businesses. Discover our innovative services and products.',
+            metaKeywords: settings?.seo_meta_keywords || 'technology, solutions, software, development',
+            ogImage: settings?.seo_og_image || null,
         };
         
         res.json(seoSettings);
@@ -26,14 +28,18 @@ exports.updateSeoSettings = async (req, res) => {
     try {
         const { siteTitle, siteSeparator, metaDescription, metaKeywords, ogImage } = req.body;
         
-        // In a real implementation, these would be stored in a database table
-        const updatedSettings = {
-            siteTitle,
-            siteSeparator,
-            metaDescription,
-            metaKeywords,
-            ogImage,
-        };
+        // Get current settings
+        const currentSettings = await SiteSettings.getSettings();
+        
+        // Update SEO settings in database
+        const updatedSettings = await SiteSettings.updateSettings({
+            ...currentSettings,
+            seo_site_title: siteTitle,
+            seo_site_separator: siteSeparator,
+            seo_meta_description: metaDescription,
+            seo_meta_keywords: metaKeywords,
+            seo_og_image: ogImage
+        });
         
         res.json({ message: 'SEO settings updated successfully', settings: updatedSettings });
     } catch (error) {

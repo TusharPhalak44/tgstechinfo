@@ -6,30 +6,32 @@
 import React from 'react';
 import { Alert, Button } from 'antd';
 import { ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function FallbackRenderer({ node, error, onRetry, onDelete }) {
+  const { darkMode } = useTheme();
   const isRegistrationError = error?.includes('not registered') || error?.includes('not found');
   
   return (
     <div style={{
       padding: 20,
-      background: '#fafafa',
-      border: '2px dashed #d9d9d9',
+      background: darkMode ? '#0f172a' : '#fafafa',
+      border: `2px dashed ${darkMode ? '#334155' : '#d9d9d9'}`,
       borderRadius: 8,
       textAlign: 'center',
-      color: '#8c8c8c',
+      color: darkMode ? '#94a3b8' : '#8c8c8c',
     }}>
       <div style={{ fontSize: 24, marginBottom: 8 }}>⚠️</div>
       
-      <div style={{ fontWeight: 600, marginBottom: 4, color: '#262626' }}>
+      <div style={{ fontWeight: 600, marginBottom: 4, color: darkMode ? '#f1f5f9' : '#262626' }}>
         {isRegistrationError ? 'Widget Not Registered' : 'Render Error'}
       </div>
       
-      <div style={{ fontSize: 12, marginBottom: 8, color: '#595959' }}>
+      <div style={{ fontSize: 12, marginBottom: 8, color: darkMode ? '#cbd5e1' : '#595959' }}>
         Type: {node.type || 'Unknown'}
       </div>
       
-      <div style={{ fontSize: 11, color: '#8c8c8c', marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', marginBottom: 12 }}>
         ID: {node.id || 'Unknown'}
       </div>
       

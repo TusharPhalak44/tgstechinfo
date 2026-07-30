@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function ButtonRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, {});
   const settings = node.settings || {};
   const styles = node.styles || {};
@@ -14,8 +16,8 @@ export default function ButtonRenderer({ node }) {
   const buttonStyles = {
     padding: settings.size === 'small' ? '8px 16px' : settings.size === 'large' ? '16px 32px' : '12px 24px',
     backgroundColor: settings.style === 'outline' || settings.style === 'text' ? 'transparent' : (settings.backgroundColor || '#4a7cff'),
-    color: settings.textColor || '#ffffff',
-    border: settings.style === 'outline' ? `2px solid ${settings.backgroundColor || '#4a7cff'}` : 'none',
+    color: settings.textColor || (settings.style === 'outline' ? (darkMode ? '#93c5fd' : '#4a7cff') : '#ffffff'),
+    border: settings.style === 'outline' ? `2px solid ${settings.backgroundColor || (darkMode ? '#93c5fd' : '#4a7cff')}` : 'none',
     borderRadius: 4,
     cursor: 'pointer',
     fontWeight: 500,

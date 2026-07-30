@@ -1,15 +1,13 @@
 /**
  * WidgetSidebar Component
  * Left sidebar with collapsible widget categories.
- * Templates load via the builder loadTemplate action.
- * All widget types match exactly what is registered in registerWidgets.js.
  */
 
 import React, { useState, useMemo } from 'react';
 import { Collapse, Input, Empty, Tooltip, message } from 'antd';
 import {
   LayoutOutlined, AppstoreOutlined, FileOutlined,
-  PictureOutlined, FormOutlined, BookOutlined, CodeOutlined,
+  PictureOutlined, CodeOutlined,
 } from '@ant-design/icons';
 import DraggableWidget from './DraggableWidget';
 import { useBuilderActions } from '../core/BuilderStore.jsx';
@@ -17,11 +15,6 @@ import { NodeType } from '../utils/types';
 
 const { Panel }  = Collapse;
 const { Search } = Input;
-
-// ─── Widget category definitions ────────────────────────────────────────────
-// Every `type` here must either be a registered widget type OR a layout type
-// handled natively by CanvasNode ('section','container','column-N').
-// Template entries use a special 'template:id' prefix handled by WidgetSidebar.
 
 const WIDGET_CATEGORIES = [
   {
@@ -70,7 +63,7 @@ const WIDGET_CATEGORIES = [
     title: 'Advanced',
     icon: <CodeOutlined />,
     items: [
-      { type: NodeType.HTML,          label: 'HTML Block',   icon: '<>' },
+      { type: NodeType.HTML,          label: 'HTML Block',    icon: '<>' },
       { type: NodeType.SPLIT_SECTION, label: 'Split Section', icon: '⬛⬛' },
       { type: NodeType.FORM,          label: 'Form',          icon: '📝' },
     ],
@@ -80,21 +73,20 @@ const WIDGET_CATEGORIES = [
     title: 'Templates',
     icon: <FileOutlined />,
     items: [
-      { type: 'template:blank',      label: 'Blank Page',        icon: '📄', isTemplate: true },
-      { type: 'template:webinar',    label: 'Webinar Landing',   icon: '🎥', isTemplate: true },
-      { type: 'template:whitepaper', label: 'Whitepaper Landing',icon: '📑', isTemplate: true },
-      { type: 'template:ebook',      label: 'eBook Landing',     icon: '📚', isTemplate: true },
-      { type: 'template:event',      label: 'Event Page',        icon: '📅', isTemplate: true },
-      { type: 'template:product',    label: 'Product Launch',    icon: '🚀', isTemplate: true },
-      { type: 'template:ai',         label: 'AI Landing',        icon: '🤖', isTemplate: true },
-      { type: 'template:case',       label: 'Case Study',        icon: '📋', isTemplate: true },
-      { type: 'template:contact',    label: 'Contact Page',      icon: '📞', isTemplate: true },
+      { type: 'template:blank',      label: 'Blank Page',         icon: '📄', isTemplate: true },
+      { type: 'template:webinar',    label: 'Webinar Landing',    icon: '🎥', isTemplate: true },
+      { type: 'template:whitepaper', label: 'Whitepaper Landing', icon: '📑', isTemplate: true },
+      { type: 'template:ebook',      label: 'eBook Landing',      icon: '📚', isTemplate: true },
+      { type: 'template:event',      label: 'Event Page',         icon: '📅', isTemplate: true },
+      { type: 'template:product',    label: 'Product Launch',     icon: '🚀', isTemplate: true },
+      { type: 'template:ai',         label: 'AI Landing',         icon: '🤖', isTemplate: true },
+      { type: 'template:case',       label: 'Case Study',         icon: '📋', isTemplate: true },
+      { type: 'template:contact',    label: 'Contact Page',       icon: '📞', isTemplate: true },
     ],
   },
 ];
 
-// ─── Template click item (not draggable) ─────────────────────────────────────
-function TemplateItem({ item, onLoad }) {
+function TemplateItem({ item, onLoad, darkMode }) {
   return (
     <Tooltip title="Click to load template" placement="right">
       <div
@@ -106,9 +98,9 @@ function TemplateItem({ item, onLoad }) {
           justifyContent: 'center',
           padding: '10px 4px',
           borderRadius: 8,
-          border: '1px solid #e8e8e8',
+          border: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}`,
           cursor: 'pointer',
-          background: '#fff',
+          background: darkMode ? '#0f172a' : '#fff',
           fontSize: 12,
           textAlign: 'center',
           gap: 4,
@@ -118,22 +110,21 @@ function TemplateItem({ item, onLoad }) {
         }}
         onMouseEnter={e => {
           e.currentTarget.style.borderColor = '#4a7cff';
-          e.currentTarget.style.background  = '#f0f4ff';
+          e.currentTarget.style.background  = darkMode ? '#1e293b' : '#f0f4ff';
         }}
         onMouseLeave={e => {
-          e.currentTarget.style.borderColor = '#e8e8e8';
-          e.currentTarget.style.background  = '#fff';
+          e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8';
+          e.currentTarget.style.background  = darkMode ? '#0f172a' : '#fff';
         }}
       >
         <span style={{ fontSize: 20 }}>{item.icon}</span>
-        <span style={{ fontSize: 11, color: '#595959', lineHeight: 1.2 }}>{item.label}</span>
+        <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#595959', lineHeight: 1.2 }}>{item.label}</span>
       </div>
     </Tooltip>
   );
 }
 
-// ─── WidgetSidebar ────────────────────────────────────────────────────────────
-export default function WidgetSidebar({ collapsed }) {
+export default function WidgetSidebar({ collapsed, darkMode = false }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeKeys, setActiveKeys]   = useState(['layouts', 'basic']);
   const actions = useBuilderActions();
@@ -147,7 +138,6 @@ export default function WidgetSidebar({ collapsed }) {
     }
   };
 
-  // Filter all categories/items by search query
   const filtered = useMemo(() => {
     if (!searchQuery.trim()) return WIDGET_CATEGORIES;
     const q = searchQuery.toLowerCase();
@@ -164,8 +154,45 @@ export default function WidgetSidebar({ collapsed }) {
   const hasAnyResults = filtered.some(c => c.items.length > 0);
 
   return (
-    <div className="widget-sidebar" style={{ padding: '10px 8px' }}>
-      {/* Search */}
+    <div
+      className={`widget-sidebar${darkMode ? ' widget-sidebar-dark' : ''}`}
+      style={{
+        padding: '10px 8px',
+        background: darkMode ? '#1e293b' : '#fafafa',
+        minHeight: '100%',
+      }}
+    >
+      {darkMode && (
+        <style>{`
+          .widget-sidebar-dark .ant-collapse-content {
+            background: #1e293b !important;
+            border-top-color: #334155 !important;
+          }
+          .widget-sidebar-dark .ant-collapse-item {
+            border-bottom-color: #334155 !important;
+          }
+          .widget-sidebar-dark .ant-collapse-header {
+            color: #cbd5e1 !important;
+          }
+          .widget-sidebar-dark .ant-input-affix-wrapper,
+          .widget-sidebar-dark .ant-input {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+          }
+          .widget-sidebar-dark .ant-input::placeholder {
+            color: #475569 !important;
+          }
+          .widget-sidebar-dark .ant-input-clear-icon {
+            color: #475569 !important;
+          }
+          .widget-sidebar-dark .ant-input-search-button {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #475569 !important;
+          }
+        `}</style>
+      )}
       <div style={{ marginBottom: 10 }}>
         <Search
           placeholder="Search widgets…"
@@ -178,7 +205,7 @@ export default function WidgetSidebar({ collapsed }) {
 
       {!hasAnyResults && (
         <Empty
-          description="No widgets found"
+          description={<span style={{ color: darkMode ? '#94a3b8' : undefined }}>No widgets found</span>}
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           style={{ marginTop: 24 }}
         />
@@ -194,26 +221,27 @@ export default function WidgetSidebar({ collapsed }) {
           <Panel
             key={category.key}
             header={
-              <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600 }}>
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 12, fontWeight: 600,
+                color: darkMode ? '#cbd5e1' : '#1a1a2e',
+              }}>
                 {category.icon}
                 {category.title}
-                <span style={{ color: '#bbb', fontWeight: 400 }}>({category.items.length})</span>
+                <span style={{ color: darkMode ? '#475569' : '#bbb', fontWeight: 400 }}>
+                  ({category.items.length})
+                </span>
               </span>
             }
           >
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: 6,
-              }}
-            >
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
               {category.items.map(item =>
                 item.isTemplate ? (
                   <TemplateItem
                     key={item.type}
                     item={item}
                     onLoad={handleLoadTemplate}
+                    darkMode={darkMode}
                   />
                 ) : (
                   <DraggableWidget
@@ -221,6 +249,7 @@ export default function WidgetSidebar({ collapsed }) {
                     type={item.type}
                     label={item.label}
                     icon={item.icon}
+                    darkMode={darkMode}
                   />
                 )
               )}

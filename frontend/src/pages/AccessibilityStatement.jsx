@@ -88,7 +88,7 @@ const AccessibilityStatement = () => {
       <Section title="3. Known Limitations" darkMode={darkMode}>
         <p style={{ marginBottom: 12, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>We are aware of the following accessibility limitations and are actively working to address them:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
-          <Li>Some older PDF documents may not be fully accessible to screen readers — we are updating these progressively</Li>
+          <Li>Some older PDF documents may not be fully accessible to screen readers - we are updating these progressively</Li>
           <Li>Some third-party embedded content (webinar players, social media widgets) may not meet full WCAG 2.1 AA compliance</Li>
           <Li>Some complex data tables may require additional ARIA markup</Li>
           <Li>Some video content may lack full captions or audio descriptions</Li>
@@ -110,18 +110,18 @@ const AccessibilityStatement = () => {
       <Section title="5. Applicable Standards and Laws" darkMode={darkMode}>
         <p style={{ marginBottom: 12, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>We aim to comply with the following accessibility standards and regulations:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
-          <Li><strong>WCAG 2.1 Level AA</strong> — Web Content Accessibility Guidelines</Li>
-          <Li><strong>ADA</strong> — Americans with Disabilities Act (Title III)</Li>
-          <Li><strong>Section 508</strong> — Rehabilitation Act (US Federal)</Li>
-          <Li><strong>EN 301 549</strong> — European accessibility standard</Li>
-          <Li><strong>Equality Act 2010</strong> — United Kingdom</Li>
+          <Li><strong>WCAG 2.1 Level AA</strong> - Web Content Accessibility Guidelines</Li>
+          <Li><strong>ADA</strong> - Americans with Disabilities Act (Title III)</Li>
+          <Li><strong>Section 508</strong> - Rehabilitation Act (US Federal)</Li>
+          <Li><strong>EN 301 549</strong> - European accessibility standard</Li>
+          <Li><strong>Equality Act 2010</strong> - United Kingdom</Li>
         </ul>
       </Section>
 
       <Section title="6. Feedback and Contact" darkMode={darkMode}>
         <p style={{ marginBottom: 16, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>We welcome your feedback on the accessibility of tgstechinfo.com. If you experience any accessibility barriers or have suggestions for improvement, please contact us:</p>
         <div style={{ padding: 'clamp(16px, 3vw, 20px) clamp(18px, 3vw, 24px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff', marginBottom: 16 }}>
-          <p style={{ margin: '0 0 6px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>TGS Tech Info — Accessibility Team</p>
+          <p style={{ margin: '0 0 6px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>TGS Tech Info - Accessibility Team</p>
           <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Email: <a href="mailto:accessibility@tgstechinfo.com" style={{ color: '#4a7cff' }}>accessibility@tgstechinfo.com</a></p>
           <p style={{ margin: 0, color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Website: <a href="https://tgstechinfo.com" style={{ color: '#4a7cff' }}>https://tgstechinfo.com</a></p>
         </div>
@@ -131,7 +131,7 @@ const AccessibilityStatement = () => {
       <Section title="7. Enforcement Procedure" darkMode={darkMode}>
         <p style={{ color: darkMode ? '#cbd5e1' : '#374151' }}>If you are not satisfied with our response to your accessibility complaint, you may contact the relevant enforcement body in your jurisdiction:</p>
         <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
-          <Li><strong>US:</strong> US Department of Justice — ADA National Network</Li>
+          <Li><strong>US:</strong> US Department of Justice - ADA National Network</Li>
           <Li><strong>UK:</strong> Equality and Human Rights Commission (EHRC)</Li>
           <Li><strong>EU:</strong> Your national accessibility enforcement authority</Li>
         </ul>

@@ -4,14 +4,16 @@
  */
 
 import React from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function DividerRenderer({ node }) {
+  const { darkMode } = useTheme();
   const settings = node.settings || {};
   const styles = node.styles || {};
 
   const dividerStyles = {
     border: 'none',
-    borderTop: `${settings.thickness || 1}px ${settings.style || 'solid'} ${settings.color || '#e8e8e8'}`,
+    borderTop: `${settings.thickness || 1}px ${settings.style || 'solid'} ${settings.color || (darkMode ? '#334155' : '#e8e8e8')}`,
     margin: styles.margin || '20px 0',
     width: '100%',
     ...styles,

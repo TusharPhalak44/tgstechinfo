@@ -1,8 +1,12 @@
 const Content = require('../models/Content');
 const ContentType = require('../models/ContentType');
 const Category = require('../models/Category');
+const Media = require('../models/Media');
+
+const User = require('../models/User');
+
 const { validationResult } = require('express-validator');
-const { sendEmail, accessGrantEmailTemplate } = require('../config/email');
+const { sendEmail, accessGrantEmailTemplate, sendTemplatedEmail } = require('../config/email');
 const { notifyAdmins } = require('./notificationController');
 const { updateTagUsage, decreaseTagUsage } = require('./tagsController');
 
@@ -52,6 +56,54 @@ exports.createContent = async (req, res) => {
         });
 
         const content = await Content.create(contentData);
+        
+        // Add banner image to media_files table if present
+        if (req.files?.banner_image?.[0]) {
+            try {
+                const bannerFile = req.files.banner_image[0];
+                const ext = bannerFile.filename.split('.').pop().toLowerCase();
+                const fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other';
+                const fileData = require('fs').readFileSync(bannerFile.path);
+                await Media.create({
+                    filename: bannerFile.filename,
+                    original_name: bannerFile.originalname,
+                    file_path: `/uploads/${bannerFile.filename}`,
+                    file_type: fileType,
+                    file_size: bannerFile.size,
+                    mime_type: bannerFile.mimetype,
+                    folder: 'Images',
+                    uploaded_by: req.user.id,
+                    file_data: fileData
+                });
+                console.log('✓ Banner image added to media_files table:', bannerFile.filename);
+            } catch (mediaError) {
+                console.error('Error adding banner image to media_files:', mediaError);
+            }
+        } else {
+            console.log('No banner image file found in req.files');
+        }
+        
+        // Add PDF file to media_files table if present
+        if (req.files?.pdf_file?.[0]) {
+            try {
+                const pdfFile = req.files.pdf_file[0];
+                const fileData = require('fs').readFileSync(pdfFile.path);
+                await Media.create({
+                    filename: pdfFile.filename,
+                    original_name: pdfFile.originalname,
+                    file_path: `/uploads/${pdfFile.filename}`,
+                    file_type: 'document',
+                    file_size: pdfFile.size,
+                    mime_type: pdfFile.mimetype,
+                    folder: 'Documents',
+                    uploaded_by: req.user.id,
+                    file_data: fileData
+                });
+                console.log('✓ PDF file added to media_files table:', pdfFile.filename);
+            } catch (mediaError) {
+                console.error('Error adding PDF to media_files:', mediaError);
+            }
+        }
         
         // Update tag usage counts
         if (contentData.tags && contentData.tags.length > 0) {
@@ -115,10 +167,60 @@ exports.updateContent = async (req, res) => {
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
         if (req.body.builder_layout !== undefined) updateData.builder_layout = req.body.builder_layout;
         if (req.body.builder_content_elements !== undefined) updateData.builder_content_elements = req.body.builder_content_elements;
-       if (req.body.builder_page_data !== undefined) updateData.builder_page_data = req.body.builder_page_data;
+        if (req.body.builder_page_data !== undefined) updateData.builder_page_data = req.body.builder_page_data;
         if (req.body.tags) updateData.tags = JSON.stringify(req.body.tags.split(',').map(t => t.trim()).filter(Boolean));
         updateData = stripEmDash(updateData);
 
+        await Content.update(id, updateData);
+        
+        // Add new banner image to media_files table if present
+        if (req.files?.banner_image?.[0]) {
+            try {
+                const bannerFile = req.files.banner_image[0];
+                const ext = bannerFile.filename.split('.').pop().toLowerCase();
+                const fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other';
+                const fileData = require('fs').readFileSync(bannerFile.path);
+                await Media.create({
+                    filename: bannerFile.filename,
+                    original_name: bannerFile.originalname,
+                    file_path: `/uploads/${bannerFile.filename}`,
+                    file_type: fileType,
+                    file_size: bannerFile.size,
+                    mime_type: bannerFile.mimetype,
+                    folder: 'Images',
+                    uploaded_by: req.user.id,
+                    file_data: fileData
+                });
+                console.log('✓ Banner image added to media_files table on update:', bannerFile.filename);
+            } catch (mediaError) {
+                console.error('Error adding banner image to media_files on update:', mediaError);
+            }
+        } else {
+            console.log('No banner image file found in req.files during update');
+        }
+        
+        // Add new PDF file to media_files table if present
+        if (req.files?.pdf_file?.[0]) {
+            try {
+                const pdfFile = req.files.pdf_file[0];
+                const fileData = require('fs').readFileSync(pdfFile.path);
+                await Media.create({
+                    filename: pdfFile.filename,
+                    original_name: pdfFile.originalname,
+                    file_path: `/uploads/${pdfFile.filename}`,
+                    file_type: 'document',
+                    file_size: pdfFile.size,
+                    mime_type: pdfFile.mimetype,
+                    folder: 'Documents',
+                    uploaded_by: req.user.id,
+                    file_data: fileData
+                });
+                console.log('✓ PDF file added to media_files table on update:', pdfFile.filename);
+            } catch (mediaError) {
+                console.error('Error adding PDF to media_files on update:', mediaError);
+            }
+        }
+        
         // Handle tag usage updates
         const oldTags = content.tags ? (typeof content.tags === 'string' ? JSON.parse(content.tags) : content.tags) : [];
         const newTags = updateData.tags ? (typeof updateData.tags === 'string' ? JSON.parse(updateData.tags) : updateData.tags) : [];
@@ -135,7 +237,7 @@ exports.updateContent = async (req, res) => {
             await updateTagUsage(addedTags);
         }
 
-        const updatedContent = await Content.update(id, updateData);
+        const updatedContent = await Content.findById(id);
         res.json({ message: 'Content updated successfully', content: updatedContent });
     } catch (error) {
         console.error('Update content error:', error);
@@ -173,7 +275,7 @@ exports.submitForReview = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
-        if (content.user_id !== req.user.id) {
+        if (content.user_id !== req.user.id && req.user.role !== 'admin') {
             return res.status(403).json({ message: 'Access denied' });
         }
 
@@ -183,8 +285,29 @@ exports.submitForReview = async (req, res) => {
 
         const updatedContent = await Content.updateStatus(id, 'pending');
 
+        // Send notification to admins (non-blocking)
         const userName = `${req.user.first_name} ${req.user.last_name}`;
-        await notifyAdmins(id, 'review', `${userName} submitted "${content.title}" for review.`);
+        notifyAdmins(id, 'review', `${userName} submitted "${content.title}" for review.`).catch(err => {
+            console.error('Notification error (non-critical):', err.message);
+        });
+         // Send email to user about content submission
+        try {
+            const category = await Category.findById(content.category_id);
+            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+            const frontendUrl = rawFrontend.split(',')[0].trim();
+           
+            await sendTemplatedEmail('content_submitted', req.user.email, {
+                first_name: req.user.first_name,
+                last_name: req.user.last_name,
+                content_title: content.title,
+                category: category?.name || 'Uncategorized',
+                submitted_date: new Date().toLocaleDateString(),
+                dashboard_url: `${frontendUrl}/dashboard`
+            });
+        } catch (emailError) {
+            console.error('Content submission email error:', emailError);
+            // Don't fail submission if email fails
+        }
 
         res.json({ message: 'Content submitted for review', content: updatedContent });
     } catch (error) {

@@ -1,6 +1,6 @@
 // UserDashboardLayout.jsx - Updated
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Button, Typography, Input, Badge, Tooltip } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Button, Typography, Input, Badge, Tooltip, Popover } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -21,6 +21,7 @@ import {
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { notificationApi } from '../../services/notificationApi';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -34,6 +35,9 @@ const UserDashboardLayout = () => {
   const { user, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
   const [isMobile, setIsMobile] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -46,6 +50,31 @@ const UserDashboardLayout = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user?.id) return;
+      
+      setLoadingNotifications(true);
+      try {
+        const data = await notificationApi.getNotifications();
+        setNotifications(data || []);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+        setNotifications([]);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   const getMenuItems = () => {
     const items = [
@@ -296,13 +325,63 @@ const UserDashboardLayout = () => {
               </Tooltip>
             )}
             {!isMobile && (
-              <Badge count={3} size="small">
-                <Button
-                  type="text"
-                  icon={<BellOutlined />}
-                  style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
-                />
-              </Badge>
+              <Popover
+                open={notificationVisible}
+                onOpenChange={setNotificationVisible}
+                title="Notifications"
+                content={
+                  <div style={{ maxWidth: 320 }}>
+                    {loadingNotifications ? (
+                      <div style={{ padding: '16px', textAlign: 'center', color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                        Loading...
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div style={{ padding: '16px', textAlign: 'center', color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                        No new notifications
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ padding: '8px 0', borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`, marginBottom: 8 }}>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                            You have {notifications.length} new notifications
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 13, color: darkMode ? '#CBD5E1' : '#374151' }}>
+                          {notifications.map((notification) => (
+                            <div 
+                              key={notification.id} 
+                              style={{ 
+                                padding: '8px 0', 
+                                borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => {
+                                notificationApi.markAsRead(notification.id);
+                                setNotifications(prev => prev.filter(n => n.id !== notification.id));
+                              }}
+                            >
+                              <div style={{ fontWeight: 500, marginBottom: 4 }}>{notification.message}</div>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                                {new Date(notification.created_at).toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                }
+                trigger="click"
+                placement="bottomRight"
+              >
+                <Badge count={notifications.length} size="small">
+                  <Button
+                    type="text"
+                    icon={<BellOutlined />}
+                    style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
+                  />
+                </Badge>
+              </Popover>
             )}
             {!isMobile && (
               <Button

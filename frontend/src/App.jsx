@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { Layout, ConfigProvider, App as AntApp } from 'antd';
 import { CookieProvider } from './context/CookieContext';
@@ -25,6 +25,8 @@ import VendorList from './pages/VendorList';
 import ContactPrivacyOfficer from './pages/ContactPrivacyOfficer';
 import ArticleDetail from './components/public/ArticleDetail';
 import UserAccountPolicy from './pages/UserAccountPolicy';
+
+import axios from 'axios';
 
 import CategoryList from './components/public/CategoryList';
 import Newsletter from './components/public/Newsletter';
@@ -58,6 +60,7 @@ import SEO from './components/admin/SEO';
 import Roles from './components/admin/Roles';
 import SessionManagement from './components/admin/SessionManagement';
 import Settings from './components/admin/Settings';
+import EmailTemplates from './components/admin/EmailTemplates';
 import Tags from './components/admin/Tags';
 import SearchResults from './components/public/SearchResults';
 import ContactUs from './pages/ContactUs';
@@ -158,6 +161,47 @@ function AppContent() {
     return location.pathname === route || location.pathname.startsWith(route + '/');
   });
 
+  // Load website favicon from database
+  useEffect(() => {
+    const loadWebsiteFavicon = async () => {
+      try {
+        const response = await axios.get('/api/site-settings/public');
+        const settings = response.data.settings;
+        if (settings && settings.website_favicon) {
+          let link = document.querySelector("link[rel~='icon']");
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            link.sizes = '64x64';
+            document.head.appendChild(link);
+          }
+          link.href = settings.website_favicon;
+        }
+      } catch (error) {
+        console.error('Failed to load website favicon:', error);
+      }
+    };
+    loadWebsiteFavicon();
+  }, []);
+
+  // Load SEO settings and set document title
+  useEffect(() => {
+    const loadSeoSettings = async () => {
+      try {
+        const response = await axios.get('/api/seo/settings');
+        const seoSettings = response.data;
+        if (seoSettings && seoSettings.siteTitle) {
+          document.title = seoSettings.siteTitle;
+        }
+      } catch (error) {
+        console.error('Failed to load SEO settings:', error);
+        // Set default title if API fails
+        document.title = 'TgsTechInfo - Technology Solutions';
+      }
+    };
+    loadSeoSettings();
+  }, []);
+
   return (
     <>
       <ScrollToTop />
@@ -173,9 +217,11 @@ function AppContent() {
         <Layout className="app-layout" style={{ background: darkMode ? '#0f172a' : '#f8f9fa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           {!isAuthRoute && !isDashboardRoute && <Navbar />}
           <Content className="app-content" style={{
-            minHeight: isAuthRoute || isDashboardRoute ? '100vh' : 'calc(100vh - 120px)',
+            minHeight: isAuthRoute || isDashboardRoute ? '100vh' : 'auto',
             background: isAuthRoute || isDashboardRoute ? 'transparent' : (darkMode ? '#0f172a' : '#f8f9fa'),
             flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
             paddingTop: isAuthRoute || isDashboardRoute ? 0 : 61
           }}>
             <Routes>
@@ -255,8 +301,9 @@ function AppContent() {
                 <Route path="integrations" element={<Integrations />} />
                 <Route path="sessions" element={<SessionManagement />} />
                 <Route path="profile" element={<UserProfile />} />
-                <Route path="settings" element={<UserProfile />} />
+                {/* <Route path="settings" element={<UserProfile />} /> */}
                 <Route path="settings" element={<Settings />} />
+                <Route path="email-templates" element={<EmailTemplates />} />
                 {/* User sub-routes */}
                 <Route index element={<Dashboard />} />
                 <Route path="my-content" element={<MyContent />} />
@@ -288,7 +335,8 @@ function AppContent() {
                 <Route path="integrations" element={<Integrations />} />
                 <Route path="sessions" element={<SessionManagement />} />
                 <Route path="profile" element={<UserProfile />} />
-                <Route path="settings" element={<UserProfile />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="email-templates" element={<EmailTemplates />} />
                 <Route path="submissions" element={<AdminSubmissions />} />
                 <Route path="review/:id" element={<ArticleReviewPage />} />
                 <Route path="edit/:id" element={<AdminEditContent />} />

@@ -1,9 +1,10 @@
 const Content = require('../models/Content');
 const User = require('../models/User');
 const LandingPage = require('../models/LandingPage');
+const Category = require('../models/Category');
 const DataRequest = require('../models/DataRequest');
 const { pool } = require('../config/database');
-const { sendEmail, accessGrantEmailTemplate } = require('../config/email');
+const { sendEmail, accessGrantEmailTemplate, sendTemplatedEmail } = require('../config/email');
 const { createNotification } = require('./notificationController');
 
 const stripEmDash = (val) => {
@@ -51,25 +52,73 @@ exports.reviewContent = async (req, res) => {
         let status;
         let responseMessage;
 
+        // Get user and category details for email templates
+        const user = await User.findById(content.user_id);
+        const category = await Category.findById(content.category_id);
+        const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = rawFrontend.split(',')[0].trim();
+
         switch (action) {
             case 'approve':
                 status = 'approved';
                 responseMessage = 'Content approved successfully';
+                try {
+                    await sendTemplatedEmail('content_approved', user.email, {
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        content_title: content.title,
+                        category: category?.name || 'Uncategorized',
+                        approved_date: new Date().toLocaleDateString(),
+                        dashboard_url: `${frontendUrl}/dashboard`
+                    });
+                } catch (e) { console.warn('Email failed:', e.message); }
                 break;
             case 'publish':
                 status = 'published';
                 responseMessage = 'Content published successfully';
-                try { await sendEmail(content.author_email, 'Content Published', `Your content "${content.title}" has been published.`); } catch (e) { console.warn('Email failed:', e.message); }
+                try {
+                    await sendTemplatedEmail('content_published', user.email, {
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        content_title: content.title,
+                        category: category?.name || 'Uncategorized',
+                        published_date: new Date().toLocaleDateString(),
+                        article_url: `${frontendUrl}/article/${content.slug}`,
+                        dashboard_url: `${frontendUrl}/dashboard`
+                    });
+                } catch (e) { console.warn('Email failed:', e.message); }
+ 
                 break;
             case 'reject':
                 status = 'rejected';
                 responseMessage = 'Content rejected';
-                try { await sendEmail(content.author_email, 'Content Rejected', `Your content "${content.title}" has been rejected. Comment: ${comment || 'No specific reason provided'}`); } catch (e) { console.warn('Email failed:', e.message); }
+                try {
+                    await sendTemplatedEmail('content_rejected', user.email, {
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        content_title: content.title,
+                        category: category?.name || 'Uncategorized',
+                        reviewed_date: new Date().toLocaleDateString(),
+                        feedback: comment || 'No specific reason provided',
+                        dashboard_url: `${frontendUrl}/dashboard`
+                    });
+                } catch (e) { console.warn('Email failed:', e.message); }
+ 
                 break;
             case 'request_changes':
                 status = 'changes_requested';
                 responseMessage = 'Changes requested';
-                try { await sendEmail(content.author_email, 'Changes Requested for Your Content', `Changes have been requested for "${content.title}".<br><br>Comment: ${comment}`); } catch (e) { console.warn('Email failed:', e.message); }
+                try {
+                    await sendTemplatedEmail('content_rejected', user.email, {
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        content_title: content.title,
+                        category: category?.name || 'Uncategorized',
+                        reviewed_date: new Date().toLocaleDateString(),
+                        feedback: comment || 'Please review and make necessary changes.',
+                        dashboard_url: `${frontendUrl}/dashboard`
+                    });
+                } catch (e) { console.warn('Email failed:', e.message); }
                 break;
             default:
                 return res.status(400).json({ message: 'Invalid action' });
@@ -245,6 +294,47 @@ exports.adminEditContent = async (req, res) => {
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
 
         const updated = await Content.update(id, stripEmDash(updateData));
+
+        // Save banner image to media_files
+        if (req.files?.banner_image?.[0]) {
+            try {
+                const bannerFile = req.files.banner_image[0];
+                const ext = bannerFile.filename.split('.').pop().toLowerCase();
+                const Media = require('../models/Media');
+                const fileData = require('fs').readFileSync(bannerFile.path);
+                await Media.create({
+                    filename: bannerFile.filename,
+                    original_name: bannerFile.originalname,
+                    file_path: `/uploads/${bannerFile.filename}`,
+                    file_type: ['jpg','jpeg','png','gif','webp'].includes(ext) ? 'image' : 'other',
+                    file_size: bannerFile.size,
+                    mime_type: bannerFile.mimetype,
+                    folder: 'Images',
+                    uploaded_by: req.user.id,
+                    file_data: fileData
+                });
+            } catch (e) { console.error('Media save error:', e.message); }
+        }
+        // Save PDF to media_files
+        if (req.files?.pdf_file?.[0]) {
+            try {
+                const pdfFile = req.files.pdf_file[0];
+                const Media = require('../models/Media');
+                const fileData = require('fs').readFileSync(pdfFile.path);
+                await Media.create({
+                    filename: pdfFile.filename,
+                    original_name: pdfFile.originalname,
+                    file_path: `/uploads/${pdfFile.filename}`,
+                    file_type: 'document',
+                    file_size: pdfFile.size,
+                    mime_type: pdfFile.mimetype,
+                    folder: 'Documents',
+                    uploaded_by: req.user.id,
+                    file_data: fileData
+                });
+            } catch (e) { console.error('Media save error:', e.message); }
+        }
+
         res.json({ message: 'Content updated successfully', content: updated });
     } catch (error) {
         console.error('Admin edit content error:', error);

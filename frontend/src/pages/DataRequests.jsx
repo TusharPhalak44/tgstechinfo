@@ -116,7 +116,7 @@ const DoNotSellForm = ({ darkMode }) => {
             options={[
               { value: 'do_not_sell', label: 'Do Not Sell My Personal Information' },
               { value: 'do_not_share', label: 'Do Not Share My Personal Information' },
-              { value: 'both', label: 'Both — Do Not Sell or Share' },
+              { value: 'both', label: 'Both - Do Not Sell or Share' },
             ]}
           />
         </Field>
@@ -216,14 +216,14 @@ const DSARForm = ({ darkMode }) => {
             onChange={value => set('requestType', value)}
             style={{ width: '100%' }}
             options={[
-              { value: 'access', label: 'Access My Data — Receive a copy of my personal data' },
-              { value: 'correct', label: 'Correct My Data — Fix inaccurate personal data' },
-              { value: 'delete', label: 'Delete My Data — Request erasure of my personal data' },
-              { value: 'restrict', label: 'Restrict Processing — Limit how my data is used' },
-              { value: 'portability', label: 'Data Portability — Receive data in machine-readable format' },
-              { value: 'object', label: 'Object to Processing — Object to legitimate interest processing' },
-              { value: 'withdraw', label: 'Withdraw Consent — Withdraw previously given consent' },
-              { value: 'other', label: 'Other — Describe below' },
+              { value: 'access', label: 'Access My Data - Receive a copy of my personal data' },
+              { value: 'correct', label: 'Correct My Data - Fix inaccurate personal data' },
+              { value: 'delete', label: 'Delete My Data - Request erasure of my personal data' },
+              { value: 'restrict', label: 'Restrict Processing - Limit how my data is used' },
+              { value: 'portability', label: 'Data Portability - Receive data in machine-readable format' },
+              { value: 'object', label: 'Object to Processing - Object to legitimate interest processing' },
+              { value: 'withdraw', label: 'Withdraw Consent - Withdraw previously given consent' },
+              { value: 'other', label: 'Other - Describe below' },
             ]}
           />
         </Field>
@@ -339,7 +339,7 @@ const DataRequests = () => {
 
               <Section title="Contact Privacy Officer" darkMode={darkMode}>
                 <div style={{ padding: 'clamp(14px, 2.5vw, 20px) clamp(16px, 3vw, 24px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
-                  <p style={{ margin: '0 0 6px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(14px, 1.6vw, 15px)' }}>TGS Tech Info — Privacy Officer</p>
+                  <p style={{ margin: '0 0 6px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(14px, 1.6vw, 15px)' }}>TGS Tech Info - Privacy Officer</p>
                   <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Email: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
                   <p style={{ margin: 0, color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>DPO: <a href="mailto:sagar.machale@tgstechinfo.com" style={{ color: '#4a7cff' }}>sagar.machale@tgstechinfo.com</a></p>
                 </div>

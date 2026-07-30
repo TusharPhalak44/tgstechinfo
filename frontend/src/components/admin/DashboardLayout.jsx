@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Avatar, Dropdown, Button, Typography, Input, Badge, Tooltip } from 'antd';
+import { Layout, Menu, Avatar, Dropdown, Button, Typography, Input, Badge, Tooltip, Popover } from 'antd';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -34,11 +34,15 @@ import {
   CheckCircleOutlined,
   CloseOutlined,
   MenuOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import PermissionWrapper from '../common/PermissionWrapper';
+import { notificationApi } from '../../services/notificationApi';
+import axios from 'axios';
+ 
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -49,6 +53,12 @@ const DashboardLayout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [siteName, setSiteName] = useState('TgsTechInfo');
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [cmsLogo1, setCmsLogo1] = useState('');
+  const [cmsLogo2, setCmsLogo2] = useState('');
+  const [cmsFavicon, setCmsFavicon] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -56,23 +66,35 @@ const DashboardLayout = () => {
 
     // Load site name from localStorage
   useEffect(() => {
-    const savedSiteName = localStorage.getItem('cmsSiteName');
-    if (savedSiteName) {
-      setSiteName(savedSiteName);
-    }
- 
-    // Load and apply favicon
-    const savedFavicon = localStorage.getItem('cmsFaviconUrl');
-    if (savedFavicon) {
-      let link = document.querySelector("link[rel~='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
-      link.href = savedFavicon;
-    }
+    fetchSiteSettings();
   }, []);
+ 
+  const fetchSiteSettings = async () => {
+    try {
+      const response = await axios.get('/api/site-settings');
+      const settings = response.data.settings;
+      if (settings) {
+        setSiteName(settings.site_name || 'TgsTechInfo');
+        setCmsLogo1(settings.cms_logo1 || '');
+        setCmsLogo2(settings.cms_logo2 || '');
+        setCmsFavicon(settings.cms_favicon || '');
+       
+        // Apply favicon
+        if (settings.cms_favicon) {
+          let link = document.querySelector("link[rel~='icon']");
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            link.sizes = '64x64';
+            document.head.appendChild(link);
+          }
+          link.href = settings.cms_favicon;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch site settings:', error);
+    }
+  };
 
   // Detect mobile screen size
   useEffect(() => {
@@ -87,6 +109,26 @@ const DashboardLayout = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Fetch notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user?.id) return;
+      
+      setLoadingNotifications(true);
+      try {
+        const data = await notificationApi.getAdminNotifications();
+        setNotifications(data || []);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+        setNotifications([]);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+  }, [user?.id]);
 
   // Section-based menu items with role-based filtering
   const getMenuItems = () => {
@@ -213,6 +255,11 @@ const DashboardLayout = () => {
           key: '/dashboard/settings',
           icon: <SettingOutlined />,
           label: 'Settings',
+        },
+         {
+          key: '/dashboard/email-templates',
+          icon: <MailOutlined />,
+          label: 'Email Templates',
         },
         {
           key: '/dashboard/audit-logs',
@@ -477,13 +524,63 @@ const DashboardLayout = () => {
             </Tooltip>
             {!isMobile && (
               <>
-                <Badge count={3} size="small">
-                  <Button
-                    type="text"
-                    icon={<BellOutlined />}
-                    style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
-                  />
-                </Badge>
+                <Popover
+                  open={notificationVisible}
+                  onOpenChange={setNotificationVisible}
+                  title="Notifications"
+                  content={
+                    <div style={{ maxWidth: 320 }}>
+                      {loadingNotifications ? (
+                        <div style={{ padding: '16px', textAlign: 'center', color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                          Loading...
+                        </div>
+                      ) : notifications.length === 0 ? (
+                        <div style={{ padding: '16px', textAlign: 'center', color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                          No new notifications
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ padding: '8px 0', borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`, marginBottom: 8 }}>
+                            <div style={{ fontSize: 12, color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                              You have {notifications.length} new notifications
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 13, color: darkMode ? '#CBD5E1' : '#374151' }}>
+                            {notifications.map((notification) => (
+                              <div 
+                                key={notification.id} 
+                                style={{ 
+                                  padding: '8px 0', 
+                                  borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => {
+                                  notificationApi.markAdminAsRead(notification.id);
+                                  setNotifications(prev => prev.filter(n => n.id !== notification.id));
+                                }}
+                              >
+                                <div style={{ fontWeight: 500, marginBottom: 4 }}>{notification.message}</div>
+                                <div style={{ fontSize: 12, color: darkMode ? '#94A3B8' : '#6B7280' }}>
+                                  {new Date(notification.created_at).toLocaleString()}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  }
+                  trigger="click"
+                  placement="bottomRight"
+                >
+                  <Badge count={notifications.length} size="small">
+                    <Button
+                      type="text"
+                      icon={<BellOutlined />}
+                      style={{ color: darkMode ? '#94A3B8' : '#6B7280' }}
+                    />
+                  </Badge>
+                </Popover>
                 <PermissionWrapper permissions="content.create">
                   <Button
                     type="primary"

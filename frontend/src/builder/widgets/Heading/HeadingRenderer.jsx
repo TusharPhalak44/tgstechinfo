@@ -4,8 +4,10 @@
  */
 
 import React from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function HeadingRenderer({ node }) {
+  const { darkMode } = useTheme();
   const styles = node.styles || {};
   const headingLevel = node.headingLevel || 'h2';
   const content = node.content || 'Heading';
@@ -14,7 +16,7 @@ export default function HeadingRenderer({ node }) {
   const headingStyles = {
     textAlign: alignment,
     margin: styles.margin || '0 0 16px 0',
-    color: styles.color || '#262626',
+    color: styles.color || (darkMode ? '#f1f5f9' : '#262626'),
     fontSize: styles.fontSize || (headingLevel === 'h1' ? '32px' : headingLevel === 'h2' ? '24px' : headingLevel === 'h3' ? '20px' : '16px'),
     fontWeight: styles.fontWeight || '600',
     lineHeight: styles.lineHeight || '1.2',

@@ -71,6 +71,9 @@ exports.uploadFile = async (req, res) => {
             folder = 'Documents';
         }
         
+        // Read file binary data to store in DB
+        const fileData = fs.readFileSync(req.file.path);
+
         // Save to database
         const mediaData = {
             filename: req.file.filename,
@@ -80,7 +83,8 @@ exports.uploadFile = async (req, res) => {
             file_size: req.file.size,
             mime_type: req.file.mimetype,
             folder: folder,
-            uploaded_by: req.user ? req.user.id : null
+            uploaded_by: req.user ? req.user.id : null,
+            file_data: fileData
         };
         
         const savedMedia = await Media.create(mediaData);
@@ -107,19 +111,31 @@ exports.getAllFiles = async (req, res) => {
     try {
         const { file_type, folder, search } = req.query;
         
+        // Capitalize folder to match DB values (images -> Images)
+        const folderValue = folder && folder !== 'all'
+            ? folder.charAt(0).toUpperCase() + folder.slice(1)
+            : 'all';
+
         const filters = {
             file_type: file_type || 'all',
-            folder: folder || 'all',
+            folder: folderValue,
             search: search || '',
-            limit: 100,
+            limit: 500,
             offset: 0
         };
         
         const mediaFiles = await Media.findAll(filters);
-        const totalCount = await Media.getCount(filters);
+        
+        // Show all DB records — file_data in DB or file on filesystem
+        const seenFilenames = new Set();
+        const uniqueFiles = mediaFiles.filter(media => {
+            if (seenFilenames.has(media.filename)) return false;
+            seenFilenames.add(media.filename);
+            return true;
+        });
         
         // Transform database records to match frontend format
-        const formattedFiles = mediaFiles.map(media => ({
+        const formattedFiles = uniqueFiles.map(media => ({
             id: media.id,
             name: media.original_name,
             filename: media.filename,
@@ -133,11 +149,9 @@ exports.getAllFiles = async (req, res) => {
             content_title: null,
         }));
         
-        console.log('Media files from database:', formattedFiles.length);
-        
         res.json({
             data: formattedFiles,
-            total: totalCount
+            total: uniqueFiles.length
         });
     } catch (error) {
         console.error('Error fetching files:', error);
@@ -152,6 +166,29 @@ exports.getFolderCounts = async (req, res) => {
     } catch (error) {
         console.error('Error fetching folder counts:', error);
         res.status(500).json({ message: 'Failed to fetch folder counts' });
+    }
+};
+
+exports.serveFile = async (req, res) => {
+    try {
+        const { filename } = req.params;
+        const [rows] = await require('../config/database').pool.query(
+            'SELECT file_data, mime_type FROM media_files WHERE filename = ? LIMIT 1',
+            [filename]
+        );
+        if (!rows[0] || !rows[0].file_data) {
+            // Fallback to filesystem
+            const filePath = path.join(uploadDir, filename);
+            if (fs.existsSync(filePath)) return res.sendFile(filePath);
+            return res.status(404).json({ message: 'File not found' });
+        }
+        const mime = rows[0].mime_type || 'application/octet-stream';
+        res.setHeader('Content-Type', mime);
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        res.send(rows[0].file_data);
+    } catch (error) {
+        console.error('Serve file error:', error);
+        res.status(500).json({ message: 'Failed to serve file' });
     }
 };
 

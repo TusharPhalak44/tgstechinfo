@@ -14,6 +14,42 @@ richEditorStyle.textContent = `
   [contenteditable] ul { list-style-type: disc; padding-left: 24px; margin: 4px 0; }
   [contenteditable] ol { list-style-type: decimal; padding-left: 24px; margin: 4px 0; }
   [contenteditable] li { display: list-item; margin: 2px 0; }
+
+  .builder-section { padding: 24px 28px !important; }
+  .builder-section-header { display: flex; align-items: center; justify-content: space-between; }
+  .builder-content-area { display: flex; gap: 16px; padding: 16px 0; flex-direction: row; }
+  .builder-sidebar { width: 180px; flex-shrink: 0; }
+  .builder-canvas { flex: 1; min-width: 0; }
+  .builder-elements-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+  .builder-field-row { display: flex; gap: 10px; align-items: flex-start; flex-wrap: nowrap; }
+
+  /* Tablet */
+  @media (max-width: 1024px) {
+    .builder-section { padding: 16px 20px !important; }
+    .builder-sidebar { width: 160px !important; }
+  }
+
+  /* Mobile */
+  @media (max-width: 768px) {
+    .builder-section { padding: 12px 14px !important; margin-bottom: 12px !important; }
+    .builder-section-header { flex-wrap: wrap !important; gap: 8px !important; }
+    .builder-content-area { flex-direction: column !important; padding: 12px 0 !important; }
+    .builder-sidebar { width: 100% !important; }
+    .builder-elements-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+    .builder-canvas { width: 100% !important; }
+    .builder-field-row { flex-wrap: wrap !important; }
+    .builder-field-row > * { flex: 1 1 140px !important; }
+    .section-title { font-size: 13px !important; }
+    .landing-page-fields { padding: 14px !important; }
+    .content-type-row { flex-direction: column !important; }
+  }
+
+  /* Small Mobile */
+  @media (max-width: 480px) {
+    .builder-section { padding: 10px 10px !important; }
+    .builder-elements-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+    .section-title { font-size: 12px !important; }
+  }
 `;
 if (!document.head.querySelector('[data-rich-editor-style]')) {
   richEditorStyle.setAttribute('data-rich-editor-style', '1');
@@ -50,7 +86,7 @@ const CONTENT_ELEMENTS = [
   { type: 'button', label: 'Button', tag: 'button', icon: '🔘' },
 ];
 
-const SplitContentEditor = ({ section, onUpdate }) => {
+const SplitContentEditor = ({ section, onUpdate, darkMode = false }) => {
   const ref = React.useRef(null);
   const [align, setAlign] = useState(section.alignment || 'left');
 
@@ -127,17 +163,17 @@ const SplitContentEditor = ({ section, onUpdate }) => {
     onUpdate({ text: ref.current?.innerHTML || '' });
   };
 
-  const btnStyle = (active) => ({ minWidth: 32, height: 28, borderRadius: 4, border: active ? '2px solid #4a7cff' : '1px solid #d9d9d9', background: '#fff', paddingLeft: 8 });
+  const btnStyle = (active) => ({ minWidth: 32, height: 28, borderRadius: 4, border: active ? '2px solid #4a7cff' : (darkMode ? '1px solid #334155' : '1px solid #d9d9d9'), background: darkMode ? '#1e293b' : '#fff', paddingLeft: 8, color: darkMode ? '#cbd5e1' : '#1a1a2e' });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '8px 10px', background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8', alignItems: 'center' }}>
-        <Button size="small" onClick={() => exec('bold')} style={{ fontWeight: 'bold', minWidth: 32, height: 28, borderRadius: 4, border: '1px solid #d9d9d9', background: '#fff' }}>B</Button>
-        <Button size="small" onClick={() => exec('italic')} style={{ fontStyle: 'italic', minWidth: 32, height: 28, borderRadius: 4, border: '1px solid #d9d9d9', background: '#fff' }}>I</Button>
-        <Button size="small" onClick={() => exec('underline')} style={{ textDecoration: 'underline', minWidth: 32, height: 28, borderRadius: 4, border: '1px solid #d9d9d9', background: '#fff' }}>U</Button>
-        <input type="color" onChange={(e) => exec('foreColor', e.target.value)} style={{ width: 36, height: 28, cursor: 'pointer', border: '1px solid #d9d9d9', borderRadius: 4, padding: 2 }} />
-        <Button size="small" onClick={insertLink} style={{ minWidth: 50, height: 28, borderRadius: 4, border: '1px solid #d9d9d9', background: '#fff' }}>Link</Button>
-        <div style={{ width: 1, height: 20, background: '#e8e8e8', margin: '0 2px' }} />
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '8px 10px', background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', alignItems: 'center' }}>
+        <Button size="small" onClick={() => exec('bold')} style={{ fontWeight: 'bold', minWidth: 32, height: 28, borderRadius: 4, border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', background: darkMode ? '#1e293b' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>B</Button>
+        <Button size="small" onClick={() => exec('italic')} style={{ fontStyle: 'italic', minWidth: 32, height: 28, borderRadius: 4, border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', background: darkMode ? '#1e293b' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>I</Button>
+        <Button size="small" onClick={() => exec('underline')} style={{ textDecoration: 'underline', minWidth: 32, height: 28, borderRadius: 4, border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', background: darkMode ? '#1e293b' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>U</Button>
+        <input type="color" onChange={(e) => exec('foreColor', e.target.value)} style={{ width: 36, height: 28, cursor: 'pointer', border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', borderRadius: 4, padding: 2 }} />
+        <Button size="small" onClick={insertLink} style={{ minWidth: 50, height: 28, borderRadius: 4, border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', background: darkMode ? '#1e293b' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Link</Button>
+        <div style={{ width: 1, height: 20, background: darkMode ? '#334155' : '#e8e8e8', margin: '0 2px' }} />
         <Button size="small" onClick={() => { setAlign('left'); onUpdate({ alignment: 'left' }); }} style={btnStyle(align === 'left')}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm0 4h12v2H3V8zm0 4h18v2H3v-2zm0 4h12v2H3v-2zm0 4h18v2H3v-2z"/></svg>
         </Button>
@@ -159,15 +195,16 @@ const SplitContentEditor = ({ section, onUpdate }) => {
         onPaste={handlePaste}
         style={{
           minHeight: 80, padding: '8px 11px', fontSize: 13, lineHeight: 1.6,
-          textAlign: align, border: '1px solid #d9d9d9', borderRadius: 6,
-          background: '#fff', outline: 'none', wordBreak: 'break-word'
+          textAlign: align, border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', borderRadius: 6,
+          background: darkMode ? '#0f172a' : '#fff', outline: 'none', wordBreak: 'break-word',
+          color: darkMode ? '#cbd5e1' : '#1a1a2e'
         }}
       />
     </div>
   );
 };
 
-const ContentElementEditor = ({ element, onUpdate }) => {
+const ContentElementEditor = ({ element, onUpdate, darkMode = false }) => {
   // State for table initial setup (outside switch to avoid hook rules)
   const [tableRowCount, setTableRowCount] = useState(2);
   const [tableColCount, setTableColCount] = useState(2);
@@ -411,12 +448,12 @@ const ContentElementEditor = ({ element, onUpdate }) => {
           value={element.content}
           onChange={(e) => onUpdate({ content: e.target.value })}
           rows={4}
-          style={{ fontSize: 13 }}
+          style={{ fontSize: 13, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
         />
       );
     case 'line_break':
       return (
-        <div style={{ fontSize: 12, color: '#bfbfbf', fontStyle: 'italic' }}>
+        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#bfbfbf', fontStyle: 'italic' }}>
           Line break element - no content needed
         </div>
       );
@@ -443,7 +480,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
             </Button>
           </Upload>
           {element.content && (
-            <div style={{ marginTop: 8, borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+            <div style={{ marginTop: 8, borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
               <img 
                 src={element.content} 
                 alt="Preview" 
@@ -466,7 +503,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
           value={element.content}
           onChange={(e) => onUpdate({ content: e.target.value })}
           rows={2}
-          style={{ fontSize: 13, fontStyle: 'italic' }}
+          style={{ fontSize: 13, fontStyle: 'italic', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
         />
       );
     case 'code_block':
@@ -476,7 +513,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
           value={element.content}
           onChange={(e) => onUpdate({ content: e.target.value })}
           rows={4}
-          style={{ fontFamily: 'monospace', fontSize: 12 }}
+          style={{ fontFamily: 'monospace', fontSize: 12, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
         />
       );
     case 'table':
@@ -562,7 +599,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Rows</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Rows</label>
                 <AntInput
                   type="number"
                   min="1"
@@ -570,10 +607,11 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                   value={tableRowCount}
                   onChange={(e) => setTableRowCount(parseInt(e.target.value) || 1)}
                   placeholder="Enter number of rows"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Columns</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Columns</label>
                 <AntInput
                   type="number"
                   min="1"
@@ -581,6 +619,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                   value={tableColCount}
                   onChange={(e) => setTableColCount(parseInt(e.target.value) || 1)}
                   placeholder="Enter number of columns"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
             </div>
@@ -613,25 +652,27 @@ const ContentElementEditor = ({ element, onUpdate }) => {
 
           {/* Add Fields */}
           {showAddFields && (
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: 12, background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: 12, background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Rows to Add</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Rows to Add</label>
                 <AntInput
                   type="number"
                   min="1"
                   value={addRowCount}
                   onChange={(e) => setAddRowCount(parseInt(e.target.value) || 1)}
                   placeholder="Enter number of rows"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Columns to Add</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Columns to Add</label>
                 <AntInput
                   type="number"
                   min="1"
                   value={addColCount}
                   onChange={(e) => setAddColCount(parseInt(e.target.value) || 1)}
                   placeholder="Enter number of columns"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
               <Button type="primary" onClick={() => {
@@ -656,9 +697,9 @@ const ContentElementEditor = ({ element, onUpdate }) => {
 
           {/* Remove Fields */}
           {showRemoveFields && (
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: 12, background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8' }}>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: 12, background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Rows to Remove</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Rows to Remove</label>
                 <AntInput
                   type="number"
                   min="1"
@@ -666,10 +707,11 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                   value={removeRowCount}
                   onChange={(e) => setRemoveRowCount(parseInt(e.target.value) || 1)}
                   placeholder="Enter number of rows"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Columns to Remove</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Columns to Remove</label>
                 <AntInput
                   type="number"
                   min="1"
@@ -677,6 +719,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                   value={removeColCount}
                   onChange={(e) => setRemoveColCount(parseInt(e.target.value) || 1)}
                   placeholder="Enter number of columns"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
               <Button type="primary" danger onClick={() => {
@@ -703,13 +746,13 @@ const ContentElementEditor = ({ element, onUpdate }) => {
           )}
 
           {/* Table */}
-          <div style={{ overflow: 'auto', border: '1px solid #e8e8e8', borderRadius: 4 }}>
+          <div style={{ overflow: 'auto', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', borderRadius: 4 }}>
             <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 400 }}>
               <tbody>
                 {tableData.data.map((row, rowIndex) => (
                   <tr key={rowIndex}>
                     {row.map((cell, colIndex) => (
-                      <td key={colIndex} style={{ border: '1px solid #e8e8e8', padding: 0 }}>
+                      <td key={colIndex} style={{ border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', padding: 0 }}>
                         <AntInput
                           value={cell}
                           onChange={(e) => updateCell(rowIndex, colIndex, e.target.value)}
@@ -718,7 +761,9 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                             border: 'none', 
                             borderRadius: 0,
                             width: '100%',
-                            height: 40
+                            height: 40,
+                            background: darkMode ? '#0f172a' : '#fff',
+                            color: darkMode ? '#cbd5e1' : '#1a1a2e'
                           }}
                         />
                       </td>
@@ -728,24 +773,24 @@ const ContentElementEditor = ({ element, onUpdate }) => {
               </tbody>
             </table>
           </div>
-          <p style={{ fontSize: 12, color: '#8c8c8c' }}>Click + Add or - Remove to show input fields, then enter counts and click Apply.</p>
+          <p style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c' }}>Click + Add or - Remove to show input fields, then enter counts and click Apply.</p>
         </div>
       );
     case 'section_break':
       return (
-        <div style={{ fontSize: 12, color: '#bfbfbf', fontStyle: 'italic' }}>
+        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#bfbfbf', fontStyle: 'italic' }}>
           Section break - adds double line break
         </div>
       );
     case 'table_row':
       return (
         <div style={{ position: 'relative' }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8c8c8c' }}>|</span>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: darkMode ? '#94a3b8' : '#8c8c8c' }}>|</span>
           <AntInput
             placeholder="Enter table row (| Cell1 | Cell2 |)"
             value={element.content}
             onChange={(e) => onUpdate({ content: e.target.value })}
-            style={{ paddingLeft: 24 }}
+            style={{ paddingLeft: 24, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
           />
         </div>
       );
@@ -830,7 +875,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Text Sections</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Text Sections</label>
                 <AntInput
                   type="number"
                   min="0"
@@ -838,10 +883,11 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                   value={splitTextCount}
                   onChange={(e) => setSplitTextCount(parseInt(e.target.value) || 0)}
                   placeholder="Enter number of text sections"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Image Sections</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Image Sections</label>
                 <AntInput
                   type="number"
                   min="0"
@@ -849,6 +895,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                   value={splitImageCount}
                   onChange={(e) => setSplitImageCount(parseInt(e.target.value) || 0)}
                   placeholder="Enter number of image sections"
+                  style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
             </div>
@@ -871,21 +918,21 @@ const ContentElementEditor = ({ element, onUpdate }) => {
               onDrop={(e) => handleDrop(e, index)}
               style={{ 
                 padding: 16, 
-                background: '#fafafa', 
+                background: darkMode ? '#0f172a' : '#fafafa', 
                 borderRadius: 8, 
-                border: '1px solid #e8e8e8',
+                border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
                 position: 'relative',
                 cursor: 'move',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1890ff'}
-              onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e8e8e8'}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'}
             >
               {/* Section Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <GripVertical style={{ width: 16, height: 16, color: '#8c8c8c', cursor: 'grab' }} />
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#595959' }}>Section {index + 1}</span>
+                  <GripVertical style={{ width: 16, height: 16, color: darkMode ? '#94a3b8' : '#8c8c8c', cursor: 'grab' }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#595959' }}>Section {index + 1}</span>
                 </div>
                 {splitData.sections.length > 1 && (
                   <Button 
@@ -901,11 +948,11 @@ const ContentElementEditor = ({ element, onUpdate }) => {
 
               {/* Layout Selection */}
               <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Layout</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Layout</label>
                 <AntSelect
                   value={section.layout}
                   onChange={(value) => updateSection(section.id, { layout: value })}
-                  style={{ width: '100%' }}
+                  style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff' }}
                   size="small"
                 >
                   <AntSelect.Option value="image-left">Image Left + Text Right</AntSelect.Option>
@@ -918,7 +965,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
               {/* Image Section */}
               {section.layout !== 'text-only' && (
                 <div style={{ marginBottom: 12 }}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Image</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Image</label>
                   <Upload 
                     beforeUpload={() => false} 
                     showUploadList={false}
@@ -939,7 +986,7 @@ const ContentElementEditor = ({ element, onUpdate }) => {
                     </Button>
                   </Upload>
                   {section.image && (
-                    <div style={{ marginTop: 8, borderRadius: 8, overflow: 'hidden', border: '1px solid #e8e8e8' }}>
+                    <div style={{ marginTop: 8, borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
                       <img 
                         src={section.image} 
                         alt="Preview" 
@@ -953,9 +1000,10 @@ const ContentElementEditor = ({ element, onUpdate }) => {
               {/* Text Section */}
               {section.layout !== 'image-only' && (
                 <div>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Content</label>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Content</label>
                   <SplitContentEditor
                     section={section}
+                    darkMode={darkMode}
                     onUpdate={(updates) => updateSection(section.id, updates)}
                   />
                 </div>
@@ -1001,22 +1049,22 @@ const ContentElementEditor = ({ element, onUpdate }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Button Text */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Button Text</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Button Text</label>
             <AntInput
               placeholder="Enter button text"
               value={buttonData.text}
               onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, text: e.target.value }) })}
-              style={{ width: '100%' }}
+              style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
             />
           </div>
 
           {/* Action Type */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Action Type</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Action Type</label>
             <AntSelect
               value={buttonData.actionType}
               onChange={(value) => onUpdate({ content: JSON.stringify({ ...buttonData, actionType: value }) })}
-              style={{ width: '100%' }}
+              style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff' }}
             >
               <AntSelect.Option value="redirect">Redirect to URL</AntSelect.Option>
               <AntSelect.Option value="download">Download File</AntSelect.Option>
@@ -1025,78 +1073,78 @@ const ContentElementEditor = ({ element, onUpdate }) => {
 
           {/* URL/Path */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>
               {buttonData.actionType === 'redirect' ? 'Redirect URL' : 'Download URL/Path'}
             </label>
             <AntInput
               placeholder={buttonData.actionType === 'redirect' ? 'https://example.com' : '/uploads/file.pdf'}
               value={buttonData.url}
               onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, url: e.target.value }) })}
-              style={{ width: '100%' }}
+              style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
             />
           </div>
 
           {/* CSS Properties */}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 120 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Height</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Height</label>
               <AntInput
                 placeholder="40px"
                 value={buttonData.height}
                 onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, height: e.target.value }) })}
-                style={{ width: '100%' }}
+                style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
               />
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Width</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Width</label>
               <AntInput
                 placeholder="auto"
                 value={buttonData.width}
                 onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, width: e.target.value }) })}
-                style={{ width: '100%' }}
+                style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
               />
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Border Radius</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Border Radius</label>
               <AntInput
                 placeholder="8px"
                 value={buttonData.borderRadius}
                 onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, borderRadius: e.target.value }) })}
-                style={{ width: '100%' }}
+                style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
               />
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 120 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Background Color</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Background Color</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
                   type="color"
                   value={buttonData.backgroundColor}
                   onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, backgroundColor: e.target.value }) })}
-                  style={{ width: 40, height: 32, cursor: 'pointer', border: '1px solid #d9d9d9', borderRadius: 4 }}
+                  style={{ width: 40, height: 32, cursor: 'pointer', border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', borderRadius: 4 }}
                 />
                 <AntInput
                   value={buttonData.backgroundColor}
                   onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, backgroundColor: e.target.value }) })}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 120 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Text Color</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Text Color</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
                   type="color"
                   value={buttonData.textColor}
                   onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, textColor: e.target.value }) })}
-                  style={{ width: 40, height: 32, cursor: 'pointer', border: '1px solid #d9d9d9', borderRadius: 4 }}
+                  style={{ width: 40, height: 32, cursor: 'pointer', border: darkMode ? '1px solid #334155' : '1px solid #d9d9d9', borderRadius: 4 }}
                 />
                 <AntInput
                   value={buttonData.textColor}
                   onChange={(e) => onUpdate({ content: JSON.stringify({ ...buttonData, textColor: e.target.value }) })}
-                  style={{ flex: 1 }}
+                  style={{ flex: 1, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#d9d9d9' }}
                 />
               </div>
             </div>
@@ -1104,8 +1152,8 @@ const ContentElementEditor = ({ element, onUpdate }) => {
 
           {/* Preview */}
           <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: '#595959', display: 'block', marginBottom: 4 }}>Preview</label>
-            <div style={{ padding: 16, background: '#fafafa', borderRadius: 8, border: '1px solid #e8e8e8', textAlign: 'center' }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94a3b8' : '#595959', display: 'block', marginBottom: 4 }}>Preview</label>
+            <div style={{ padding: 16, background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', textAlign: 'center' }}>
               <button
                 style={{
                   height: buttonData.height,
@@ -1159,9 +1207,11 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
   switch (type) {
     case 'content_type_category':
       return (
-        <div style={sectionStyle}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</span>
-          <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</span>
+          </div>
+          <div className="content-type-row" style={{ display: 'flex', gap: 16, marginTop: 16, flexWrap: 'wrap' }}>
             <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
               <AntSelect placeholder="Select type" size="large" onChange={val => {
                 const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
@@ -1181,7 +1231,10 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
 
     case 'title_description':
       return (
-        <div style={sectionStyle}>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="section-title" style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Title & Description</span>
+          </div>
           <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
             <AntInput placeholder="Article title..." size="large"
               style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
@@ -1199,8 +1252,8 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
         ? (fileList[0].originFileObj ? URL.createObjectURL(fileList[0].originFileObj) : fileList[0].url)
         : null;
       return (
-        <div style={sectionStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
             <div>
               <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><Image className="inline mr-2" style={{ color: '#4a7cff' }} />Banner Image</span>
               <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
@@ -1225,8 +1278,8 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
 
     case 'pdf_attachment':
       return (
-        <div style={sectionStyle}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
             <div>
               <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><FileText className="inline mr-2" style={{ color: '#ff4d4f' }} />PDF Attachment</span>
               <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This PDF will be downloaded when user submits the access form</div>
@@ -1251,133 +1304,113 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
       );
 
     case 'content':
-      console.log('SectionRenderer content - contentElements:', contentElements);
-      console.log('SectionRenderer content - props.contentElements:', props.contentElements);
-      const isMobile = window.innerWidth < 768;
       return (
-        <div style={sectionStyle}>
-          <div style={{ padding: '14px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}>Content</span>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ padding: '14px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 0 }}>
+            <span className="section-title" style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}>Content</span>
           </div>
-          <div style={{ display: 'flex', gap: 16, padding: '16px 28px', flexDirection: isMobile ? 'column' : 'row' }}>
+          <div className="builder-content-area" style={{ display: 'flex', gap: 16, paddingTop: 16, flexWrap: 'wrap' }}>
             {/* Left sidebar for content elements */}
-            <div style={{ width: isMobile ? '100%' : 180, flexShrink: 0 }}>
+            <div className="builder-sidebar" style={{ flexShrink: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>
                 Content Blocks
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : '1fr', gap: isMobile ? 8 : 0 }}>
+              <div className="builder-elements-grid" style={{ display: 'grid' }}>
                 {CONTENT_ELEMENTS.map(el => (
                   <div
                     key={el.type}
-                    draggable={!isMobile}
-                    onClick={() => isMobile && props.onAddContentElement?.(el.type, el.label)}
+                    draggable
+                    onClick={() => props.onAddContentElement?.(el.type, el.label)}
                     onDragStart={(e) => {
-                      if (!isMobile) {
-                        e.dataTransfer.setData('elementType', el.type);
-                        e.dataTransfer.setData('elementLabel', el.label);
-                      }
+                      e.dataTransfer.setData('elementType', el.type);
+                      e.dataTransfer.setData('elementLabel', el.label);
                     }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       padding: '8px 10px', marginBottom: 6,
                       background: darkMode ? '#0f172a' : '#fff', borderRadius: 8,
-                      border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: isMobile ? 'pointer' : 'grab',
-                      transition: 'all 0.15s'
+                      border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
+                      cursor: 'grab', transition: 'all 0.15s'
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fff'; }}
                   >
-                    <span style={{ width: 24, height: 24, borderRadius: 6, background: '#e6f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7cff', fontSize: 11, fontWeight: 600 }}>
+                    <span style={{ width: 24, height: 24, borderRadius: 6, background: '#e6f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a7cff', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
                       {el.icon}
                     </span>
-                    <span style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', fontWeight: 500, flex: 1 }}>
+                    <span style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', fontWeight: 500, flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {el.label}
                     </span>
                   </div>
                 ))}
               </div>
-              {isMobile && (
-                <div style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 8, fontStyle: 'italic' }}>
-                  Tap blocks to add them
-                </div>
-              )}
+              <div style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 8, fontStyle: 'italic' }}>
+                Drag or tap to add
+              </div>
             </div>
 
             {/* Main content area (canvas) */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="builder-canvas" style={{ flex: 1, minWidth: 0 }}>
               {props.contentElements && props.contentElements.length > 0 ? (
-                <div 
+                <div
                   style={{ minHeight: 200, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', borderRadius: 8, padding: 16, background: darkMode ? '#0f172a' : '#fafafa' }}
-                  onDragOver={e => !isMobile && e.preventDefault()}
+                  onDragOver={e => e.preventDefault()}
                   onDrop={(e) => {
-                    if (isMobile) return;
                     e.preventDefault();
                     const elementType = e.dataTransfer.getData('elementType');
                     const elementLabel = e.dataTransfer.getData('elementLabel');
-                    if (elementType && elementLabel) {
-                      props.onAddContentElement?.(elementType, elementLabel);
-                    }
+                    if (elementType && elementLabel) props.onAddContentElement?.(elementType, elementLabel);
                   }}
                 >
                   {props.contentElements.map((element, index) => (
                     <div
                       key={element.id}
-                      onDragEnter={() => !isMobile && props.onContentDragEnter?.(index)}
-                    
-                      onDragOver={e => !isMobile && e.preventDefault()}
+                      onDragEnter={() => props.onContentDragEnter?.(index)}
+                      onDragOver={e => e.preventDefault()}
                       style={{
                         marginBottom: 12, padding: 12, background: darkMode ? '#1e293b' : '#fff',
-                        borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'default'
+                        borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8'
                       }}
                     >
                       <div
-                        draggable={!isMobile}
-                        onDragStart={() => !isMobile && props.onContentDragStart?.(index)}
-                       onDragEnd={!isMobile ? props.onContentDragEnd : undefined}
-                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: isMobile ? 'default' : 'grab' }}
+                        draggable
+                        onDragStart={() => props.onContentDragStart?.(index)}
+                        onDragEnd={props.onContentDragEnd}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'grab', flexWrap: 'wrap' }}
                       >
-                        {!isMobile && <GripVertical style={{ color: darkMode ? '#475569' : '#bfbfbf', width: 16, height: 16 }} />}
-                        <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        <GripVertical style={{ color: darkMode ? '#475569' : '#bfbfbf', width: 16, height: 16, flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
                           {element.label}
                         </span>
                         <Button
-                          type="text"
-                          danger
-                          size="small"
+                          type="text" danger size="small"
                           icon={<Trash2 style={{ width: 14, height: 14 }} />}
                           onClick={() => props.onRemoveContentElement?.(element.id)}
-                          style={{ marginLeft: 'auto', cursor: 'pointer' }}
+                          style={{ marginLeft: 'auto', cursor: 'pointer', flexShrink: 0 }}
                         />
                       </div>
-                      <ContentElementEditor element={element} onUpdate={(updates) => props.onUpdateContentElement?.(element.id, updates)} />
+                      <ContentElementEditor element={element} darkMode={darkMode} onUpdate={(updates) => props.onUpdateContentElement?.(element.id, updates)} />
                     </div>
                   ))}
                 </div>
               ) : (
-                <div 
+                <div
                   style={{
                     minHeight: 200, border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8,
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    gap: 8, background: darkMode ? '#0f172a' : '#fafafa'
+                    gap: 8, background: darkMode ? '#0f172a' : '#fafafa', padding: 16, textAlign: 'center'
                   }}
-                  onDragOver={e => !isMobile && e.preventDefault()}
+                  onDragOver={e => e.preventDefault()}
                   onDrop={(e) => {
-                    if (isMobile) return;
                     e.preventDefault();
                     const elementType = e.dataTransfer.getData('elementType');
                     const elementLabel = e.dataTransfer.getData('elementLabel');
-                    if (elementType && elementLabel) {
-                      props.onAddContentElement?.(elementType, elementLabel);
-                    }
+                    if (elementType && elementLabel) props.onAddContentElement?.(elementType, elementLabel);
                   }}
                 >
                   <div style={{ fontSize: 32 }}>📝</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#595959' }}>
-                    {isMobile ? 'Tap blocks above to add them' : 'Drag blocks from the left panel to add them'}
-                  </div>
-                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c' }}>
-                    {isMobile ? 'Use desktop to drag and reorder' : 'Drag to reorder after adding'}
-                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#595959' }}>Drag or tap blocks to add content</div>
+                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c' }}>Drag to reorder after adding</div>
                 </div>
               )}
             </div>
@@ -1387,7 +1420,10 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
 
     case 'tags':
       return (
-        <div style={sectionStyle}>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="section-title" style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Tags</span>
+          </div>
           <Form.Item name="tags" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Tags</span>} style={{ marginBottom: 0 }}>
             <AntSelect mode="tags" placeholder="Add tags and press Enter..." style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
           </Form.Item>
@@ -1396,7 +1432,10 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
 
     case 'schedule':
       return (
-        <div style={sectionStyle}>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="section-title" style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Schedule</span>
+          </div>
           <Form.Item name="scheduled_publish_date" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Schedule</span>} style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
             <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
           </Form.Item>
@@ -1405,8 +1444,10 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
 
     case 'reorder_layout':
       return (
-        <div style={sectionStyle}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}>Reorder Layout</span>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="section-title" style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Reorder Layout</span>
+          </div>
           <div style={{ marginTop: 16, padding: '16px', background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>
             Layout reordering functionality - drag sections to reorder
           </div>
@@ -1415,8 +1456,10 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
 
     case 'seo':
       return (
-        <div style={sectionStyle}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO Settings</span>
+        <div style={sectionStyle} className="builder-section">
+          <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span className="section-title" style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>SEO Settings</span>
+          </div>
           <div style={{ marginTop: 16 }}>
             <Form.Item name="seo_meta_title" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Title</span>} style={{ marginBottom: 16 }}>
               <AntInput placeholder="SEO title" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
@@ -1740,8 +1783,8 @@ const DragDropBuilder = ({ darkMode = false, sectionProps, selectedTypeName = ''
       {/* Landing Page Form Fields — auto shown for webinar/whitepaper/event */}
       {showLandingFields && (
         <>
-          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div className="landing-page-fields" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+            <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><Menu className="inline mr-2" style={{ color: '#4a7cff' }} />Client Webhook URL</span>
               </div>
@@ -1759,8 +1802,8 @@ const DragDropBuilder = ({ darkMode = false, sectionProps, selectedTypeName = ''
             </Form.Item>
           </div>
 
-          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div className="landing-page-fields" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+            <div className="builder-section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <span style={{ fontSize: 14, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}><Menu className="inline mr-2" style={{ color: '#4a7cff' }} />Landing Page Form Fields</span>
                 <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Add all form fields with their label, API key, and type.</div>
@@ -1783,6 +1826,7 @@ const DragDropBuilder = ({ darkMode = false, sectionProps, selectedTypeName = ''
                 onDragEnter={() => onFieldDragEnter(index)}
                 onDragEnd={onFieldDragEnd}
                 onDragOver={e => e.preventDefault()}
+                className="custom-field-row"
                 style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', marginBottom: 10, background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab' }}
               >
                 <GripVertical className="text-gray-300 mt-2 cursor-grab flex-shrink-0 w-4 h-4" style={{ color: darkMode ? '#475569' : '#d1d5db' }} />

@@ -70,7 +70,7 @@ const ArticlePreview = () => {
     <div className="px-4 py-6 md:px-8" style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
       {/* Top Bar */}
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3 max-w-7xl mx-auto">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/admin')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
           Back to Dashboard
         </Button>
         {canEdit && (

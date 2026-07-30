@@ -4,8 +4,10 @@
  */
 
 import React from 'react';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function ParagraphRenderer({ node }) {
+  const { darkMode } = useTheme();
   const styles = node.styles || {};
   const content = node.content || 'Paragraph text goes here...';
   const alignment = node.alignment || 'left';
@@ -13,7 +15,7 @@ export default function ParagraphRenderer({ node }) {
   const paragraphStyles = {
     textAlign: alignment,
     margin: styles.margin || '0 0 16px 0',
-    color: styles.color || '#262626',
+    color: styles.color || (darkMode ? '#cbd5e1' : '#262626'),
     fontSize: styles.fontSize || '16px',
     fontWeight: styles.fontWeight || '400',
     lineHeight: styles.lineHeight || '1.6',

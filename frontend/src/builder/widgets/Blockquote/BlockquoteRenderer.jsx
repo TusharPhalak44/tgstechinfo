@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function BlockquoteRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, {});
   const settings = node.settings || {};
   const styles = node.styles || {};
@@ -15,10 +17,11 @@ export default function BlockquoteRenderer({ node }) {
   const style = settings.style || 'default';
 
   const baseStyles = {
-    borderLeft: style === 'minimal' ? '2px solid #ccc' : '4px solid #4a7cff',
+    borderLeft: style === 'minimal' ? `2px solid ${darkMode ? '#475569' : '#ccc'}` : '4px solid #4a7cff',
     padding: style === 'minimal' ? '8px 12px' : '16px 20px',
     margin: '20px 0',
-    backgroundColor: style === 'modern' ? '#f5f5f5' : 'transparent',
+    backgroundColor: style === 'modern' ? (darkMode ? '#0f172a' : '#f5f5f5') : 'transparent',
+    color: darkMode ? '#cbd5e1' : undefined,
     fontStyle: 'italic',
     textAlign: alignment,
     ...styles,
@@ -30,7 +33,7 @@ export default function BlockquoteRenderer({ node }) {
         {content.text || ''}
       </p>
       {content.citation && (
-        <cite style={{ display: 'block', marginTop: 8, fontSize: '0.9em', fontStyle: 'normal' }}>
+        <cite style={{ display: 'block', marginTop: 8, fontSize: '0.9em', fontStyle: 'normal', color: darkMode ? '#94a3b8' : undefined }}>
           {content.citation}
         </cite>
       )}

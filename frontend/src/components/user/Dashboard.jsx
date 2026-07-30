@@ -471,7 +471,7 @@ const Dashboard = () => {
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
-            onClick={() => navigate('/create-content')} 
+            onClick={() => navigate('/dashboard/create-post')} 
             size={isMobile ? 'small' : 'middle'}
             style={{ 
               flex: isMobile ? 1 : 'none',
@@ -585,7 +585,7 @@ const Dashboard = () => {
           description={activeTab === 'all' ? 'No content yet' : `No ${CONTENT_TABS.find(t => t.key === activeTab)?.label.toLowerCase() || 'content'} yet`}
           style={{ padding: isMobile ? '40px 0' : '48px 0' }}
         >
-          <Button type="primary" onClick={() => navigate('/create-content')}>
+          <Button type="primary" onClick={() => navigate('/dashboard/create-post')}>
             Create Your First Content
           </Button>
         </Empty>

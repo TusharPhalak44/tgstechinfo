@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function NumberedListRenderer({ node }) {
+  const { darkMode } = useTheme();
   const content = safeParseJsonContent(node.content, { items: ['First item', 'Second item'] });
   const settings = node.settings || {};
   const styles = node.styles || {};
@@ -19,6 +21,7 @@ export default function NumberedListRenderer({ node }) {
     paddingLeft: '20px',
     margin: '16px 0',
     listStyleType: listStyle,
+    color: darkMode ? '#cbd5e1' : '#262626',
     ...styles,
   };
 

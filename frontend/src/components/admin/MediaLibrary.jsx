@@ -58,7 +58,6 @@ const MediaLibrary = () => {
   const [renameFolderIndex, setRenameFolderIndex] = useState(null);
   const [renameFolderName, setRenameFolderName] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [visibleCards, setVisibleCards] = useState(24);
   const pageSize = 36;
 
   useEffect(() => {
@@ -70,13 +69,10 @@ const MediaLibrary = () => {
     fetchMedia();
   }, []);
 
-  useEffect(() => {
-    setVisibleCards(24);
-  }, [currentPage]);
-
   const fetchMedia = async () => {
     try {
       setLoading(true);
+      setCurrentPage(1);
       // Load uploaded files from database via media API
       const params = {};
       if (filters.type && filters.type !== 'all') params.file_type = filters.type;
@@ -176,9 +172,7 @@ const MediaLibrary = () => {
     });
   };
 
-  const handleShowMore = () => {
-    setVisibleCards(prev => Math.min(prev + 6, pageSize));
-  };
+  const handleShowMore = () => {};
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -581,7 +575,7 @@ const MediaLibrary = () => {
             ) : (
               <>
               <Row gutter={[window.innerWidth < 768 ? 0 : 24, window.innerWidth < 768 ? 0 : 24]}>
-                {media.slice(0, visibleCards).map((item) => (
+                {media.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((item) => (
                   <Col xs={12} sm={8} md={6} lg={4} xl={4} key={item.id}>
                     <div style={{ padding: window.innerWidth < 768 ? '0 10px 16px 10px' : 0 }}>
                       <Card
@@ -608,11 +602,21 @@ const MediaLibrary = () => {
                           }}
                         >
                           {item.type === 'image' ? (
-                            <Image
-                              src={item.thumbnail}
+                            <img
+                              src={item.url}
                               alt={item.name}
-                              preview={false}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              onError={(e) => {
+                                console.error('Image load error for:', item.url);
+                                // Show placeholder when image fails to load
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = `
+                                  <div style="text-align: center; color: ${darkMode ? '#94a3b8' : '#6B7280'}">
+                                    <PictureOutlined style="font-size: 24px; margin-bottom: 4px;" />
+                                    <div style="font-size: 10px;">Image not found</div>
+                                  </div>
+                                `;
+                              }}
                             />
                           ) : (
                             <div style={{ textAlign: 'center' }}>
@@ -692,26 +696,15 @@ const MediaLibrary = () => {
                   </Col>
                 ))}
               </Row>
-              <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-                {visibleCards < pageSize && visibleCards < media.length && (
-                  <Button
-                    type="default"
-                    onClick={handleShowMore}
-                    style={{ borderRadius: 8 }}
-                  >
-                    Show More ({Math.min(pageSize - visibleCards, media.length - visibleCards)} more)
-                  </Button>
-                )}
-                {visibleCards >= pageSize && (
-                  <Pagination
-                    current={currentPage}
-                    pageSize={pageSize}
-                    total={media.length}
-                    showSizeChanger={false}
-                    showTotal={(total) => `${total} items`}
-                    onChange={handlePageChange}
-                  />
-                )}
+              <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center' }}>
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={media.length}
+                  showSizeChanger={false}
+                  showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
+                  onChange={handlePageChange}
+                />
               </div>
               </>
             )}

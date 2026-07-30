@@ -71,8 +71,8 @@ const SecurityStatement = () => {
               <Section title="2. Application Security" darkMode={darkMode}>
                 <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
                   <Li><strong>Authentication:</strong> JWT (JSON Web Token) based authentication with secure token expiry and rotation</Li>
-                  <Li><strong>Password Security:</strong> Passwords are hashed using bcrypt with appropriate salt rounds — plaintext passwords are never stored</Li>
-                  <Li><strong>Role-Based Access Control (RBAC):</strong> Least-privilege access model — users only access data and functions required for their role</Li>
+                  <Li><strong>Password Security:</strong> Passwords are hashed using bcrypt with appropriate salt rounds - plaintext passwords are never stored</Li>
+                  <Li><strong>Role-Based Access Control (RBAC):</strong> Least-privilege access model - users only access data and functions required for their role</Li>
                   <Li><strong>Input Validation:</strong> All user inputs are validated and sanitized server-side to prevent injection attacks</Li>
                   <Li><strong>API Rate Limiting:</strong> Rate limiting applied to all API endpoints to prevent abuse and brute-force attacks</Li>
                   <Li><strong>CSRF Protection:</strong> Cross-Site Request Forgery protection on all state-changing operations</Li>
@@ -87,8 +87,8 @@ const SecurityStatement = () => {
                 <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
                   <Li><strong>In Transit:</strong> All data transmitted between your browser and our servers is encrypted using TLS 1.2 or higher</Li>
                   <Li><strong>At Rest:</strong> Sensitive data stored in our databases is encrypted at rest using AES-256 encryption</Li>
-                  <Li><strong>Passwords:</strong> Hashed using bcrypt — never stored in plaintext</Li>
-                  <Li><strong>API Keys:</strong> Stored as hashed values — never exposed in logs or responses</Li>
+                  <Li><strong>Passwords:</strong> Hashed using bcrypt - never stored in plaintext</Li>
+                  <Li><strong>API Keys:</strong> Stored as hashed values - never exposed in logs or responses</Li>
                 </ul>
               </Section>
 
@@ -136,7 +136,7 @@ const SecurityStatement = () => {
               <Section title="8. Vulnerability Disclosure" darkMode={darkMode}>
                 <p style={{ marginBottom: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>If you discover a security vulnerability in our platform, please report it responsibly:</p>
                 <div style={{ padding: 'clamp(14px, 2.5vw, 16px) clamp(16px, 3vw, 20px)', background: darkMode ? 'rgba(0, 184, 148, 0.1)' : '#e8faf5', borderRadius: 12, borderLeft: '4px solid #00b894' }}>
-                  <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Security Team — TGS Tech Info</p>
+                  <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Security Team - TGS Tech Info</p>
                   <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Email: <a href="mailto:security@tgstechinfo.com" style={{ color: '#00b894' }}>security@tgstechinfo.com</a></p>
                   <p style={{ margin: 0, fontSize: 'clamp(12px, 1.4vw, 13px)', color: darkMode ? '#94a3b8' : '#6b7280' }}>Please do not publicly disclose vulnerabilities before we have had the opportunity to investigate and remediate.</p>
                 </div>
@@ -228,7 +228,7 @@ const SecurityStatement = () => {
 
               <Section title="6. Contact" darkMode={darkMode}>
                 <div style={{ padding: 'clamp(14px, 2.5vw, 16px) clamp(16px, 3vw, 20px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
-                  <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>TGS Tech Info — Privacy Team</p>
+                  <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>TGS Tech Info - Privacy Team</p>
                   <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Email: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
                 </div>
               </Section>

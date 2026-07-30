@@ -34,12 +34,12 @@ const Disclaimer = () => {
         <div style={{ fontWeight: 800, fontSize: 'clamp(16px, 2.2vw, 18px)', color: darkMode ? '#f1f5f9' : '#1a1a2e', marginBottom: 4 }}>
           © {YEAR} TGS Tech Info. All Rights Reserved.
         </div>
-        <div style={{ fontSize: 'clamp(12px, 1.4vw, 13.5px)', color: darkMode ? '#94a3b8' : '#6b7280' }}>tgstechinfo.com — Global B2B Technology Publishing Platform</div>
+        <div style={{ fontSize: 'clamp(12px, 1.4vw, 13.5px)', color: darkMode ? '#94a3b8' : '#6b7280' }}>tgstechinfo.com - Global B2B Technology Publishing Platform</div>
       </div>
 
       {/* DISCLAIMER */}
       <div style={{ marginBottom: 'clamp(32px, 5vw, 40px)' }}>
-        <div style={{ fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, color: '#e17055', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Part I — Disclaimer</div>
+        <div style={{ fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, color: '#e17055', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Part I - Disclaimer</div>
 
         <Section title="1. General Disclaimer" darkMode={darkMode}>
           <p style={{ marginBottom: 12, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>The information published on <strong>tgstechinfo.com</strong> is provided for general informational and educational purposes only. TGS Tech Info makes no representations or warranties of any kind, express or implied, regarding the accuracy, completeness, reliability, suitability, or availability of any content on this website.</p>
@@ -47,7 +47,7 @@ const Disclaimer = () => {
         </Section>
 
         <Section title="2. Not Professional Advice" darkMode={darkMode}>
-          <p style={{ marginBottom: 12, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>Content published on TGS Tech Info — including articles, blogs, whitepapers, research reports, webinars, interviews, and case studies — does <strong>not constitute</strong> professional advice of any kind, including but not limited to:</p>
+          <p style={{ marginBottom: 12, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>Content published on TGS Tech Info - including articles, blogs, whitepapers, research reports, webinars, interviews, and case studies - does <strong>not constitute</strong> professional advice of any kind, including but not limited to:</p>
           <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
             <Li>Legal advice</Li>
             <Li>Financial or investment advice</Li>
@@ -86,10 +86,10 @@ const Disclaimer = () => {
 
       {/* COPYRIGHT */}
       <div>
-        <div style={{ fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, color: '#4a7cff', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Part II — Copyright Notice</div>
+        <div style={{ fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, color: '#4a7cff', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 16 }}>Part II - Copyright Notice</div>
 
         <Section title="9. Ownership of Content" darkMode={darkMode}>
-          <p style={{ marginBottom: 12, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>Unless otherwise stated, all content on tgstechinfo.com — including but not limited to text, articles, blogs, research reports, whitepapers, graphics, logos, icons, images, audio clips, video content, and software — is the <strong>intellectual property of TGS Tech Info</strong> or its respective content contributors and is protected by applicable copyright, trademark, and intellectual property laws.</p>
+          <p style={{ marginBottom: 12, fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>Unless otherwise stated, all content on tgstechinfo.com - including but not limited to text, articles, blogs, research reports, whitepapers, graphics, logos, icons, images, audio clips, video content, and software - is the <strong>intellectual property of TGS Tech Info</strong> or its respective content contributors and is protected by applicable copyright, trademark, and intellectual property laws.</p>
           <p style={{ fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>© {YEAR} TGS Tech Info. All rights reserved.</p>
         </Section>
 
@@ -131,7 +131,7 @@ const Disclaimer = () => {
             <Li>Your electronic or physical signature</Li>
           </ul>
           <div style={{ padding: 'clamp(14px, 2.5vw, 16px) clamp(16px, 3vw, 20px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
-            <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>DMCA Agent — TGS Tech Info</p>
+            <p style={{ margin: '0 0 4px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>DMCA Agent - TGS Tech Info</p>
             <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Email: <a href="mailto:legal@tgstechinfo.com" style={{ color: '#4a7cff' }}>legal@tgstechinfo.com</a></p>
             <p style={{ margin: 0, color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Subject line: DMCA Copyright Notice</p>
           </div>

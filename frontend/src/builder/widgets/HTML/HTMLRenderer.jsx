@@ -5,8 +5,10 @@
 
 import React, { useEffect, useRef } from 'react';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useTheme } from '../../../context/ThemeContext';
 
 export default function HTMLRenderer({ node }) {
+  const { darkMode } = useTheme();
   const containerRef = useRef(null);
   const content = safeParseJsonContent(node.content, { html: '', css: '', js: '' });
   const settings = node.settings || {};
@@ -53,6 +55,7 @@ export default function HTMLRenderer({ node }) {
   }, [content, node.id]);
 
   const containerStyles = {
+    color: darkMode ? '#cbd5e1' : undefined,
     ...styles,
   };
 

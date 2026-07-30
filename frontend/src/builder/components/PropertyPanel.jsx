@@ -23,7 +23,7 @@ const LAYOUT_TYPES = ['page', 'section', 'container', 'column', 'column-1', 'col
 /**
  * PropertyPanel Component
  */
-export default function PropertyPanel({ collapsed }) {
+export default function PropertyPanel({ collapsed, darkMode = false }) {
   const { selectedNodeId } = useBuilderSelection();
   const { updateNode } = useBuilderActions();
   const page = useBuilderPage();
@@ -58,10 +58,10 @@ export default function PropertyPanel({ collapsed }) {
   // Empty state when no node is selected
   if (!selectedNode) {
     return (
-      <div className="property-panel" style={{ padding: 16 }}>
+      <div className="property-panel" style={{ padding: 16, background: darkMode ? '#1e293b' : undefined, minHeight: '100%' }}>
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="Select an element to edit its properties"
+          description={<span style={{ color: darkMode ? '#94a3b8' : undefined }}>Select an element to edit its properties</span>}
           style={{ marginTop: 40 }}
         />
       </div>
@@ -69,13 +69,13 @@ export default function PropertyPanel({ collapsed }) {
   }
 
   return (
-    <div className="property-panel" style={{ padding: 16 }}>
+    <div className="property-panel" style={{ padding: 16, background: darkMode ? '#1e293b' : undefined, minHeight: '100%' }}>
       {/* Node Info */}
-      <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #e8e8e8' }}>
-        <div style={{ fontWeight: 600, fontSize: 14 }}>
+      <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${darkMode ? '#334155' : '#e8e8e8'}` }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: darkMode ? '#f1f5f9' : undefined }}>
           {widget?.metadata?.label || selectedNode.label || selectedNode.type}
         </div>
-        <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#999', marginTop: 4 }}>
           {selectedNode.type}
         </div>
       </div>

@@ -130,10 +130,10 @@ const VendorList = () => {
         <div style={{ marginTop: 'clamp(24px, 4vw, 32px)', padding: 'clamp(16px, 3vw, 20px) clamp(18px, 3vw, 24px)', background: darkMode ? '#0f172a' : '#f8faff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8f0ff' }}>
           <div style={{ fontWeight: 700, fontSize: 'clamp(13px, 1.5vw, 14px)', color: darkMode ? '#f1f5f9' : '#1a1a2e', marginBottom: 8 }}>Transfer Mechanism Key</div>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 'clamp(12px, 1.4vw, 13px)', color: darkMode ? '#cbd5e1' : '#374151' }}>
-            <span><strong>SCCs</strong> — Standard Contractual Clauses (EU Commission approved)</span>
-            <span><strong>BCRs</strong> — Binding Corporate Rules</span>
-            <span><strong>EU-based</strong> — Data processed within the EU/EEA</span>
-            <span><strong>Adequacy</strong> — Country with EU adequacy decision</span>
+            <span><strong>SCCs</strong> - Standard Contractual Clauses (EU Commission approved)</span>
+            <span><strong>BCRs</strong> - Binding Corporate Rules</span>
+            <span><strong>EU-based</strong> - Data processed within the EU/EEA</span>
+            <span><strong>Adequacy</strong> - Country with EU adequacy decision</span>
           </div>
         </div>
 
