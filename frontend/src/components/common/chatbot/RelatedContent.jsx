@@ -3,6 +3,7 @@ import { Card, Tag, Spin } from 'antd';
 import { ExternalLink, Calendar, Link2, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../../context/ChatContext';
+import { navigateContentItem } from '../../../lib/contentRoute';
 
 const RelatedContent = ({ contentId, title }) => {
   const { getRelatedContent, logClick } = useChat();
@@ -25,7 +26,7 @@ const RelatedContent = ({ contentId, title }) => {
 
   const handleContentClick = (content, index) => {
     logClick(content.id, index);
-    navigate(content.url);
+    navigateContentItem(content, navigate);
   };
 
   if (!contentId) {

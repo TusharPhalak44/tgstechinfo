@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, Globe, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 const FEATURES = [
   { icon: Sparkles, text: 'AI & Machine Learning insights' },
@@ -13,6 +15,7 @@ const FEATURES = [
 
 const Login = () => {
   const { darkMode } = useTheme();
+  const { mainLogo } = useSiteSettings();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
@@ -67,18 +70,24 @@ const Login = () => {
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden bg-gradient-to-br from-[var(--color-primary)] via-[var(--color-primary-hover)] to-[var(--color-accent)]">
         {/* Background decorations */}
-        <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-[rgba(255,255,255,0.1)] blur-3xl pointer-events-none" />
-        <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-[rgba(255,255,255,0.08)] blur-2xl pointer-events-none" />
+        <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-white/8 pointer-events-none" />
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
 
         {/* Floating glass cards */}
-        <div className="absolute top-20 right-20 w-32 h-32 bg-[rgba(255,255,255,0.05)] backdrop-blur-sm rounded-2xl border border-[rgba(255,255,255,0.1)] pointer-events-none" />
-        <div className="absolute bottom-32 left-16 w-24 h-24 bg-[rgba(255,255,255,0.04)] backdrop-blur-sm rounded-xl border border-[rgba(255,255,255,0.08)] pointer-events-none" />
+        <div className="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-2xl border border-white/10 pointer-events-none" />
+        <div className="absolute bottom-32 left-16 w-24 h-24 bg-white/4 rounded-xl border border-white/8 pointer-events-none" />
 
         {/* Logo */}
         <div className="mb-12 self-start">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-2xl">
-            <img src="/logo.jpg" alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
+            {mainLogo ? (
+              <img src={mainLogo} alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
+            ) : (
+              <div className="h-12 w-12 flex items-center justify-center text-white font-bold text-xl rounded-xl bg-white/20">
+                TGS
+              </div>
+            )}
           </div>
         </div>
 
@@ -148,7 +157,7 @@ const Login = () => {
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`pl-10 h-11 w-full rounded-md border bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-[var(--color-border)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]'}`}
+                  className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500/20 focus:border-blue-500'} ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400' : 'bg-white text-gray-900 placeholder-gray-500'}`}
                   required
                   disabled={loading || success}
                 />
@@ -164,7 +173,7 @@ const Login = () => {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`pl-10 pr-10 h-11 w-full rounded-md border bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-[var(--color-border)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]'}`}
+                  className={`pl-10 pr-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500/20 focus:border-blue-500'} ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400' : 'bg-white text-gray-900 placeholder-gray-500'}`}
                   required
                   disabled={loading || success}
                 />
@@ -187,7 +196,7 @@ const Login = () => {
                   id="remember"
                   checked={remember}
                   onChange={(e) => setRemember(e.target.checked)}
-                  className="h-4 w-4 rounded-sm border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                  className={`h-4 w-4 rounded-sm focus:ring-2 focus:ring-blue-500/20 ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
                   disabled={loading || success}
                 />
                 <label htmlFor="remember" className="text-sm text-[var(--color-body)] cursor-pointer hover:text-[var(--color-primary)] transition-colors">

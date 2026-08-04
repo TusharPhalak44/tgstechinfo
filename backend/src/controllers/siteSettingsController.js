@@ -25,7 +25,7 @@ exports.uploadLogo = async (req, res) => {
         const { type } = req.params;
         const { imageData } = req.body;
 
-        if (!imageData && imageData !== '') {
+        if (!imageData) {
             return res.status(400).json({ message: 'Image data is required' });
         }
 

@@ -5,6 +5,7 @@ import { CalendarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
+import { navigateContentItem } from '../../lib/contentRoute';
 
 // Detect HTML builder (landing page) content by builder_layout OR content type
 const isHtmlBuilderContent = (item) => {
@@ -35,30 +36,8 @@ const parseTags = (value) => {
   return [];
 };
 
-const getContentRoute = (item) => {
-  try {
-    const layout = item.builder_layout ? JSON.parse(item.builder_layout) : null;
-    const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-    const isLandingPageType = ['landing-page', 'landing page'].includes(
-      (item.content_type || item.content_type_name || '').toLowerCase().trim()
-    );
-    const isStandalone = isHtmlBuilder || isLandingPageType;
-    if (isStandalone) return { url: `/content/${item.slug}`, newTab: true };
-    const contentType = item.content_type || 'article';
-    return { url: `/${contentType}/${item.slug}`, newTab: false };
-  } catch {
-    const contentType = item.content_type || 'article';
-    return { url: `/${contentType}/${item.slug}`, newTab: false };
-  }
-};
-
 const navigateContent = (item, navigate) => {
-  const { url, newTab } = getContentRoute(item);
-  if (newTab) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  } else {
-    navigate(url);
-  }
+  navigateContentItem(item, navigate);
 };
 
 const TYPE_MAP = {

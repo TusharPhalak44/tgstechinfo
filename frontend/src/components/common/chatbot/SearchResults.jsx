@@ -3,6 +3,7 @@ import { Card, Tag } from 'antd';
 import { ExternalLink, Calendar, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../../context/ChatContext';
+import { navigateContentItem } from '../../../lib/contentRoute';
 
 const SearchResults = ({ query }) => {
   const { searchResults, logClick } = useChat();
@@ -10,7 +11,7 @@ const SearchResults = ({ query }) => {
 
   const handleContentClick = (content, index) => {
     logClick(content.id, index);
-    navigate(content.url);
+    navigateContentItem(content, navigate);
   };
 
   // If no results, return null - ChatContext handles showing suggestions/query form
