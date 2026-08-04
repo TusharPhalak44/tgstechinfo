@@ -6,7 +6,7 @@ const DataRequest = require('../models/DataRequest');
 const ContactSubmission = require('../models/ContactSubmission');
 const Download = require('../models/Download');
 const { pool } = require('../config/database');
-const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail } = require('../config/email');
+const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail } = require('../config/email');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
 
@@ -906,31 +906,45 @@ exports.submitCaseStudyGate = async (req, res) => {
             ]
         );
 
-        // Send email using custom template or fallback
+        // Send email using database template or fallback
         try {
-            const emailHtml = renderCaseStudyEmail(caseStudy.email_template, {
+            // First try to use the database template for case_study_download
+            const templateResult = await sendTemplatedEmail('case_study_download', email.trim().toLowerCase(), {
                 name,
                 title: caseStudy.title,
                 email,
                 contact,
                 slug: caseStudy.slug,
+                year: new Date().getFullYear()
             });
-            // Use custom subject if provided, otherwise use fallback
-            const emailSubject = caseStudy.email_subject 
-                ? renderCaseStudyEmail(caseStudy.email_subject, {
+            
+            // If database template is not found or skipped, fall back to custom template or default
+            if (templateResult?.skipped) {
+                console.log('Database template not found, using fallback template');
+                const emailHtml = renderCaseStudyEmail(caseStudy.email_template, {
                     name,
                     title: caseStudy.title,
                     email,
                     contact,
                     slug: caseStudy.slug,
-                })
-                : `Your Case Study: ${caseStudy.title}`;
-            const result = await sendEmail(
-                email.trim().toLowerCase(),
-                emailSubject,
-                emailHtml
-            );
-            if (result?.skipped) console.warn('Case study email skipped:', result.reason);
+                });
+                // Use custom subject if provided, otherwise use fallback
+                const emailSubject = caseStudy.email_subject 
+                    ? renderCaseStudyEmail(caseStudy.email_subject, {
+                        name,
+                        title: caseStudy.title,
+                        email,
+                        contact,
+                        slug: caseStudy.slug,
+                    })
+                    : `Your Case Study: ${caseStudy.title}`;
+                const fallbackResult = await sendEmail(
+                    email.trim().toLowerCase(),
+                    emailSubject,
+                    emailHtml
+                );
+                if (fallbackResult?.skipped) console.warn('Case study email skipped:', fallbackResult.reason);
+            }
         } catch (emailErr) {
             console.warn('Case study email failed (non-fatal):', emailErr.message);
         }
