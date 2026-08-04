@@ -213,9 +213,7 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
-        if (normalizedContentId) await Content.incrementViewCount(normalizedContentId);
 
-        // Always forward to webhook
         if (content?.webhook_url) {
             // Build payload using webhook_key (original field name) when available,
             // falling back to the normalized DB column name.
@@ -537,6 +535,37 @@ exports.getCategoriesWithCount = async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Get categories with count error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.getTopCategoriesByViews = async (req, res) => {
+    try {
+        const { limit = 10 } = req.query;
+        const { pool } = require('../config/database');
+
+        // Get categories sorted by total views of their content
+        const query = `
+            SELECT 
+                cat.id, 
+                cat.name, 
+                cat.slug, 
+                cat.parent_id,
+                COALESCE(SUM(c.view_count), 0) as total_views,
+                COUNT(c.id) as content_count
+            FROM categories cat
+            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published'
+            WHERE (cat.parent_id IS NULL OR cat.parent_id = 0)
+            GROUP BY cat.id, cat.name, cat.slug, cat.parent_id
+            ORDER BY total_views DESC, content_count DESC
+            LIMIT ?
+        `;
+
+        const [categories] = await pool.query(query, [parseInt(limit)]);
+
+        res.json(categories);
+    } catch (error) {
+        console.error('Get top categories by views error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

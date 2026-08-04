@@ -13,6 +13,10 @@ class Media {
             uploaded_by,
             file_data = null
         } = mediaData;
+
+        // Prevent duplicate — return existing record if filename already in DB
+        const existing = await Media.findByFilename(filename);
+        if (existing) return existing;
         
         const query = `
             INSERT INTO media_files (filename, original_name, file_path, file_type, file_size, mime_type, folder, uploaded_by, file_data)
@@ -45,6 +49,14 @@ class Media {
         const [rows] = await pool.query(
             'SELECT * FROM media_files WHERE filename = ?',
             [filename]
+        );
+        return rows[0];
+    }
+
+    static async findByOriginalName(originalName) {
+        const [rows] = await pool.query(
+            'SELECT * FROM media_files WHERE original_name = ? ORDER BY id DESC LIMIT 1',
+            [originalName]
         );
         return rows[0];
     }

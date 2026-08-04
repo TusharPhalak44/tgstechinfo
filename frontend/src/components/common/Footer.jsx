@@ -59,6 +59,7 @@ const Footer = ({ simplified = false }) => {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
   const [websiteLogo, setWebsiteLogo] = useState('/logo.jpg');
+  const [stats, setStats] = useState({ totalPublished: 0, totalViews: 0, totalAuthors: 0, totalCategories: 0 });
 
   useEffect(() => {
     const fetchWebsiteLogo = async () => {
@@ -73,6 +74,18 @@ const Footer = ({ simplified = false }) => {
       }
     };
     fetchWebsiteLogo();
+  }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await axios.get('/api/public/stats');
+        setStats(response.data || {});
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      }
+    };
+    fetchStats();
   }, []);
 
   const handleNewsletterSubmit = async (e) => {
@@ -182,12 +195,18 @@ const Footer = ({ simplified = false }) => {
             </div>
             {/* Mini stats */}
             <div style={{ display: 'flex', gap: 20 }}>
-              {[['50K+', 'Readers'], ['500+', 'Articles'], ['100+', 'Experts']].map(([num, lbl]) => (
-                <div key={lbl}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{num}</div>
-                  <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>{lbl}</div>
-                </div>
-              ))}
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{stats.totalViews || 0}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>Readers</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{stats.totalPublished || 0}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>Articles</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{stats.totalAuthors || 0}</div>
+                <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>Experts</div>
+              </div>
             </div>
           </div>
 
@@ -200,6 +219,11 @@ const Footer = ({ simplified = false }) => {
             <FooterLink to="/interviews">Interviews</FooterLink>
             <FooterLink to="/webinars">Webinars</FooterLink>
             <FooterLink to="/events">Events</FooterLink>
+            <div style={{ marginTop: 48 }}>
+              <ColHead>Company</ColHead>
+              <FooterLink to="/about">About Us</FooterLink>
+              <FooterLink to="/contact">Contact</FooterLink>
+            </div>
           </div>
 
           {/* Technology */}
@@ -213,7 +237,7 @@ const Footer = ({ simplified = false }) => {
             <FooterLink to="/category/software-development">Software Dev</FooterLink>
           </div>
 
-          {/* Company */}
+          {/* Legal & Privacy */}
           <div>
             <ColHead accent="#F7941D">Legal &amp; Privacy</ColHead>
             <FooterLink to="/privacy-policy">Privacy Policy</FooterLink>

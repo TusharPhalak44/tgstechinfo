@@ -64,11 +64,6 @@ const MediaLibrary = () => {
     fetchMedia();
   }, [filters]);
 
-  useEffect(() => {
-    // Refresh media when component mounts
-    fetchMedia();
-  }, []);
-
   const fetchMedia = async () => {
     try {
       setLoading(true);

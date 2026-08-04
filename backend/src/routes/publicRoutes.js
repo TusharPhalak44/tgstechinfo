@@ -3,6 +3,7 @@ const router = express.Router();
 const publicController = require('../controllers/publicController');
 const adminController = require('../controllers/adminController');
 const notificationController = require('../controllers/notificationController');
+const contentController = require('../controllers/contentController');
 const { authenticate } = require('../middleware/auth');
 const {
     strictLimiter,
@@ -16,6 +17,8 @@ router.get('/search', apiLimiter, notificationController.searchContent);
 // Public content routes
 router.get('/content', publicController.getPublishedContent);
 router.get('/content/:slug', publicController.getContentBySlug);
+// Increment view count when content is clicked
+router.post('/content/:id/view', apiLimiter, contentController.incrementContentView);
 // Alias routes for landing pages — /lp/:slug and /landing-page/:slug resolve the same as /content/:slug
 router.get('/lp/:slug', publicController.getContentBySlug);
 router.get('/landing-page/:slug', publicController.getContentBySlug);
@@ -24,6 +27,7 @@ router.post('/subscribe-content', strictLimiter, publicController.subscribeConte
 router.post('/newsletter', strictLimiter, publicController.subscribeNewsletter);
 router.get('/categories', publicController.getCategories);
 router.get('/categories-with-count', publicController.getCategoriesWithCount);
+router.get('/top-categories', publicController.getTopCategoriesByViews);
 router.get('/content-types', publicController.getContentTypes);
 
 // Public stats

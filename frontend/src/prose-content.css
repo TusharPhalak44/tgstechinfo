@@ -170,6 +170,20 @@
   line-height: 1.6;
   font-size: 16px;
   color: #1a1a1a;
+  list-style-position: outside;
+  padding-left: 6px;
+}
+
+.prose-content li p {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.prose-content li > p:first-child {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* ── Blockquote ── */

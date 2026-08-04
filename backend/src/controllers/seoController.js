@@ -53,94 +53,103 @@ exports.getPageSeoAnalysis = async (req, res) => {
     try {
         // Get all published content
         const { rows: content } = await Content.findAll({ status: 'published' });
-        
+
+        // Use the same SEO calculation logic as CreateContent.jsx
+        const calculateSEOScore = (title, description, content, tags, seoMetaTitle, seoMetaDescription, seoMetaKeywords) => {
+            let score = 0;
+            let maxScore = 100;
+            let issues = [];
+
+            // Title analysis (20 points)
+            if (title && title.length >= 30 && title.length <= 60) {
+                score += 20;
+            } else if (title && title.length > 0) {
+                score += 10;
+                issues.push(title.length < 30 ? 'Title is too short (should be 30-60 characters)' : 'Title is too long (should be 30-60 characters)');
+            } else {
+                issues.push('Title is missing');
+            }
+
+            // Description analysis (15 points)
+            if (description && description.length >= 120 && description.length <= 160) {
+                score += 15;
+            } else if (description && description.length > 0) {
+                score += 8;
+                issues.push(description.length < 120 ? 'Description is too short (should be 120-160 characters)' : 'Description is too long (should be 120-160 characters)');
+            } else {
+                issues.push('Description is missing');
+            }
+
+            // Content length analysis (25 points)
+            const plainContent = content ? content.replace(/<[^>]*>/g, '').trim() : '';
+            const wordCount = plainContent.split(/\s+/).filter(Boolean).length;
+            if (wordCount >= 300) {
+                score += 25;
+            } else if (wordCount >= 150) {
+                score += 15;
+                issues.push('Content is too short (should be at least 300 words)');
+            } else {
+                issues.push('Content is too short (should be at least 300 words)');
+            }
+
+            // Tags analysis (10 points)
+            const parsedTags = tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [];
+            if (parsedTags && parsedTags.length >= 3) {
+                score += 10;
+            } else if (parsedTags && parsedTags.length > 0) {
+                score += 5;
+                issues.push('Add more tags (should have at least 3 tags)');
+            } else {
+                issues.push('Tags are missing');
+            }
+
+            // SEO Meta Title analysis (15 points)
+            if (seoMetaTitle && seoMetaTitle.length >= 30 && seoMetaTitle.length <= 60) {
+                score += 15;
+            } else if (seoMetaTitle && seoMetaTitle.length > 0) {
+                score += 8;
+                issues.push(seoMetaTitle.length < 30 ? 'SEO meta title is too short (should be 30-60 characters)' : 'SEO meta title is too long (should be 30-60 characters)');
+            } else {
+                issues.push('SEO meta title is missing');
+            }
+
+            // SEO Meta Description analysis (15 points)
+            if (seoMetaDescription && seoMetaDescription.length >= 120 && seoMetaDescription.length <= 160) {
+                score += 15;
+            } else if (seoMetaDescription && seoMetaDescription.length > 0) {
+                score += 8;
+                issues.push(seoMetaDescription.length < 120 ? 'SEO meta description is too short (should be 120-160 characters)' : 'SEO meta description is too long (should be 120-160 characters)');
+            } else {
+                issues.push('SEO meta description is missing');
+            }
+
+            return {
+                score: Math.round((score / maxScore) * 100),
+                issues
+            };
+        };
+
         const pageAnalysis = content.map(item => {
-            const title = item.title || '';
-            
-            // Check meta description from seo_meta_description field first, then meta_description
-            const metaDescription = item.seo_meta_description || item.meta_description || '';
-            const hasMetaDescription = metaDescription.length >= 150 && metaDescription.length <= 160;
-            
-            // Check for H1 in multiple content sources
-            let hasH1 = false;
-            const contentSources = [];
-            
-            // Check main content field
-            if (item.content) {
-                contentSources.push(item.content);
-            }
-            
-            // Check builder content elements if they exist
-            if (item.builder_content_elements) {
-                try {
-                    const elements = typeof item.builder_content_elements === 'string' 
-                        ? JSON.parse(item.builder_content_elements) 
-                        : item.builder_content_elements;
-                    if (Array.isArray(elements)) {
-                        elements.forEach(el => {
-                            if (el.content) contentSources.push(el.content);
-                            if (el.html) contentSources.push(el.html);
-                            if (el.text) contentSources.push(el.text);
-                        });
-                    }
-                } catch (e) {
-                    console.error('Error parsing builder_content_elements:', e);
-                }
-            }
-            
-            // Check short description
-            if (item.short_description) {
-                contentSources.push(item.short_description);
-            }
-            
-            // Check for H1 in all content sources (case-insensitive, with attributes)
-            const h1Regex = /<h1\b[^>]*>/i;
-            hasH1 = contentSources.some(source => h1Regex.test(source));
-            
-            const hasAltText = true; // This would need to be checked in the actual content
-            
-            // Calculate SEO score
-            let score = 100;
-            if (!hasMetaDescription) score -= 20;
-            if (!hasH1) score -= 15;
-            if (!hasAltText) score -= 10;
-            if (title.length < 30 || title.length > 60) score -= 15;
-            
-            const issues = [];
-            
-            if (!hasMetaDescription) {
-                const currentLength = metaDescription.length;
-                if (currentLength === 0) {
-                    issues.push('Meta description is missing');
-                } else if (currentLength < 150) {
-                    issues.push(`Meta description too short (${currentLength}/150 chars)`);
-                } else if (currentLength > 160) {
-                    issues.push(`Meta description too long (${currentLength}/160 chars)`);
-                }
-            }
-            
-            if (!hasH1) {
-                issues.push('Missing H1 tag in content');
-            }
-            
-            if (!hasAltText) {
-                issues.push('Missing alt text on images');
-            }
-            
-            if (title.length < 30 || title.length > 60) {
-                issues.push(`Title length not optimal (${title.length}/30-60 chars)`);
-            }
+            const { score, issues } = calculateSEOScore(
+                item.title,
+                item.short_description,
+                item.content,
+                item.tags,
+                item.seo_meta_title,
+                item.seo_meta_description,
+                item.seo_meta_keywords
+            );
 
             return {
                 id: item.id,
                 page: item.slug || 'Unknown',
-                title: title,
-                status: score >= 70 ? 'Good' : score >= 50 ? 'Warning' : 'Critical',
+                title: item.title || 'Unknown',
+                status: score >= 80 ? 'Good' : score >= 60 ? 'Warning' : 'Critical',
                 score: score,
                 issues: issues,
             };
         });
-        
+
         res.json(pageAnalysis);
     } catch (error) {
         console.error('Get page SEO analysis error:', error);
@@ -152,46 +161,118 @@ exports.getPageSeoAnalysis = async (req, res) => {
 exports.getSeoScore = async (req, res) => {
     try {
         const { rows: content } = await Content.findAll({ status: 'published' });
-        
+
         if (content.length === 0) {
             return res.json({ score: 0, issues: [] });
         }
-        
+
+        // Use the same SEO calculation logic as CreateContent.jsx
+        const calculateSEOScore = (title, description, content, tags, seoMetaTitle, seoMetaDescription, seoMetaKeywords) => {
+            let score = 0;
+            let maxScore = 100;
+            let issues = [];
+
+            // Title analysis (20 points)
+            if (title && title.length >= 30 && title.length <= 60) {
+                score += 20;
+            } else if (title && title.length > 0) {
+                score += 10;
+                issues.push(title.length < 30 ? 'Title is too short (should be 30-60 characters)' : 'Title is too long (should be 30-60 characters)');
+            } else {
+                issues.push('Title is missing');
+            }
+
+            // Description analysis (15 points)
+            if (description && description.length >= 120 && description.length <= 160) {
+                score += 15;
+            } else if (description && description.length > 0) {
+                score += 8;
+                issues.push(description.length < 120 ? 'Description is too short (should be 120-160 characters)' : 'Description is too long (should be 120-160 characters)');
+            } else {
+                issues.push('Description is missing');
+            }
+
+            // Content length analysis (25 points)
+            const plainContent = content ? content.replace(/<[^>]*>/g, '').trim() : '';
+            const wordCount = plainContent.split(/\s+/).filter(Boolean).length;
+            if (wordCount >= 300) {
+                score += 25;
+            } else if (wordCount >= 150) {
+                score += 15;
+                issues.push('Content is too short (should be at least 300 words)');
+            } else {
+                issues.push('Content is too short (should be at least 300 words)');
+            }
+
+            // Tags analysis (10 points)
+            const parsedTags = tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [];
+            if (parsedTags && parsedTags.length >= 3) {
+                score += 10;
+            } else if (parsedTags && parsedTags.length > 0) {
+                score += 5;
+                issues.push('Add more tags (should have at least 3 tags)');
+            } else {
+                issues.push('Tags are missing');
+            }
+
+            // SEO Meta Title analysis (15 points)
+            if (seoMetaTitle && seoMetaTitle.length >= 30 && seoMetaTitle.length <= 60) {
+                score += 15;
+            } else if (seoMetaTitle && seoMetaTitle.length > 0) {
+                score += 8;
+                issues.push(seoMetaTitle.length < 30 ? 'SEO meta title is too short (should be 30-60 characters)' : 'SEO meta title is too long (should be 30-60 characters)');
+            } else {
+                issues.push('SEO meta title is missing');
+            }
+
+            // SEO Meta Description analysis (15 points)
+            if (seoMetaDescription && seoMetaDescription.length >= 120 && seoMetaDescription.length <= 160) {
+                score += 15;
+            } else if (seoMetaDescription && seoMetaDescription.length > 0) {
+                score += 8;
+                issues.push(seoMetaDescription.length < 120 ? 'SEO meta description is too short (should be 120-160 characters)' : 'SEO meta description is too long (should be 120-160 characters)');
+            } else {
+                issues.push('SEO meta description is missing');
+            }
+
+            return {
+                score: Math.round((score / maxScore) * 100),
+                issues
+            };
+        };
+
         let totalScore = 0;
         const allIssues = [];
-        
+
         content.forEach(item => {
-            const title = item.title || '';
-            const metaDescription = item.meta_description || '';
-            const hasMetaDescription = metaDescription.length >= 150 && metaDescription.length <= 160;
-            const hasH1 = item.content && item.content.includes('<h1>');
-            
-            let score = 100;
-            if (!hasMetaDescription) {
-                score -= 20;
-                allIssues.push({ type: 'warning', message: `Meta description is too short or too long for "${title}"` });
-            }
-            if (!hasH1) {
-                score -= 15;
-                allIssues.push({ type: 'warning', message: `Missing H1 tag for "${title}"` });
-            }
-            if (title.length < 30 || title.length > 60) {
-                score -= 15;
-                allIssues.push({ type: 'warning', message: `Title tag length is not optimal for "${title}"` });
-            }
-            
+            const { score, issues } = calculateSEOScore(
+                item.title,
+                item.short_description,
+                item.content,
+                item.tags,
+                item.seo_meta_title,
+                item.seo_meta_description,
+                item.seo_meta_keywords
+            );
+
             totalScore += score;
+
+            // Add issues with type
+            issues.forEach(issue => {
+                allIssues.push({ type: 'warning', message: `${issue} for "${item.title || 'Untitled'}"` });
+            });
         });
-        
+
         const averageScore = Math.round(totalScore / content.length);
-        
+
         // Add some success messages
-        const successCount = allIssues.filter(i => i.type === 'success').length;
-        if (successCount === 0) {
-            allIssues.unshift({ type: 'success', message: 'Title tags are present on all pages' });
-            allIssues.unshift({ type: 'success', message: 'All pages have content structure' });
+        if (allIssues.length === 0) {
+            allIssues.unshift({ type: 'success', message: 'All content has excellent SEO scores' });
+            allIssues.unshift({ type: 'success', message: 'All pages have proper meta tags' });
+        } else {
+            allIssues.unshift({ type: 'success', message: `${content.length} pages analyzed` });
         }
-        
+
         res.json({
             score: averageScore,
             issues: allIssues.slice(0, 10), // Limit to 10 issues

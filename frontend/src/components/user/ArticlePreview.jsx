@@ -24,12 +24,15 @@ const statusColorMap = {
 };
 
 const ArticlePreview = () => {
-  const { id } = useParams();
+  const { type, id } = useParams();
   const navigate = useNavigate();
   const { darkMode } = useTheme();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Extract content type from URL parameter (remove -preview suffix)
+  const contentType = type ? type.replace('-preview', '') : 'article';
 
   useEffect(() => { fetchContent(); }, [id]);
 

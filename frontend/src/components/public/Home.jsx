@@ -12,6 +12,7 @@ import axios from 'axios';
 import moment from 'moment';
 import { Card, CardContent } from '@/components/ui/card';
 import { useTheme } from '../../context/ThemeContext';
+import { navigateContentItem } from '../../lib/contentRoute';
 
 // Newsletter Subscribe Form Component
 const NewsletterSubscribeForm = ({ darkMode = false }) => {
@@ -493,20 +494,14 @@ const CAT_TABS = [
 ];
 
 const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
-  // Merge hardcoded tabs with dynamic categories
-  const allTabs = [...CAT_TABS];
-  
-  // Add dynamic categories that aren't already in CAT_TABS
-  dynamicCategories.forEach(cat => {
-    if (!allTabs.find(tab => tab.key === cat.slug)) {
-      allTabs.push({
-        label: cat.name,
-        key: cat.slug,
-        param: 'category',
-        color: 'var(--color-primary)'
-      });
-    }
-  });
+  // Only use dynamic categories (top viewed categories from API)
+  const allTabs = dynamicCategories.map(cat => ({
+    label: cat.name,
+    key: cat.slug,
+    param: 'category',
+    color: 'var(--color-primary)',
+    count: cat.content_count || 0
+  }));
 
   return (
     <div className="category-nav" style={{ margin: '32px 0 24px' }}>
@@ -519,8 +514,9 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
         gap: 10,
         flexWrap: 'nowrap',
         overflowX: 'auto',
-        overflowY: 'hidden',
+        overflowY: 'visible',
         paddingBottom: 8,
+        paddingTop: 4,
         scrollbarWidth: 'thin',
         scrollbarColor: 'var(--color-primary) transparent',
         WebkitOverflowScrolling: 'touch'
@@ -571,6 +567,12 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
                   e.currentTarget.style.color = c.color;
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = `0 4px 12px ${c.color}25`;
+                  // Update count span color on hover
+                  const countSpan = e.currentTarget.querySelector('span');
+                  if (countSpan) {
+                    countSpan.style.background = 'rgba(255,255,255,0.2)';
+                    countSpan.style.color = '#fff';
+                  }
                 }
               }}
               onMouseLeave={e => {
@@ -579,10 +581,29 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
                   e.currentTarget.style.color = 'var(--color-heading)';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
+                  // Restore count span color on mouse leave
+                  const countSpan = e.currentTarget.querySelector('span');
+                  if (countSpan) {
+                    countSpan.style.background = 'var(--color-primary-light)';
+                    countSpan.style.color = 'var(--color-primary)';
+                  }
                 }
               }}
             >
               {c.label}
+              {c.count > 0 && (
+                <span style={{
+                  fontSize: 'clamp(10px, 0.7vw, 11px)',
+                  fontWeight: 700,
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--color-primary-light)',
+                  color: isActive ? '#fff' : 'var(--color-primary)',
+                  transition: 'all .2s ease'
+                }}>
+                  {c.count}
+                </span>
+              )}
             </button>
           );
         })}
@@ -1031,7 +1052,7 @@ const HERO_QUOTES = [
   { 
     text: 'Your Gateway to', 
     shimmerWord: 'Tech Insights', 
-    afterText: '& Innovation',
+    afterText: ' & Innovation',
     fullText: 'Your Gateway to Tech Insights & Innovation'
   },
   { 
@@ -1043,7 +1064,7 @@ const HERO_QUOTES = [
   { 
     text: 'The', 
     shimmerWord: 'Knowledge Hub', 
-    afterText: 'for Modern Businesses',
+    afterText: ' for Modern Businesses',
     fullText: 'The Knowledge Hub for Modern Businesses'
   },
   { 
@@ -1800,7 +1821,7 @@ const Home = () => {
   const [stats, setStats] = useState({ totalPublished: 0, totalViews: 0, totalAuthors: 0, totalCategories: 0 });
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);
-  const [activeTab, setActiveTab] = useState(CAT_TABS[0].key);
+  const [activeTab, setActiveTab] = useState(null);
   const [tabData, setTabData] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
   const [dynamicCategories, setDynamicCategories] = useState([]);
@@ -1823,24 +1844,28 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch dynamic categories from API
-    axios.get('/api/public/categories')
+    // Fetch top viewed categories from API (limit to 6)
+    axios.get('/api/public/top-categories?limit=6')
       .then(res => {
-        setDynamicCategories(res.data || []);
+        const categories = res.data || [];
+        setDynamicCategories(categories);
+        // Set first category as active tab if no tab is selected
+        if (categories.length > 0 && !activeTab) {
+          setActiveTab(categories[0].slug);
+        }
       })
       .catch(err => {
-        console.error('Failed to fetch categories:', err);
+        console.error('Failed to fetch top categories:', err);
       });
   }, []);
 
   useEffect(() => {
     if (!activeTab) { setTabData([]); return; }
     setTabLoading(true);
-    // Check if tab is in CAT_TABS or dynamic categories
-    const hardcodedTab = CAT_TABS.find(c => c.key === activeTab);
+    // Only check dynamic categories
     const dynamicTab = dynamicCategories.find(c => c.slug === activeTab);
-    const tab = hardcodedTab || (dynamicTab ? { key: dynamicTab.slug, param: 'category' } : null);
-    
+    const tab = dynamicTab ? { key: dynamicTab.slug, param: 'category' } : null;
+
     if (!tab) {
       setTabData([]);
       setTabLoading(false);

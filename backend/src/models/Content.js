@@ -371,7 +371,10 @@ class Content {
     }
 
     static async incrementViewCount(id) {
-        await pool.query('UPDATE contents SET view_count = view_count + 1 WHERE id = ?', [id]);
+        console.log('👁️ Incrementing view count for content ID:', id);
+        const [result] = await pool.query('UPDATE contents SET view_count = view_count + 1 WHERE id = ?', [id]);
+        console.log('👁️ View count increment result:', result.affectedRows > 0 ? 'SUCCESS' : 'FAILED');
+        return result.affectedRows > 0;
     }
 
     static async getRelatedArticles(contentId, categoryId, limit = 3) {

@@ -52,7 +52,24 @@ const getContentRoute = (item) => {
   }
 };
 
-const navigateContent = (item, navigate) => {
+const navigateContent = async (item, navigate) => {
+  try {
+    // Increment view count when content is clicked (use session-based deduplication)
+    const viewKey = `content-viewed-${item.id}`;
+    const sessionViewed = sessionStorage.getItem(viewKey);
+
+    // Only increment if not already viewed in this session
+    if (!sessionViewed) {
+      console.log('👁️ Incrementing view for content:', item.id);
+      await axios.post(`/api/public/content/${item.id}/view`);
+      sessionStorage.setItem(viewKey, 'true');
+      console.log('✅ View incremented and marked as viewed');
+    } else {
+      console.log('⏭️ Content already viewed in this session, skipping increment');
+    }
+  } catch (error) {
+    console.error('Error incrementing view count:', error);
+  }
   const { url, newTab } = getContentRoute(item);
   if (newTab) {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -91,41 +108,60 @@ const CATEGORY_IMG_MAP = {
 };
 
 // ── Split Hero Banner ────────────────────────────────────────────
-const HeroBanner = ({ title, accent, leftImg, rightImg }) => (
-  <div style={{ display: 'flex', height: 400, overflow: 'hidden', position: 'relative' }} className="cat-hero">
-    {/* Left half */}
-    <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-      <img src={leftImg} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}cc 0%, ${accent}66 60%, transparent 100%)` }} />
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 48px' }}>
-        <div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
-            TGS Tech Info
+const HeroBanner = ({ title, accent, leftImg, rightImg }) => {
+  const isMobile = window.innerWidth < 768;
+  return (
+    <div style={{ display: 'flex', height: isMobile ? 280 : 400, overflow: 'hidden', position: 'relative' }} className="cat-hero">
+      {/* Left half */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: isMobile ? 'none' : 'block' }}>
+        <img src={leftImg} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}cc 0%, ${accent}66 60%, transparent 100%)` }} />
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 48px' }}>
+          <div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
+              TGS Tech Info
+            </div>
+            <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 'clamp(28px,3vw,42px)', margin: 0, letterSpacing: -1, textShadow: '0 2px 12px rgba(0,0,0,.3)' }}>
+              {title.toUpperCase()}
+            </h1>
           </div>
-          <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 'clamp(28px,3vw,42px)', margin: 0, letterSpacing: -1, textShadow: '0 2px 12px rgba(0,0,0,.3)' }}>
-            {title.toUpperCase()}
-          </h1>
         </div>
       </div>
+      {/* Right half - shown on mobile as full width */}
+      <div style={{ flex: isMobile ? 1 : 1, position: 'relative', overflow: 'hidden' }}>
+        <img src={isMobile ? leftImg : rightImg} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <div style={{ position: 'absolute', inset: 0, background: isMobile ? `linear-gradient(135deg, ${accent}cc 0%, ${accent}66 100%)` : 'linear-gradient(135deg, rgba(10,22,40,.3) 0%, rgba(10,22,40,.6) 100%)' }} />
+        {isMobile && (
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
+            <div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.75)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
+                TGS Tech Info
+              </div>
+              <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 'clamp(20px,5vw,32px)', margin: 0, letterSpacing: -1, textShadow: '0 2px 12px rgba(0,0,0,.3)' }}>
+                {title.toUpperCase()}
+              </h1>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Center divider glow - hidden on mobile */}
+      {!isMobile && (
+        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 3, background: `linear-gradient(to bottom, transparent, ${accent}, transparent)`, transform: 'translateX(-50%)', zIndex: 2 }} />
+      )}
     </div>
-    {/* Right half */}
-    <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-      <img src={rightImg} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(10,22,40,.3) 0%, rgba(10,22,40,.6) 100%)' }} />
-    </div>
-    {/* Center divider glow */}
-    <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 3, background: `linear-gradient(to bottom, transparent, ${accent}, transparent)`, transform: 'translateX(-50%)', zIndex: 2 }} />
-  </div>
-);
+  );
+};
 
 // ── Main list item ───────────────────────────────────────────────
 const ListItem = ({ item, navigate, accent, darkMode }) => {
+  const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
   return (
   <div style={{
-    display: 'flex', gap: 20, padding: '20px 0',
+    display: 'flex', gap: isMobile ? 12 : 20, padding: isMobile ? '16px 0' : '20px 0',
     borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer',
-    transition: 'background .15s', borderRadius: 4
+    transition: 'background .15s', borderRadius: 4,
+    flexDirection: isMobile ? 'column' : 'row'
   }}
     className="cat-list-item"
     onClick={() => navigateContent(item, navigate)}
@@ -133,57 +169,67 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
   >
     {/* Thumbnail */}
-    <div style={{ width: 220, height: 150, flexShrink: 0, borderRadius: 10, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }} className="cat-list-item-thumb">
+    <div style={{ 
+      width: isMobile ? '100%' : 220, 
+      height: isMobile ? 180 : 150, 
+      flexShrink: 0, 
+      borderRadius: 10, 
+      overflow: 'hidden', 
+      background: darkMode ? '#1e293b' : '#f0f4ff', 
+      position: 'relative',
+      minHeight: isMobile ? 180 : 150,
+      maxHeight: isMobile ? 180 : 150,
+    }} className="cat-list-item-thumb">
       {item.banner_image
-        ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .3s', imageRendering: 'auto', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+        ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="cat-list-item-thumb-img" style={{ transition: 'transform .4s ease' }}
             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
           />
-        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📄</div>
+        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 40 : 32 }}>📄</div>
       }
       {/* Landing Page or content type badge on thumbnail */}
       <span style={{
         position: 'absolute', top: 8, left: 8,
         background: isLandingPage ? '#6c5ce7' : accent,
-        color: '#fff', fontSize: 10, fontWeight: 700,
-        padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase'
+        color: '#fff', fontSize: isMobile ? 9 : 10, fontWeight: 700,
+        padding: isMobile ? '2px 7px' : '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase'
       }}>
         {isLandingPage ? 'Landing Page' : (item.content_type_name || item.content_type || '')}
       </span>
     </div>
     {/* Content */}
     <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isMobile ? 6 : 8 }}>
         {item.category_name && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8 }}>
+          <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8 }}>
             {item.category_name}
           </span>
         )}
       </div>
-      <h3 style={{ fontWeight: 700, fontSize: 16, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 8px', lineHeight: 1.4,
+      <h3 style={{ fontWeight: 700, fontSize: isMobile ? 15 : 16, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 8px', lineHeight: 1.4,
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {item.title}
       </h3>
-      <p style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.65, margin: '0 0 12px',
-        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+      <p style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.65, margin: '0 0 12px',
+        display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {item.short_description}
       </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <UserOutlined style={{ fontSize: 11 }} />
+          <UserOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
           {item.first_name} {item.last_name}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <CalendarOutlined style={{ fontSize: 11 }} />
+          <CalendarOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
           {moment(item.published_date || item.created_at).format('MMM D, YYYY')}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <EyeOutlined style={{ fontSize: 11 }} />
+          <EyeOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
           {item.view_count || 0}
         </span>
         {/* CTA label */}
         <span style={{
-          marginLeft: 'auto', fontSize: 12, fontWeight: 700,
+          marginLeft: isMobile ? 0 : 'auto', fontSize: isMobile ? 11 : 12, fontWeight: 700,
           color: isLandingPage ? '#6c5ce7' : accent,
           display: 'flex', alignItems: 'center', gap: 4
         }}>
@@ -197,16 +243,17 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
 
 // ── Sidebar recent post ──────────────────────────────────────────
 const SidebarPost = ({ item, navigate, accent, darkMode }) => {
+  const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
   return (
-  <div style={{ display: 'flex', flexDirection: 'row', gap: 10, padding: '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
+  <div style={{ display: 'flex', flexDirection: 'row', gap: isMobile ? 12 : 10, padding: isMobile ? '10px 0' : '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
     onClick={() => navigateContent(item, navigate)}
   >
     {/* Thumbnail */}
-    <div style={{ width: 64, height: 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }}>
+    <div style={{ width: isMobile ? 80 : 64, height: isMobile ? 60 : 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }}>
       {item.banner_image
-        ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📄</div>
+        ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="thumb-img" />
+        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 24 : 20 }}>📄</div>
       }
       {isLandingPage && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(108,92,231,0.15)', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: '2px 4px' }}>
@@ -216,7 +263,7 @@ const SidebarPost = ({ item, navigate, accent, darkMode }) => {
     </div>
     {/* Title + Description */}
     <div style={{ flex: 1, minWidth: 0 }}>
-      <h4 style={{ fontWeight: 700, fontSize: 13, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 3px', lineHeight: 1.4,
+      <h4 style={{ fontWeight: 700, fontSize: isMobile ? 14 : 13, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 3px', lineHeight: 1.4,
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
         transition: 'color .2s'
       }}
@@ -225,8 +272,8 @@ const SidebarPost = ({ item, navigate, accent, darkMode }) => {
       >
         {item.title}
       </h4>
-      <p style={{ fontSize: 11.5, color: '#94a3b8', margin: 0, lineHeight: 1.5,
-        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+      <p style={{ fontSize: isMobile ? 12 : 11.5, color: '#94a3b8', margin: 0, lineHeight: 1.5,
+        display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
         {item.short_description}
       </p>
     </div>
@@ -241,6 +288,7 @@ const CategoryList = () => {
   const slug = paramSlug || pathSlug;
   const navigate = useNavigate();
   const { darkMode } = useTheme();
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [contents, setContents] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
@@ -249,6 +297,12 @@ const CategoryList = () => {
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const typeInfo = TYPE_MAP[slug];
   const catImgInfo = !typeInfo ? (CATEGORY_IMG_MAP[slug] || {}) : {};
@@ -309,23 +363,230 @@ const CategoryList = () => {
         rightImg={rightImg}
       />
 
+      {/* ── Newsletter Section (Mobile Only - After Hero) ── */}
+      {isMobile && (
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
+          <div style={{ 
+            background: 'linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #8b5cf6 100%)',
+            borderRadius: 16, 
+            padding: '20px', 
+            boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
+            position: 'relative',
+            overflow: 'hidden',
+            marginBottom: 24
+          }}>
+            {/* Background dots pattern */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
+              opacity: 0.5
+            }} />
+            
+            {/* Wave pattern at bottom */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '60px',
+              background: 'linear-gradient(180deg, transparent 0%, rgba(236, 72, 153, 0.2) 100%)',
+              clipPath: 'polygon(0 40%, 25% 60%, 50% 40%, 75% 60%, 100% 40%, 100% 100%, 0 100%)'
+            }} />
+
+            {/* Logo and header */}
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+              <div style={{
+                width: 24,
+                height: 24,
+                background: 'rgba(255,255,255,0.2)',
+                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+              }} />
+              <span style={{ 
+                fontWeight: 800, 
+                fontSize: 14, 
+                color: '#fff', 
+                letterSpacing: 2,
+                textTransform: 'uppercase'
+              }}>
+                Newsletter
+              </span>
+            </div>
+
+            {/* Main text */}
+            <div style={{ 
+              position: 'relative', 
+              zIndex: 1, 
+              fontSize: 15, 
+              color: '#fff', 
+              fontWeight: 600,
+              marginBottom: 16,
+              lineHeight: 1.4,
+              textAlign: 'center'
+            }}>
+              Stay Updated with Our Latest News!
+            </div>
+
+            {/* Form */}
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const email = e.target.email.value;
+              if (!email || !email.includes('@')) {
+                alert('Please enter a valid email address');
+                return;
+              }
+              try {
+                await axios.post('/api/public/newsletter', { email });
+                alert('Successfully subscribed!');
+                e.target.email.value = '';
+              } catch (error) {
+                alert('Failed to subscribe. Please try again.');
+              }
+            }} style={{ 
+              position: 'relative',
+              zIndex: 1, 
+              display: 'flex', 
+              gap: 8,
+              alignItems: 'center',
+              flexDirection: 'column'
+            }}>
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                required
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  borderRadius: 25,
+                  border: 'none',
+                  background: 'rgba(255,255,255,0.9)',
+                  color: '#1f2937',
+                  fontSize: 14,
+                  outline: 'none',
+                  fontWeight: 500,
+                  width: '100%'
+                }}
+              />
+              <button
+                type="submit"
+                style={{
+                  width: '100%',
+                  height: 44,
+                  background: '#9ca3af',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 25,
+                  cursor: 'pointer',
+                  transition: 'all .3s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 16,
+                  padding: '12px 20px'
+                }}
+                onMouseEnter={e => { 
+                  e.currentTarget.style.background = '#6b7280';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseLeave={e => { 
+                  e.currentTarget.style.background = '#9ca3af';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                Subscribe
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Content Area ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
-        <div style={{ display: 'flex', gap: 40, alignItems: 'flex-start' }} className="cat-layout">
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
+        <div style={{ display: 'flex', gap: isMobile ? 24 : 40, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }} className="cat-layout">
 
           {/* ── Main List ── */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', width: isMobile ? '100%' : 'auto' }}>
+            {/* Horizontal Categories */}
+            <div style={{ marginBottom: isMobile ? 16 : 24 }}>
+              <div style={{ fontWeight: 700, fontSize: isMobile ? 13 : 14, color: darkMode ? '#94a3b8' : '#64748b', marginBottom: isMobile ? 10 : 12, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Browse Categories
+              </div>
+              <div style={{ display: 'flex', gap: isMobile ? 8 : 10, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'thin', scrollbarColor: `${accent}33 transparent` }}
+                css={{
+                  '&::-webkit-scrollbar': { height: '6px' },
+                  '&::-webkit-scrollbar-track': { background: 'transparent', borderRadius: '3px' },
+                  '&::-webkit-scrollbar-thumb': { background: `${accent}33`, borderRadius: '3px' },
+                  '&::-webkit-scrollbar-thumb:hover': { background: `${accent}66` }
+                }}>
+                {loading
+                  ? <Skeleton active paragraph={{ rows: 1 }} />
+                  : categoriesTree.filter(parent => parent.count > 0).length === 0
+                    ? <div style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>No categories found.</div>
+                    : categoriesTree.filter(parent => parent.count > 0).map(parent => (
+                        <button
+                          key={parent.id}
+                          onClick={() => navigate(`/category/${parent.slug}`)}
+                          style={{
+                            padding: isMobile ? '6px 12px' : '8px 16px',
+                            background: darkMode ? '#1e293b' : '#fff',
+                            border: `1.5px solid ${accent}33`,
+                            borderRadius: 20,
+                            fontSize: isMobile ? 12 : 13,
+                            fontWeight: 600,
+                            color: darkMode ? '#f1f5f9' : '#0f172a',
+                            cursor: 'pointer',
+                            transition: 'all .2s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            flexShrink: 0
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = accent;
+                            e.currentTarget.style.color = '#fff';
+                            e.currentTarget.style.borderColor = accent;
+                            // Update count span color on hover
+                            const countSpan = e.currentTarget.querySelector('span');
+                            if (countSpan) {
+                              countSpan.style.background = 'rgba(255,255,255,0.2)';
+                              countSpan.style.color = '#fff';
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = darkMode ? '#1e293b' : '#fff';
+                            e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#0f172a';
+                            e.currentTarget.style.borderColor = `${accent}33`;
+                            // Restore count span color on mouse leave
+                            const countSpan = e.currentTarget.querySelector('span');
+                            if (countSpan) {
+                              countSpan.style.background = `${accent}18`;
+                              countSpan.style.color = accent;
+                            }
+                          }}
+                        >
+                          {parent.name}
+                          <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, background: `${accent}18`, color: accent, borderRadius: 12, padding: '1px 6px', minWidth: 20, textAlign: 'center' }}>
+                            {parent.count}
+                          </span>
+                        </button>
+                      ))
+                }
+              </div>
+            </div>
+
             {/* Count bar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: 16, borderBottom: `3px solid ${accent}`, flexShrink: 0 }}>
-              <span style={{ fontWeight: 800, fontSize: 18, color: darkMode ? '#f1f5f9' : '#0f172a' }}>{pageTitle}</span>
-              <span style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>{total} posts found</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: isMobile ? 12 : 16, borderBottom: `3px solid ${accent}`, flexShrink: 0 }}>
+              <span style={{ fontWeight: 800, fontSize: isMobile ? 16 : 18, color: darkMode ? '#f1f5f9' : '#0f172a' }}>{pageTitle}</span>
+              <span style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>{total} posts found</span>
             </div>
 
             <div>
               {loading
                 ? <Skeleton active paragraph={{ rows: 6 }} />
                 : contents.length === 0
-                  ? <div style={{ textAlign: 'center', padding: '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: 15 }}>No content found.</div>
+                  ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>No content found.</div>
                   : contents.slice(0, visibleCount).map(item => (
                       <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
                     ))
@@ -334,10 +595,10 @@ const CategoryList = () => {
 
             {/* See More button */}
             {!loading && contents.length > 0 && visibleCount < contents.length && (
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: isMobile ? 20 : 24 }}>
                 <button
                   onClick={() => setVisibleCount(v => Math.min(v + SEE_MORE_STEP, contents.length))}
-                  style={{ padding: '11px 36px', background: darkMode ? '#1e293b' : '#fff', color: accent, border: `2px solid ${accent}`, borderRadius: 30, fontWeight: 700, fontSize: 14, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
+                  style={{ padding: isMobile ? '10px 28px' : '11px 36px', background: darkMode ? '#1e293b' : '#fff', color: accent, border: `2px solid ${accent}`, borderRadius: 30, fontWeight: 700, fontSize: isMobile ? 13 : 14, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = '#fff'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = darkMode ? '#1e293b' : '#fff'; e.currentTarget.style.color = accent; }}
                 >
@@ -348,74 +609,196 @@ const CategoryList = () => {
 
             {/* Pagination — only shown after all items on this page are visible */}
             {!loading && total > PAGE_SIZE && visibleCount >= contents.length && (
-              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+              <div style={{ marginTop: isMobile ? 16 : 16, display: 'flex', justifyContent: 'center' }}>
                 <Pagination
                   current={currentPage}
                   total={total}
                   pageSize={PAGE_SIZE}
-                  onChange={page => setCurrentPage(page)}
+                  onChange={page => {
+                    setCurrentPage(page);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   showSizeChanger={false}
-                  showTotal={t => `Total ${t} items`}
+                  showTotal={isMobile ? false : t => `Total ${t} items`}
+                  simple={isMobile}
+                  size={isMobile ? 'small' : 'default'}
                 />
               </div>
             )}
           </div>
 
-          {/* ── Sidebar ── */}
-          <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
-            {/* Recent Posts */}
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5', marginBottom: 24 }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
-                Recent Posts
-              </div>
-              {loading
-                ? <Skeleton active paragraph={{ rows: 6 }} />
-                : recentPosts.map(item => (
-                    <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
-                  ))
-              }
-            </div>
+          {/* ── Sidebar (Desktop Only) ── */}
+          {!isMobile && (
+            <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
+              {/* Newsletter Section */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #8b5cf6 100%)',
+                borderRadius: 16, 
+                padding: '24px', 
+                boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
+                position: 'relative',
+                overflow: 'hidden',
+                marginBottom: 24
+              }}>
+                {/* Background dots pattern */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
+                  backgroundSize: '20px 20px',
+                  opacity: 0.5
+                }} />
+                
+                {/* Wave pattern at bottom */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '60px',
+                  background: 'linear-gradient(180deg, transparent 0%, rgba(236, 72, 153, 0.2) 100%)',
+                  clipPath: 'polygon(0 40%, 25% 60%, 50% 40%, 75% 60%, 100% 40%, 100% 100%, 0 100%)'
+                }} />
 
-            {/* Categories with Count */}
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5' }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
-                Categories
+                {/* Logo and header */}
+                <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                  <div style={{
+                    width: 24,
+                    height: 24,
+                    background: 'rgba(255,255,255,0.2)',
+                    clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+                  }} />
+                  <span style={{ 
+                    fontWeight: 800, 
+                    fontSize: 14, 
+                    color: '#fff', 
+                    letterSpacing: 2,
+                    textTransform: 'uppercase'
+                  }}>
+                    Newsletter
+                  </span>
+                </div>
+
+                {/* Main text */}
+                <div style={{ 
+                  position: 'relative', 
+                  zIndex: 1, 
+                  fontSize: 16, 
+                  color: '#fff', 
+                  fontWeight: 600,
+                  marginBottom: 20,
+                  lineHeight: 1.4,
+                  textAlign: 'center'
+                }}>
+                  Stay Updated with Our Latest News!
+                </div>
+
+                {/* Form */}
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  const email = e.target.email.value;
+                  if (!email || !email.includes('@')) {
+                    alert('Please enter a valid email address');
+                    return;
+                  }
+                  try {
+                    await axios.post('/api/public/newsletter', { email });
+                    alert('Successfully subscribed!');
+                    e.target.email.value = '';
+                  } catch (error) {
+                    alert('Failed to subscribe. Please try again.');
+                  }
+                }} style={{ 
+                  position: 'relative',
+                  zIndex: 1, 
+                  display: 'flex', 
+                  gap: 10,
+                  alignItems: 'center',
+                  flexDirection: 'row'
+                }}>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email Address"
+                    required
+                    style={{
+                      flex: 1,
+                      padding: '12px 16px',
+                      borderRadius: 25,
+                      border: 'none',
+                      background: 'rgba(255,255,255,0.9)',
+                      color: '#1f2937',
+                      fontSize: 13,
+                      outline: 'none',
+                      fontWeight: 500,
+                      width: 'auto'
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      background: '#9ca3af',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      transition: 'all .3s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 16,
+                      padding: '0'
+                    }}
+                    onMouseEnter={e => { 
+                      e.currentTarget.style.background = '#6b7280';
+                      e.currentTarget.style.transform = 'scale(1.1)';
+                    }}
+                    onMouseLeave={e => { 
+                      e.currentTarget.style.background = '#9ca3af';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    ➤
+                  </button>
+                </form>
               </div>
-              {loading
-                ? <Skeleton active paragraph={{ rows: 5 }} />
-                : categoriesTree.length === 0
-                  ? <div style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#94a3b8', padding: '8px 0' }}>No categories found.</div>
-                  : categoriesTree.map(parent => (
-                      <div key={parent.id} style={{ marginBottom: 10 }}>
-                        <div
-                          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '6px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f1f5f9' }}
-                          onClick={() => navigate(`/category/${parent.slug}`)}
-                        >
-                          <span style={{ fontWeight: 700, fontSize: 13, color: darkMode ? '#f1f5f9' : '#0f172a' }}>{parent.name}</span>
-                          <span style={{ fontSize: 11, fontWeight: 700, background: `${accent}18`, color: accent, borderRadius: 20, padding: '2px 8px', minWidth: 24, textAlign: 'center' }}>
-                            {parent.count}
-                          </span>
-                        </div>
-                        {parent.subcategories?.map(sub => (
-                          <div
-                            key={sub.id}
-                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0 4px 14px' }}
-                            onClick={() => navigate(`/category/${sub.slug}`)}
-                          >
-                            <span style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#475569' }}>↳ {sub.name}</span>
-                            <span style={{ fontSize: 11, fontWeight: 600, background: darkMode ? '#334155' : '#f1f5f9', color: darkMode ? '#94a3b8' : '#64748b', borderRadius: 20, padding: '1px 7px', minWidth: 20, textAlign: 'center' }}>
-                              {sub.count}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+
+              {/* Recent Posts */}
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5', marginBottom: 24 }}>
+                <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
+                  Recent Posts
+                </div>
+                {loading
+                  ? <Skeleton active paragraph={{ rows: 6 }} />
+                  : recentPosts.map(item => (
+                      <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
                     ))
-              }
+                }
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
+
+      {/* ── Recent Posts (Mobile Only - After Content List) ── */}
+      {isMobile && (
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px 24px' }}>
+          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '16px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: accent, marginBottom: 4, paddingBottom: 10, borderBottom: `2px solid ${accent}22` }}>
+              Recent Posts
+            </div>
+            {loading
+              ? <Skeleton active paragraph={{ rows: 6 }} />
+              : recentPosts.map(item => (
+                  <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
+                ))
+            }
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -125,7 +125,7 @@ const ArticleReviewPage = () => {
 
         <Row gutter={[24, 24]}>
           {/* Main Article Content */}
-          <Col xs={24} lg={16}>
+          <Col xs={24} lg={18}>
             <div className="bg-white p-6 md:p-8 rounded-xl shadow-soft border border-gray-200" style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
 
             {/* Status Badge */}
@@ -185,7 +185,7 @@ const ArticleReviewPage = () => {
         </Col>
 
         {/* Sidebar - Review Actions */}
-        <Col xs={24} lg={8}>
+        <Col xs={24} lg={6}>
           <div className="sticky top-20">
             <Card title="Review Actions" className="rounded-xl shadow-soft border border-gray-200" style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
 
@@ -220,24 +220,22 @@ const ArticleReviewPage = () => {
               )}
 
               {/* Action Buttons */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2" style={{ alignItems: 'flex-start' }}>
                 <Button
                   icon={<EditOutlined />}
-                  block
-                  size="large"
+                  size="small"
                   className="border-indigo-500 text-indigo-500 hover:border-indigo-600 hover:text-indigo-600"
-                  style={{ color: darkMode ? '#818cf8' : undefined, borderColor: darkMode ? '#6366f1' : undefined }}
+                  style={{ color: darkMode ? '#818cf8' : undefined, borderColor: darkMode ? '#6366f1' : undefined, height: 28, padding: '2px 10px', fontSize: 12, minWidth: 'auto' }}
                   onClick={() => navigate(`/admin/edit/${id}`)}
                 >
                   Edit Content
                 </Button>
                 {content.status === 'published' && (
                   <Button
-                    icon={<EyeOutlined />} 
-                    block 
-                    size="large"
+                    icon={<EyeOutlined />}
+                    size="small"
                     className="border-blue-500 text-blue-500 hover:border-blue-600 hover:text-blue-600"
-                    style={{ color: darkMode ? '#60a5fa' : undefined, borderColor: darkMode ? '#3b82f6' : undefined }}
+                    style={{ color: darkMode ? '#60a5fa' : undefined, borderColor: darkMode ? '#3b82f6' : undefined, height: 28, padding: '2px 10px', fontSize: 12, minWidth: 'auto' }}
                     onClick={() => {
                       const contentType = content.content_type || 'article';
                       window.open(`/${contentType}/${content.slug}`, '_blank');
@@ -249,13 +247,12 @@ const ArticleReviewPage = () => {
 
                 {content.status === 'approved' && (
                   <Button
-                    type="primary" 
-                    icon={<SendOutlined />} 
-                    block 
-                    loading={submitting} 
-                    size="large"
+                    type="primary"
+                    icon={<SendOutlined />}
+                    loading={submitting}
+                    size="small"
                     className="bg-blue-500 hover:bg-blue-600 border-none"
-                    style={{ background: darkMode ? '#3b82f6' : undefined }}
+                    style={{ background: darkMode ? '#3b82f6' : undefined, height: 28, padding: '2px 10px', fontSize: 12, minWidth: 'auto' }}
                     onClick={() => handleReview('publish')}
                   >
                     Publish
@@ -264,13 +261,12 @@ const ArticleReviewPage = () => {
 
                 {content.status !== 'approved' && content.status !== 'published' && (
                   <Button
-                    type="primary" 
-                    icon={<CheckOutlined />} 
-                    block 
-                    loading={submitting} 
-                    size="large"
+                    type="primary"
+                    icon={<CheckOutlined />}
+                    loading={submitting}
+                    size="small"
                     className="bg-green-500 hover:bg-green-600 border-none"
-                    style={{ background: darkMode ? '#22c55e' : undefined }}
+                    style={{ background: darkMode ? '#22c55e' : undefined, height: 28, padding: '2px 10px', fontSize: 12, minWidth: 'auto' }}
                     onClick={() => handleReview('approve')}
                   >
                     Approve
@@ -279,12 +275,11 @@ const ArticleReviewPage = () => {
 
                 {content.status !== 'published' && (
                   <Button
-                    icon={<EditOutlined />} 
-                    block 
-                    loading={submitting} 
-                    size="large"
+                    icon={<EditOutlined />}
+                    loading={submitting}
+                    size="small"
                     className="border-orange-500 text-orange-500 hover:border-orange-600 hover:text-orange-600"
-                    style={{ color: darkMode ? '#fb923c' : undefined, borderColor: darkMode ? '#f97316' : undefined }}
+                    style={{ color: darkMode ? '#fb923c' : undefined, borderColor: darkMode ? '#f97316' : undefined, height: 28, padding: '2px 10px', fontSize: 12, minWidth: 'auto' }}
                     onClick={() => { setChangesComment(''); setChangesModalOpen(true); }}
                   >
                     Request Changes
@@ -292,20 +287,19 @@ const ArticleReviewPage = () => {
                 )}
 
                 {content.status !== 'published' && (
-                  <Popconfirm 
-                    title="Reject this content?" 
-                    onConfirm={() => handleReview('reject')} 
-                    okText="Yes" 
+                  <Popconfirm
+                    title="Reject this content?"
+                    onConfirm={() => handleReview('reject')}
+                    okText="Yes"
                     cancelText="No"
                   >
-                    <Button 
-                      danger 
-                      icon={<CloseOutlined />} 
-                      block 
-                      loading={submitting} 
-                      size="large"
+                    <Button
+                      danger
+                      icon={<CloseOutlined />}
+                      loading={submitting}
+                      size="small"
                       className="hover:bg-red-50"
-                      style={{ background: darkMode ? 'rgba(239, 68, 68, 0.1)' : undefined }}
+                      style={{ background: darkMode ? 'rgba(239, 68, 68, 0.1)' : undefined, height: 28, padding: '2px 10px', fontSize: 12, minWidth: 'auto' }}
                     >
                       Reject
                     </Button>
@@ -328,7 +322,7 @@ const ArticleReviewPage = () => {
                   okButtonProps={{ danger: true }}
                   cancelText="Cancel"
                 >
-                  <Button danger icon={<DeleteOutlined />} block size="large">
+                  <Button danger icon={<DeleteOutlined />} size="small" style={{ height: 28, padding: '2px 10px', fontSize: 12, minWidth: 'auto' }}>
                     Delete Permanently
                   </Button>
                 </Popconfirm>

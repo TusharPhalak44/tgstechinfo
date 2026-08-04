@@ -196,28 +196,32 @@ const MyContent = () => {
             display: 'flex',
             flexDirection: 'column'
           }}
-          onClick={() => navigate(`/article-preview/${article.id}`)}
+          onClick={() => navigate(`/${article.content_type || 'article'}-preview/${article.id}`)}
         >
           {/* Banner Image */}
-          <div style={{ position: 'relative', lineHeight: 0, flexShrink: 0 }}>
+          <div style={{ position: 'relative', lineHeight: 0, flexShrink: 0, overflow: 'hidden' }}>
             {article.banner_image ? (
-              <img 
-                src={`/uploads/${article.banner_image}`} 
+              <img
+                src={`/uploads/${article.banner_image}`}
                 alt={article.title}
-                style={{ 
-                  width: '100%', 
-                  height: isMobile ? 160 : 180, 
-                  objectFit: 'cover', 
-                  display: 'block', 
-                  background: darkMode ? '#1e293b' : '#f0f4ff' 
-                }} 
+                style={{
+                  width: '100%',
+                  height: isMobile ? 160 : 180,
+                  objectFit: 'cover',
+                  display: 'block',
+                  background: darkMode ? '#1e293b' : '#f0f4ff',
+                  transform: 'scale(0.95)',
+                  transition: 'transform .3s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'scale(0.95)'}
               />
             ) : (
-              <div style={{ 
-                height: isMobile ? 160 : 180, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
+              <div style={{
+                height: isMobile ? 160 : 180,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 background: darkMode ? 'linear-gradient(135deg,#1e293b,#0f172a)' : 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
               }}>
                 <FileTextOutlined style={{ fontSize: 40, color: darkMode ? '#64748b' : '#bfbfbf' }} />
@@ -354,7 +358,7 @@ const MyContent = () => {
                 <Button 
                   size="small" 
                   icon={<EyeOutlined />}
-                  onClick={(e) => { e.stopPropagation(); navigate(`/article-preview/${article.id}`); }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/${article.content_type || 'article'}-preview/${article.id}`); }}
                   style={{ fontSize: isMobile ? 11 : 12 }}
                 >
                   {!isMobile && 'View'}
@@ -493,11 +497,15 @@ const MyContent = () => {
           type="primary" 
           icon={<PlusOutlined />} 
           onClick={() => navigate('/create-content')}
-          size={isMobile ? 'small' : 'middle'}
-          style={{ 
+          size="small"
+          style={{
             flex: isMobile ? 1 : 'none',
-            borderRadius: 8,
-            width: isMobile ? '100%' : 'auto'
+            borderRadius: 6,
+            width: isMobile ? '100%' : 'auto',
+            fontSize: 13,
+            height: 32,
+            padding: '4px 12px',
+            minWidth: 'auto'
           }}
         >
           {isMobile ? 'Create' : 'Create New'}
@@ -528,7 +536,7 @@ const MyContent = () => {
           description={activeTab === 'all' ? 'No content yet' : `No ${activeTab}s yet`}
           style={{ padding: isMobile ? '40px 0' : '48px 0' }}
         >
-          <Button type="primary" onClick={() => navigate('/create-content')}>
+          <Button type="primary" onClick={() => navigate('/create-content')} size="small" style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}>
             Create Now
           </Button>
         </Empty>

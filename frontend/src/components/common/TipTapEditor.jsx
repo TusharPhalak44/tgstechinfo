@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
-import { Node } from '@tiptap/core';
+import { Node, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -108,6 +108,19 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
         heading: { levels: [1, 2, 3, 4, 5, 6] }, 
         link: false,
         paragraph: { HTMLAttributes: {} },
+        bulletList: { 
+          HTMLAttributes: {},
+          keepMarks: false,
+          keepAttributes: false,
+        },
+        orderedList: { 
+          HTMLAttributes: {},
+          keepMarks: false,
+          keepAttributes: false,
+        },
+        listItem: {
+          HTMLAttributes: {},
+        },
       }),
       Image.configure({ 
         allowBase64: true, 
@@ -129,12 +142,12 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
     ],
     content: initialContent || value || '',
     onUpdate: ({ editor }) => { 
-      onChange(editor.getHTML()); 
+      onChange(editor.getHTML());
       updateStates(editor); 
     },
     onSelectionUpdate: ({ editor }) => updateStates(editor),
     onTransaction: ({ editor }) => updateStates(editor),
-    editorProps: { 
+      editorProps: { 
       attributes: { class: 'tiptap-editor-content' },
       handlePaste: (view, event) => {
         // Remove hyperlinks and clean HTML artifacts from pasted content
@@ -163,6 +176,15 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
           el.removeAttribute('color');
         });
         
+        // Fix list items - completely remove all HTML structure inside li and replace with plain text
+        const listItems = tempDiv.querySelectorAll('li');
+        listItems.forEach(li => {
+          const textContent = li.textContent.trim();
+          // Completely clear the li and set just the text
+          li.innerHTML = '';
+          li.textContent = textContent;
+        });
+        
         // Remove HTML comments (StartFragment, EndFragment)
         tempDiv.innerHTML = tempDiv.innerHTML.replace(/<!--[\s\S]*?-->/g, '');
         
@@ -179,10 +201,26 @@ const TipTapEditor = ({ value, onChange, placeholder = 'Write your content here.
           parent.removeChild(span);
         });
         
-        const cleanHtml = tempDiv.innerHTML;
+        // Remove empty paragraphs and extra whitespace
+        const paragraphs = tempDiv.querySelectorAll('p, div');
+        paragraphs.forEach(p => {
+          if (!p.textContent.trim()) {
+            p.remove();
+          }
+        });
         
-        // Insert cleaned content
-        editor.commands.insertContent(cleanHtml || text);
+        // Trim leading and trailing whitespace from the cleaned HTML
+        let cleanHtml = tempDiv.innerHTML.trim();
+        
+        // Remove leading <br> or <p>&nbsp;</p> tags
+        cleanHtml = cleanHtml.replace(/^(<br\s*\/?>|<p>\s*<\/p>|<p>&nbsp;<\/p>)+/i, '');
+        
+        // Insert cleaned content at cursor position
+        if (cleanHtml) {
+          editor.chain().focus().insertContent(cleanHtml).run();
+        } else {
+          editor.chain().focus().insertContent(text).run();
+        }
         return true;
       }
     },

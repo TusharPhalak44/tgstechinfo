@@ -44,29 +44,43 @@ const CONTENT_TABS = [
 
 const AdminContent = () => {
   const { darkMode } = useTheme();
-  const [contents, setContents] = useState([]);
+  const [allContents, setAllContents] = useState([]); // Full dataset for accurate counts
+  const [contents, setContents] = useState([]); // Filtered dataset for display
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [visibleCards, setVisibleCards] = useState(18);
+  const [showPagination, setShowPagination] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [visibleCards, setVisibleCards] = useState(9);
-  const pageSize = 15;
+  const pageSize = 24;
   const navigate = useNavigate();
 
-  useEffect(() => { fetchContents(); }, [activeTab]);
+  useEffect(() => { fetchAllContents(); }, []); // Fetch all content once on mount
 
   useEffect(() => {
-    setVisibleCards(9);
+    // Filter contents based on active tab
+    if (activeTab === 'all') {
+      setContents(allContents);
+    } else {
+      setContents(allContents.filter(c => (c.content_type_name || '').toLowerCase() === activeTab));
+    }
+    // Reset to initial state when tab changes
+    setVisibleCards(18);
+    setShowPagination(false);
+    setCurrentPage(1);
+  }, [activeTab, allContents]);
+
+  // Reset visibleCards when page changes
+  useEffect(() => {
+    setVisibleCards(18);
+    setShowPagination(false);
   }, [currentPage]);
 
-  const fetchContents = async () => {
+  const fetchAllContents = async () => {
     setLoading(true);
     try {
-      const params = {};
-      if (activeTab !== 'all') {
-        params.content_type = activeTab;
-      }
-      const res = await axios.get('/api/admin/content/all', { params });
+      const res = await axios.get('/api/admin/content/all', { params: { limit: 10000 } });
+      setAllContents(res.data.data || []);
       setContents(res.data.data || []);
     } catch {
       message.error('Failed to load content');
@@ -81,7 +95,7 @@ const AdminContent = () => {
     try {
       await axios.post(`/api/admin/content/${contentId}/submit`);
       message.success('Content submitted for review!');
-      fetchContents();
+      fetchAllContents();
       navigate('/admin/dashboard');
     } catch {
       message.error('Failed to submit for review');
@@ -94,14 +108,10 @@ const AdminContent = () => {
     try {
       await axios.delete(`/api/admin/content/${contentId}`);
       message.success('Deleted successfully');
-      fetchContents();
+      fetchAllContents();
     } catch {
       message.error('Failed to delete');
     }
-  };
-
-  const handleShowMore = () => {
-    setVisibleCards(prev => Math.min(prev + 3, pageSize));
   };
 
   const handlePageChange = (page) => {
@@ -109,14 +119,23 @@ const AdminContent = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const filteredContents = activeTab === 'all'
-    ? contents
-    : contents.filter(c => (c.content_type_name || '').toLowerCase() === activeTab);
+  const handleSeeMore = () => {
+    if (visibleCards === 18) {
+      // First click: show 21 cards (18 + 3)
+      setVisibleCards(21);
+    } else if (visibleCards === 21) {
+      // Second click: show 24 cards (21 + 3) and then show pagination
+      setVisibleCards(24);
+      setShowPagination(true);
+    }
+  };
+
+  const filteredContents = contents;
 
   const tabItems = CONTENT_TABS.map(tab => {
     const count = tab.key === 'all'
-      ? contents.length
-      : contents.filter(c => (c.content_type_name || '').toLowerCase() === tab.key).length;
+      ? allContents.length
+      : allContents.filter(c => (c.content_type_name || '').toLowerCase() === tab.key).length;
     return {
       key: tab.key,
       label: (
@@ -182,19 +201,22 @@ const AdminContent = () => {
         ) : (
           <>
             <Row gutter={[20, 20]}>
-              {filteredContents.slice(0, visibleCards).map(item => {
-              const status = statusConfig[item.status] || { color: 'default', text: item.status };
-              const tags = parseTags(item.tags);
-              const canEdit = item.status === 'draft' || item.status === 'changes_requested';
+              {(() => {
+                const pageStartIndex = (currentPage - 1) * pageSize;
+                const pageContents = filteredContents.slice(pageStartIndex, pageStartIndex + pageSize);
+                return pageContents.slice(0, visibleCards).map(item => {
+                  const status = statusConfig[item.status] || { color: 'default', text: item.status };
+                  const tags = parseTags(item.tags);
+                  const canEdit = item.status === 'draft' || item.status === 'changes_requested';
 
-              return (
-                <Col xs={24} sm={12} lg={8} key={item.id}>
-                  <Card
-                    hoverable
-                    style={{ borderRadius: 12, cursor: 'pointer', background: darkMode ? '#1e293b' : '#fff', border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb' }}
-                    styles={{ body: { padding: 0 } }}
+                  return (
+                    <Col xs={24} sm={12} lg={8} key={item.id}>
+                      <Card
+                        hoverable
+                        style={{ borderRadius: 12, cursor: 'pointer', background: darkMode ? '#1e293b' : '#fff', border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb' }}
+                        styles={{ body: { padding: 0 } }}
                     className="h-full"
-                    onClick={() => navigate(`/article-preview/${item.id}`)}
+                    onClick={() => navigate(`/${item.content_type || 'article'}-preview/${item.id}`)}
                   >
                     {/* Banner Image */}
                     {item.banner_image ? (
@@ -291,7 +313,7 @@ const AdminContent = () => {
                       <div style={{ marginBottom: 8 }} onClick={e => e.stopPropagation()}>
                         <Space size={4} wrap>
                           <Button size="small" icon={<EyeOutlined />}
-                            onClick={(e) => { e.stopPropagation(); navigate(`/article-preview/${item.id}`); }}>
+                            onClick={(e) => { e.stopPropagation(); navigate(`/${item.content_type || 'article'}-preview/${item.id}`); }}>
                             View
                           </Button>
                           {canEdit && (
@@ -344,29 +366,30 @@ const AdminContent = () => {
                   </Card>
                 </Col>
               );
-            })}
+                });
+              })()}
           </Row>
-          <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-            {visibleCards < pageSize && visibleCards < filteredContents.length && (
-              <Button
-                type="default"
-                onClick={handleShowMore}
-                style={{ borderRadius: 8 }}
-              >
-                Show More ({pageSize - visibleCards} more)
-              </Button>
-            )}
-            {visibleCards >= pageSize && (
-              <Pagination
-                current={currentPage}
-                pageSize={pageSize}
-                total={filteredContents.length}
-                showSizeChanger={false}
-                showTotal={(total) => `${total} items`}
-                onChange={handlePageChange}
-              />
-            )}
-          </div>
+          {(() => {
+            const pageContents = filteredContents.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            const hasMore = pageContents.length > visibleCards;
+            return (
+              <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', gap: 16 }}>
+                {!showPagination && hasMore && (
+                  <Button type="default" onClick={handleSeeMore} style={{ borderRadius: 8 }}>See More</Button>
+                )}
+                {showPagination && filteredContents.length > pageSize && (
+                  <Pagination
+                    current={currentPage}
+                    pageSize={pageSize}
+                    total={filteredContents.length}
+                    showSizeChanger={false}
+                    showTotal={(total) => `${total} items`}
+                    onChange={handlePageChange}
+                  />
+                )}
+              </div>
+            );
+          })()}
           </>
         )}
       </div>
