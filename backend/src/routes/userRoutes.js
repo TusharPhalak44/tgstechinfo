@@ -66,13 +66,23 @@ router.put('/content/:id/webhook',
     contentController.updateWebhookSettings
 );
 
-router.post('/content/:id/submit', 
+router.post('/content/:id/submit',
     isOwnerOrHasPermission('content.publish', async (req) => {
         const Content = require('../models/Content');
         const content = await Content.findById(req.params.id);
         return content ? content.user_id : null;
     }),
     contentController.submitForReview
+);
+
+// Content delete - owner or has permission
+router.delete('/content/:id',
+    isOwnerOrHasPermission('content.delete', async (req) => {
+        const Content = require('../models/Content');
+        const content = await Content.findById(req.params.id);
+        return content ? content.user_id : null;
+    }),
+    contentController.deleteContent
 );
 
 // View content — any authenticated user

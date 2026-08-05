@@ -113,6 +113,119 @@
 .tiptap-editor-content li {
   margin: 4px 0;
   display: list-item;
+  line-height: 1.8;
+  list-style-position: outside;
+  padding-left: 6px;
+}
+
+.tiptap-editor-content li p {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+.tiptap-editor-content li > p:first-child {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+.tiptap-editor-content ul,
+.tiptap-editor-content ol {
+  padding-left: 24px;
+  margin: 8px 0;
+}
+
+/* ProseMirror specific - force paragraphs inside list items to be inline */
+.ProseMirror li p {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+.ProseMirror li > p:first-child {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+/* Ensure list items don't have extra spacing */
+.ProseMirror li {
+  padding: 0 !important;
+  margin: 4px 0 !important;
+  list-style-position: outside !important;
+  padding-left: 6px !important;
+}
+
+/* Ultra-specific selectors for ProseMirror */
+.ProseMirror ul li > p,
+.ProseMirror ol li > p {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+.ProseMirror ul li > p:first-child,
+.ProseMirror ol li > p:first-child {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+/* Target the actual rendered HTML */
+.tiptap-editor-content ul li p,
+.tiptap-editor-content ol li p {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+.tiptap-editor-content ul li p:first-child,
+.tiptap-editor-content ol li p:first-child {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline !important;
+}
+
+/* Force all children of list items to be inline */
+.tiptap-editor-content li > * {
+  display: inline !important;
+}
+
+.ProseMirror li > * {
+  display: inline !important;
+}
+
+/* Maximum specificity - targeting the editor wrapper directly */
+.tiptap-editor-wrapper .ProseMirror li p {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.tiptap-editor-wrapper .ProseMirror li {
+  list-style-position: outside !important;
+  padding: 0 !important;
+  margin: 4px 0 !important;
+  padding-left: 6px !important;
+}
+
+/* Target all possible paragraph variations */
+.tiptap-editor-content li p,
+.tiptap-editor-content li > p,
+.tiptap-editor-content li p:first-child,
+.tiptap-editor-content li > p:first-child,
+.ProseMirror li p,
+.ProseMirror li > p,
+.ProseMirror li p:first-child,
+.ProseMirror li > p:first-child,
+.tiptap-editor-wrapper .ProseMirror li p,
+.tiptap-editor-wrapper .ProseMirror li > p,
+.tiptap-editor-wrapper .ProseMirror li p:first-child,
+.tiptap-editor-wrapper .ProseMirror li > p:first-child {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* TipTap ProseMirror wrapper */
@@ -286,6 +399,13 @@
 .ProseMirror li {
   display: list-item !important;
   margin: 4px 0 !important;
+  line-height: 1.8 !important;
+}
+
+.ProseMirror li p {
+  display: inline !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .ProseMirror ul ul {

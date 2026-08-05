@@ -6,6 +6,7 @@ const DataRequest = require('../models/DataRequest');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, sendTemplatedEmail } = require('../config/email');
 const { createNotification } = require('./notificationController');
+const logAudit = require('../utils/auditLogger');
 
 const stripEmDash = (val) => {
     if (typeof val === 'string') return val.replace(/—/g, '-');
@@ -136,6 +137,9 @@ exports.reviewContent = async (req, res) => {
             await createNotification(content.user_id, content.id, status, notifMessages[status]);
         }
 
+        // Log to audit logs
+        await logAudit(req, action, 'content', id, `${action} content: ${content.title}${comment ? ' - ' + comment : ''}`, 'success');
+
         res.json({ message: responseMessage, content: updatedContent });
     } catch (error) {
         console.error('Review content error:', error);
@@ -218,6 +222,10 @@ exports.createUser = async (req, res) => {
         });
 
         delete user.password_hash;
+
+        // Log to audit logs
+        await logAudit(req, 'create', 'user', user.id, `Created user: ${user.email} with role ${user.role}`, 'success');
+
         res.status(201).json({ message: 'User created successfully', user });
     } catch (error) {
         console.error('Admin create user error:', error);
@@ -251,6 +259,9 @@ exports.updateUserStatus = async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        // Log to audit logs
+        await logAudit(req, 'update', 'user', id, `Updated user status to ${is_active} for user: ${user.email}`, 'success');
 
         res.json({ message: 'User status updated successfully', user });
     } catch (error) {

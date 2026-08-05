@@ -110,6 +110,7 @@ app.use('/api/seo', require('./src/routes/seoRoutes'));
 app.use('/api/tags', require('./src/routes/tagsRoutes'));
 app.use('/api/email-templates', require('./src/routes/emailTemplateRoutes'));
 app.use('/api/site-settings', require('./src/routes/siteSettingsRoutes'));
+app.use('/api/audit-logs', require('./src/routes/auditLogRoutes'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

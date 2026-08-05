@@ -52,26 +52,33 @@ const BannerImage = ({ src, alt, darkMode }) => {
 
   return (
     <>
-      {/* 35% cropped preview — click to open full */}
+      {/* 25-30% cropped preview with fixed height — click to open full */}
       <div
         onClick={() => setLightboxOpen(true)}
         style={{
-          margin: '24px 0 32px',
+          margin: '24px 0 16px',
           cursor: 'pointer',
           overflow: 'hidden',
           position: 'relative',
+          height: '350px',
         }}
         className="article-banner-image"
       >
         <img
           src={src}
           alt={alt}
-          style={{ width: '100%', height: 'auto', display: 'block', transform: 'translateY(0)' }}
+          style={{ 
+            width: '100%', 
+            height: '100%', 
+            display: 'block', 
+            objectFit: 'cover',
+            objectPosition: 'top center'
+          }}
         />
-        {/* Overlay showing only top 35% */}
+        {/* Overlay showing only top 25-30% */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
-          height: '85%',
+          height: '75%',
           background: darkMode ? 'linear-gradient(to bottom, transparent 0%, #0f172a 60%)' : 'linear-gradient(to bottom, transparent 0%, #fff 60%)',
           display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
           paddingBottom: 12,
@@ -140,10 +147,89 @@ const ArticleDetail = () => {
   const [subscribing, setSubscribing] = useState(false);
   const [submittedData, setSubmittedData] = useState(null); // stores {name, email} after form submit
   const [pdfFile, setPdfFile] = useState(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
-    fetchContent();
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`/api/public/content/${slug}`);
+        if (cancelled) return;
+        const c = response.data.content;
+
+        if (c?.id) {
+          const sessionKey = `viewed-${c.id}`;
+          if (!sessionStorage.getItem(sessionKey)) {
+            sessionStorage.setItem(sessionKey, '1');
+            axios.post(`/api/public/content/${c.id}/view`).catch(() => {});
+          }
+        }
+
+        if (!c) {
+          messageApi.error('Content not found');
+          setContent(null);
+          setLoading(false);
+          return;
+        }
+
+        console.log('[ArticleDetail] builder_layout raw:', c.builder_layout);
+        console.log('[ArticleDetail] builder_layout type:', typeof c.builder_layout);
+
+        try {
+          const layout = typeof c.builder_layout === 'string'
+            ? JSON.parse(c.builder_layout)
+            : c.builder_layout;
+          console.log('[ArticleDetail] layout parsed:', layout);
+          const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
+          console.log('[ArticleDetail] isHtmlBuilder:', isHtmlBuilder);
+          if (isHtmlBuilder) {
+            window.open(`/content/${c.slug}`, '_blank', 'noopener,noreferrer');
+            navigate(-1);
+            return;
+          }
+        } catch (e) {
+          console.log('[ArticleDetail] layout parse error:', e.message);
+        }
+
+        setContent(c);
+        setRelatedArticles(response.data.relatedArticles || []);
+        if (c?.custom_fields) {
+          try {
+            const cf = typeof c.custom_fields === 'string' ? JSON.parse(c.custom_fields) : c.custom_fields;
+            setCustomFields(Array.isArray(cf) ? cf : []);
+          } catch { setCustomFields([]); }
+        }
+        setComments([
+          { id: 1, author: 'Admin', content: 'Great article! Thanks for sharing.', datetime: moment().format('MMMM D, YYYY') }
+        ]);
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[ArticleDetail] Fetch error:', error);
+        messageApi.error('Failed to load content');
+        setContent(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
   }, [slug]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (!content) return;
@@ -165,61 +251,6 @@ const ArticleDetail = () => {
       setHasAccess(storedAccess === 'true');
     }
   }, [content?.id]);
-
-  const fetchContent = async () => {
-    setLoading(true);
-    try {
-      const response = await axios.get(`/api/public/content/${slug}`);
-      const c = response.data.content;
-
-      if (!c) {
-        messageApi.error('Content not found');
-        setContent(null);
-        setLoading(false);
-        return;
-      }
-
-      // Debug — log what builder_layout actually contains
-      console.log('[ArticleDetail] builder_layout raw:', c.builder_layout);
-      console.log('[ArticleDetail] builder_layout type:', typeof c.builder_layout);
-
-      // If this is an HTML builder page, open in new tab at /content/:slug
-      try {
-        const layout = typeof c.builder_layout === 'string'
-          ? JSON.parse(c.builder_layout)
-          : c.builder_layout;
-        console.log('[ArticleDetail] layout parsed:', layout);
-        const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-        console.log('[ArticleDetail] isHtmlBuilder:', isHtmlBuilder);
-        if (isHtmlBuilder) {
-          window.open(`/content/${c.slug}`, '_blank', 'noopener,noreferrer');
-          navigate(-1);
-          return;
-        }
-      } catch (e) {
-        console.log('[ArticleDetail] layout parse error:', e.message);
-      }
-
-      setContent(c);
-      setRelatedArticles(response.data.relatedArticles || []);
-      // Parse custom fields
-      if (c?.custom_fields) {
-        try {
-          const cf = typeof c.custom_fields === 'string' ? JSON.parse(c.custom_fields) : c.custom_fields;
-          setCustomFields(Array.isArray(cf) ? cf : []);
-        } catch { setCustomFields([]); }
-      }
-      setComments([
-        { id: 1, author: 'Admin', content: 'Great article! Thanks for sharing.', datetime: moment().format('MMMM D, YYYY') }
-      ]);
-    } catch (error) {
-      console.error('[ArticleDetail] Fetch error:', error);
-      messageApi.error('Failed to load content');
-      setContent(null);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLandingPageSubmit = async (values) => {
     setSubmitting(true);
@@ -757,37 +788,6 @@ const ArticleDetail = () => {
               </Card>
             )}
 
-            {/* SEO Info Card — sidebar */}
-            {(content.seo_meta_title || content.seo_meta_description || content.seo_meta_keywords) && (
-              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 10, border: darkMode ? '1px solid #334155' : '1px solid #e8ecf4', padding: '16px 18px' }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: darkMode ? '#f1f5f9' : '#1a1a2e', marginBottom: 12, paddingBottom: 8, borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
-                  🔍 SEO Info
-                </div>
-                {content.seo_meta_title && (
-                  <div style={{ marginBottom: 10 }}>
-                    <Text style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: darkMode ? '#94a3b8' : '#64748b' }}>Meta Title</Text>
-                    <div style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#374151', marginTop: 2 }}>{content.seo_meta_title}</div>
-                  </div>
-                )}
-                {content.seo_meta_description && (
-                  <div style={{ marginBottom: 10 }}>
-                    <Text style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: darkMode ? '#94a3b8' : '#64748b' }}>Meta Description</Text>
-                    <div style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#374151', marginTop: 2, lineHeight: 1.5 }}>{content.seo_meta_description}</div>
-                  </div>
-                )}
-                {content.seo_meta_keywords && (
-                  <div>
-                    <Text style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', color: darkMode ? '#94a3b8' : '#64748b' }}>Keywords</Text>
-                    <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {content.seo_meta_keywords.split(',').map(k => k.trim()).filter(Boolean).map((k, i) => (
-                        <Tag key={i} style={{ fontSize: 11, borderRadius: 12 }}>{k}</Tag>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* ── Related Articles — below landing card ── */}
             {relatedArticles.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -841,6 +841,43 @@ const ArticleDetail = () => {
         </Col>
       </Row>
 
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          style={{
+            position: 'fixed',
+            bottom: 100,
+            right: 30,
+            width: 50,
+            height: 50,
+            borderRadius: '50%',
+            background: darkMode ? '#7c3aed' : '#6b21a8',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            boxShadow: '0 4px 20px rgba(107, 33, 168, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 20,
+            zIndex: 1000,
+            transition: 'all 0.3s ease',
+            opacity: showScrollTop ? 1 : 0,
+            transform: showScrollTop ? 'translateY(0)' : 'translateY(20px)'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'translateY(-5px) scale(1.1)';
+            e.currentTarget.style.boxShadow = '0 8px 30px rgba(107, 33, 168, 0.5)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+            e.currentTarget.style.boxShadow = '0 4px 20px rgba(107, 33, 168, 0.4)';
+          }}
+        >
+          ↑
+        </button>
+      )}
 
     </div>
     </>

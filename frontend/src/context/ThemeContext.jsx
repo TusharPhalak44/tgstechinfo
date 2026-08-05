@@ -16,12 +16,10 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     setMounted(true);
-    // Check localStorage or system preference
+    // Check localStorage only - default to light mode
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
       setDarkMode(JSON.parse(saved));
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      setDarkMode(true);
     }
   }, []);
 

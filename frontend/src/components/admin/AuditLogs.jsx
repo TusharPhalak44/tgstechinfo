@@ -7,6 +7,7 @@ import {
   DownloadOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '../../context/ThemeContext';
+import axios from 'axios';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -20,54 +21,49 @@ const AuditLogs = () => {
   const isDesktop = screens.lg;
   const { darkMode } = useTheme();
 
-  const [loading, setLoading] = useState(false);
-  const [logs, setLogs] = useState([
-    {
-      id: 1,
-      action: 'User Login',
-      user: 'admin@example.com',
-      ip: '192.168.1.1',
-      timestamp: '2024-01-15 10:30:00',
-      status: 'success',
-      details: 'Successful login',
-    },
-    {
-      id: 2,
-      action: 'Content Created',
-      user: 'admin@example.com',
-      ip: '192.168.1.1',
-      timestamp: '2024-01-15 11:45:00',
-      status: 'success',
-      details: 'Created blog post "Getting Started"',
-    },
-    {
-      id: 3,
-      action: 'Content Updated',
-      user: 'editor@example.com',
-      ip: '192.168.1.2',
-      timestamp: '2024-01-15 14:20:00',
-      status: 'success',
-      details: 'Updated page "About Us"',
-    },
-    {
-      id: 4,
-      action: 'Failed Login Attempt',
-      user: 'unknown@example.com',
-      ip: '192.168.1.3',
-      timestamp: '2024-01-15 15:30:00',
-      status: 'failed',
-      details: 'Invalid credentials',
-    },
-    {
-      id: 5,
-      action: 'User Deleted',
-      user: 'admin@example.com',
-      ip: '192.168.1.1',
-      timestamp: '2024-01-15 16:45:00',
-      status: 'success',
-      details: 'Deleted user "test@example.com"',
-    },
-  ]);
+  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState([]);
+  const [filters, setFilters] = useState({
+    action: null,
+    status: null,
+    search: '',
+  });
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      const params = {};
+      if (filters.action) params.action = filters.action;
+      if (filters.status) params.status = filters.status;
+      if (filters.search) params.search = filters.search;
+      
+      const response = await axios.get('/api/audit-logs', {
+        params,
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      
+      const formattedLogs = response.data.data.map(log => ({
+        id: log.id,
+        action: log.action,
+        user: log.user_email || 'System',
+        ip: log.ip_address || 'N/A',
+        timestamp: new Date(log.created_at).toLocaleString(),
+        status: log.status,
+        details: log.details || 'No details',
+      }));
+      
+      setLogs(formattedLogs);
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [filters]);
 
   const columns = [
     {
@@ -161,20 +157,36 @@ const AuditLogs = () => {
                 placeholder="Search logs..."
                 prefix={<SearchOutlined />}
                 style={{ width: isMobile ? '100%' : 250, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                allowClear
               />
-              <Select placeholder="Filter by action" style={{ width: isMobile ? '100%' : 150, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} allowClear>
+              <Select 
+                placeholder="Filter by action" 
+                style={{ width: isMobile ? '100%' : 150, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} 
+                allowClear
+                value={filters.action}
+                onChange={(value) => setFilters({ ...filters, action: value })}
+              >
                 <Option value="login">Login</Option>
                 <Option value="create">Create</Option>
                 <Option value="update">Update</Option>
                 <Option value="delete">Delete</Option>
               </Select>
-              <Select placeholder="Filter by status" style={{ width: isMobile ? '100%' : 120, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} allowClear>
+              <Select 
+                placeholder="Filter by status" 
+                style={{ width: isMobile ? '100%' : 120, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} 
+                allowClear
+                value={filters.status}
+                onChange={(value) => setFilters({ ...filters, status: value })}
+              >
                 <Option value="success">Success</Option>
                 <Option value="failed">Failed</Option>
+                <Option value="warning">Warning</Option>
               </Select>
               <RangePicker style={{ width: isMobile ? '100%' : 250 }} />
             </Space>
-            <Button icon={<FilterOutlined />} style={{ width: isMobile ? '100%' : 'auto' }}>Apply Filters</Button>
+            <Button icon={<FilterOutlined />} style={{ width: isMobile ? '100%' : 'auto' }} onClick={fetchLogs}>Apply Filters</Button>
           </Space>
 
           <Table

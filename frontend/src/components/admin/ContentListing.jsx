@@ -110,7 +110,8 @@ const ContentListing = () => {
   const handleDelete = async (id, e) => {
     e?.stopPropagation();
     try {
-      await axios.delete(`/api/admin/content/${id}`);
+      const apiBase = user?.role === 'admin' ? '/api/admin' : '/api/user';
+      await axios.delete(`${apiBase}/content/${id}`);
       message.success('Deleted successfully');
       fetchContent();
     } catch {
@@ -205,17 +206,80 @@ const ContentListing = () => {
       width: 100,
       responsive: ['lg', 'xl'],
       render: (_, record) => {
-        let score = 0;
-        if (record.seo_meta_title) score += 20;
-        if (record.seo_meta_description) score += 20;
-        if (record.seo_meta_keywords) score += 20;
-        if (record.content) score += 20;
-        if (record.banner_image) score += 20;
+        // Use the same SEO calculation logic as CreateContent
+        const calculateSEOScore = (title, description, content, tags, seoMetaTitle, seoMetaDescription, seoMetaKeywords) => {
+          let score = 0;
+          let maxScore = 100;
+
+          // Title analysis (20 points)
+          if (title && title.length >= 30 && title.length <= 60) {
+            score += 20;
+          } else if (title && title.length > 0) {
+            score += 10;
+          }
+
+          // Description analysis (15 points)
+          if (description && description.length >= 120 && description.length <= 160) {
+            score += 15;
+          } else if (description && description.length > 0) {
+            score += 8;
+          }
+
+          // Content length analysis (25 points)
+          const plainContent = content ? content.replace(/<[^>]*>/g, '').trim() : '';
+          const wordCount = plainContent.split(/\s+/).filter(Boolean).length;
+          if (wordCount >= 300) {
+            score += 25;
+          } else if (wordCount >= 150) {
+            score += 15;
+          }
+
+          // Tags analysis (10 points)
+          const parsedTags = tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [];
+          if (parsedTags && parsedTags.length >= 3) {
+            score += 10;
+          } else if (parsedTags && parsedTags.length > 0) {
+            score += 5;
+          }
+
+          // SEO Meta Title analysis (15 points)
+          if (seoMetaTitle && seoMetaTitle.length >= 30 && seoMetaTitle.length <= 60) {
+            score += 15;
+          } else if (seoMetaTitle && seoMetaTitle.length > 0) {
+            score += 8;
+          }
+
+          // SEO Meta Description analysis (15 points)
+          if (seoMetaDescription && seoMetaDescription.length >= 120 && seoMetaDescription.length <= 160) {
+            score += 15;
+          } else if (seoMetaDescription && seoMetaDescription.length > 0) {
+            score += 8;
+          }
+
+          return Math.round((score / maxScore) * 100);
+        };
+
+        const score = calculateSEOScore(
+          record.title,
+          record.short_description,
+          record.content,
+          record.tags,
+          record.seo_meta_title,
+          record.seo_meta_description,
+          record.seo_meta_keywords
+        );
+
+        // Don't show SEO warning for published content - it's already been approved
+        const shouldShowWarning = record.status !== 'published';
         const color = score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444';
+
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <StarOutlined style={{ color, fontSize: 14 }} />
-            <Text strong style={{ fontSize: 13, color }}>{score}</Text>
+            <Text strong style={{ fontSize: 13, color }}>{score}%</Text>
+            {shouldShowWarning && score < 80 && (
+              <Text style={{ fontSize: 11, color: '#F59E0B' }}>(Low)</Text>
+            )}
           </div>
         );
       },
@@ -283,9 +347,26 @@ const ContentListing = () => {
                 key: 'preview',
                 icon: <EyeOutlined />,
                 label: 'Preview',
-                onClick: ({ domEvent }) => {
+                onClick: async ({ domEvent }) => {
                   domEvent.stopPropagation();
-                  navigate(`/article-preview/${record.id}`);
+                  try {
+                    // Increment view count when content is clicked (use session-based deduplication)
+                    const viewKey = `content-viewed-${record.id}`;
+                    const sessionViewed = sessionStorage.getItem(viewKey);
+
+                    // Only increment if not already viewed in this session
+                    if (!sessionViewed) {
+                      console.log('👁️ Incrementing view for content:', record.id);
+                      await axios.post(`/api/public/content/${record.id}/view`);
+                      sessionStorage.setItem(viewKey, 'true');
+                      console.log('✅ View incremented and marked as viewed');
+                    } else {
+                      console.log('⏭️ Content already viewed in this session, skipping increment');
+                    }
+                  } catch (error) {
+                    console.error('Error incrementing view count:', error);
+                  }
+                  navigate(`/${record.content_type || 'article'}-preview/${record.id}`);
                 },
               },
               { type: 'divider' },
@@ -397,7 +478,7 @@ const ContentListing = () => {
                   label: 'Preview',
                   onClick: ({ domEvent }) => {
                     domEvent.stopPropagation();
-                    navigate(`/article-preview/${record.id}`);
+                    navigate(`/${record.content_type || 'article'}-preview/${record.id}`);
                   },
                 },
                 { type: 'divider' },
@@ -508,7 +589,10 @@ const ContentListing = () => {
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
                 <Button
                   disabled={pagination.current === 1}
-                  onClick={() => setPagination(prev => ({ ...prev, current: prev.current - 1 }))}
+                  onClick={() => {
+                    setPagination(prev => ({ ...prev, current: prev.current - 1 }));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   style={{ marginRight: 8 }}
                 >
                   Previous
@@ -518,7 +602,10 @@ const ContentListing = () => {
                 </Text>
                 <Button
                   disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                  onClick={() => setPagination(prev => ({ ...prev, current: prev.current + 1 }))}
+                  onClick={() => {
+                    setPagination(prev => ({ ...prev, current: prev.current + 1 }));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   style={{ marginLeft: 8 }}
                 >
                   Next
@@ -542,8 +629,10 @@ const ContentListing = () => {
               showTotal: isMobile ? undefined : (total) => `${total} items`,
               simple: isMobile,
               style: isMobile ? { padding: '12px 16px' } : { padding: '16px 24px' },
-              onChange: (page, size) =>
-                setPagination(prev => ({ ...prev, current: page, pageSize: size })),
+              onChange: (page, size) => {
+                setPagination(prev => ({ ...prev, current: page, pageSize: size }));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              },
             }}
             onRow={(record) => ({
               onClick: () => handleEdit(record),

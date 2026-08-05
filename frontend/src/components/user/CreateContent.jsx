@@ -287,10 +287,8 @@ const CreateContent = () => {
           const descMatch = shortDescription && content.short_description && 
                           (content.short_description.toLowerCase().includes(shortDescription.toLowerCase()) ||
                            shortDescription.toLowerCase().includes(content.short_description.toLowerCase()));
-          const tagMatch = tags && content.tags && 
-                         tags.some(tag => content.tags.includes(tag));
           
-          return titleMatch || descMatch || tagMatch;
+          return titleMatch || descMatch;
         });
 
         if (similarContent.length > 0) {
@@ -453,6 +451,34 @@ const handleSubmit = async () => {
       const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
 
+      // Generate content based on active tab for SEO calculation
+      let finalContent = content;
+      if (activeTab === 'builder' && contentElementsRef.current.length > 0) {
+        finalContent = HtmlGenerationCompat.generateHtml(contentElementsRef.current);
+      } else if (activeTab === 'builder') {
+        finalContent = builderContent;
+      } else if (activeTab === 'html') {
+        finalContent = htmlContent;
+      }
+
+      // Calculate SEO score before submission
+      const seoScore = calculateSEOScore(
+        values.title,
+        values.short_description,
+        finalContent,
+        values.tags,
+        values.seo_meta_title,
+        values.seo_meta_description,
+        values.seo_meta_keywords
+      );
+
+      // Check if SEO score is below 80%
+      if (seoScore.percentage < 80) {
+        setSubmitLoading(false);
+        message.error('Please improve your content SEO score before submitting. Your current SEO score is ' + seoScore.percentage + '%. Aim for at least 80% to ensure better visibility and performance.');
+        return;
+      }
+
       const apiBase = isAdmin ? '/api/admin' : '/api/user';
       const redirectPath = isAdmin ? '/admin' : '/dashboard';
 
@@ -476,21 +502,119 @@ const handleSubmit = async () => {
     }
   };
 
+  const calculateSEOScore = (title, description, content, tags, seoMetaTitle, seoMetaDescription, seoMetaKeywords) => {
+    let score = 0;
+    let maxScore = 100;
+    let issues = [];
+
+    // Title analysis (20 points)
+    if (title && title.length >= 30 && title.length <= 60) {
+      score += 20;
+    } else if (title && title.length > 0) {
+      score += 10;
+      issues.push(title.length < 30 ? 'Title is too short (should be 30-60 characters)' : 'Title is too long (should be 30-60 characters)');
+    } else {
+      issues.push('Title is missing');
+    }
+
+    // Description analysis (15 points)
+    if (description && description.length >= 120 && description.length <= 160) {
+      score += 15;
+    } else if (description && description.length > 0) {
+      score += 8;
+      issues.push(description.length < 120 ? 'Description is too short (should be 120-160 characters)' : 'Description is too long (should be 120-160 characters)');
+    } else {
+      issues.push('Description is missing');
+    }
+
+    // Content length analysis (25 points)
+    const plainContent = content.replace(/<[^>]*>/g, '').trim();
+    const wordCount = plainContent.split(/\s+/).filter(Boolean).length;
+    if (wordCount >= 300) {
+      score += 25;
+    } else if (wordCount >= 150) {
+      score += 15;
+      issues.push('Content is too short (should be at least 300 words)');
+    } else {
+      issues.push('Content is too short (should be at least 300 words)');
+    }
+
+    // Tags analysis (10 points)
+    if (tags && tags.length >= 3) {
+      score += 10;
+    } else if (tags && tags.length > 0) {
+      score += 5;
+      issues.push('Add more tags (should have at least 3 tags)');
+    } else {
+      issues.push('Tags are missing');
+    }
+
+    // SEO Meta Title analysis (15 points)
+    if (seoMetaTitle && seoMetaTitle.length >= 30 && seoMetaTitle.length <= 60) {
+      score += 15;
+    } else if (seoMetaTitle && seoMetaTitle.length > 0) {
+      score += 8;
+      issues.push(seoMetaTitle.length < 30 ? 'SEO meta title is too short (should be 30-60 characters)' : 'SEO meta title is too long (should be 30-60 characters)');
+    } else {
+      issues.push('SEO meta title is missing');
+    }
+
+    // SEO Meta Description analysis (15 points)
+    if (seoMetaDescription && seoMetaDescription.length >= 120 && seoMetaDescription.length <= 160) {
+      score += 15;
+    } else if (seoMetaDescription && seoMetaDescription.length > 0) {
+      score += 8;
+      issues.push(seoMetaDescription.length < 120 ? 'SEO meta description is too short (should be 120-160 characters)' : 'SEO meta description is too long (should be 120-160 characters)');
+    } else {
+      issues.push('SEO meta description is missing');
+    }
+
+    return {
+      score: Math.round(score),
+      maxScore,
+      percentage: Math.round((score / maxScore) * 100),
+      issues,
+      wordCount
+    };
+  };
+
   const handlePreview = async () => {
     try {
       const values = await form.validateFields();
       const formData = buildFormData(values);
-     
+
+      // Generate content based on active tab
+      let finalContent = content;
+      if (activeTab === 'builder' && contentElementsRef.current.length > 0) {
+        finalContent = HtmlGenerationCompat.generateHtml(contentElementsRef.current);
+      } else if (activeTab === 'builder') {
+        finalContent = builderContent;
+      } else if (activeTab === 'html') {
+        finalContent = htmlContent;
+      }
+
+      // Calculate SEO score
+      const seoScore = calculateSEOScore(
+        values.title,
+        values.short_description,
+        finalContent,
+        values.tags,
+        values.seo_meta_title,
+        values.seo_meta_description,
+        values.seo_meta_keywords
+      );
+
       // Generate preview data
       const previewData = {
         title: values.title,
-        description: values.description,
-        content: formData.get('content'),
+        description: values.short_description,
+        content: finalContent,
         banner_image: values.banner_image,
         content_type_id: values.content_type_id,
         category_id: values.category_id,
+        seoScore
       };
-     
+
       setPreviewData(previewData);
       setPreviewVisible(true);
     } catch (error) {
@@ -766,7 +890,18 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
             } else if (activeTab === 'html') {
               previewContent = htmlContent;
             }
-            
+
+            // Calculate SEO score
+            const seoScore = calculateSEOScore(
+              v.title,
+              v.short_description,
+              previewContent,
+              v.tags,
+              v.seo_meta_title,
+              v.seo_meta_description,
+              v.seo_meta_keywords
+            );
+
             setPreviewData({
               content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
               category: categories.find(c => c.id === v.category_id)?.name || '',
@@ -780,15 +915,17 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
               seo_meta_description: v.seo_meta_description || '',
               seo_meta_keywords: v.seo_meta_keywords || '',
               content: previewContent,
+              seoScore,
             });
             setPreviewVisible(true);
-          }} size={window.innerWidth < 768 ? 'small' : 'middle'}>Preview</Button>
+          }} size="small" style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}>Preview</Button>
           <Button
             icon={<SaveOutlined />}
             loading={loading}
             disabled={contentStatus === 'pending'}
             onClick={handleSave}
-            size={window.innerWidth < 768 ? 'small' : 'middle'}
+            size="small"
+            style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}
           >
             {window.innerWidth < 768 ? (savedContentId ? 'Update' : 'Save') : (savedContentId ? 'Update Draft' : 'Save Draft')}
           </Button>
@@ -802,9 +939,8 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
               loading={submitLoading}
               disabled={!savedContentId || contentStatus === 'pending'}
               onClick={handleSubmit}
-
-              size={window.innerWidth < 768 ? 'small' : 'middle'}
-              style={{ color: darkMode ? '#fff' : undefined }}
+              size="small"
+              style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto', color: darkMode ? '#fff' : undefined }}
             >
               {window.innerWidth < 768 ? (contentStatus === 'pending' ? 'Review' : 'Submit') : (contentStatus === 'pending' ? 'Under Review' : 'Submit for Review')}
             </Button>
@@ -1691,6 +1827,55 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
           <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, width: '100%', maxWidth: 860, padding: 'clamp(20px, 3vw, 40px)', position: 'relative', border: darkMode ? '1px solid #334155' : 'none' }}
             onClick={e => e.stopPropagation()}>
             <Button type="text" onClick={() => setPreviewVisible(false)} style={{ position: 'absolute', top: 'clamp(12px, 1.5vw, 16px)', right: 'clamp(12px, 1.5vw, 16px)', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 'clamp(14px, 1.2vw, 16px)' }}>✕ Close</Button>
+
+            {/* SEO Score Display */}
+            {previewData.seoScore && (
+              <div style={{
+                marginBottom: 'clamp(16px, 2vw, 24px)',
+                padding: 'clamp(12px, 1.5vw, 16px)',
+                background: previewData.seoScore.percentage >= 80
+                  ? darkMode ? 'rgba(91, 189, 43, 0.1)' : 'rgba(91, 189, 43, 0.1)'
+                  : darkMode ? 'rgba(249, 148, 29, 0.1)' : 'rgba(249, 148, 29, 0.1)',
+                border: `2px solid ${previewData.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D'}`,
+                borderRadius: 10
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Text strong style={{ fontSize: 'clamp(13px, 0.9vw, 15px)', color: darkMode ? '#f1f5f9' : '#1a1a1a' }}>
+                    SEO Score: {previewData.seoScore.percentage}%
+                  </Text>
+                  <div style={{
+                    width: 'clamp(80px, 10vw, 120px)',
+                    height: 'clamp(8px, 1vw, 10px)',
+                    background: darkMode ? '#334155' : '#e5e7eb',
+                    borderRadius: 5,
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{
+                      width: `${previewData.seoScore.percentage}%`,
+                      height: '100%',
+                      background: previewData.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D',
+                      transition: 'width 0.3s ease'
+                    }} />
+                  </div>
+                </div>
+                <div style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#94a3b8' : '#6B7280' }}>
+                  Word Count: {previewData.seoScore.wordCount}
+                </div>
+                {previewData.seoScore.issues.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#f1f5f9' : '#1a1a1a', fontWeight: 500 }}>
+                      Issues to fix:
+                    </Text>
+                    <ul style={{ margin: '8px 0 0 0', paddingLeft: 20, fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : '#6B7280' }}>
+                      {previewData.seoScore.issues.map((issue, i) => (
+                        <li key={i} style={{ marginBottom: 4 }}>{issue}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
             {previewData.category && <Tag color="blue" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)', marginRight: 8 }}>{previewData.category}</Tag>}
             {previewData.content_type && <Tag color="purple" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.content_type}</Tag>}
             <h1 style={{ fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a1a', margin: 'clamp(12px, 1.5vw, 16px) 0', lineHeight: 1.3 }}>{previewData.title}</h1>

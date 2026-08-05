@@ -36,36 +36,147 @@ const SEO = () => {
   const fetchSeoData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch SEO settings
       const settingsResponse = await axios.get('/api/seo/settings');
       form.setFieldsValue(settingsResponse.data);
-      
-      // Fetch SEO score and issues
-      const scoreResponse = await axios.get('/api/seo/score');
-      setSeoScore(scoreResponse.data.score);
-      setSeoIssues(scoreResponse.data.issues || []);
-      
-      // Fetch page analysis
-      const analysisResponse = await axios.get('/api/seo/analysis');
-      setPages(analysisResponse.data || []);
+
+      // Fetch all content for SEO analysis
+      const contentResponse = await axios.get('/api/admin/content/all', {
+        params: { limit: 100, offset: 0 }
+      });
+      const contentData = contentResponse.data.data || [];
+
+      // Use the same SEO calculation logic as CreateContent.jsx
+      const calculateSEOScore = (title, description, content, tags, seoMetaTitle, seoMetaDescription, seoMetaKeywords) => {
+        let score = 0;
+        let maxScore = 100;
+        let issues = [];
+
+        // Title analysis (20 points)
+        if (title && title.length >= 30 && title.length <= 60) {
+          score += 20;
+        } else if (title && title.length > 0) {
+          score += 10;
+          issues.push(title.length < 30 ? 'Title is too short (should be 30-60 characters)' : 'Title is too long (should be 30-60 characters)');
+        } else {
+          issues.push('Title is missing');
+        }
+
+        // Description analysis (15 points)
+        if (description && description.length >= 120 && description.length <= 160) {
+          score += 15;
+        } else if (description && description.length > 0) {
+          score += 8;
+          issues.push(description.length < 120 ? 'Description is too short (should be 120-160 characters)' : 'Description is too long (should be 120-160 characters)');
+        } else {
+          issues.push('Description is missing');
+        }
+
+        // Content length analysis (25 points)
+        const plainContent = content ? content.replace(/<[^>]*>/g, '').trim() : '';
+        const wordCount = plainContent.split(/\s+/).filter(Boolean).length;
+        if (wordCount >= 300) {
+          score += 25;
+        } else if (wordCount >= 150) {
+          score += 15;
+          issues.push('Content is too short (should be at least 300 words)');
+        } else {
+          issues.push('Content is too short (should be at least 300 words)');
+        }
+
+        // Tags analysis (10 points)
+        const parsedTags = tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [];
+        if (parsedTags && parsedTags.length >= 3) {
+          score += 10;
+        } else if (parsedTags && parsedTags.length > 0) {
+          score += 5;
+          issues.push('Add more tags (should have at least 3 tags)');
+        } else {
+          issues.push('Tags are missing');
+        }
+
+        // SEO Meta Title analysis (15 points)
+        if (seoMetaTitle && seoMetaTitle.length >= 30 && seoMetaTitle.length <= 60) {
+          score += 15;
+        } else if (seoMetaTitle && seoMetaTitle.length > 0) {
+          score += 8;
+          issues.push(seoMetaTitle.length < 30 ? 'SEO meta title is too short (should be 30-60 characters)' : 'SEO meta title is too long (should be 30-60 characters)');
+        } else {
+          issues.push('SEO meta title is missing');
+        }
+
+        // SEO Meta Description analysis (15 points)
+        if (seoMetaDescription && seoMetaDescription.length >= 120 && seoMetaDescription.length <= 160) {
+          score += 15;
+        } else if (seoMetaDescription && seoMetaDescription.length > 0) {
+          score += 8;
+          issues.push(seoMetaDescription.length < 120 ? 'SEO meta description is too short (should be 120-160 characters)' : 'SEO meta description is too long (should be 120-160 characters)');
+        } else {
+          issues.push('SEO meta description is missing');
+        }
+
+        return {
+          score: Math.round((score / maxScore) * 100),
+          issues
+        };
+      };
+
+      // Calculate SEO scores for all content
+      const pagesWithScores = contentData.map(item => {
+        const { score, issues } = calculateSEOScore(
+          item.title,
+          item.short_description,
+          item.content,
+          item.tags,
+          item.seo_meta_title,
+          item.seo_meta_description,
+          item.seo_meta_keywords
+        );
+
+        return {
+          id: item.id,
+          page: item.title || 'Untitled',
+          title: item.title || 'Untitled',
+          status: item.status || 'draft',
+          score: score,
+          issues: issues,
+          slug: item.slug,
+        };
+      });
+
+      setPages(pagesWithScores);
+
+      // Calculate overall SEO score
+      if (pagesWithScores.length > 0) {
+        const totalScore = pagesWithScores.reduce((sum, page) => sum + page.score, 0);
+        const averageScore = Math.round(totalScore / pagesWithScores.length);
+        setSeoScore(averageScore);
+
+        // Collect all issues
+        const allIssues = [];
+        pagesWithScores.forEach(page => {
+          page.issues.forEach(issue => {
+            allIssues.push({ type: 'warning', message: `${issue} for "${page.title}"` });
+          });
+        });
+
+        if (allIssues.length === 0) {
+          allIssues.unshift({ type: 'success', message: 'All content has excellent SEO scores' });
+        } else {
+          allIssues.unshift({ type: 'success', message: `${pagesWithScores.length} content items analyzed` });
+        }
+
+        setSeoIssues(allIssues.slice(0, 10));
+      } else {
+        setSeoScore(0);
+        setSeoIssues([]);
+      }
     } catch (error) {
       console.error('Error fetching SEO data:', error);
-      // Use default data if API fails
-      setSeoIssues([
-        { type: 'warning', message: 'Meta description is too short (recommended: 150-160 characters)' },
-        { type: 'success', message: 'Title tag has optimal length (50-60 characters)' },
-        { type: 'warning', message: 'Missing alt text on 3 images' },
-        { type: 'success', message: 'H1 tag is present and unique' },
-        { type: 'warning', message: 'Internal links could be improved' },
-      ]);
-      setPages([
-        { id: 1, page: 'Home', title: 'TgsTechInfo - Technology Solutions', status: 'Good', score: 85 },
-        { id: 2, page: 'About Us', title: 'About TgsTechInfo - Our Story', status: 'Good', score: 78 },
-        { id: 3, page: 'Services', title: 'Our Services - TgsTechInfo', status: 'Warning', score: 65 },
-        { id: 4, page: 'Contact', title: 'Contact Us - TgsTechInfo', status: 'Good', score: 82 },
-        { id: 5, page: 'Blog', title: 'Blog - Technology Insights', status: 'Warning', score: 58 },
-      ]);
+      setPages([]);
+      setSeoScore(0);
+      setSeoIssues([]);
     } finally {
       setLoading(false);
     }
@@ -73,44 +184,69 @@ const SEO = () => {
 
   const columns = [
     {
-      title: 'Page',
-      dataIndex: 'page',
-      key: 'page',
-      width: isMobile ? 80 : 100,
-      render: (text) => <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
-    },
-    {
-      title: 'Title Tag',
+      title: 'Content Title',
       dataIndex: 'title',
       key: 'title',
       ellipsis: true,
-      width: isMobile ? 120 : 200,
-      render: (text) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{text}</Text>,
+      width: isMobile ? 120 : 250,
+      render: (text, record) => (
+        <Text strong style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>
+          {text}
+        </Text>
+      ),
     },
     {
-      title: 'Status',
+      title: 'Content Status',
       dataIndex: 'status',
-      key: 'status',
-      width: isMobile ? 70 : 90,
-      render: (status, record) => (
-        <Tooltip 
-          title={record.issues && record.issues.length > 0 ? record.issues.join(', ') : 'No issues'}
-          placement="top"
-        >
-          <Tag color={status === 'Good' ? 'green' : 'orange'} icon={status === 'Good' ? <CheckCircleOutlined /> : <WarningOutlined />} style={{ fontSize: isMobile ? 11 : 14, cursor: 'pointer' }}>
-            {status}
+      key: 'contentStatus',
+      width: isMobile ? 70 : 100,
+      render: (status) => {
+        const statusColors = {
+          published: { bg: '#dcfce7', color: '#166534' },
+          draft: { bg: '#f3f4f6', color: '#374151' },
+          pending: { bg: '#fef3c7', color: '#92400e' },
+          rejected: { bg: '#fee2e2', color: '#991b1b' },
+        };
+        const cfg = statusColors[status] || statusColors.draft;
+        return (
+          <Tag style={{
+            background: cfg.bg,
+            color: cfg.color,
+            fontSize: isMobile ? 11 : 12,
+            fontWeight: 500,
+            border: 'none'
+          }}>
+            {status?.toUpperCase() || 'DRAFT'}
           </Tag>
-        </Tooltip>
-      ),
+        );
+      },
+    },
+    {
+      title: 'SEO Status',
+      key: 'seoStatus',
+      width: isMobile ? 70 : 100,
+      render: (_, record) => {
+        const seoStatus = record.score >= 80 ? 'Good' : record.score >= 60 ? 'Warning' : 'Critical';
+        return (
+          <Tooltip
+            title={record.issues && record.issues.length > 0 ? record.issues.join(', ') : 'No SEO issues'}
+            placement="top"
+          >
+            <Tag color={seoStatus === 'Good' ? 'green' : seoStatus === 'Warning' ? 'orange' : 'red'} icon={seoStatus === 'Good' ? <CheckCircleOutlined /> : <WarningOutlined />} style={{ fontSize: isMobile ? 11 : 14, cursor: 'pointer' }}>
+              {seoStatus}
+            </Tag>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'SEO Score',
       dataIndex: 'score',
       key: 'score',
-      width: isMobile ? 80 : 100,
+      width: isMobile ? 80 : 120,
       render: (score) => (
-        <div style={{ width: isMobile ? 80 : 100 }}>
-          <Progress percent={score} size="small" strokeColor={score >= 70 ? '#10B981' : score >= 50 ? '#F59E0B' : '#EF4444'} />
+        <div style={{ width: isMobile ? 80 : 120 }}>
+          <Progress percent={score} size="small" strokeColor={score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444'} />
         </div>
       ),
     },
@@ -341,9 +477,9 @@ ${settings.ogImage ? `<meta property="og:image" content="${settings.ogImage}">` 
       <Card
         title={
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Page SEO Analysis</span>
+            <span>Content SEO Analysis</span>
             <Input
-              placeholder="Search pages..."
+              placeholder="Search content..."
               prefix={<SearchOutlined />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -363,8 +499,7 @@ ${settings.ogImage ? `<meta property="og:image" content="${settings.ogImage}">` 
         <div style={{ maxHeight: isMobile ? 400 : 500, overflowY: 'auto' }}>
           <Table
             columns={columns}
-            dataSource={pages.filter(page => 
-              page.page.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            dataSource={pages.filter(page =>
               page.title.toLowerCase().includes(searchQuery.toLowerCase())
             )}
             rowKey="id"

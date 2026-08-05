@@ -97,6 +97,11 @@ const UserDashboardLayout = () => {
             label: 'My Content',
           },
           {
+            key: '/dashboard/my-submissions',
+            icon: <FileTextOutlined />,
+            label: 'My Submissions',
+          },
+          {
             key: '/dashboard/drafts',
             icon: <EditOutlined />,
             label: 'Drafts',
@@ -335,7 +340,13 @@ const UserDashboardLayout = () => {
                             You have {notifications.length} new notifications
                           </div>
                         </div>
-                        <div style={{ fontSize: 13, color: darkMode ? '#CBD5E1' : '#374151' }}>
+                        <div style={{ 
+                          fontSize: 13, 
+                          color: darkMode ? '#CBD5E1' : '#374151',
+                          maxHeight: 300,
+                          overflowY: 'auto',
+                          paddingRight: 8
+                        }}>
                           {notifications.map((notification) => (
                             <div 
                               key={notification.id} 
@@ -377,11 +388,16 @@ const UserDashboardLayout = () => {
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => navigate('/dashboard/create-post')}
+                size="small"
                 style={{
                   background: '#0AAEEF',
                   borderColor: '#0AAEEF',
-                  borderRadius: 8,
+                  borderRadius: 6,
                   fontWeight: 500,
+                  fontSize: 13,
+                  height: 32,
+                  padding: '4px 12px',
+                  minWidth: 'auto'
                 }}
               >
                 Create
@@ -389,10 +405,10 @@ const UserDashboardLayout = () => {
             )}
             <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
               <Avatar
-                size={isMobile ? 32 : 36}
+                size={32}
                 icon={<UserOutlined />}
-                style={{ 
-                  background: '#0AAEEF', 
+                style={{
+                  background: '#0AAEEF',
                   cursor: 'pointer',
                   border: `2px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
                 }}

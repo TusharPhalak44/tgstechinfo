@@ -52,6 +52,27 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate, darkMode }) => {
   const screens = useBreakpoint();
   const isMobile = !screens.md;
 
+  const handleCardClick = async () => {
+    try {
+      // Increment view count when content is clicked (use session-based deduplication)
+      const viewKey = `content-viewed-${article.id}`;
+      const sessionViewed = sessionStorage.getItem(viewKey);
+
+      // Only increment if not already viewed in this session
+      if (!sessionViewed) {
+        console.log('👁️ Incrementing view for content:', article.id);
+        await axios.post(`/api/public/content/${article.id}/view`);
+        sessionStorage.setItem(viewKey, 'true');
+        console.log('✅ View incremented and marked as viewed');
+      } else {
+        console.log('⏭️ Content already viewed in this session, skipping increment');
+      }
+    } catch (error) {
+      console.error('Error incrementing view count:', error);
+    }
+    navigate(`/${article.content_type || 'article'}-preview/${article.id}`);
+  };
+
   // Limit description to 2-3 lines
   const truncateDescription = (text, maxLines = 3) => {
     if (!text) return '';
@@ -80,34 +101,38 @@ const ArticleCard = ({ article, submitting, onSubmit, navigate, darkMode }) => {
           flexDirection: 'column',
           background: darkMode ? '#1e293b' : '#fff'
         }}
-        bodyStyle={{ 
+        bodyStyle={{
           padding: 0,
           flex: 1,
           display: 'flex',
           flexDirection: 'column'
         }}
-        onClick={() => navigate(`/article-preview/${article.id}`)}
+        onClick={handleCardClick}
       >
         {/* Banner Image */}
-        <div style={{ position: 'relative', lineHeight: 0, flexShrink: 0 }}>
+        <div style={{ position: 'relative', lineHeight: 0, flexShrink: 0, overflow: 'hidden' }}>
           {article.banner_image ? (
-            <img 
-              src={`/uploads/${article.banner_image}`} 
+            <img
+              src={`/uploads/${article.banner_image}`}
               alt={article.title}
-              style={{ 
-                width: '100%', 
-                height: isMobile ? 160 : 180, 
-                objectFit: 'cover', 
-                display: 'block', 
-                background: darkMode ? '#1e293b' : '#f0f4ff' 
-              }} 
+              style={{
+                width: '100%',
+                height: isMobile ? 160 : 180,
+                objectFit: 'cover',
+                display: 'block',
+                background: darkMode ? '#1e293b' : '#f0f4ff',
+                transform: 'scale(0.95)',
+                transition: 'transform .3s'
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(0.95)'}
             />
           ) : (
-            <div style={{ 
-              height: isMobile ? 160 : 180, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
+            <div style={{
+              height: isMobile ? 160 : 180,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               background: darkMode ? 'linear-gradient(135deg,#1e293b,#0f172a)' : 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
             }}>
               <FileTextOutlined style={{ fontSize: 40, color: darkMode ? '#64748b' : '#bfbfbf' }} />
@@ -452,32 +477,25 @@ const Dashboard = () => {
           </Text>
         </div>
         <div style={{ 
-          display: 'flex', 
-          gap: isMobile ? 8 : 12, 
+          display: 'flex',
+          gap: isMobile ? 8 : 12,
           flexWrap: 'wrap',
           width: isMobile ? '100%' : 'auto'
         }}>
-          <Button 
-            icon={<EyeOutlined />} 
-            onClick={() => navigate('/my-submissions')} 
-            size={isMobile ? 'small' : 'middle'}
-            style={{ 
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => navigate('/dashboard/create-post')}
+            size="small"
+            style={{
               flex: isMobile ? 1 : 'none',
-              borderRadius: 8
-            }}
-          >
-            {isMobile ? 'Submissions' : 'My Submissions'}
-          </Button>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
-            onClick={() => navigate('/dashboard/create-post')} 
-            size={isMobile ? 'small' : 'middle'}
-            style={{ 
-              flex: isMobile ? 1 : 'none',
-              borderRadius: 8,
+              borderRadius: 6,
               background: '#4a7cff',
-              borderColor: '#4a7cff'
+              borderColor: '#4a7cff',
+              fontSize: 13,
+              height: 32,
+              padding: '4px 12px',
+              minWidth: 'auto'
             }}
           >
             {isMobile ? 'Create' : 'Create Content'}

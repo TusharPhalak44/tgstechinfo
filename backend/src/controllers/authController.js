@@ -5,6 +5,7 @@ const { hashPassword, comparePassword, generateToken, generateRefreshToken, gene
 const { parseUserAgent, generateSessionToken, generateRefreshToken: genRefreshToken, getClientIP } = require('../utils/deviceFingerprint');
 const { validationResult } = require('express-validator');
 const { sendTemplatedEmail } = require('../config/email');
+const logAudit = require('../utils/auditLogger');
  
 exports.register = async (req, res) => {
     try {
@@ -184,6 +185,7 @@ exports.login = async (req, res) => {
                 login_status: 'failed',
                 failure_reason: 'Invalid credentials - user not found'
             });
+            await logAudit(req, 'login', 'user', null, `Failed login attempt for email: ${email}`, 'failed');
             return res.status(401).json({ message: 'Invalid credentials' });
         }
  
@@ -220,6 +222,7 @@ exports.login = async (req, res) => {
                 login_status: 'failed',
                 failure_reason: 'Invalid password'
             });
+            await logAudit(req, 'login', 'user', user.id, `Failed login - wrong password for: ${email}`, 'failed');
             return res.status(401).json({ message: 'Invalid credentials' });
         }
  
@@ -314,6 +317,9 @@ exports.login = async (req, res) => {
             path: '/'
         });
  
+        // Log audit
+        await logAudit(req, 'login', 'user', user.id, `User logged in: ${user.email}`, 'success');
+
         // Remove password from response
         delete user.password_hash;
  
@@ -366,6 +372,8 @@ exports.logout = async (req, res) => {
         if (sessionToken) {
             await UserSession.deactivate(sessionToken);
         }
+
+        await logAudit(req, 'logout', 'user', req.user?.id, `User logged out: ${req.user?.email}`, 'success');
        
         // Clear cookies
         res.clearCookie('accessToken', { path: '/' });
