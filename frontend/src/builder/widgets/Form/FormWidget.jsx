@@ -36,12 +36,12 @@ export default function FormWidget({ node, onUpdate }) {
   const applyWhitePaperTemplate = () => {
     const t = Date.now();
     const templateFields = [
-      { id: `field_${t}_1`, type: 'text',  label: 'First Name',    placeholder: 'Enter your first name',    required: true },
-      { id: `field_${t}_2`, type: 'text',  label: 'Last Name',     placeholder: 'Enter your last name',     required: true },
-      { id: `field_${t}_3`, type: 'email', label: 'Business Email',placeholder: 'your@company.com',         required: true },
-      { id: `field_${t}_4`, type: 'text',  label: 'Country',       placeholder: 'Enter your country',       required: true },
-      { id: `field_${t}_5`, type: 'text',  label: 'Company Name',  placeholder: 'Enter your company name',  required: true },
-      { id: `field_${t}_6`, type: 'text',  label: 'Job Title',     placeholder: 'Enter your job title',     required: true },
+      { id: `field_${t}_1`, type: 'text',  label: 'First Name',    apiKey: 'first_name',    placeholder: 'Enter your first name',    required: true },
+      { id: `field_${t}_2`, type: 'text',  label: 'Last Name',     apiKey: 'last_name',     placeholder: 'Enter your last name',     required: true },
+      { id: `field_${t}_3`, type: 'email', label: 'Business Email',apiKey: 'email',         placeholder: 'your@company.com',         required: true },
+      { id: `field_${t}_4`, type: 'text',  label: 'Country',       apiKey: 'country',       placeholder: 'Enter your country',       required: true },
+      { id: `field_${t}_5`, type: 'text',  label: 'Company Name',  apiKey: 'company_name',  placeholder: 'Enter your company name',  required: true },
+      { id: `field_${t}_6`, type: 'text',  label: 'Job Title',     apiKey: 'job_title',     placeholder: 'Enter your job title',     required: true },
     ];
     setFields(templateFields);
     updateContent({ fields: templateFields, formName: 'White Paper Download', submitText: 'DOWNLOAD THE WHITE PAPER' });
@@ -149,6 +149,18 @@ export default function FormWidget({ node, onUpdate }) {
                     onChange={(e) => updateField(field.id, { label: e.target.value })}
                     placeholder="Field Label"
                     size="small"
+                  />
+                </div>
+                <div style={{ marginBottom: 6 }}>
+                  <label style={{ display: 'block', marginBottom: 3, fontSize: 11, color: '#555' }}>
+                    API Key <span style={{ color: '#aaa', fontWeight: 400 }}>(maps to webhook field)</span>
+                  </label>
+                  <Input
+                    value={field.apiKey || ''}
+                    onChange={(e) => updateField(field.id, { apiKey: e.target.value })}
+                    placeholder="e.g. f_name, email_address"
+                    size="small"
+                    style={{ fontFamily: 'monospace', fontSize: 11 }}
                   />
                 </div>
                 <div style={{ marginBottom: 6 }}>

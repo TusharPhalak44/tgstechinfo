@@ -185,11 +185,14 @@ exports.submitLandingPage = async (req, res) => {
             normalizedExtraData[sanitizeColumnName(key)] = val;
         }
 
-        // Validate required fields
-        for (const field of customFieldsDef) {
-            const val = normalizedExtraData[field.name] ?? '';
-            if (field.required !== false && String(val).trim() === '') {
-                return res.status(400).json({ message: `Field "${field.label || field.name}" is required` });
+        // Validate required fields — only when customFieldsDef has entries
+        // HTML builder pages often have no custom_fields definition; skip validation for them
+        if (customFieldsDef.length > 0) {
+            for (const field of customFieldsDef) {
+                const val = normalizedExtraData[field.name] ?? '';
+                if (field.required !== false && String(val).trim() === '') {
+                    return res.status(400).json({ message: `Field "${field.label || field.name}" is required` });
+                }
             }
         }
 
@@ -199,7 +202,7 @@ exports.submitLandingPage = async (req, res) => {
 
         const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, normalizedContentId) : null;
         if (!existing) {
-            // Store in dynamic table if it exists
+            // Store in dynamic table — auto-create it if it doesn't exist yet
             try {
                 await insertIntoDynamicTable(normalizedContentId, {
                     ...normalizedExtraData,
@@ -207,9 +210,33 @@ exports.submitLandingPage = async (req, res) => {
                     user_agent: req.headers['user-agent']
                 });
             } catch (dynamicTableError) {
-                console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
-                // Fallback to JSON storage
-                await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
+                // Table doesn't exist — create it from submitted field names and retry
+                if (dynamicTableError.message && dynamicTableError.message.includes('does not exist')) {
+                    try {
+                        // Build field definitions from submitted data
+                        const autoFields = Object.keys(normalizedExtraData)
+                            .filter(k => !['ip_address', 'user_agent'].includes(k))
+                            .map(k => ({ name: k, label: k, type: 'text', required: false }));
+                        
+                        if (autoFields.length > 0) {
+                            const { createDynamicTable } = require('../utils/dynamicTable');
+                            await createDynamicTable(normalizedContentId, content.slug, autoFields);
+                        }
+                        
+                        // Retry the insert
+                        await insertIntoDynamicTable(normalizedContentId, {
+                            ...normalizedExtraData,
+                            ip_address: req.ip,
+                            user_agent: req.headers['user-agent']
+                        });
+                    } catch (retryError) {
+                        console.error('Auto-create table and retry failed, falling back to JSON:', retryError);
+                        await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
+                    }
+                } else {
+                    console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
+                    await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
+                }
             }
         }
 

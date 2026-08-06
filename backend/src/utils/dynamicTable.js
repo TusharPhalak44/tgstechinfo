@@ -154,15 +154,30 @@ const insertIntoDynamicTable = async (contentId, formData) => {
         const [columns] = await pool.query(`SHOW COLUMNS FROM ${tableName}`);
         const columnNames = columns.map(col => col.Field);
         
-        // Filter form data to match table columns
+        // Filter form data — auto-add columns that don't exist yet (VARCHAR 255 NULL)
         const filteredData = {};
         const standardColumns = ['id', 'content_id', 'created_at', 'updated_at', 'ip_address', 'user_agent'];
         
         for (const [key, value] of Object.entries(formData)) {
             const sanitizedKey = sanitizeColumnName(key);
-            if (columnNames.includes(sanitizedKey) && !standardColumns.includes(sanitizedKey)) {
-                filteredData[sanitizedKey] = value;
+            if (standardColumns.includes(sanitizedKey)) continue;
+            if (sanitizedKey === '') continue;
+            
+            // If column doesn't exist yet, create it dynamically
+            if (!columnNames.includes(sanitizedKey)) {
+                try {
+                    await pool.query(
+                        `ALTER TABLE ${tableName} ADD COLUMN ${sanitizedKey} VARCHAR(500) NULL DEFAULT NULL`
+                    );
+                    columnNames.push(sanitizedKey); // keep local list in sync
+                    console.log(`Auto-added column ${sanitizedKey} to ${tableName}`);
+                } catch (alterErr) {
+                    console.warn(`Could not add column ${sanitizedKey}:`, alterErr.message);
+                    continue; // skip this field if we can't add the column
+                }
             }
+            
+            filteredData[sanitizedKey] = value !== undefined && value !== null ? String(value) : null;
         }
         
         // Build INSERT query

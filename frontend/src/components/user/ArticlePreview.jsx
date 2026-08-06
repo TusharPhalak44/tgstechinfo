@@ -9,6 +9,7 @@ import axios from 'axios';
 import moment from 'moment';
 import ContentRenderer from '../common/ContentRenderer';
 import { useTheme } from '../../context/ThemeContext';
+import StandaloneBuilderPage from '../../pages/StandaloneBuilderPage';
 
 const { Title, Text } = Typography;
 
@@ -68,6 +69,28 @@ const ArticlePreview = () => {
 
   const tags = parseTags(content.tags);
   const canEdit = content.status === 'changes_requested' || content.status === 'draft';
+
+  // Visual Builder content — render full canvas, no standard layout
+  if (content.builder_page_data) {
+    return (
+      <div style={{ minHeight: '100vh' }}>
+        {/* Top bar for navigation and actions */}
+        <div style={{ padding: '12px 24px', background: darkMode ? '#1e293b' : '#fff', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
+            Back to Dashboard
+          </Button>
+          {canEdit && (
+            <Space size={8}>
+              <Button icon={<EditOutlined />} onClick={() => navigate(`/edit-content/${id}`)} style={{ color: darkMode ? '#cbd5e1' : undefined }}>
+                Edit in Builder
+              </Button>
+            </Space>
+          )}
+        </div>
+        <StandaloneBuilderPage content={content} />
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-6 md:px-8" style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>

@@ -43,17 +43,34 @@ export default function FormRenderer({ node }) {
     setSubmitting(true);
     try {
       // Save to backend database if a contentId is configured
+      // Use apiKey as the field name if set, otherwise fall back to field.id
       if (contentId) {
+        const dbFields = {};
+        fields.forEach(field => {
+          const rawValue = values[field.id];
+          if (rawValue === undefined) return;
+          const key = (field.apiKey && field.apiKey.trim()) ? field.apiKey.trim() : field.id;
+          dbFields[key] = rawValue;
+        });
         await axios.post('/api/public/landing-page', {
           content_id: contentId,
-          extra_fields: values,
+          extra_fields: dbFields,
         });
       }
 
       // Also forward to external API URL if configured (non-blocking)
       if (apiUrl) {
         try {
-          await axios.post(apiUrl, values, {
+          // Remap field values using apiKey mappings if defined
+          // e.g. { field_123: 'John' } → { first_name: 'John' } when apiKey = 'first_name'
+          const mappedValues = {};
+          fields.forEach(field => {
+            const rawValue = values[field.id];
+            if (rawValue === undefined) return;
+            const key = (field.apiKey && field.apiKey.trim()) ? field.apiKey.trim() : field.id;
+            mappedValues[key] = rawValue;
+          });
+          await axios.post(apiUrl, mappedValues, {
             headers: { 'Content-Type': 'application/json' },
             timeout: 10000,
           });

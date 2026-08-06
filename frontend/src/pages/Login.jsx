@@ -15,7 +15,7 @@ const FEATURES = [
 
 const Login = () => {
   const { darkMode } = useTheme();
-  const { mainLogo } = useSiteSettings();
+  const { cmsLogo, mainLogo } = useSiteSettings();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
@@ -81,8 +81,8 @@ const Login = () => {
         {/* Logo */}
         <div className="mb-12 self-start">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-2xl">
-            {mainLogo ? (
-              <img src={mainLogo} alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
+            {(cmsLogo || mainLogo) ? (
+              <img src={cmsLogo || mainLogo} alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
             ) : (
               <div className="h-12 w-12 flex items-center justify-center text-white font-bold text-xl rounded-xl bg-white/20">
                 TGS

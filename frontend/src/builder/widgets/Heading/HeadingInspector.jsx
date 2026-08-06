@@ -6,6 +6,8 @@
 import React from 'react';
 import { Form, Input, Select, InputNumber, ColorPicker } from 'antd';
 
+const { TextArea } = Input;
+
 const { Option } = Select;
 
 export default function HeadingInspector({ node, onUpdate }) {
@@ -33,6 +35,14 @@ export default function HeadingInspector({ node, onUpdate }) {
   return (
     <div style={{ padding: 16 }}>
       <Form layout="vertical">
+        <Form.Item label="Text">
+          <TextArea
+            rows={2}
+            value={node.content || ''}
+            onChange={(e) => onUpdate({ content: e.target.value })}
+            placeholder="Enter heading text"
+          />
+        </Form.Item>
         <Form.Item label="Heading Level">
           <Select
             value={node.headingLevel || 'h2'}

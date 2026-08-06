@@ -358,7 +358,25 @@ const MyContent = () => {
                 <Button 
                   size="small" 
                   icon={<EyeOutlined />}
-                  onClick={(e) => { e.stopPropagation(); navigate(`/${article.content_type || 'article'}-preview/${article.id}`); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // For published builder content, open the public-facing page
+                    if (article.status === 'published') {
+                      const isBuilderContent = !!article.builder_page_data || (() => {
+                        try {
+                          const l = typeof article.builder_layout === 'string'
+                            ? JSON.parse(article.builder_layout)
+                            : article.builder_layout;
+                          return Array.isArray(l) && l[0] === 'html';
+                        } catch { return false; }
+                      })();
+                      if (isBuilderContent) {
+                        navigate(`/content/${encodeURIComponent(article.slug)}`);
+                        return;
+                      }
+                    }
+                    navigate(`/${article.content_type || 'article'}-preview/${article.id}`);
+                  }}
                   style={{ fontSize: isMobile ? 11 : 12 }}
                 >
                   {!isMobile && 'View'}
