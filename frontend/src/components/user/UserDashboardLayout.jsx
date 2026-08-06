@@ -355,7 +355,9 @@ const UserDashboardLayout = () => {
                                 borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
                                 cursor: 'pointer'
                               }}
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 notificationApi.markAsRead(notification.id);
                                 setNotifications(prev => prev.filter(n => n.id !== notification.id));
                               }}

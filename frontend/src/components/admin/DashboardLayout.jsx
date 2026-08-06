@@ -545,7 +545,13 @@ const DashboardLayout = () => {
                               You have {notifications.length} new notifications
                             </div>
                           </div>
-                          <div style={{ fontSize: 13, color: darkMode ? '#CBD5E1' : '#374151' }}>
+                          <div style={{ 
+                            fontSize: 13, 
+                            color: darkMode ? '#CBD5E1' : '#374151',
+                            maxHeight: 300,
+                            overflowY: 'auto',
+                            paddingRight: 8
+                          }}>
                             {notifications.map((notification) => (
                               <div 
                                 key={notification.id} 
@@ -554,7 +560,9 @@ const DashboardLayout = () => {
                                   borderBottom: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
                                   cursor: 'pointer'
                                 }}
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   notificationApi.markAdminAsRead(notification.id);
                                   setNotifications(prev => prev.filter(n => n.id !== notification.id));
                                 }}

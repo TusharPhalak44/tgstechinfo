@@ -160,11 +160,7 @@ const ArticleDetail = () => {
         const c = response.data.content;
 
         if (c?.id) {
-          const sessionKey = `viewed-${c.id}`;
-          if (!sessionStorage.getItem(sessionKey)) {
-            sessionStorage.setItem(sessionKey, '1');
-            axios.post(`/api/public/content/${c.id}/view`).catch(() => {});
-          }
+          axios.post(`/api/public/content/${c.id}/view`).catch(() => {});
         }
 
         if (!c) {

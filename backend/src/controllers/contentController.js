@@ -425,23 +425,11 @@ exports.deleteContent = async (req, res) => {
     }
 };
 
-if (!exports._viewCache) exports._viewCache = new Map();
-
 exports.incrementContentView = async (req, res) => {
     try {
         const { id } = req.params;
-        const ip = (req.headers['x-forwarded-for'] || req.ip || '').split(',')[0].trim();
-        const cacheKey = `${id}_${ip}`;
-
-        if (exports._viewCache.has(cacheKey)) {
-            return res.json({ message: 'Already counted' });
-        }
-        exports._viewCache.set(cacheKey, true);
-        setTimeout(() => exports._viewCache.delete(cacheKey), 10000);
-
         const content = await Content.findById(id);
         if (!content) return res.status(404).json({ message: 'Content not found' });
-
         await Content.incrementViewCount(id);
         res.json({ message: 'View count incremented successfully' });
     } catch (error) {
