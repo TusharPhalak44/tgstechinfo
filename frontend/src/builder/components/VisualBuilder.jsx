@@ -45,25 +45,32 @@ function ResponsiveButtons({ mode, onChange, darkMode = false }) {
 }
 
 // ─── Outer wrapper that provides context ─────────────────────────────────────
-export default function VisualBuilder({ initialData, onSave, onCancel, embedded = false }) {
+// Context to share contentId with all widgets inside the builder
+export const BuilderContentIdContext = React.createContext(null);
+
+export default function VisualBuilder({ initialData, onSave, onCancel, embedded = false, contentId = null, triggerPreview = null, previewMeta = null }) {
   const { darkMode } = useTheme();
   return (
-    <ConfigProvider theme={{ algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
-      <BuilderProvider>
-        <VisualBuilderContent
-          initialData={initialData}
-          onSave={onSave}
-          onCancel={onCancel}
-          embedded={embedded}
-          darkMode={darkMode}
-        />
-      </BuilderProvider>
-    </ConfigProvider>
+    <BuilderContentIdContext.Provider value={contentId}>
+      <ConfigProvider theme={{ algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
+        <BuilderProvider>
+          <VisualBuilderContent
+            initialData={initialData}
+            onSave={onSave}
+            onCancel={onCancel}
+            embedded={embedded}
+            darkMode={darkMode}
+            triggerPreview={triggerPreview}
+            previewMeta={previewMeta}
+          />
+        </BuilderProvider>
+      </ConfigProvider>
+    </BuilderContentIdContext.Provider>
   );
 }
 
 // ─── Inner component (has access to builder context) ─────────────────────────
-function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false, darkMode = false }) {
+function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false, darkMode = false, triggerPreview = null, previewMeta = null }) {
   const actions = useBuilderActions();
   const state   = useBuilderState();
 
@@ -73,6 +80,16 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false,
   const [previewMode,            setPreviewMode]            = useState(false);
   const [previewDevice,          setPreviewDevice]          = useState('desktop');
   const [previewModalOpen,       setPreviewModalOpen]       = useState(false);
+
+  // Wire external preview trigger — allows parent (CreateContent) to open this modal
+  React.useEffect(() => {
+    if (triggerPreview) {
+      triggerPreview.current = () => setPreviewModalOpen(true);
+    }
+    return () => {
+      if (triggerPreview) triggerPreview.current = null;
+    };
+  }, [triggerPreview]);
 
   // Load data once on mount
   React.useEffect(() => {
@@ -368,6 +385,59 @@ function VisualBuilderContent({ initialData, onSave, onCancel, embedded = false,
               minHeight: '60vh',
             }}
           >
+            {/* Article metadata header — shown when triggered from CreateContent */}
+            {previewMeta && (
+              <div style={{ padding: '24px 28px', borderBottom: '1px solid #e8e8e8', background: '#fff' }}>
+                {/* SEO Score */}
+                {previewMeta.seoScore && (
+                  <div style={{
+                    marginBottom: 16,
+                    padding: 12,
+                    background: previewMeta.seoScore.percentage >= 80 ? 'rgba(91,189,43,0.08)' : 'rgba(249,148,29,0.08)',
+                    border: `1.5px solid ${previewMeta.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D'}`,
+                    borderRadius: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                  }}>
+                    <span style={{ fontWeight: 600, fontSize: 13 }}>SEO Score: {previewMeta.seoScore.percentage}%</span>
+                    <div style={{ flex: 1, height: 8, background: '#e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
+                      <div style={{ width: `${previewMeta.seoScore.percentage}%`, height: '100%', background: previewMeta.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D' }} />
+                    </div>
+                    <span style={{ fontSize: 11, color: '#666' }}>{previewMeta.seoScore.wordCount} words</span>
+                  </div>
+                )}
+                {/* Content type + category tags */}
+                <div style={{ marginBottom: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {previewMeta.content_type && <span style={{ padding: '2px 10px', background: '#f0ecff', color: '#6c5ce7', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{previewMeta.content_type}</span>}
+                  {previewMeta.category && <span style={{ padding: '2px 10px', background: '#e0f0ff', color: '#2563eb', borderRadius: 12, fontSize: 11, fontWeight: 600 }}>{previewMeta.category}</span>}
+                </div>
+                {/* Title */}
+                {previewMeta.title && (
+                  <h1 style={{ fontSize: 26, fontWeight: 700, color: '#1a1a2e', margin: '0 0 10px 0', lineHeight: 1.3 }}>{previewMeta.title}</h1>
+                )}
+                {/* Banner image */}
+                {previewMeta.banner_image && (
+                  <div style={{ marginBottom: 14, borderRadius: 8, overflow: 'hidden' }}>
+                    <img src={previewMeta.banner_image} alt={previewMeta.title} style={{ width: '100%', maxHeight: 320, objectFit: 'contain', display: 'block', background: '#f5f5f5' }} />
+                  </div>
+                )}
+                {/* Short description */}
+                {previewMeta.short_description && (
+                  <div style={{ padding: '10px 14px', background: 'rgba(74,124,255,0.07)', borderLeft: '4px solid #4a7cff', borderRadius: '0 8px 8px 0', marginBottom: 12, fontSize: 14, color: '#374151', lineHeight: 1.6 }}>
+                    {previewMeta.short_description}
+                  </div>
+                )}
+                {/* Tags */}
+                {previewMeta.tags && previewMeta.tags.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {previewMeta.tags.map((tag, i) => (
+                      <span key={i} style={{ padding: '2px 10px', background: '#e0e7ff', color: '#4338ca', borderRadius: 20, fontSize: 11 }}>{tag}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <PreviewCanvas />
           </div>
         </div>

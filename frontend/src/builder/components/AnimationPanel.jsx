@@ -1,47 +1,102 @@
 /**
  * AnimationPanel Component
- * Panel for configuring widget animations
+ * Panel for configuring widget animations with working preview
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Select, Slider, Switch, Collapse, Button, Space } from 'antd';
+import { Form, Select, Slider, Switch, Collapse, Button } from 'antd';
 import { ThunderboltOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import animationManager from '../core/AnimationManager';
-import { animationTypes, animationEasing } from '../utils/types';
+
+// Keyframes map matching AnimationManager presets — used by Web Animations API
+const KEYFRAMES = {
+  fadeIn:     [{ opacity: 0, transform: 'translateY(0)' },     { opacity: 1, transform: 'translateY(0)' }],
+  slideUp:    [{ opacity: 0, transform: 'translateY(30px)' },  { opacity: 1, transform: 'translateY(0)' }],
+  slideDown:  [{ opacity: 0, transform: 'translateY(-30px)' }, { opacity: 1, transform: 'translateY(0)' }],
+  slideLeft:  [{ opacity: 0, transform: 'translateX(30px)' },  { opacity: 1, transform: 'translateX(0)' }],
+  slideRight: [{ opacity: 0, transform: 'translateX(-30px)' }, { opacity: 1, transform: 'translateX(0)' }],
+  zoomIn:     [{ opacity: 0, transform: 'scale(0.8)' },        { opacity: 1, transform: 'scale(1)' }],
+  zoomOut:    [{ opacity: 0, transform: 'scale(1.2)' },        { opacity: 1, transform: 'scale(1)' }],
+  bounce: [
+    { transform: 'translateY(0)' },
+    { transform: 'translateY(-20px)' },
+    { transform: 'translateY(0)' },
+    { transform: 'translateY(-10px)' },
+    { transform: 'translateY(0)' },
+  ],
+  rotate: [{ opacity: 0, transform: 'rotate(-180deg)' }, { opacity: 1, transform: 'rotate(0)' }],
+  flip:   [{ transform: 'perspective(400px) rotateY(90deg)' }, { transform: 'perspective(400px) rotateY(0)' }],
+  pulse:  [{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }],
+};
 
 /**
- * AnimationPanel Component
+ * Run animation preview directly on the DOM element using Web Animations API
  */
-export default function AnimationPanel({ node, onUpdate, onPreview }) {
+function runPreview(nodeId, config) {
+  const el = document.querySelector(`[data-node-id="${nodeId}"]`);
+  if (!el) {
+    console.warn('[AnimationPanel] Element not found for node:', nodeId);
+    return;
+  }
+  const keyframes = KEYFRAMES[config.type];
+  if (!keyframes) {
+    console.warn('[AnimationPanel] No keyframes for type:', config.type);
+    return;
+  }
+
+  const duration = config.duration || 600;
+  const delay    = config.delay    || 0;
+  const easing   = config.easing   || 'ease-out';
+  const iterations = config.iteration === 'infinite' ? Infinity : (config.iteration || 1);
+
+  // Cancel any running animation first
+  el.getAnimations?.().forEach(a => a.cancel());
+
+  el.animate(keyframes, {
+    duration,
+    delay,
+    easing,
+    iterations,
+    fill: 'both',
+  });
+}
+
+export default function AnimationPanel({ node, onUpdate }) {
   const [form] = Form.useForm();
   const [animation, setAnimation] = useState(null);
+  const [previewing, setPreviewing] = useState(false);
 
+  // Sync from node.settings.animation (the source of truth) on node change
   useEffect(() => {
-    if (node) {
-      const nodeAnimation = animationManager.getAnimation(node.id);
-      setAnimation(nodeAnimation);
-      form.setFieldsValue({
-        type: nodeAnimation?.type || 'none',
-        duration: nodeAnimation?.duration || 600,
-        delay: nodeAnimation?.delay || 0,
-        easing: nodeAnimation?.easing || 'ease-out',
-        iteration: nodeAnimation?.iteration || 1,
-        trigger: nodeAnimation?.trigger || 'onLoad',
-        scrollThreshold: nodeAnimation?.scrollThreshold || 0.2,
-        hover: nodeAnimation?.hover || false,
-      });
-    }
-  }, [node, form]);
+    if (!node) return;
 
-  const handleValuesChange = (changedValues) => {
-    const newAnimation = {
-      ...animation,
-      ...changedValues,
+    // Prefer settings stored in the node, fall back to animationManager
+    const stored = node.settings?.animation || animationManager.getAnimation(node.id);
+
+    const config = {
+      type:            stored?.type            ?? 'none',
+      duration:        stored?.duration        ?? 600,
+      delay:           stored?.delay           ?? 0,
+      easing:          stored?.easing          ?? 'ease-out',
+      iteration:       stored?.iteration       ?? 1,
+      trigger:         stored?.trigger         ?? 'onLoad',
+      scrollThreshold: stored?.scrollThreshold ?? 0.2,
+      hover:           stored?.hover           ?? false,
     };
 
+    setAnimation(config);
+    form.setFieldsValue(config);
+
+    // Keep manager in sync
+    if (config.type !== 'none') {
+      animationManager.registerAnimation(node.id, config);
+    }
+  }, [node?.id]); // re-run only when selected node changes
+
+  const handleValuesChange = (changedValues) => {
+    const newAnimation = { ...animation, ...changedValues };
     setAnimation(newAnimation);
     animationManager.registerAnimation(node.id, newAnimation);
-
     onUpdate({
       settings: {
         ...node.settings,
@@ -51,9 +106,12 @@ export default function AnimationPanel({ node, onUpdate, onPreview }) {
   };
 
   const handlePreview = () => {
-    if (onPreview) {
-      onPreview(node.id);
-    }
+    if (!animation || animation.type === 'none') return;
+    setPreviewing(true);
+    runPreview(node.id, animation);
+    // Re-enable button after animation completes
+    const totalMs = (animation.duration || 600) + (animation.delay || 0) + 150;
+    setTimeout(() => setPreviewing(false), totalMs);
   };
 
   const animationPresets = Object.entries(animationManager.getAllPresets()).map(([key, preset]) => ({
@@ -61,19 +119,22 @@ export default function AnimationPanel({ node, onUpdate, onPreview }) {
     label: preset.name,
   }));
 
+  const hasAnimation = animation && animation.type && animation.type !== 'none';
+
   return (
-    <div className="animation-panel">
+    <div className="animation-panel" style={{ padding: '4px 0' }}>
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <ThunderboltOutlined style={{ color: '#f59e0b' }} />
           <span style={{ fontWeight: 600 }}>Animation</span>
         </div>
         <Button
-          type="text"
+          type="primary"
           size="small"
           icon={<PlayCircleOutlined />}
           onClick={handlePreview}
-          disabled={!animation || animation.type === 'none'}
+          disabled={!hasAnimation || previewing}
+          loading={previewing}
         >
           Preview
         </Button>
@@ -134,20 +195,18 @@ export default function AnimationPanel({ node, onUpdate, onPreview }) {
               </Select>
             </Form.Item>
 
-            <Form.Item
-              label="Scroll Threshold"
-              name="scrollThreshold"
-              style={{ display: 'none' }}
-            >
-              <Slider min={0} max={1} step={0.1} marks={{ 0: '0%', 0.5: '50%', 1: '100%' }} />
-            </Form.Item>
-
             <Form.Item label="Animate on Hover" name="hover">
               <Switch />
             </Form.Item>
           </Collapse.Panel>
         </Collapse>
       </Form>
+
+      {!hasAnimation && (
+        <div style={{ marginTop: 12, padding: '10px 14px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#94a3b8', textAlign: 'center' }}>
+          Select an animation type above, then click Preview
+        </div>
+      )}
     </div>
   );
 }

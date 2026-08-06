@@ -304,7 +304,6 @@ const About = () => {
                   <h3 style={{
                     fontSize: 'clamp(16px, 1.8vw, 18px)',
                     fontWeight: 700,
-                    color: darkMode ? '#f1f5f9' : '#1a1a2e',
                     marginBottom: 8,
                     color: '#F7941D'
                   }}>

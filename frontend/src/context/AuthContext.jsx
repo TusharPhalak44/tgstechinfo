@@ -82,8 +82,21 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.get('/api/auth/profile');
       setUser(response.data.user);
     } catch (error) {
-      console.error('Fetch user error:', error);
-      setUser(null);
+      if (error.response?.status === 401) {
+        try {
+          const { data } = await axios.post('/api/auth/refresh');
+          setCsrfToken(data.csrfToken);
+          const response = await axios.get('/api/auth/profile');
+          setUser(response.data.user);
+          return;
+        } catch {
+          setUser(null);
+          setCsrfToken(null);
+        }
+      } else {
+        console.error('Fetch user error:', error);
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

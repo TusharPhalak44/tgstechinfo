@@ -14,6 +14,8 @@ import AnimationPanel from './AnimationPanel';
 import VisibilityPanel from './VisibilityPanel';
 import InteractionPanel from './InteractionPanel';
 import FormWidget from '../widgets/Form/FormWidget';
+import ImageInspector from '../widgets/Image/ImageInspector.jsx';
+import VideoInspector from '../widgets/Video/VideoInspector.jsx';
 
 const { TabPane } = Tabs;
 
@@ -229,14 +231,18 @@ function ContentPanel({ node, widget, onUpdate }) {
 
       case 'image':
         return (
-          <>
-            <Form.Item label="Image URL" name="content">
-              <Input 
-                placeholder="https://example.com/image.jpg"
-                onChange={(e) => onUpdate({ content: e.target.value })}
-              />
-            </Form.Item>
-          </>
+          <ImageInspector
+            node={node}
+            onUpdate={onUpdate}
+          />
+        );
+
+      case 'video':
+        return (
+          <VideoInspector
+            node={node}
+            onUpdate={onUpdate}
+          />
         );
 
       case 'button':
@@ -267,8 +273,8 @@ function ContentPanel({ node, widget, onUpdate }) {
     }
   };
 
-  // For form widget, render without Form wrapper to avoid nested form
-  if (node.type === 'form') {
+  // For form and image widgets, render without Form wrapper to avoid conflicts
+  if (node.type === 'form' || node.type === 'image' || node.type === 'video') {
     return renderContentEditor();
   }
 
@@ -305,19 +311,60 @@ function StylePanel({ node, widget, onUpdate }) {
   };
 
   React.useEffect(() => {
-    const normalizedStyles = {};
+    const formValues = {};
     Object.keys(styles).forEach(key => {
-      if (key.toLowerCase().includes('color') || key.toLowerCase().includes('background')) {
-        normalizedStyles[key] = normalizeColorValue(styles[key]);
+      const val = styles[key];
+      if (key.toLowerCase().includes('color')) {
+        // Color fields: normalize objects → hex string
+        formValues[key] = normalizeColorValue(val) || val;
+      } else if (key === 'backgroundGradient') {
+        formValues[key] = val;
+      } else if (key === 'backgroundImage') {
+        // Strip url() wrapper so the Input shows a plain URL
+        if (typeof val === 'string' && val.startsWith('url(')) {
+          formValues[key] = val.slice(4, -1).replace(/['"]/g, '');
+        } else {
+          formValues[key] = val;
+        }
       } else {
-        normalizedStyles[key] = styles[key];
+        formValues[key] = val;
       }
     });
-    form.setFieldsValue(normalizedStyles);
+    form.setFieldsValue(formValues);
   }, [styles, form]);
 
   const handleValuesChange = (changedValues) => {
-    onUpdate({ styles: { ...styles, ...changedValues } });
+    const normalized = {};
+    Object.keys(changedValues).forEach(key => {
+      const val = changedValues[key];
+      // ColorPicker returns an AggregationColor object — extract hex string
+      if (val && typeof val === 'object' && typeof val.toHexString === 'function') {
+        normalized[key] = val.toHexString();
+      } else if (val && typeof val === 'object' && typeof val.toRgbString === 'function') {
+        normalized[key] = val.toRgbString();
+      } else if (key === 'backgroundGradient') {
+        // backgroundGradient is not a real CSS property — store as 'background'
+        if (!val || val === 'none') {
+          normalized.backgroundGradient = 'none';
+          // Only clear background if it was previously a gradient
+          if (typeof styles.background === 'string' && styles.background.includes('gradient')) {
+            normalized.background = '';
+          }
+        } else {
+          normalized.backgroundGradient = val;
+          normalized.background = val; // apply as real CSS background
+        }
+      } else if (key === 'backgroundImage') {
+        // backgroundImage URL needs url() wrapping for CSS
+        normalized.backgroundImage = val;
+        if (val && val !== 'none' && !val.startsWith('url(')) {
+          normalized.backgroundImage = `url(${val})`;
+        }
+      } else {
+        normalized[key] = val;
+      }
+    });
+    onUpdate({ styles: { ...styles, ...normalized } });
   };
 
   return (

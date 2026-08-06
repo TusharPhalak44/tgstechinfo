@@ -60,6 +60,7 @@ import AuditLogs from './components/admin/AuditLogs';
 import Forms from './components/admin/Forms';
 import SEO from './components/admin/SEO';
 import Roles from './components/admin/Roles';
+import Permissions from './components/admin/Permissions';
 import SessionManagement from './components/admin/SessionManagement';
 import Settings from './components/admin/Settings';
 import EmailTemplates from './components/admin/EmailTemplates';
@@ -249,6 +250,7 @@ function AppContent() {
               <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
               <Route path="/contact" element={<ContactUs />} />
+              <Route path="/about" element={<About />} />
               <Route path="/case-study/:slug" element={<CaseStudyPage />} />
               <Route path="/case-studies" element={<CategoryList />} />
               {/* Landing pages listing + direct access */}
@@ -287,12 +289,11 @@ function AppContent() {
                 <Route path="media-library" element={<MediaLibrary />} />
                 <Route path="uploads" element={<Uploads />} />
                 <Route path="categories" element={<Categories />} />
-                <Route path="/about" element={<About />} />
                  <Route path="forms" element={<Forms />} />
                 <Route path="seo" element={<SEO />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="roles" element={<Roles />} />
-                <Route path="permissions" element={<Roles />} />
+                <Route path="permissions" element={<Permissions />} />
                 <Route path="audit-logs" element={<AuditLogs />} />
                 <Route path="integrations" element={<Integrations />} />
                 <Route path="sessions" element={<SessionManagement />} />
@@ -328,7 +329,7 @@ function AppContent() {
                 <Route path="seo" element={<SEO />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="roles" element={<Roles />} />
-                <Route path="permissions" element={<Roles />} />
+                <Route path="permissions" element={<Permissions />} />
                 <Route path="audit-logs" element={<AuditLogs />} />
                 <Route path="integrations" element={<Integrations />} />
                 <Route path="sessions" element={<SessionManagement />} />

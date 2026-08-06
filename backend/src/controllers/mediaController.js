@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
+        fileSize: 500 * 1024 * 1024 // 500MB limit
     },
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|webp|pdf|doc|docx|mp4|mov|avi/;
@@ -71,8 +71,19 @@ exports.uploadFile = async (req, res) => {
             folder = 'Documents';
         }
         
-        // Read file binary data to store in DB
-        const fileData = fs.readFileSync(req.file.path);
+        // Only store file binary in DB for small images/PDFs (under 5MB).
+        // For videos and large files, store metadata only — serve from disk.
+        const MAX_BLOB_SIZE = 5 * 1024 * 1024; // 5MB
+        const isVideo = fileType === 'video';
+        const isLarge = req.file.size > MAX_BLOB_SIZE;
+        let fileData = null;
+        if (!isVideo && !isLarge) {
+            try {
+                fileData = fs.readFileSync(req.file.path);
+            } catch (readErr) {
+                console.warn('Could not read file into DB blob (non-fatal):', readErr.message);
+            }
+        }
 
         // Save to database
         const mediaData = {

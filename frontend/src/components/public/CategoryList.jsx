@@ -37,12 +37,7 @@ const parseTags = (value) => {
 };
 
 const navigateContent = (item, navigate) => {
-  const { url, newTab } = getContentRoute(item);
-  if (newTab) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  } else {
-    navigate(url);
-  }
+  navigateContentItem(item, navigate);
 };
 
 const TYPE_MAP = {

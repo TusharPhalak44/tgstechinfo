@@ -1,13 +1,42 @@
 const { verifyToken } = require('../config/auth');
 const User = require('../models/User');
+const UserSession = require('../models/UserSession');
 
 exports.authenticate = async (req, res, next) => {
     try {
         // Try to get token from httpOnly cookie first, fallback to Authorization header
         const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
+        const sessionToken = req.cookies?.sessionToken;
         
         if (!token) {
             return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        if (sessionToken) {
+            const session = await UserSession.findBySessionToken(sessionToken);
+            if (!session || !session.is_active || session.expires_at < new Date()) {
+                if (sessionToken) {
+                    await UserSession.deactivate(sessionToken);
+                }
+                res.clearCookie('accessToken', { path: '/' });
+                res.clearCookie('refreshToken', { path: '/' });
+                res.clearCookie('sessionToken', { path: '/' });
+                return res.status(401).json({ message: 'Session expired. Please login again.' });
+            }
+
+            const idleTimeoutMs = 30 * 60 * 1000;
+            const lastActivity = new Date(session.last_activity || session.created_at);
+            const timeSinceActivity = Date.now() - lastActivity.getTime();
+
+            if (timeSinceActivity > idleTimeoutMs) {
+                await UserSession.deactivate(sessionToken);
+                res.clearCookie('accessToken', { path: '/' });
+                res.clearCookie('refreshToken', { path: '/' });
+                res.clearCookie('sessionToken', { path: '/' });
+                return res.status(401).json({ message: 'Session expired due to inactivity. Please login again.' });
+            }
+
+            await UserSession.updateLastActivity(sessionToken);
         }
 
         const decoded = verifyToken(token);

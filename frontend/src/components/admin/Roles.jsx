@@ -40,7 +40,13 @@ const Roles = () => {
       const filteredRoles = response.data.roles.filter(role =>
         role.name.toLowerCase() === 'admin' || role.name.toLowerCase() === 'user'
       );
-      setRoles(filteredRoles);
+      const normalizedRoles = filteredRoles.map((role) => ({
+        ...role,
+        permissions: Array.isArray(role.permissions) ? role.permissions : [],
+        status: role.status ?? 'active',
+        userCount: role.userCount ?? 0,
+      }));
+      setRoles(normalizedRoles);
     } catch (error) {
       console.error('Error fetching roles:', error);
       message.error('Failed to load roles');
@@ -69,12 +75,13 @@ const Roles = () => {
   };
 
   const handleEdit = (role) => {
+    const permissions = Array.isArray(role.permissions) ? role.permissions : [];
     setEditingRole(role);
     form.setFieldsValue({
       name: role.name,
       description: role.description,
-      permissions: role.permissions.includes('all') ? ['all'] : role.permissions,
-      status: role.status,
+      permissions: permissions.includes('all') ? ['all'] : permissions,
+      status: role.status ?? 'active',
     });
     setIsModalVisible(true);
   };
@@ -127,38 +134,46 @@ const Roles = () => {
       key: 'permissions',
       width: isMobile ? 100 : 150,
       responsive: ['md'],
-      render: (permissions) => (
-        <Space size={isMobile ? 2 : 'small'} wrap>
-          {permissions.includes('all') ? (
-            <Tag color="purple" style={{ fontSize: isMobile ? 11 : 14 }}>All Permissions</Tag>
-          ) : (
-            permissions.slice(0, 3).map((perm, index) => (
-              <Tag key={index} color="blue" style={{ fontSize: isMobile ? 11 : 14 }}>{perm}</Tag>
-            ))
-          )}
-          {permissions.length > 3 && !permissions.includes('all') && (
-            <Tag style={{ fontSize: isMobile ? 11 : 14 }}>+{permissions.length - 3} more</Tag>
-          )}
-        </Space>
-      ),
+      render: (permissions) => {
+        const perms = Array.isArray(permissions) ? permissions : [];
+        const hasAll = perms.includes('all');
+
+        return (
+          <Space size={isMobile ? 2 : 'small'} wrap>
+            {hasAll ? (
+              <Tag color="purple" style={{ fontSize: isMobile ? 11 : 14 }}>All Permissions</Tag>
+            ) : (
+              perms.slice(0, 3).map((perm, index) => (
+                <Tag key={index} color="blue" style={{ fontSize: isMobile ? 11 : 14 }}>{perm}</Tag>
+              ))
+            )}
+            {perms.length > 3 && !hasAll && (
+              <Tag style={{ fontSize: isMobile ? 11 : 14 }}>+{perms.length - 3} more</Tag>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Users',
       dataIndex: 'userCount',
       key: 'userCount',
       width: isMobile ? 70 : 90,
-      render: (count) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{count} users</Text>,
+      render: (count) => <Text style={{ fontSize: isMobile ? 11 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>{(count ?? 0)} users</Text>,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       width: isMobile ? 70 : 90,
-      render: (status) => (
-        <Tag color={status === 'active' ? 'green' : 'red'} style={{ fontSize: isMobile ? 11 : 14 }}>
-          {status.toUpperCase()}
-        </Tag>
-      ),
+      render: (status) => {
+        const normalizedStatus = status ?? 'active';
+        return (
+          <Tag color={normalizedStatus === 'active' ? 'green' : 'red'} style={{ fontSize: isMobile ? 11 : 14 }}>
+            {String(normalizedStatus).toUpperCase()}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Actions',

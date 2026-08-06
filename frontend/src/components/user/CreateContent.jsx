@@ -13,14 +13,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import TipTapEditor from '../common/TipTapEditor';
-import DragDropBuilder from '../common/DragDropBuilder';
 import HtmlEditor from '../editor/HtmlEditor';
 import '../../prose-content.css';
 // New builder architecture imports
 import { BuilderProvider } from '../../builder/core/BuilderStore.jsx';
 import { registerAllWidgets } from '../../builder/registry/registerWidgets';
-import { BuilderCompatWrapper, HtmlGenerationCompat } from '../../builder/utils/builderCompatibility';
-import VisualBuilder from '../../builder/components/VisualBuilder';
 import BuilderIntegration from '../../builder/components/BuilderIntegration';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -73,6 +70,7 @@ const CreateContent = () => {
   const layoutDragOver = useRef(null);
   const builderLayoutDragItem = useRef(null);
   const builderLayoutDragOver = useRef(null);
+  const builderPreviewTrigger = React.useRef(null);
 
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -91,7 +89,7 @@ const CreateContent = () => {
   const [previewData, setPreviewData] = useState(null);
   const [htmlPreviewVisible, setHtmlPreviewVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('standard'); // 'standard' | 'builder' | 'html'
-  const [builderMode, setBuilderMode] = useState('classic'); // 'classic' | 'visual'
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [builderPageData, setBuilderPageData] = useState(null); // v2.0 full page tree from VisualBuilder
   const [builderContent, setBuilderContent] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
@@ -101,14 +99,8 @@ const CreateContent = () => {
     { id: 'sec-3', type: 'banner_image' },
     { id: 'sec-4', type: 'content' }
   ]);
-  const [contentElements, setContentElements] = useState([]);
-  const contentElementsRef = React.useRef([]);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
 
-  // Keep ref in sync with state for use in closures (preview, save)
-  useEffect(() => {
-    contentElementsRef.current = contentElements;
-  }, [contentElements]);
   const [selectedTypeName, setSelectedTypeName] = useState('');
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
 // Initialize new builder architecture - register widgets once globally
@@ -166,7 +158,6 @@ const CreateContent = () => {
           ? (Array.isArray(data.builder_layout) ? data.builder_layout : [])
           : [{ id: 'sec-1', type: 'content_type_category' }, { id: 'sec-2', type: 'title_description' }, { id: 'sec-3', type: 'banner_image' }, { id: 'sec-4', type: 'content' }]);
         setActiveTab('builder');
-        setBuilderMode('visual');
         setInitialContent('');
         setContent('');
         setEditorReady(true);
@@ -182,29 +173,10 @@ const CreateContent = () => {
               setContent(data.content || '');
               setEditorReady(true);
             } else {
-              // Builder layout: array of objects with id/type
+              // Builder layout: array of objects with id/type — open in Visual Builder
               setBuilderSections(layout);
               setBuilderContent(data.content || '');
               setActiveTab('builder');
-              // Restore contentElements if available
-              if (data.builder_content_elements) {
-                try {
-                  const elements = typeof data.builder_content_elements === 'string' 
-                    ? JSON.parse(data.builder_content_elements) 
-                    : data.builder_content_elements;
-                  console.log('Loaded builder_content_elements:', elements);
-                  if (Array.isArray(elements) && elements.length > 0) {
-                    setContentElements(elements);
-                    console.log('Set contentElements with', elements.length, 'elements');
-                  } else {
-                    console.log('builder_content_elements is empty or not an array');
-                  }
-                } catch (e) {
-                  console.error('Error parsing builder_content_elements:', e);
-                }
-              } else {
-                console.log('No builder_content_elements found in data');
-              }
               // Don't set content for standard editor when in builder mode
               setInitialContent('');
               setContent('');
@@ -281,22 +253,20 @@ const CreateContent = () => {
       const existingContent = response.data?.data || [];
       
       if (existingContent.length > 0) {
-        const similarContent = existingContent.filter(content => {
-          const titleMatch = content.title?.toLowerCase().includes(title.toLowerCase()) || 
-                            title.toLowerCase().includes(content.title?.toLowerCase());
-          const descMatch = shortDescription && content.short_description && 
-                          (content.short_description.toLowerCase().includes(shortDescription.toLowerCase()) ||
-                           shortDescription.toLowerCase().includes(content.short_description.toLowerCase()));
-          
-          return titleMatch || descMatch;
+        const exactMatch = existingContent.find(content => {
+          return content.title?.toLowerCase().trim() === title.toLowerCase().trim();
+ 
+
         });
 
-        if (similarContent.length > 0) {
+       if (exactMatch) {
           setDuplicateWarning({
             found: true,
-            count: similarContent.length,
-            titles: similarContent.map(c => c.title).slice(0, 3)
+            isExact: true,
+            title: exactMatch.title,
+            status: exactMatch.status
           });
+          message.error(`Content with title "${title}" already exists (Status: ${exactMatch.status}). Please use a different title.`);
         } else {
           setDuplicateWarning(null);
         }
@@ -342,6 +312,40 @@ const CreateContent = () => {
     }
   };
 
+  // Walk the builder page tree and collect all Form widget field definitions.
+  // These are saved as content.custom_fields so createDynamicTable runs on save.
+  const extractBuilderFormFields = (pageData) => {
+    const fields = [];
+    const walk = (node) => {
+      if (!node) return;
+      if (node.type === 'form') {
+        try {
+          const formContent = typeof node.content === 'string' ? JSON.parse(node.content) : (node.content || {});
+          const formFields = formContent.fields || [];
+          formFields.forEach(f => {
+            if (f.label || f.id) {
+              fields.push({
+                id: f.id,
+                name: (f.label || f.id).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').substring(0, 64) || f.id,
+                label: f.label || f.id,
+                type: f.type || 'text',
+                required: f.required !== false,
+                placeholder: f.placeholder || '',
+              });
+            }
+          });
+        } catch (e) { /* skip malformed nodes */ }
+      }
+      if (Array.isArray(node.children)) {
+        node.children.forEach(walk);
+      }
+    };
+    // pageData is serialized as { version, layout: { root: {...} } } or { root: {...} }
+    const root = pageData?.layout?.root || pageData?.root || pageData;
+    walk(root);
+    return fields;
+  };
+
   const buildFormData = (values) => {
     const formData = new FormData();
     const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file'];
@@ -355,18 +359,10 @@ const CreateContent = () => {
     if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
     if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
     
-    // Generate content from content elements if using drag-drop builder
+    // Generate content based on active tab
     let finalContent = content;
-    if (activeTab === 'builder' && contentElementsRef.current.length > 0) {
-      // Use new HTML generation compatibility layer
-      finalContent = HtmlGenerationCompat.generateHtml(contentElementsRef.current);
-    } else if (activeTab === 'builder') {
-      // Convert contentElements to HTML for saving
-      if (contentElementsRef.current.length > 0) {
-        finalContent = HtmlGenerationCompat.generateHtml(contentElementsRef.current);
-      } else {
-        finalContent = builderContent;
-      }
+    if (activeTab === 'builder') {
+      finalContent = builderContent;
     } else if (activeTab === 'html') {
       finalContent = htmlContent;
     }
@@ -376,17 +372,12 @@ const CreateContent = () => {
       formData.append('builder_layout', JSON.stringify(['html']));
     } else if (activeTab === 'builder' && builderSections.length > 0) {
       formData.append('builder_layout', JSON.stringify(builderSections));
-      // Save contentElements array for restoration when editing
-      // Persist v2.0 page tree when using visual builder mode
-      if (builderMode === 'visual' && builderPageData) {
+      // Persist v2.0 page tree (Visual Builder)
+      if (builderPageData) {
         const pageDataStr = typeof builderPageData === 'string'
           ? builderPageData
           : JSON.stringify(builderPageData);
         formData.append('builder_page_data', pageDataStr);
-      }
-      // Save contentElements array for restoration when editing (classic mode)
-      if (builderMode !== 'visual' && contentElementsRef.current.length > 0) {
-        formData.append('builder_content_elements', JSON.stringify(contentElementsRef.current));
       }
     } else if (activeTab === 'standard') {
       formData.append('builder_layout', JSON.stringify(standardLayout));
@@ -398,6 +389,12 @@ const CreateContent = () => {
     let finalCustomFields = customFields;
     if (activeTab === 'html') {
       finalCustomFields = parseFormFieldsFromHtml(htmlContent);
+    } else if (activeTab === 'builder' && builderPageData) {
+      // Extract Form widget fields from the builder tree so createDynamicTable runs automatically
+      const extractedFormFields = extractBuilderFormFields(builderPageData);
+      if (extractedFormFields.length > 0) {
+        finalCustomFields = extractedFormFields;
+      }
     }
     if (finalCustomFields.length > 0) formData.append('custom_fields', JSON.stringify(finalCustomFields));
     
@@ -451,33 +448,31 @@ const handleSubmit = async () => {
       const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
 
-      // Generate content based on active tab for SEO calculation
-      let finalContent = content;
-      if (activeTab === 'builder' && contentElementsRef.current.length > 0) {
-        finalContent = HtmlGenerationCompat.generateHtml(contentElementsRef.current);
-      } else if (activeTab === 'builder') {
-        finalContent = builderContent;
-      } else if (activeTab === 'html') {
-        finalContent = htmlContent;
-      }
+      // // Generate content based on active tab for SEO calculation
+      // let finalContent = content;
+      // if (activeTab === 'builder') {
+      //   finalContent = builderContent;
+      // } else if (activeTab === 'html') {
+      //   finalContent = htmlContent;
+      // }
 
-      // Calculate SEO score before submission
-      const seoScore = calculateSEOScore(
-        values.title,
-        values.short_description,
-        finalContent,
-        values.tags,
-        values.seo_meta_title,
-        values.seo_meta_description,
-        values.seo_meta_keywords
-      );
+      // // Calculate SEO score before submission
+      // const seoScore = calculateSEOScore(
+      //   values.title,
+      //   values.short_description,
+      //   finalContent,
+      //   values.tags,
+      //   values.seo_meta_title,
+      //   values.seo_meta_description,
+      //   values.seo_meta_keywords
+      // );
 
-      // Check if SEO score is below 80%
-      if (seoScore.percentage < 80) {
-        setSubmitLoading(false);
-        message.error('Please improve your content SEO score before submitting. Your current SEO score is ' + seoScore.percentage + '%. Aim for at least 80% to ensure better visibility and performance.');
-        return;
-      }
+      // // Check if SEO score is below 80%
+      // if (seoScore.percentage < 80) {
+      //   setSubmitLoading(false);
+      //   message.error('Please improve your content SEO score before submitting. Your current SEO score is ' + seoScore.percentage + '%. Aim for at least 80% to ensure better visibility and performance.');
+      //   return;
+      // }
 
       const apiBase = isAdmin ? '/api/admin' : '/api/user';
       const redirectPath = isAdmin ? '/admin' : '/dashboard';
@@ -585,9 +580,7 @@ const handleSubmit = async () => {
 
       // Generate content based on active tab
       let finalContent = content;
-      if (activeTab === 'builder' && contentElementsRef.current.length > 0) {
-        finalContent = HtmlGenerationCompat.generateHtml(contentElementsRef.current);
-      } else if (activeTab === 'builder') {
+      if (activeTab === 'builder') {
         finalContent = builderContent;
       } else if (activeTab === 'html') {
         finalContent = htmlContent;
@@ -749,145 +742,21 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
         <Space size={window.innerWidth < 768 ? 4 : 8} wrap style={{ display: 'flex', alignItems: 'center' }}>
           <Button icon={<EyeOutlined />} onClick={() => {
             const v = form.getFieldsValue();
+
+            // When in builder mode, trigger the builder's own preview modal
+            // (which renders PreviewCanvas inside its BuilderProvider)
+            if (activeTab === 'builder') {
+              if (builderPreviewTrigger.current) {
+                builderPreviewTrigger.current();
+              }
+              return;
+            }
+
             const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
             
-            // Generate content from content elements if using drag-drop builder
-            const currentElements = contentElementsRef.current;
+            // Generate content based on active tab
             let previewContent = content;
-            if (activeTab === 'builder' && currentElements.length > 0) {
-              previewContent = currentElements.map(element => {
-                switch (element.type) {
-                  case 'heading':
-                    const headingLevel = element.headingLevel || 'h2';
-                    const headingAlign = element.alignment || 'left';
-                    return `<${headingLevel} style="text-align: ${headingAlign};">${element.content}</${headingLevel}>`;
-                  case 'paragraph':
-                    let paragraphContent = element.content;
-                    const paragraphAlign = element.alignment || 'left';
-                    paragraphContent = paragraphContent.replace(/^• (.+)$/gm, '<li>$1</li>');
-                    paragraphContent = paragraphContent.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-                    paragraphContent = paragraphContent.replace(/(<li>.*<\/li>\n?)+/g, (match) => {
-                      const hasNumbers = match.match(/^\d+\./);
-                      const tag = hasNumbers ? 'ol' : 'ul';
-                      return `<${tag}>${match}</${tag}>`;
-                    });
-                    const tableRows = paragraphContent.match(/^\| .+$/gm);
-                    if (tableRows && tableRows.length > 0) {
-                      const tableHtml = tableRows.map(row => {
-                        const cells = row.split('|').map(cell => cell.trim()).filter(Boolean);
-                        return `<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
-                      }).join('');
-                      return `<table>${tableHtml}</table>`;
-                    }
-                    const sections = paragraphContent.split(/\n\n+/);
-                    return sections.map(section => `<p style="text-align: ${paragraphAlign};">${section.trim()}</p>`).join('\n');
-                  case 'bullet_list':
-                    const bulletItems = element.content.split('\n').filter(Boolean);
-                    return `<ul>${bulletItems.map(item => `<li>${item}</li>`).join('')}</ul>`;
-                  case 'numbered_list':
-                    const numberedItems = element.content.split('\n').filter(Boolean);
-                    return `<ol>${numberedItems.map(item => `<li>${item}</li>`).join('')}</ol>`;
-                  case 'line_break':
-                    return '<br>';
-                  case 'image':
-                    return `<img src="${element.content}" alt="Image" />`;
-                  case 'divider':
-                    return '<hr>';
-                  case 'blockquote':
-                    return `<blockquote>${element.content}</blockquote>`;
-                  case 'code_block':
-                    return `<pre><code>${element.content}</code></pre>`;
-                  case 'table':
-                    try {
-                      const tableData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
-                      if (tableData && tableData.data && Array.isArray(tableData.data)) {
-                        const tableHtml = tableData.data.map(row => {
-                          return `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`;
-                        }).join('');
-                        return `<table>${tableHtml}</table>`;
-                      }
-                    } catch (e) {
-                      console.error('Error parsing table data:', e);
-                    }
-                    return '';
-                  case 'section_break':
-                    return '<br><br>';
-                  case 'bullet_item':
-                    return `<ul><li>${element.content}</li></ul>`;
-                  case 'numbered_item':
-                    return `<ol><li>${element.content}</li></ol>`;
-                  case 'table_row':
-                    const cells = element.content.split('|').map(cell => cell.trim()).filter(Boolean);
-                    return `<table><tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr></table>`;
-                  case 'split_section':
-                    try {
-                      const splitData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
-                      if (splitData && splitData.sections && Array.isArray(splitData.sections)) {
-                        let html = '<div style="display: flex; gap: 20px; margin: 20px 0; align-items: center; flex-wrap: wrap;">';
-                        
-                        splitData.sections.forEach(section => {
-                          const layoutClass = section.layout || 'image-left';
-                          const sectionAlign = section.alignment || 'left';
-                          
-                          if (layoutClass === 'image-left' || layoutClass === 'image-right') {
-                            html += '<div style="flex: 1; min-width: 200px; display: flex; gap: 20px; align-items: center;">';
-                            if (section.image) {
-                              html += `<div style="flex: 1;"><img src="${section.image}" alt="Section image" style="width: 100%; max-height: 300px; object-fit: contain;" /></div>`;
-                            }
-                            if (section.text) {
-                              html += `<div style="flex: 1; text-align: ${sectionAlign};">${section.text}</div>`;
-                            }
-                            html += '</div>';
-                          } else if (layoutClass === 'text-only' && section.text) {
-                            html += `<div style="flex: 1; min-width: 200px; text-align: ${sectionAlign};">${section.text}</div>`;
-                          } else if (layoutClass === 'image-only' && section.image) {
-                            html += `<div style="flex: 1; min-width: 200px;"><img src="${section.image}" alt="Section image" style="width: 100%; max-height: 300px; object-fit: contain;" /></div>`;
-                          }
-                        });
-                        
-                        html += '</div>';
-                        return html;
-                      }
-                    } catch (e) {
-                      console.error('Error parsing split section:', e);
-                    }
-                    return '';
-                  case 'button':
-                    try {
-                      const buttonData = typeof element.content === 'string' ? JSON.parse(element.content) : element.content;
-                      if (buttonData) {
-                        const actionAttr = buttonData.actionType === 'download' 
-                          ? `download href="${buttonData.url}"` 
-                          : `href="${buttonData.url}" target="_blank"`;
-                        
-                        return `<a ${actionAttr} style="
-                          display: inline-block;
-                          height: ${buttonData.height || '40px'};
-                          width: ${buttonData.width || 'auto'};
-                          background-color: ${buttonData.backgroundColor || '#4a7cff'};
-                          color: ${buttonData.textColor || '#ffffff'};
-                          border-radius: ${buttonData.borderRadius || '8px'};
-                          text-decoration: none;
-                          padding: 0 20px;
-                          line-height: ${buttonData.height || '40px'};
-                          text-align: center;
-                          font-size: 14px;
-                          font-weight: 500;
-                          cursor: pointer;
-                          transition: all 0.2s;
-                        ">${buttonData.text || 'Click Me'}</a>`;
-                      }
-                    } catch (e) {
-                      console.error('Error parsing button:', e);
-                    }
-                    return '';
-                  default:
-                    return '';
-                }
-              }).join('\n');
-            } else if (activeTab === 'builder') {
-              previewContent = builderContent;
-            } else if (activeTab === 'html') {
+            if (activeTab === 'html') {
               previewContent = htmlContent;
             }
 
@@ -983,7 +852,7 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
           top: '120px',
           zIndex: 8
         }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 clamp(12px, 2vw, 24px)', display: 'flex', gap: 0, overflowX: 'auto' }} className="create-content-tabs">
+          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(12px, 2vw, 24px)', display: 'flex', gap: 0, alignItems: 'center', justifyContent: 'space-between' }} className="create-content-tabs">
             {[
               { key: 'standard', label: 'Standard Form', desc: 'Fill all fields directly' },
               { key: 'builder', label: 'Drag & Drop Builder', desc: 'Build structure by dragging blocks' },
@@ -1016,10 +885,49 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
  
               </button>
             ))}
+
+            {/* Properties Panel Toggle — desktop only */}
+            {window.innerWidth >= 768 && (
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(o => !o)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 14px',
+                  border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                  borderRadius: 8,
+                  background: sidebarOpen
+                    ? (darkMode ? '#1e3a5f' : '#eff6ff')
+                    : (darkMode ? '#1e293b' : '#f8fafc'),
+                  color: sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b'),
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  transition: 'all 0.15s',
+                  marginLeft: 'auto',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.borderColor = '#4a7cff';
+                  e.currentTarget.style.color = '#4a7cff';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                  e.currentTarget.style.color = sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b');
+                }}
+              >
+                <SettingOutlined style={{ fontSize: 13 }} />
+                Properties
+                <span style={{ fontSize: 11, opacity: 0.7 }}>{sidebarOpen ? '›' : '‹'}</span>
+              </button>
+            )}
           </div>
         </div>
 
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: 'clamp(16px, 2vw, 32px) clamp(12px, 2vw, 24px)', paddingTop: 'clamp(24px, 3vw, 32px)', display: 'flex', gap: 'clamp(16px, 2vw, 24px)', alignItems: 'flex-start', flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
+        <div style={{ position: 'relative', maxWidth: 1400, margin: '0 auto', padding: 'clamp(16px, 2vw, 32px) clamp(12px, 2vw, 24px)', paddingTop: 'clamp(24px, 3vw, 32px)', display: 'flex', gap: sidebarOpen ? 'clamp(16px, 2vw, 24px)' : 0, alignItems: 'flex-start', flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
 
           {/* Main Content */}
           <div style={{ flex: 1, minWidth: 0, width: window.innerWidth < 768 ? '100%' : 'auto', marginTop: '8px' }}>
@@ -1086,26 +994,25 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                         </Select>
                       </Form.Item>
                     </div>
-                  </div>
-                ),
-                title: (
-                  <div key="title" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                    {duplicateWarning && duplicateWarning.found && (
+                    {duplicateWarning && duplicateWarning.found && duplicateWarning.isExact && (
                       <div style={{ 
-                        background: '#FFF7ED', 
-                        border: '1px solid #FDBA74', 
+                        // background: '#FFF7ED', 
+                        // border: '1px solid #FDBA74',
+                         background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                        border: darkMode ? '1px solid #ef4444' : '1px solid #fecaca',
                         borderRadius: 8, 
                         padding: '12px 16px', 
                         marginBottom: 16 
                       }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                          <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
+                          {/* <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} /> */}
+                          <InfoCircleOutlined style={{ color: '#ef4444', fontSize: 16, marginTop: 2 }} />
                           <div>
-                            <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
-                              Similar content already exists
+                             <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: 4 }}>
+                              Duplicate content detected
                             </div>
-                            <div style={{ fontSize: 13, color: '#9A3412' }}>
-                              Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
+                            <div style={{ fontSize: 13, color: '#991b1b' }}>
+                              Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.
                             </div>
                           </div>
                         </div>
@@ -1384,131 +1291,51 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                   </Form.Item>
                 </div>
  
-                {/* Builder Mode Switcher */}
-                <div style={{
-                  marginBottom: 16,
-                  padding: '12px 16px',
-                  background: darkMode ? '#0f172a' : '#f5f5f5',
-                  borderRadius: 8,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  border: darkMode ? '1px solid #334155' : 'none'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 500, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Builder Mode:</span>
-                    <ConfigProvider
-                      theme={{
-                        token: {
-                          colorBgContainer: darkMode ? '#1e293b' : '#fff',
-                          colorBorder: darkMode ? '#334155' : '#d9d9d9',
-                          colorText: darkMode ? '#cbd5e1' : '#1a1a2e',
-                          colorPrimary: '#4a7cff',
-                        },
-                      }}
-                    >
-                      <Button.Group>
-                        <Button
-                          type={builderMode === 'classic' ? 'primary' : 'default'}
-                          size="small"
-                          onClick={() => setBuilderMode('classic')}
-                        >
-                          Classic
-                        </Button>
-                        <Button
-                          type={builderMode === 'visual' ? 'primary' : 'default'}
-                          size="small"
-                          onClick={() => setBuilderMode('visual')}
-                        >
-                          Visual Builder
-                        </Button>
-                      </Button.Group>
-                    </ConfigProvider>
-                  </div>
-                  <Text style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#999' }}>
-                    {builderMode === 'visual' ? 'New visual canvas' : 'Classic drag-drop'}
-                  </Text>
-                </div>
- 
-                {builderMode === 'classic' ? (
-              <DragDropBuilder
-                darkMode={darkMode}
-                sectionProps={{
-                  form,
-                  categories,
-                  contentTypes,
-                  setSelectedTypeName,
-                  fileList,
-                  setFileList,
-                  pdfList,
-                  setPdfList,
-                  content: builderContent,
-                  setContent: setBuilderContent,
-                  initialContent,
-                  editorReady,
-                }}
-                contentElements={contentElements}
-                onAddContentElement={(type, label) => {
-                  const CONTENT_ELEMENTS_MAP = {
-                    heading: 'h', paragraph: 'p', bullet_list: 'ul', numbered_list: 'ol',
-                    line_break: 'br', image: 'img', divider: 'hr', blockquote: 'blockquote',
-                    code_block: 'pre', table: 'table', section_break: 'br', table_row: 'tr',
-                    split_section: 'div', button: 'button'
-                  };
-                  const newElement = {
-                    id: `el-${Date.now()}`,
-                    type,
-                    tag: CONTENT_ELEMENTS_MAP[type] || 'div',
-                    label,
-                    content: '',
-                    headingLevel: type === 'heading' ? 'h2' : undefined
-                  };
-                  setContentElements(prev => [...prev, newElement]);
-                }}
-                onRemoveContentElement={(id) => {
-                  setContentElements(prev => prev.filter(el => el.id !== id));
-                }}
-                onUpdateContentElement={(id, updates) => {
-                  setContentElements(prev => prev.map(el => el.id === id ? { ...el, ...updates } : el));
-                }}
-                onContentElementsChange={setContentElements}
-                selectedTypeName={selectedTypeName}
-                customFields={customFields}
-                setCustomFields={setCustomFields}
-                fieldTypes={FIELD_TYPES}
-                sections={builderSections}
-                onSectionsChange={setBuilderSections}
-              />
-              ) : (
-                  <BuilderIntegration
-                    darkMode={darkMode}
-                    existingData={{
-                      builder_page_data: builderPageData,
-                      builder_layout: builderSections,
-                      builder_content_elements: contentElements,
-                      content: builderContent,
-                    }}
-                    onSave={(data, options) => {
-                      // data contains builder_page_data (v2.0 tree) plus legacy shims
-                      if (data.builder_page_data !== undefined) {
-                        setBuilderPageData(data.builder_page_data);
-                      }
-                      if (data.builder_layout) {
-                        setBuilderSections(data.builder_layout);
-                      }
-                      if (data.builder_content_elements) {
-                        setContentElements(data.builder_content_elements);
-                      }
-                      if (data.content) {
-                        setBuilderContent(data.content);
-                      }
-                    }}
-                    onCancel={() => {
-                      setBuilderMode('classic');
-                    }}
-                    enableNewBuilder={true}
-                  />
-                )}
+                {/* BuilderIntegration — always Visual Builder */}
+                <BuilderIntegration
+                  darkMode={darkMode}
+                  contentId={savedContentId}
+                  triggerPreview={builderPreviewTrigger}
+                  previewMeta={(() => {
+                    const v = form.getFieldsValue();
+                    const seoScore = calculateSEOScore(
+                      v.title,
+                      v.short_description,
+                      '',
+                      v.tags,
+                      v.seo_meta_title,
+                      v.seo_meta_description,
+                      v.seo_meta_keywords
+                    );
+                    return {
+                      content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
+                      category: categories.find(c => c.id === v.category_id)?.name || '',
+                      title: v.title || '',
+                      banner_image: bannerImageUrl,
+                      short_description: v.short_description || '',
+                      tags: v.tags || [],
+                      seoScore,
+                    };
+                  })()}
+                  existingData={{
+                    builder_page_data: builderPageData,
+                    builder_layout: builderSections,
+                    builder_content_elements: [],
+                    content: builderContent,
+                  }}
+                  onSave={(data, options) => {
+                    if (data.builder_page_data !== undefined) {
+                      setBuilderPageData(data.builder_page_data);
+                    }
+                    if (data.builder_layout) {
+                      setBuilderSections(data.builder_layout);
+                    }
+                    if (data.content) {
+                      setBuilderContent(data.content);
+                    }
+                  }}
+                  enableNewBuilder={true}
+                />
               </>
             )}
 
@@ -1731,90 +1558,99 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
 
           {/* Sidebar — for desktop only */}
           {window.innerWidth >= 768 && (
-            <div style={{ width: 300, flexShrink: 0 }}>
+            <div style={{
+              width: sidebarOpen ? 300 : 0,
+              flexShrink: 0,
+              overflow: 'hidden',
+              transition: 'width 0.3s ease',
+              opacity: sidebarOpen ? 1 : 0,
+              pointerEvents: sidebarOpen ? 'auto' : 'none',
+            }}>
+              <div style={{ width: 300 }}>
 
-            {/* Layout Reorder Panel */}
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 4, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
-              </Text>
-              <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', display: 'block', marginBottom: 12 }}>Drag sections to change order</Text>
-              {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
-                const sec = activeTab === 'builder' 
-                  ? SECTION_TYPES.find(s => s.type === item.type)
-                  : STANDARD_SECTIONS.find(s => s.key === item);
-                if (!sec) return null;
-                const key = activeTab === 'builder' ? item.id : item;
-                // hide landing/webhook if not applicable
-                if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
-                return (
-                  <div
-                    key={key}
-                    draggable
-                    onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
-                    onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
-                    onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
-                    onDragOver={e => e.preventDefault()}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 10px', marginBottom: 6,
-                      background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8,
-                      border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab',
-                      userSelect: 'none'
+              {/* Layout Reorder Panel */}
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 4, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                  <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
+                </Text>
+                <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', display: 'block', marginBottom: 12 }}>Drag sections to change order</Text>
+                {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
+                  const sec = activeTab === 'builder'
+                    ? SECTION_TYPES.find(s => s.type === item.type)
+                    : STANDARD_SECTIONS.find(s => s.key === item);
+                  if (!sec) return null;
+                  const key = activeTab === 'builder' ? item.id : item;
+                  if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
+                  return (
+                    <div
+                      key={key}
+                      draggable
+                      onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
+                      onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
+                      onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
+                      onDragOver={e => e.preventDefault()}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        padding: '8px 10px', marginBottom: 6,
+                        background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8,
+                        border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab',
+                        userSelect: 'none'
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fafafa'; }}
+                    >
+                      <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', fontSize: 12 }} />
+                      <span style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', flex: 1 }}>{sec.label}</span>
+                      <span style={{ fontSize: 10, color: darkMode ? '#475569' : '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Tags */}
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                  <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
+                </Text>
+                <Form.Item name="tags" style={{ marginBottom: 0 }}>
+                  <Select mode="tags" placeholder="Add tags..." style={{ width: '100%' }} tokenSeparators={[',']}
+                    onChange={(tags) => {
+                      const title = form.getFieldValue('title');
+                      const shortDesc = form.getFieldValue('short_description');
+                      checkDuplicateContent(title, shortDesc, tags);
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fafafa'; }}
-                  >
-                    <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', fontSize: 12 }} />
-                    <span style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', flex: 1 }}>{sec.label}</span>
-                    <span style={{ fontSize: 10, color: darkMode ? '#475569' : '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Tags */}
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
-              </Text>
-              <Form.Item name="tags" style={{ marginBottom: 0 }}>
-                <Select mode="tags" placeholder="Add tags..." style={{ width: '100%' }} tokenSeparators={[',']} 
-                  onChange={(tags) => {
-                    const title = form.getFieldValue('title');
-                    const shortDesc = form.getFieldValue('short_description');
-                    checkDuplicateContent(title, shortDesc, tags);
-                  }}
-                />
-              </Form.Item>
-            </div>
+                  />
+                </Form.Item>
+              </div>
 
-            {/* Schedule */}
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
-              </Text>
-              <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
-                <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
-              </Form.Item>
-            </div>
+              {/* Schedule */}
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                  <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
+                </Text>
+                <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
+                  <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
+                </Form.Item>
+              </div>
 
-            {/* SEO */}
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                <SettingOutlined style={{ marginRight: 6, color: '#4a7cff' }} />SEO Settings
-              </Text>
-              <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Title</Text>} style={{ marginBottom: 12 }}>
-                <Input placeholder="SEO title" size="small" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-              </Form.Item>
-              <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Description</Text>} style={{ marginBottom: 12 }}>
-                <TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', fontSize: 12, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-              </Form.Item>
-              <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
-                <Select mode="tags" placeholder="Add keyword and press Enter..." style={{ width: '100%' }} size="small" tokenSeparators={[',']} />
-              </Form.Item>
-            </div>
+              {/* SEO */}
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                  <SettingOutlined style={{ marginRight: 6, color: '#4a7cff' }} />SEO Settings
+                </Text>
+                <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Title</Text>} style={{ marginBottom: 12 }}>
+                  <Input placeholder="SEO title" size="small" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                </Form.Item>
+                <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Description</Text>} style={{ marginBottom: 12 }}>
+                  <TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', fontSize: 12, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                </Form.Item>
+                <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
+                  <Select mode="tags" placeholder="Add keyword and press Enter..." style={{ width: '100%' }} size="small" tokenSeparators={[',']} />
+                </Form.Item>
+              </div>
 
-            <Form.Item name="status" hidden><Input /></Form.Item>
+              <Form.Item name="status" hidden><Input /></Form.Item>
+              </div>
             </div>
           )}
         </div>

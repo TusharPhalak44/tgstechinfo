@@ -3,117 +3,143 @@
  * Frontend renderer for form widget
  */
 
-import React, { useState } from 'react';
-import { Form, Input, Button, Select, Radio, Checkbox, DatePicker, Upload, message } from 'antd';
+import React, { useState, useContext } from 'react';
+import { Form, Input, Button, Select, Radio, Checkbox, DatePicker, Upload, message as antMessage } from 'antd';
+import axios from 'axios';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 import { useTheme } from '../../../context/ThemeContext';
+import { BuilderContentIdContext } from '../../components/VisualBuilder.jsx';
 
 const { TextArea } = Input;
 const { Option } = Select;
 
 export default function FormRenderer({ node }) {
   const { darkMode } = useTheme();
-  const content = safeParseJsonContent(node.content, { fields: [], formName: 'Contact Form', submitText: 'Submit', successMessage: 'Thank you for your submission!' });
+  const contextContentId = useContext(BuilderContentIdContext);
+  const content = safeParseJsonContent(node.content, {
+    fields: [],
+    formName: 'Contact Form',
+    submitText: 'Submit',
+    successMessage: 'Thank you for your submission!',
+    apiUrl: '',
+    contentId: '',
+  });
   const settings = node.settings || {};
   const styles = node.styles || {};
 
   const [form] = Form.useForm();
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const fields = content.fields || [];
   const formName = content.formName || 'Contact Form';
   const submitText = content.submitText || 'Submit';
   const successMessage = content.successMessage || 'Thank you for your submission!';
+  const apiUrl = content.apiUrl || '';
+  // Priority: context (set by CreateContent when editing) > stored in node > empty (falls back to Referer slug on backend)
+  const contentId = contextContentId || content.contentId || '';
 
-  const onFinish = (values) => {
-    console.log('Form submitted:', values);
-    setSubmitted(true);
-    message.success(successMessage);
-    
-    // Here you would typically send the form data to your backend
-    // Example: axios.post('/api/forms/submit', { formName, data: values })
+  const onFinish = async (values) => {
+    setSubmitting(true);
+    try {
+      // Save to backend database if a contentId is configured
+      if (contentId) {
+        await axios.post('/api/public/landing-page', {
+          content_id: contentId,
+          extra_fields: values,
+        });
+      }
+
+      // Also forward to external API URL if configured (non-blocking)
+      if (apiUrl) {
+        try {
+          await axios.post(apiUrl, values, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 10000,
+          });
+        } catch (webhookErr) {
+          console.warn('External API submission failed (non-blocking):', webhookErr.message);
+        }
+      }
+
+      if (!contentId && !apiUrl) {
+        console.log('Form submitted (no backend configured):', values);
+      }
+
+      setSubmitted(true);
+      form.resetFields();
+      antMessage.success(successMessage);
+    } catch (err) {
+      console.error('Form submission error:', err);
+      antMessage.error(err.response?.data?.message || 'Submission failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const renderField = (field) => {
-    const commonProps = {
-      name: field.id,
-      label: field.label,
-      placeholder: field.placeholder,
-      rules: field.required ? [{ required: true, message: `${field.label} is required` }] : [],
-    };
-
+  const renderInput = (field) => {
     switch (field.type) {
-      case 'text':
-        return <Input {...commonProps} />;
-      
       case 'email':
-        return (
-          <Input
-            {...commonProps}
-            type="email"
-            rules={[
-              ...(field.required ? [{ required: true, message: `${field.label} is required` }] : []),
-              { type: 'email', message: 'Please enter a valid email' },
-            ]}
-          />
-        );
-      
+        return <Input type="email" placeholder={field.placeholder || ''} />;
       case 'tel':
-        return <Input {...commonProps} type="tel" />;
-      
+        return <Input type="tel" placeholder={field.placeholder || ''} />;
       case 'number':
-        return <Input {...commonProps} type="number" />;
-      
+        return <Input type="number" placeholder={field.placeholder || ''} />;
       case 'textarea':
-        return <TextArea {...commonProps} rows={4} />;
-      
+        return <TextArea rows={4} placeholder={field.placeholder || ''} />;
       case 'select':
         return (
-          <Select {...commonProps} placeholder={field.placeholder || 'Select an option'}>
-            {field.options?.map((option, idx) => (
-              <Option key={idx} value={option}>{option}</Option>
+          <Select placeholder={field.placeholder || 'Select an option'} style={{ width: '100%' }}>
+            {(field.options || []).map((opt, idx) => (
+              <Option key={idx} value={opt}>{opt}</Option>
             ))}
           </Select>
         );
-      
       case 'radio':
         return (
-          <Radio.Group {...commonProps}>
-            {field.options?.map((option, idx) => (
-              <Radio key={idx} value={option}>{option}</Radio>
+          <Radio.Group>
+            {(field.options || []).map((opt, idx) => (
+              <Radio key={idx} value={opt}>{opt}</Radio>
             ))}
           </Radio.Group>
         );
-      
       case 'checkbox':
         return (
-          <Checkbox.Group {...commonProps}>
-            {field.options?.map((option, idx) => (
-              <Checkbox key={idx} value={option}>{option}</Checkbox>
+          <Checkbox.Group>
+            {(field.options || []).map((opt, idx) => (
+              <Checkbox key={idx} value={opt}>{opt}</Checkbox>
             ))}
           </Checkbox.Group>
         );
-      
       case 'date':
-        return <DatePicker {...commonProps} style={{ width: '100%' }} />;
-      
+        return <DatePicker style={{ width: '100%' }} />;
       case 'file':
         return (
-          <Upload {...commonProps}>
+          <Upload beforeUpload={() => false} showUploadList={false}>
             <Button>Click to upload</Button>
           </Upload>
         );
-      
       default:
-        return <Input {...commonProps} />;
+        return <Input placeholder={field.placeholder || ''} />;
     }
+  };
+
+  const getRules = (field) => {
+    const rules = [];
+    if (field.required) {
+      rules.push({ required: true, message: `${field.label || 'This field'} is required` });
+    }
+    if (field.type === 'email') {
+      rules.push({ type: 'email', message: 'Please enter a valid email' });
+    }
+    return rules;
   };
 
   if (submitted) {
     return (
-      <div style={{ padding: '40px 20px', textAlign: 'center', ...styles }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
-        <h3 style={{ marginBottom: '8px' }}>{successMessage}</h3>
+      <div style={{ padding: '40px 20px', textAlign: 'center', background: darkMode ? '#1e293b' : '#fafafa', borderRadius: 8, ...styles }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
+        <h3 style={{ marginBottom: 8, color: darkMode ? '#f1f5f9' : undefined }}>{successMessage}</h3>
         <Button onClick={() => setSubmitted(false)}>Submit another response</Button>
       </div>
     );
@@ -124,16 +150,27 @@ export default function FormRenderer({ node }) {
       <h3 style={{ marginBottom: '24px', marginTop: 0, color: darkMode ? '#f1f5f9' : undefined }}>{formName}</h3>
       <Form
         form={form}
-        layout="vertical"
+        layout={settings.layout || 'vertical'}
         onFinish={onFinish}
       >
         {fields.map((field) => (
-          <Form.Item key={field.id} {...renderField(field)}>
-            {renderField(field)}
+          <Form.Item
+            key={field.id}
+            name={field.id}
+            label={field.label || field.id}
+            rules={getRules(field)}
+          >
+            {renderInput(field)}
           </Form.Item>
         ))}
-        <Form.Item>
-          <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+        <Form.Item style={{ marginBottom: 0 }}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={submitting}
+            size={settings.buttonSize || 'default'}
+            style={{ width: '100%' }}
+          >
             {submitText}
           </Button>
         </Form.Item>
