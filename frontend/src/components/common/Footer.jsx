@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { message } from 'antd';
 import {
@@ -9,6 +9,7 @@ import {
 import CookiePreferencesModal from './CookieBanner';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 
 const FooterLink = ({ to, children }) => (
   <Link to={to} style={{
@@ -24,7 +25,7 @@ const FooterLink = ({ to, children }) => (
   </Link>
 );
 
-const SocialBtn = ({ href, icon, label, color, logoUrl }) => (
+const SocialBtn = ({ href, icon, label, color }) => (
   <a href={href} aria-label={label} target="_blank" rel="noopener noreferrer" style={{
     width: 38, height: 38, borderRadius: 10,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -35,11 +36,7 @@ const SocialBtn = ({ href, icon, label, color, logoUrl }) => (
     onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
     onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-primary-light)'; e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.transform = 'none'; }}
   >
-    {logoUrl ? (
-      <img src={logoUrl} alt={label} style={{ width: 20, height: 20, objectFit: 'contain' }} />
-    ) : (
-      icon
-    )}
+    {icon}
   </a>
 );
 
@@ -54,39 +51,11 @@ const ColHead = ({ children, accent = 'var(--color-accent)' }) => (
 
 const Footer = ({ simplified = false }) => {
   const { darkMode } = useTheme();
+  const { footerLogo, logoSizes } = useSiteSettings();
   const year = new Date().getFullYear();
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
-  const [websiteLogo, setWebsiteLogo] = useState('/logo.jpg');
-  const [stats, setStats] = useState({ totalPublished: 0, totalViews: 0, totalAuthors: 0, totalCategories: 0 });
-
-  useEffect(() => {
-    const fetchWebsiteLogo = async () => {
-      try {
-        const response = await axios.get('/api/site-settings/public');
-        const settings = response.data.settings;
-        if (settings && settings.website_logo) {
-          setWebsiteLogo(settings.website_logo);
-        }
-      } catch (error) {
-        console.error('Failed to fetch website logo:', error);
-      }
-    };
-    fetchWebsiteLogo();
-  }, []);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await axios.get('/api/public/stats');
-        setStats(response.data || {});
-      } catch (error) {
-        console.error('Failed to fetch stats:', error);
-      }
-    };
-    fetchStats();
-  }, []);
 
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
@@ -185,28 +154,26 @@ const Footer = ({ simplified = false }) => {
           {/* Brand */}
           <div>
             <div style={{ marginBottom: 16 }}>
-              <img src={websiteLogo} alt="TGS Tech Info" style={{ height: 90, objectFit: 'contain' }} />
+              {footerLogo ? (
+                <img src={footerLogo} alt="TGS Tech Info" style={{ height: logoSizes.footer.height || 90, width: 'auto', maxWidth: logoSizes.footer.width || 200, objectFit: 'contain' }} />
+              ) : (
+                <span style={{ fontSize: 22, fontWeight: 'bold', color: 'var(--color-accent)' }}>TGS Tech Info</span>
+              )}
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-muted)', lineHeight: 1.8, marginBottom: 22, maxWidth: 240 }}>
               Your gateway to technology insights, news, and resources for IT and B2B professionals worldwide.
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
-              <SocialBtn href="https://www.linkedin.com/company/taraj-global/" icon={<LinkedinOutlined />} label="LinkedIn" color="#0077b5" logoUrl="https://upload.wikimedia.org/wikipedia/commons/c/ca/LinkedIn_logo_initials.png" />
+              <SocialBtn href="https://www.linkedin.com/company/taraj-global/" icon={<LinkedinOutlined />} label="LinkedIn" color="#0077b5" />
             </div>
             {/* Mini stats */}
             <div style={{ display: 'flex', gap: 20 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{stats.totalViews || 0}</div>
-                <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>Readers</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{stats.totalPublished || 0}</div>
-                <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>Articles</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{stats.totalAuthors || 0}</div>
-                <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>Experts</div>
-              </div>
+              {[['50K+', 'Readers'], ['500+', 'Articles'], ['100+', 'Experts']].map(([num, lbl]) => (
+                <div key={lbl}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{num}</div>
+                  <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>{lbl}</div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -219,11 +186,6 @@ const Footer = ({ simplified = false }) => {
             <FooterLink to="/interviews">Interviews</FooterLink>
             <FooterLink to="/webinars">Webinars</FooterLink>
             <FooterLink to="/events">Events</FooterLink>
-            <div style={{ marginTop: 48 }}>
-              <ColHead>Company</ColHead>
-              <FooterLink to="/about">About Us</FooterLink>
-              <FooterLink to="/contact">Contact</FooterLink>
-            </div>
           </div>
 
           {/* Technology */}
@@ -237,7 +199,7 @@ const Footer = ({ simplified = false }) => {
             <FooterLink to="/category/software-development">Software Dev</FooterLink>
           </div>
 
-          {/* Legal & Privacy */}
+          {/* Company */}
           <div>
             <ColHead accent="#F7941D">Legal &amp; Privacy</ColHead>
             <FooterLink to="/privacy-policy">Privacy Policy</FooterLink>

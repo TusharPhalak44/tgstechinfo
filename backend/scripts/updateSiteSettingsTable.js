@@ -9,7 +9,11 @@ async function updateSiteSettingsTable() {
             MODIFY COLUMN cms_logo2 LONGTEXT,
             MODIFY COLUMN cms_favicon LONGTEXT,
             MODIFY COLUMN website_logo LONGTEXT,
-            MODIFY COLUMN website_favicon LONGTEXT
+            MODIFY COLUMN website_favicon LONGTEXT,
+            MODIFY COLUMN website_main_logo LONGTEXT,
+            MODIFY COLUMN website_navbar_logo LONGTEXT,
+            MODIFY COLUMN website_footer_logo LONGTEXT,
+            MODIFY COLUMN seo_og_image LONGTEXT
         `;
 
         await pool.query(alterQuery);

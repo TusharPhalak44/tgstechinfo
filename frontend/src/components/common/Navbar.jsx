@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 import axios from 'axios';
 
 const { Text } = Typography;
@@ -41,6 +42,7 @@ const STATIC_NAV = [
   { key: 'technology', label: 'Technology', dynamic: true },
   
   { key: 'industries', label: 'Industries', dynamic: true },
+  { key: 'about', label: 'About', to: '/about' },
   { key: 'contact', label: 'Contact', to: '/contact' },
 ];
 
@@ -295,6 +297,7 @@ const NotifPanel = ({ notifications, onMarkRead }) => (
 const Navbar = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
+  const { navbarLogo, logoSizes } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -306,7 +309,6 @@ const Navbar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
   const [isLaptop, setIsLaptop] = useState(window.innerWidth > 900 && window.innerWidth <= 1200);
   const [navItems, setNavItems] = useState(STATIC_NAV);
-  const [websiteLogo, setWebsiteLogo] = useState('/logo.jpg');
   const searchRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -323,21 +325,6 @@ const Navbar = () => {
         return item;
       }));
     }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const fetchWebsiteLogo = async () => {
-      try {
-        const response = await axios.get('/api/site-settings/public');
-        const settings = response.data.settings;
-        if (settings && settings.website_logo) {
-          setWebsiteLogo(settings.website_logo);
-        }
-      } catch (error) {
-        console.error('Failed to fetch website logo:', error);
-      }
-    };
-    fetchWebsiteLogo();
   }, []);
 
   useEffect(() => {
@@ -437,11 +424,15 @@ const Navbar = () => {
 
           {/* Logo */}
           <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-            <img src={websiteLogo} alt="TGS TechInfo" style={{ 
-              height: isMobile ? 50 : isLaptop ? 55 : 65, 
-              width: 'auto', 
-              display: 'block' 
-            }} />
+            {navbarLogo ? (
+              <img src={navbarLogo} alt="TGS TechInfo" style={{ 
+                height: isMobile ? 50 : isLaptop ? 55 : (logoSizes.navbar.height || 65), 
+                width: 'auto', 
+                display: 'block' 
+              }} />
+            ) : (
+              <span style={{ fontSize: 20, fontWeight: 'bold', color: 'var(--color-text)' }}>TGS TechInfo</span>
+            )}
           </Link>
 
           {/* Desktop nav - Hide on mobile */}

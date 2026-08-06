@@ -2,21 +2,28 @@ import React, { useState, useEffect } from 'react';
 import { Card, Form, Upload, Button, message, Typography, Space, Divider, Input, Switch, Tabs } from 'antd';
 import { UploadOutlined, DeleteOutlined, PictureOutlined, SaveOutlined } from '@ant-design/icons';
 import { useTheme } from '../../context/ThemeContext';
+import { useSiteSettings } from '../../context/SiteSettingsContext';
 import axios from 'axios';
 
 const { Title, Text } = Typography;
 
 const Settings = () => {
   const { darkMode } = useTheme();
+  const { refreshSettings } = useSiteSettings();
   const [loading, setLoading] = useState(false);
   const [cmsLogo1Url, setCmsLogo1Url] = useState('');
   const [cmsLogo2Url, setCmsLogo2Url] = useState('');
   const [cmsFaviconUrl, setCmsFaviconUrl] = useState('');
   const [websiteLogoUrl, setWebsiteLogoUrl] = useState('');
   const [websiteFaviconUrl, setWebsiteFaviconUrl] = useState('');
+  const [websiteMainLogoUrl, setWebsiteMainLogoUrl] = useState('');
+  const [websiteNavbarLogoUrl, setWebsiteNavbarLogoUrl] = useState('');
+  const [websiteFooterLogoUrl, setWebsiteFooterLogoUrl] = useState('');
+  const [logoSizes, setLogoSizes] = useState({ main: { height: 60, width: 200 }, navbar: { height: 40, width: 120 }, footer: { height: 50, width: 150 } });
   const [siteName, setSiteName] = useState('TgsTechInfo');
   const [siteDescription, setSiteDescription] = useState('');
   const [siteKeywords, setSiteKeywords] = useState('');
+  const [pendingLogoUploads, setPendingLogoUploads] = useState({});
 
   useEffect(() => {
     fetchSettings();
@@ -33,6 +40,40 @@ const Settings = () => {
         setCmsFaviconUrl(settings.cms_favicon || '');
         setWebsiteLogoUrl(settings.website_logo || '');
         setWebsiteFaviconUrl(settings.website_favicon || '');
+        setWebsiteMainLogoUrl(settings.website_main_logo || '');
+        setWebsiteNavbarLogoUrl(settings.website_navbar_logo || '');
+        setWebsiteFooterLogoUrl(settings.website_footer_logo || '');
+        let parsedLogoSizes = { 
+          main: { height: 60, width: 200 }, 
+          navbar: { height: 40, width: 120 }, 
+          footer: { height: 50, width: 150 } 
+        };
+        if (settings.logo_sizes) {
+          try {
+            const rawSizes = typeof settings.logo_sizes === 'string' 
+              ? JSON.parse(settings.logo_sizes) 
+              : settings.logo_sizes;
+            if (rawSizes) {
+              parsedLogoSizes = {
+                main: { 
+                  height: (rawSizes.main && rawSizes.main.height) || 60, 
+                  width: (rawSizes.main && rawSizes.main.width) || 200 
+                },
+                navbar: { 
+                  height: (rawSizes.navbar && rawSizes.navbar.height) || 40, 
+                  width: (rawSizes.navbar && rawSizes.navbar.width) || 120 
+                },
+                footer: { 
+                  height: (rawSizes.footer && rawSizes.footer.height) || 50, 
+                  width: (rawSizes.footer && rawSizes.footer.width) || 150 
+                }
+              };
+            }
+          } catch (e) {
+            console.error('Error parsing logo sizes:', e);
+          }
+        }
+        setLogoSizes(parsedLogoSizes);
         setSiteName(settings.site_name || 'TgsTechInfo');
         setSiteDescription(settings.site_description || '');
         setSiteKeywords(settings.site_keywords || '');
@@ -46,38 +87,52 @@ const Settings = () => {
   };
 
   const handleImageUpload = async (file, type) => {
-    setLoading(true);
     try {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = async () => {
+      reader.onload = () => {
         const base64Url = reader.result;
-        await axios.put(`/api/site-settings/logo/${type}`, { imageData: base64Url });
-        
-        // Update local state
-        switch (type) {
-          case 'cms_logo1':
-            setCmsLogo1Url(base64Url);
-            break;
-          case 'cms_logo2':
-            setCmsLogo2Url(base64Url);
-            break;
-          case 'cms_favicon':
-            setCmsFaviconUrl(base64Url);
-            updateFavicon(base64Url);
-            break;
-          case 'website_logo':
-            setWebsiteLogoUrl(base64Url);
-            break;
-          case 'website_favicon':
-            setWebsiteFaviconUrl(base64Url);
-            break;
-        }
-        message.success('Image uploaded successfully');
+        setPendingLogoUploads(prev => ({ ...prev, [type]: base64Url }));
+        message.success('Image ready to save. Click "Save Changes" to apply.');
       };
     } catch (error) {
       console.error('Upload error:', error);
-      message.error('Failed to upload image');
+      message.error('Failed to process image');
+    }
+  };
+
+  const handleSaveLogoChanges = async () => {
+    setLoading(true);
+    try {
+      const updates = {};
+      
+      for (const [type, base64Url] of Object.entries(pendingLogoUploads)) {
+        await axios.put(`/api/site-settings/logo/${type}`, { imageData: base64Url });
+        updates[type] = base64Url;
+      }
+      
+      // Update local state after successful save
+      if (updates.cms_logo1) setCmsLogo1Url(updates.cms_logo1);
+      if (updates.cms_logo2) setCmsLogo2Url(updates.cms_logo2);
+      if (updates.cms_favicon) {
+        setCmsFaviconUrl(updates.cms_favicon);
+        updateFavicon(updates.cms_favicon);
+      }
+      if (updates.website_logo) setWebsiteLogoUrl(updates.website_logo);
+      if (updates.website_favicon) setWebsiteFaviconUrl(updates.website_favicon);
+      if (updates.website_main_logo) setWebsiteMainLogoUrl(updates.website_main_logo);
+      if (updates.website_navbar_logo) setWebsiteNavbarLogoUrl(updates.website_navbar_logo);
+      if (updates.website_footer_logo) setWebsiteFooterLogoUrl(updates.website_footer_logo);
+      
+      // Save logo sizes
+      await axios.put('/api/site-settings', { logo_sizes: logoSizes });
+      
+      setPendingLogoUploads({});
+      message.success('Logo changes saved successfully');
+      await refreshSettings?.();
+    } catch (error) {
+      console.error('Save error:', error);
+      message.error('Failed to save logo changes');
     } finally {
       setLoading(false);
     }
@@ -128,6 +183,15 @@ const Settings = () => {
         case 'website_favicon':
           setWebsiteFaviconUrl('');
           break;
+        case 'website_main_logo':
+          setWebsiteMainLogoUrl('');
+          break;
+        case 'website_navbar_logo':
+          setWebsiteNavbarLogoUrl('');
+          break;
+        case 'website_footer_logo':
+          setWebsiteFooterLogoUrl('');
+          break;
       }
       message.success('Image removed successfully');
     } catch (error) {
@@ -144,12 +208,16 @@ const Settings = () => {
       await axios.put('/api/site-settings', {
         site_name: siteName,
         site_description: siteDescription,
-        site_keywords: siteKeywords
+        site_keywords: siteKeywords,
+        logo_sizes: logoSizes
       });
       message.success('Settings saved successfully');
+      // Refresh settings to get updated data
+      await fetchSettings();
+      await refreshSettings?.();
     } catch (error) {
       console.error('Save settings error:', error);
-      message.error('Failed to save settings');
+      message.error(error.response?.data?.message || 'Failed to save settings');
     } finally {
       setLoading(false);
     }
@@ -163,6 +231,20 @@ const Settings = () => {
     beforeUpload,
     showUploadList: false,
   });
+
+  const getLogoPreview = (type) => {
+    return pendingLogoUploads[type] || (
+      type === 'cms_logo1' ? cmsLogo1Url :
+      type === 'cms_logo2' ? cmsLogo2Url :
+      type === 'cms_favicon' ? cmsFaviconUrl :
+      type === 'website_logo' ? websiteLogoUrl :
+      type === 'website_favicon' ? websiteFaviconUrl :
+      type === 'website_main_logo' ? websiteMainLogoUrl :
+      type === 'website_navbar_logo' ? websiteNavbarLogoUrl :
+      type === 'website_footer_logo' ? websiteFooterLogoUrl :
+      ''
+    );
+  };
 
   return (
     <div style={{ padding: '24px', maxWidth: 1200 }}>
@@ -191,7 +273,7 @@ const Settings = () => {
                   </Text>
 
                   <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                    {(cmsLogo1Url || cmsLogo2Url) && (
+                    {(getLogoPreview('cms_logo1') || getLogoPreview('cms_logo2')) && (
                       <div style={{
                         padding: 16,
                         border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
@@ -201,9 +283,9 @@ const Settings = () => {
                         alignItems: 'center',
                         gap: 16
                       }}>
-                        {cmsLogo1Url && (
+                        {getLogoPreview('cms_logo1') && (
                           <img
-                            src={cmsLogo1Url}
+                            src={getLogoPreview('cms_logo1')}
                             alt="CMS Logo 1"
                             style={{
                               height: 40,
@@ -212,9 +294,9 @@ const Settings = () => {
                             }}
                           />
                         )}
-                        {cmsLogo2Url && (
+                        {getLogoPreview('cms_logo2') && (
                           <img
-                            src={cmsLogo2Url}
+                            src={getLogoPreview('cms_logo2')}
                             alt="CMS Logo 2"
                             style={{
                               height: 60,
@@ -309,6 +391,15 @@ const Settings = () => {
                     </Space>
                   </Space>
                 </div>
+
+                {Object.keys(pendingLogoUploads).length > 0 && (
+                  <>
+                    <Divider />
+                    <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveLogoChanges} loading={loading} style={{ marginTop: 16 }}>
+                      Save Logo Changes
+                    </Button>
+                  </>
+                )}
               </Card>
             )
           },
@@ -323,14 +414,14 @@ const Settings = () => {
               >
                 <div style={{ marginBottom: 32 }}>
                   <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Website Logo
+                    Website Main Logo
                   </Text>
                   <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
                     Upload the main logo for your website. Recommended size: 200x60px, max 2MB.
                   </Text>
 
                   <Space direction="vertical" style={{ width: '100%' }}>
-                    {websiteLogoUrl && (
+                    {getLogoPreview('website_main_logo') && (
                       <div style={{
                         padding: 16,
                         border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
@@ -339,11 +430,11 @@ const Settings = () => {
                         display: 'inline-block'
                       }}>
                         <img
-                          src={websiteLogoUrl}
-                          alt="Website Logo"
+                          src={getLogoPreview('website_main_logo')}
+                          alt="Website Main Logo"
                           style={{
-                            maxHeight: 60,
-                            maxWidth: 200,
+                            maxHeight: logoSizes.main.height,
+                            maxWidth: logoSizes.main.width,
                             objectFit: 'contain'
                           }}
                         />
@@ -351,17 +442,181 @@ const Settings = () => {
                     )}
 
                     <Space>
-                      <Upload {...createUploadProps('website_logo')}>
+                      <Upload {...createUploadProps('website_main_logo')}>
                         <Button icon={<UploadOutlined />} loading={loading}>
-                          {websiteLogoUrl ? 'Change Logo' : 'Upload Logo'}
+                          {websiteMainLogoUrl ? 'Change Main Logo' : 'Upload Main Logo'}
                         </Button>
                       </Upload>
-                      {websiteLogoUrl && (
-                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_logo')}>
+                      {websiteMainLogoUrl && (
+                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_main_logo')}>
                           Remove
                         </Button>
                       )}
                     </Space>
+
+                    <div style={{ marginTop: 16 }}>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Logo Size
+                      </Text>
+                      <Space>
+                        <Input
+                          type="number"
+                          placeholder="Height"
+                          value={logoSizes.main.height}
+                          onChange={(e) => setLogoSizes(prev => ({ ...prev, main: { ...prev.main, height: parseInt(e.target.value) || 60 } }))}
+                          style={{ width: 100 }}
+                          addonAfter="px"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Width"
+                          value={logoSizes.main.width}
+                          onChange={(e) => setLogoSizes(prev => ({ ...prev, main: { ...prev.main, width: parseInt(e.target.value) || 200 } }))}
+                          style={{ width: 100 }}
+                          addonAfter="px"
+                        />
+                      </Space>
+                    </div>
+                  </Space>
+                </div>
+
+                <Divider />
+
+                <div style={{ marginBottom: 32 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Website Navbar Logo
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    Upload the logo for your website navbar. Recommended size: 120x40px, max 2MB.
+                  </Text>
+
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {getLogoPreview('website_navbar_logo') && (
+                      <div style={{
+                        padding: 16,
+                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                        borderRadius: 8,
+                        background: darkMode ? '#1E293B' : '#F8FAFC',
+                        display: 'inline-block'
+                      }}>
+                        <img
+                          src={getLogoPreview('website_navbar_logo')}
+                          alt="Website Navbar Logo"
+                          style={{
+                            maxHeight: logoSizes.navbar.height,
+                            maxWidth: logoSizes.navbar.width,
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <Space>
+                      <Upload {...createUploadProps('website_navbar_logo')}>
+                        <Button icon={<UploadOutlined />} loading={loading}>
+                          {websiteNavbarLogoUrl ? 'Change Navbar Logo' : 'Upload Navbar Logo'}
+                        </Button>
+                      </Upload>
+                      {websiteNavbarLogoUrl && (
+                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_navbar_logo')}>
+                          Remove
+                        </Button>
+                      )}
+                    </Space>
+
+                    <div style={{ marginTop: 16 }}>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Logo Size
+                      </Text>
+                      <Space>
+                        <Input
+                          type="number"
+                          placeholder="Height"
+                          value={logoSizes.navbar.height}
+                          onChange={(e) => setLogoSizes(prev => ({ ...prev, navbar: { ...prev.navbar, height: parseInt(e.target.value) || 40 } }))}
+                          style={{ width: 100 }}
+                          addonAfter="px"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Width"
+                          value={logoSizes.navbar.width}
+                          onChange={(e) => setLogoSizes(prev => ({ ...prev, navbar: { ...prev.navbar, width: parseInt(e.target.value) || 120 } }))}
+                          style={{ width: 100 }}
+                          addonAfter="px"
+                        />
+                      </Space>
+                    </div>
+                  </Space>
+                </div>
+
+                <Divider />
+
+                <div style={{ marginBottom: 32 }}>
+                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                    Website Footer Logo
+                  </Text>
+                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+                    Upload the logo for your website footer. Recommended size: 150x50px, max 2MB.
+                  </Text>
+
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    {getLogoPreview('website_footer_logo') && (
+                      <div style={{
+                        padding: 16,
+                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
+                        borderRadius: 8,
+                        background: darkMode ? '#1E293B' : '#F8FAFC',
+                        display: 'inline-block'
+                      }}>
+                        <img
+                          src={getLogoPreview('website_footer_logo')}
+                          alt="Website Footer Logo"
+                          style={{
+                            maxHeight: logoSizes.footer.height,
+                            maxWidth: logoSizes.footer.width,
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    <Space>
+                      <Upload {...createUploadProps('website_footer_logo')}>
+                        <Button icon={<UploadOutlined />} loading={loading}>
+                          {websiteFooterLogoUrl ? 'Change Footer Logo' : 'Upload Footer Logo'}
+                        </Button>
+                      </Upload>
+                      {websiteFooterLogoUrl && (
+                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_footer_logo')}>
+                          Remove
+                        </Button>
+                      )}
+                    </Space>
+
+                    <div style={{ marginTop: 16 }}>
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        Logo Size
+                      </Text>
+                      <Space>
+                        <Input
+                          type="number"
+                          placeholder="Height"
+                          value={logoSizes.footer.height}
+                          onChange={(e) => setLogoSizes(prev => ({ ...prev, footer: { ...prev.footer, height: parseInt(e.target.value) || 50 } }))}
+                          style={{ width: 100 }}
+                          addonAfter="px"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Width"
+                          value={logoSizes.footer.width}
+                          onChange={(e) => setLogoSizes(prev => ({ ...prev, footer: { ...prev.footer, width: parseInt(e.target.value) || 150 } }))}
+                          style={{ width: 100 }}
+                          addonAfter="px"
+                        />
+                      </Space>
+                    </div>
                   </Space>
                 </div>
 
@@ -410,6 +665,15 @@ const Settings = () => {
                     </Space>
                   </Space>
                 </div>
+
+                {Object.keys(pendingLogoUploads).length > 0 && (
+                  <>
+                    <Divider />
+                    <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveLogoChanges} loading={loading} style={{ marginTop: 16 }}>
+                      Save Logo Changes
+                    </Button>
+                  </>
+                )}
               </Card>
             )
           },

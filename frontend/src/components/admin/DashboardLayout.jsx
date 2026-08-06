@@ -387,11 +387,11 @@ const DashboardLayout = () => {
             style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
             onClick={() => navigate('/dashboard/settings')}
           >
-            {(localStorage.getItem('cmsSidebarLogo1Url') || localStorage.getItem('cmsSidebarLogo2Url')) ? (
+            {(cmsLogo1 || cmsLogo2) ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {localStorage.getItem('cmsSidebarLogo1Url') && (
+                {cmsLogo1 && (
                   <img
-                    src={localStorage.getItem('cmsSidebarLogo1Url')}
+                    src={cmsLogo1}
                     alt="Logo 1"
                     style={{
                       height: collapsed ? 32 : 40,
@@ -400,9 +400,9 @@ const DashboardLayout = () => {
                     }}
                   />
                 )}
-                {localStorage.getItem('cmsSidebarLogo2Url') && (
+                {cmsLogo2 && (
                   <img
-                    src={localStorage.getItem('cmsSidebarLogo2Url')}
+                    src={cmsLogo2}
                     alt="Logo 2"
                     style={{
                       height: collapsed ? 32 : 48,
@@ -545,14 +545,14 @@ const DashboardLayout = () => {
                               You have {notifications.length} new notifications
                             </div>
                           </div>
-                          <div style={{ 
-                            fontSize: 13, 
+                          
+<div style={{
+                            fontSize: 13,
                             color: darkMode ? '#CBD5E1' : '#374151',
                             maxHeight: 300,
                             overflowY: 'auto',
                             paddingRight: 8
-                          }}>
-                            {notifications.map((notification) => (
+                          }}>                            {notifications.map((notification) => (
                               <div 
                                 key={notification.id} 
                                 style={{ 
@@ -594,11 +594,16 @@ const DashboardLayout = () => {
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={() => navigate('/dashboard/create-post')}
+                    size="small"
                     style={{
                       background: '#0AAEEF',
                       borderColor: '#0AAEEF',
-                      borderRadius: 8,
+                      borderRadius: 6,
                       fontWeight: 500,
+                      fontSize: 13,
+                      height: 32,
+                      padding: '4px 12px',
+                      minWidth: 'auto'
                     }}
                   >
                     Create

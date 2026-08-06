@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import { User, Mail, Lock, Phone, ArrowRight, Eye, EyeOff, Newspaper, Mic, Mail as MailIcon, Trophy, Shield, CheckCircle, XCircle } from 'lucide-react';
+import axios from 'axios';
 
 const PERKS = [
   { icon: Newspaper, text: 'Access 500+ exclusive articles' },
@@ -13,6 +15,7 @@ const PERKS = [
 
 const Register = () => {
   const { darkMode } = useTheme();
+  const { mainLogo } = useSiteSettings();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -116,18 +119,24 @@ const Register = () => {
       {/* Left Panel - Branding */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-accent-hover)] to-[var(--color-success)]">
         {/* Background decorations */}
-        <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-[rgba(255,255,255,0.1)] blur-3xl pointer-events-none" />
-        <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-[rgba(255,255,255,0.08)] blur-2xl pointer-events-none" />
+        <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-white/8 pointer-events-none" />
         <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
 
         {/* Floating glass cards */}
-        <div className="absolute top-24 right-16 w-28 h-28 bg-[rgba(255,255,255,0.05)] backdrop-blur-sm rounded-2xl border border-[rgba(255,255,255,0.1)] pointer-events-none" />
-        <div className="absolute bottom-28 left-20 w-20 h-20 bg-[rgba(255,255,255,0.04)] backdrop-blur-sm rounded-xl border border-[rgba(255,255,255,0.08)] pointer-events-none" />
+        <div className="absolute top-24 right-16 w-28 h-28 bg-white/5 rounded-2xl border border-white/10 pointer-events-none" />
+        <div className="absolute bottom-28 left-20 w-20 h-20 bg-white/4 rounded-xl border border-white/8 pointer-events-none" />
 
         {/* Logo */}
         <div className="mb-12 self-start">
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-2xl">
-            <img src="/logo.jpg" alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
+            {mainLogo ? (
+              <img src={mainLogo} alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
+            ) : (
+              <div className="h-12 w-12 flex items-center justify-center text-white font-bold text-xl rounded-xl bg-white/20">
+                TGS
+              </div>
+            )}
           </div>
         </div>
 
@@ -188,7 +197,7 @@ const Register = () => {
                     placeholder="John"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                    className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
                     required
                   />
                 </div>
@@ -203,7 +212,7 @@ const Register = () => {
                     placeholder="Doe"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                    className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
                     required
                   />
                 </div>
@@ -221,7 +230,7 @@ const Register = () => {
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={handleChange}
-                  className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
                   required
                 />
               </div>
@@ -237,7 +246,7 @@ const Register = () => {
                   placeholder="+1 234 567 8900"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="pl-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
                 />
               </div>
             </div>
@@ -252,7 +261,7 @@ const Register = () => {
                   placeholder="Create a strong password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="pl-10 pr-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className={`pl-10 pr-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
                   required
                 />
                 <button
@@ -330,7 +339,7 @@ const Register = () => {
                   placeholder="Confirm your password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="pl-10 pr-10 h-11 w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)] transition-all duration-200"
+                  className={`pl-10 pr-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
                   required
                 />
                 <button
@@ -351,7 +360,7 @@ const Register = () => {
                 id="agreement"
                 checked={agreement}
                 onChange={(e) => setAgreement(e.target.checked)}
-                className="h-4 w-4 mt-0.5 rounded-sm border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-primary)]/20"
+                className={`h-4 w-4 mt-0.5 rounded-sm focus:ring-2 focus:ring-blue-500/20 ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
               />
               <label htmlFor="agreement" className="text-sm text-[var(--color-body)] cursor-pointer leading-tight">
                 I agree to the{' '}

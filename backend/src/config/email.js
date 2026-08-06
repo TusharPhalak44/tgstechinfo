@@ -1,9 +1,62 @@
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
+const { pool } = require('./database');
 
 dotenv.config();
 
-const sendEmail = async (to, subject, html) => {
+const parseBase64ImageDataUri = (value) => {
+    if (!value || typeof value !== 'string') return null;
+    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/i.exec(value);
+    if (!match) return null;
+    return { mimeType: match[1], base64: match[2] };
+};
+
+const getWebsiteLogoFromSettings = async () => {
+    try {
+        const [settingsRows] = await pool.query(
+            'SELECT website_main_logo, website_logo FROM site_settings LIMIT 1'
+        );
+        if (settingsRows && settingsRows[0]) {
+            return settingsRows[0].website_main_logo || settingsRows[0].website_logo || '';
+        }
+        return '';
+    } catch (error) {
+        console.error('Error fetching website logo for email:', error);
+        return '';
+    }
+};
+
+const buildEmailLogoAssets = async () => {
+    const logoOriginal = await getWebsiteLogoFromSettings();
+    if (!logoOriginal) {
+        return { logoOriginal: '', logoSrc: '', logoHtml: '', logoImgOnly: '', attachments: [] };
+    }
+
+    const parsed = parseBase64ImageDataUri(logoOriginal);
+    if (parsed) {
+        const cid = 'tgstechinfo-logo';
+        const logoSrc = `cid:${cid}`;
+        const logoHtml = `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" /></div>`;
+        const logoImgOnly = `<img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" />`;
+        const attachments = [
+            {
+                filename: 'logo',
+                cid,
+                content: Buffer.from(parsed.base64, 'base64'),
+                contentType: parsed.mimeType
+            }
+        ];
+
+        return { logoOriginal, logoSrc, logoHtml, logoImgOnly, attachments };
+    }
+
+    const logoSrc = logoOriginal;
+    const logoHtml = `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" /></div>`;
+    const logoImgOnly = `<img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" />`;
+    return { logoOriginal, logoSrc, logoHtml, logoImgOnly, attachments: [] };
+};
+
+const sendEmail = async (to, subject, html, options = {}) => {
     const user = process.env.EMAIL_USER;
     const pass = process.env.EMAIL_PASSWORD;
     const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
@@ -22,6 +75,35 @@ const sendEmail = async (to, subject, html) => {
         return { skipped: true, reason: 'credentials_not_configured', from: fromAddress };
     }
 
+    const originalHtml = html || '';
+    let finalHtml = originalHtml;
+    const hadLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(originalHtml);
+
+    const { logoOriginal, logoSrc, logoHtml, logoImgOnly, attachments: logoAttachments } = await buildEmailLogoAssets();
+
+    if (logoSrc) {
+        finalHtml = finalHtml
+            .replace(/\{\{website_logo_html\}\}/g, logoHtml)
+            .replace(/\{\{website_logo_img\}\}/g, logoImgOnly)
+            .replace(/\{\{website_logo\}\}/g, logoSrc)
+            .replace(/\{\{logo\}\}/g, logoSrc);
+
+        if (logoOriginal && logoOriginal !== logoSrc) {
+            finalHtml = finalHtml.split(logoOriginal).join(logoSrc);
+        }
+
+        const alreadyHasLogo = finalHtml.includes(logoSrc);
+        if (!hadLogoPlaceholder && !alreadyHasLogo) {
+            finalHtml = `${logoHtml}${finalHtml}`;
+        }
+    } else {
+        finalHtml = finalHtml
+            .replace(/\{\{website_logo_html\}\}/g, '')
+            .replace(/\{\{website_logo_img\}\}/g, '')
+            .replace(/\{\{website_logo\}\}/g, '')
+            .replace(/\{\{logo\}\}/g, '');
+    }
+
     const transporter = nodemailer.createTransport({
         host,
         port,
@@ -36,7 +118,10 @@ const sendEmail = async (to, subject, html) => {
         from: fromAddress,
         to,
         subject,
-        html
+        html: finalHtml,
+        ...(logoAttachments.length || options.attachments?.length
+            ? { attachments: [...logoAttachments, ...(options.attachments || [])] }
+            : {})
     });
     return info;
 };
@@ -57,7 +142,10 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
         </head>
         <body>
             <div class="container">
-                <div class="header"><h2>Subscription Confirmed</h2></div>
+                <div class="header">
+                    {{website_logo_html}}
+                    <h2>Subscription Confirmed</h2>
+                </div>
                 <div class="content">
                     <h3>Hi ${name},</h3>
                     <p>Thank you for reaching out! We've received your details, and our team is reviewing them.</p>
@@ -94,6 +182,7 @@ const accessGrantEmailTemplate = (name, contentTitle) => {
         <body>
             <div class="container">
                 <div class="header">
+                    {{website_logo_html}}
                     <h2>Content Access Granted</h2>
                 </div>
                 <div class="content">
@@ -136,6 +225,7 @@ const chatbotQueryAdminTemplate = (email, query, submittedAt) => {
         <body>
             <div class="container">
                 <div class="header">
+                    {{website_logo_html}}
                     <h2>New Chatbot Query Received</h2>
                 </div>
                 <div class="content">
@@ -189,6 +279,7 @@ const chatbotQueryResponseTemplate = (query, adminResponse) => {
         <body>
             <div class="container">
                 <div class="header">
+                    {{website_logo_html}}
                     <h2>🤖 Response to Your Chatbot Query</h2>
                 </div>
                 <div class="content">

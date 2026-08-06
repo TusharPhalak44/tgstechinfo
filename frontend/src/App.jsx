@@ -25,6 +25,8 @@ import VendorList from './pages/VendorList';
 import ContactPrivacyOfficer from './pages/ContactPrivacyOfficer';
 import ArticleDetail from './components/public/ArticleDetail';
 import UserAccountPolicy from './pages/UserAccountPolicy';
+import About from './pages/About';
+ 
 
 import axios from 'axios';
 
@@ -70,6 +72,7 @@ import Unsubscribe from './components/public/Unsubscribe';
 import ResetPassword from './pages/ResetPassword';
 import { ChatProvider } from './context/ChatContext';
 import ChatWidget from './components/common/chatbot/ChatWidget';
+import { SiteSettingsProvider, useSiteSettings } from './context/SiteSettingsContext';
 
 const { Content } = Layout;
 
@@ -144,6 +147,7 @@ const theme = {
 
 function AppContent() {
   const { darkMode } = useTheme();
+  const { favicon } = useSiteSettings();
   // All URL prefixes that render as a full-screen standalone landing page (no Navbar/Footer)
   const STANDALONE_PREFIXES = ['/content/', '/lp/', '/landing-page/'];
   const dashboardRoutes = ['/dashboard', '/create-content', '/my-content', '/my-submissions', '/admin', '/admin/users', '/admin/submissions', '/dashboard/analytics', '/dashboard/create-post', '/dashboard/drafts', '/dashboard/scheduled', '/dashboard/categories', '/dashboard/profile', '/dashboard/settings'];
@@ -161,28 +165,19 @@ function AppContent() {
     return location.pathname === route || location.pathname.startsWith(route + '/');
   });
 
-  // Load website favicon from database
+  // Apply website favicon from CMS settings
   useEffect(() => {
-    const loadWebsiteFavicon = async () => {
-      try {
-        const response = await axios.get('/api/site-settings/public');
-        const settings = response.data.settings;
-        if (settings && settings.website_favicon) {
-          let link = document.querySelector("link[rel~='icon']");
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            link.sizes = '64x64';
-            document.head.appendChild(link);
-          }
-          link.href = settings.website_favicon;
-        }
-      } catch (error) {
-        console.error('Failed to load website favicon:', error);
+    if (favicon) {
+      let link = document.querySelector("link[rel~='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        link.sizes = '64x64';
+        document.head.appendChild(link);
       }
-    };
-    loadWebsiteFavicon();
-  }, []);
+      link.href = favicon;
+    }
+  }, [favicon]);
 
   // Load SEO settings and set document title
   useEffect(() => {
@@ -292,7 +287,8 @@ function AppContent() {
                 <Route path="media-library" element={<MediaLibrary />} />
                 <Route path="uploads" element={<Uploads />} />
                 <Route path="categories" element={<Categories />} />
-                <Route path="forms" element={<Forms />} />
+                <Route path="/about" element={<About />} />
+                 <Route path="forms" element={<Forms />} />
                 <Route path="seo" element={<SEO />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="roles" element={<Roles />} />
@@ -307,6 +303,8 @@ function AppContent() {
                 {/* User sub-routes */}
                 <Route index element={<Dashboard />} />
                 <Route path="my-content" element={<MyContent />} />
+                <Route path="my-submissions" element={<UserSubmissions />} />
+ 
                 <Route path="scheduled" element={<MyContent />} />
               </Route>
 
@@ -353,8 +351,8 @@ function AppContent() {
                   <CreateContent />
                 </PrivateRoute>
               } />
-              <Route path="/article-preview/:id" element={
-                <PrivateRoute>
+              <Route path="/:type-preview/:id" element={
+                  <PrivateRoute>
                   <ArticlePreview />
                 </PrivateRoute>
               } />
@@ -386,16 +384,18 @@ function App() {
     <ConfigProvider theme={theme}>
       <AuthProvider>
         <ThemeProvider>
-          <CookieProvider>
-            <TrackingProvider>
-              <ChatProvider>
-                <AntApp>
-                  <AppContent />
-                  <ChatWidget />
-                </AntApp>
-              </ChatProvider>
-            </TrackingProvider>
-          </CookieProvider>
+          <SiteSettingsProvider>
+            <CookieProvider>
+              <TrackingProvider>
+                <ChatProvider>
+                  <AntApp>
+                    <AppContent />
+                    <ChatWidget />
+                  </AntApp>
+                </ChatProvider>
+              </TrackingProvider>
+            </CookieProvider>
+          </SiteSettingsProvider>
         </ThemeProvider>
       </AuthProvider>
     </ConfigProvider>

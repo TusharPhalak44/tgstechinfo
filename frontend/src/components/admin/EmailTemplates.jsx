@@ -24,11 +24,11 @@ const EmailTemplates = () => {
     ];
 
     const availableVariables = {
-        registration: ['first_name', 'last_name', 'email', 'login_url', 'year'],
-        content_submitted: ['first_name', 'last_name', 'content_title', 'category', 'submitted_date', 'dashboard_url', 'year'],
-        content_approved: ['first_name', 'last_name', 'content_title', 'category', 'approved_date', 'dashboard_url', 'year'],
-        content_rejected: ['first_name', 'last_name', 'content_title', 'category', 'reviewed_date', 'feedback', 'dashboard_url', 'year'],
-        content_published: ['first_name', 'last_name', 'content_title', 'category', 'published_date', 'article_url', 'dashboard_url', 'year']
+        registration: ['first_name', 'last_name', 'email', 'login_url', 'website_logo_html', 'website_logo_img', 'website_logo', 'logo', 'site_name', 'year'],
+        content_submitted: ['first_name', 'last_name', 'content_title', 'category', 'submitted_date', 'dashboard_url', 'website_logo_html', 'website_logo_img', 'website_logo', 'logo', 'site_name', 'year'],
+        content_approved: ['first_name', 'last_name', 'content_title', 'category', 'approved_date', 'dashboard_url', 'website_logo_html', 'website_logo_img', 'website_logo', 'logo', 'site_name', 'year'],
+        content_rejected: ['first_name', 'last_name', 'content_title', 'category', 'reviewed_date', 'feedback', 'dashboard_url', 'website_logo_html', 'website_logo_img', 'website_logo', 'logo', 'site_name', 'year'],
+        content_published: ['first_name', 'last_name', 'content_title', 'category', 'published_date', 'article_url', 'dashboard_url', 'website_logo_html', 'website_logo_img', 'website_logo', 'logo', 'site_name', 'year']
     };
 
     useEffect(() => {

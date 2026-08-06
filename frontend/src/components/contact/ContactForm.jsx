@@ -6,8 +6,10 @@ import { Textarea } from '../../components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Button } from '../../components/ui/button';
+import { useTheme } from '../../context/ThemeContext';
 
 export const ContactForm = ({ agreed, setAgreed }) => {
+  const { darkMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -127,22 +129,22 @@ export const ContactForm = ({ agreed, setAgreed }) => {
                 className="transition-shadow focus:ring-2 focus:ring-blue-500" 
               />
             </div>
-            <div className="space-y-2 group">
+            <div className="space-y-2 group relative z-50">
               <label className="text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors">Inquiry Category</label>
               <Select 
                 value={formData.inquiry_category} 
                 onValueChange={(value) => setFormData(prev => ({ ...prev, inquiry_category: value }))}
               >
-                <SelectTrigger className="transition-shadow focus:ring-2 focus:ring-blue-500">
+                <SelectTrigger className={`transition-shadow focus:ring-2 focus:ring-blue-500 ${darkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="general">General Inquiry</SelectItem>
-                  <SelectItem value="partnership">Partnership</SelectItem>
-                  <SelectItem value="media">Media</SelectItem>
-                  <SelectItem value="feedback">Feedback</SelectItem>
-                  <SelectItem value="issue">Report an Issue</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                <SelectContent className={`${darkMode ? 'bg-gray-800 text-white border-gray-600' : 'bg-white text-gray-900 border-gray-300'}`}>
+                  <SelectItem value="general" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}>General Inquiry</SelectItem>
+                  <SelectItem value="partnership" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}>Partnership</SelectItem>
+                  <SelectItem value="media" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}>Media</SelectItem>
+                  <SelectItem value="feedback" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}>Feedback</SelectItem>
+                  <SelectItem value="issue" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}>Report an Issue</SelectItem>
+                  <SelectItem value="other" className={darkMode ? 'text-white hover:bg-gray-700' : 'text-gray-900 hover:bg-gray-100'}>Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>

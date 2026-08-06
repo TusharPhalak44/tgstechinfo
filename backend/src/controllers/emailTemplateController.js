@@ -1,5 +1,6 @@
 const EmailTemplate = require('../models/EmailTemplate');
 const { validationResult } = require('express-validator');
+const { pool } = require('../config/database');
 
 exports.getAllTemplates = async (req, res) => {
     try {
@@ -138,9 +139,32 @@ exports.toggleTemplateActive = async (req, res) => {
 };
 
 // Helper function to render template with variables
-exports.renderTemplate = (template, variables) => {
+exports.renderTemplate = async (template, variables) => {
     let renderedHtml = template.html_body;
     let renderedSubject = template.subject;
+
+    // Fetch site settings for logo and site name
+    try {
+        const [settingsRows] = await pool.query(
+            'SELECT website_main_logo, website_logo, site_name FROM site_settings LIMIT 1'
+        );
+        if (settingsRows[0]) {
+            variables.website_logo = settingsRows[0].website_main_logo || settingsRows[0].website_logo || '';
+            variables.logo = variables.website_logo;
+            variables.site_name = settingsRows[0].site_name || 'TgsTechInfo';
+        }
+    } catch (error) {
+        console.error('Error fetching site settings for email template:', error);
+        // Use defaults if fetch fails
+        variables.website_logo = variables.website_logo || '';
+        variables.logo = variables.logo || variables.website_logo || '';
+        variables.site_name = variables.site_name || 'TgsTechInfo';
+    }
+
+    // Add current year if not provided
+    if (!variables.year) {
+        variables.year = new Date().getFullYear();
+    }
 
     // Replace all variables in both subject and body
     Object.keys(variables).forEach(key => {

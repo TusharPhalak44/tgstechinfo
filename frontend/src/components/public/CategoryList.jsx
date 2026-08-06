@@ -5,6 +5,7 @@ import { CalendarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
+import { navigateContentItem } from '../../lib/contentRoute';
 
 // Detect HTML builder (landing page) content by builder_layout OR content type
 const isHtmlBuilderContent = (item) => {
@@ -35,41 +36,7 @@ const parseTags = (value) => {
   return [];
 };
 
-const getContentRoute = (item) => {
-  try {
-    const layout = item.builder_layout ? JSON.parse(item.builder_layout) : null;
-    const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-    const isLandingPageType = ['landing-page', 'landing page'].includes(
-      (item.content_type || item.content_type_name || '').toLowerCase().trim()
-    );
-    const isStandalone = isHtmlBuilder || isLandingPageType;
-    if (isStandalone) return { url: `/content/${item.slug}`, newTab: true };
-    const contentType = item.content_type || 'article';
-    return { url: `/${contentType}/${item.slug}`, newTab: false };
-  } catch {
-    const contentType = item.content_type || 'article';
-    return { url: `/${contentType}/${item.slug}`, newTab: false };
-  }
-};
-
-const navigateContent = async (item, navigate) => {
-  try {
-    // Increment view count when content is clicked (use session-based deduplication)
-    const viewKey = `content-viewed-${item.id}`;
-    const sessionViewed = sessionStorage.getItem(viewKey);
-
-    // Only increment if not already viewed in this session
-    if (!sessionViewed) {
-      console.log('👁️ Incrementing view for content:', item.id);
-      await axios.post(`/api/public/content/${item.id}/view`);
-      sessionStorage.setItem(viewKey, 'true');
-      console.log('✅ View incremented and marked as viewed');
-    } else {
-      console.log('⏭️ Content already viewed in this session, skipping increment');
-    }
-  } catch (error) {
-    console.error('Error incrementing view count:', error);
-  }
+const navigateContent = (item, navigate) => {
   const { url, newTab } = getContentRoute(item);
   if (newTab) {
     window.open(url, '_blank', 'noopener,noreferrer');

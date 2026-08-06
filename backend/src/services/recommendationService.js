@@ -1,6 +1,25 @@
 const { pool } = require('../config/database');
 
 class RecommendationService {
+    static buildResultUrl({ slug, contentType, builderLayout, contentTypeName, contentTypeSlug }) {
+        const normalizedContentType = String(contentType || contentTypeSlug || contentTypeName || 'article').toLowerCase().trim();
+        const parsedLayout = typeof builderLayout === 'string' ? (() => {
+            try {
+                return JSON.parse(builderLayout);
+            } catch {
+                return null;
+            }
+        })() : builderLayout;
+        const isHtmlBuilder = Array.isArray(parsedLayout) && parsedLayout[0] === 'html';
+        const isLandingPageType = ['landing-page', 'landing page'].includes(normalizedContentType);
+
+        if (isHtmlBuilder || isLandingPageType) {
+            return `/content/${slug}`;
+        }
+
+        return `/${normalizedContentType || 'article'}/${slug}`;
+    }
+
     /**
      * Get related content based on multiple factors
      * Priority: Same Category > Same Tags > Same Author > Most Viewed > Recently Published > Editor's Choice
@@ -274,9 +293,16 @@ class RecommendationService {
             category_slug: formattedResult.category_slug,
             content_type: formattedResult.content_type_name,
             content_type_slug: formattedResult.content_type_slug,
+            builder_layout: formattedResult.builder_layout,
             banner_image: formattedResult.banner_image,
             short_description: formattedResult.short_description,
-            url: `/${contentType}/${formattedResult.slug}`,
+            url: this.buildResultUrl({
+                slug: formattedResult.slug,
+                contentType,
+                builderLayout: formattedResult.builder_layout,
+                contentTypeName: formattedResult.content_type_name,
+                contentTypeSlug: formattedResult.content_type_slug
+            }),
             published_date: formattedResult.published_date,
             view_count: formattedResult.view_count,
             tags: formattedResult.tags,
