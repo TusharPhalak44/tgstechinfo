@@ -78,20 +78,47 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
-// Static files - serve from filesystem, fallback to DB
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static files — serve from filesystem first, then fall back to DB blob
+const uploadsDir = path.join(__dirname, 'uploads');
+app.use('/uploads', express.static(uploadsDir));
+
+// DB blob fallback — fires when the file isn't found on disk
 app.use('/uploads/:filename', async (req, res, next) => {
     try {
         const { pool } = require('./src/config/database');
+        const filename = req.params.filename;
+
+        // 1. Check filesystem first (handles cases where uploads dir exists)
+        const filePath = path.join(uploadsDir, filename);
+        if (require('fs').existsSync(filePath)) {
+            return res.sendFile(filePath);
+        }
+
+        // 2. Try DB blob
         const [rows] = await pool.query(
             'SELECT file_data, mime_type FROM media_files WHERE filename = ? LIMIT 1',
-            [req.params.filename]
+            [filename]
         );
-        if (!rows[0] || !rows[0].file_data) return res.status(404).send('Not found');
-        res.setHeader('Content-Type', rows[0].mime_type || 'application/octet-stream');
-        res.setHeader('Cache-Control', 'public, max-age=31536000');
-        res.send(rows[0].file_data);
-    } catch (e) { next(e); }
+
+        if (rows[0] && rows[0].file_data) {
+            res.setHeader('Content-Type', rows[0].mime_type || 'application/octet-stream');
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            return res.send(rows[0].file_data);
+        }
+
+        // 3. file_data is NULL (large file stored on disk only, but disk missing on this server)
+        //    Return a transparent 1x1 pixel PNG placeholder so the page doesn't show broken images
+        const placeholder = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+            'base64'
+        );
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('X-Image-Missing', 'true');
+        return res.send(placeholder);
+    } catch (e) {
+        next(e);
+    }
 });
 
 // Routes

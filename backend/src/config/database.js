@@ -19,6 +19,13 @@
         for (let i = 0; i < retries; i++) {
             try {
                 const conn = await pool.getConnection();
+                // Raise max_allowed_packet to 64MB for this session so large base64
+                // logo data and other large fields can be stored without errors
+                try {
+                    await conn.query('SET SESSION max_allowed_packet = 67108864');
+                } catch (e) {
+                    console.warn('Could not set max_allowed_packet (non-fatal):', e.message);
+                }
                 console.log('✅ Connected to MySQL database successfully');
                 conn.release();
                 return true;

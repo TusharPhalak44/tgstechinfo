@@ -202,6 +202,8 @@ class SiteSettings {
 
 
 
+        // Raise packet limit for this query - base64 logos can be 200KB-1MB
+        try { await pool.query('SET SESSION max_allowed_packet = 67108864'); } catch (e) {}
         await pool.query(query, [imageData]);
 
         return await SiteSettings.getSettings();
