@@ -4,6 +4,7 @@ services:
     image: mysql:8.0
     container_name: tgstechinfo_mysql
     restart: unless-stopped
+    command: --max_allowed_packet=67108864
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
