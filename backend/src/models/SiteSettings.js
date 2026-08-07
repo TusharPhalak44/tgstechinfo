@@ -100,7 +100,34 @@ class SiteSettings {
                 UPDATE site_settings
                 SET ${column} = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = 1
-            `;
+            `;const conn = await pool.getConnection();
+
+try {
+    console.log("Column:", column);
+    console.log("Image length:", imageData?.length);
+    console.log("First 50 chars:", imageData?.substring(0, 50));
+
+    const sql = `
+        UPDATE site_settings
+        SET ${column} = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = 1
+    `;
+
+    const [result] = await conn.query(sql, [imageData]);
+
+    console.log("UPDATE RESULT:", result);
+
+    const [rows] = await conn.query(
+        `SELECT LENGTH(${column}) AS len FROM site_settings WHERE id = 1`
+    );
+
+    console.log("VERIFY:", rows);
+
+    return await SiteSettings.getSettings();
+
+} finally {
+    conn.release();
+}
 
             const [result] = await conn.query(sql, [imageData]);
             console.log('UPDATE RESULT:', result);
