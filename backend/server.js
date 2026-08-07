@@ -74,8 +74,8 @@ app.use('/api', limiter);
 // Body parser middleware
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(cookieParser());
 
 // Static files — serve from filesystem first, then fall back to DB blob
