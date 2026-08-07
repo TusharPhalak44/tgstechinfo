@@ -105,15 +105,14 @@ class SiteSettings {
         // Use a single dedicated connection so SET SESSION and INSERT are
         // guaranteed to run on the same connection. pool.query() can hand out
         // a different connection for each call, making SET SESSION ineffective.
-        const conn = await pool.getConnection();
-        try {
-            await conn.query('SET SESSION max_allowed_packet = 67108864');
-            await conn.query(query, [imageData]);
-        } finally {
-            conn.release();
-        }
+       const conn = await pool.getConnection();
+try {
+    await conn.query(query, [imageData]);
+} finally {
+    conn.release();
+}
 
-        return await SiteSettings.getSettings();
+return await SiteSettings.getSettings();
     }
 }
 
