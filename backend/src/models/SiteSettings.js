@@ -8,71 +8,42 @@ class SiteSettings {
     }
 
     static async updateSettings(settingsData) {
-        const {
-            site_name,
-            cms_logo1,
-            cms_logo2,
-            cms_favicon,
-            website_logo,
-            website_favicon,
-            website_main_logo,
-            website_navbar_logo,
-            website_footer_logo,
-            site_description,
-            site_keywords,
-            seo_site_title,
-            seo_site_separator,
-            seo_meta_description,
-            seo_meta_keywords,
-            seo_og_image
-        } = settingsData;
+        // Only update columns that were explicitly included in the request body.
+        // If a field is absent (undefined), leave it unchanged in the database.
+        // This prevents a partial update (e.g. { logo_sizes }) from wiping
+        // logo columns with NULL.
+        const allowed = [
+            'site_name', 'cms_logo1', 'cms_logo2', 'cms_favicon',
+            'website_logo', 'website_favicon', 'website_main_logo',
+            'website_navbar_logo', 'website_footer_logo',
+            'site_description', 'site_keywords', 'logo_sizes',
+            'seo_site_title', 'seo_site_separator', 'seo_meta_description',
+            'seo_meta_keywords', 'seo_og_image'
+        ];
 
-        const query = `
-            INSERT INTO site_settings (
-                id, site_name, cms_logo1, cms_logo2, cms_favicon,
-                website_logo, website_favicon, website_main_logo, website_navbar_logo, website_footer_logo,
-                site_description, site_keywords,
-                seo_site_title, seo_site_separator, seo_meta_description, seo_meta_keywords, seo_og_image, updated_at
-            )
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON DUPLICATE KEY UPDATE
-                site_name = VALUES(site_name),
-                cms_logo1 = VALUES(cms_logo1),
-                cms_logo2 = VALUES(cms_logo2),
-                cms_favicon = VALUES(cms_favicon),
-                website_logo = VALUES(website_logo),
-                website_favicon = VALUES(website_favicon),
-                website_main_logo = VALUES(website_main_logo),
-                website_navbar_logo = VALUES(website_navbar_logo),
-                website_footer_logo = VALUES(website_footer_logo),
-                site_description = VALUES(site_description),
-                site_keywords = VALUES(site_keywords),
-                seo_site_title = VALUES(seo_site_title),
-                seo_site_separator = VALUES(seo_site_separator),
-                seo_meta_description = VALUES(seo_meta_description),
-                seo_meta_keywords = VALUES(seo_meta_keywords),
-                seo_og_image = VALUES(seo_og_image),
-                updated_at = CURRENT_TIMESTAMP
-        `;
+        const setClauses = [];
+        const values = [];
 
-        await pool.query(query, [
-            site_name,
-            cms_logo1,
-            cms_logo2,
-            cms_favicon,
-            website_logo,
-            website_favicon,
-            website_main_logo,
-            website_navbar_logo,
-            website_footer_logo,
-            site_description,
-            site_keywords,
-            seo_site_title,
-            seo_site_separator,
-            seo_meta_description,
-            seo_meta_keywords,
-            seo_og_image
-        ]);
+        for (const col of allowed) {
+            if (Object.prototype.hasOwnProperty.call(settingsData, col)) {
+                const val = settingsData[col];
+                setClauses.push(`${col} = ?`);
+                // Serialize objects (e.g. logo_sizes JSON) to strings
+                values.push(typeof val === 'object' && val !== null ? JSON.stringify(val) : val);
+            }
+        }
+
+        if (setClauses.length === 0) {
+            return await SiteSettings.getSettings();
+        }
+
+        setClauses.push('updated_at = CURRENT_TIMESTAMP');
+
+        // Ensure the row exists before updating
+        await pool.query('INSERT IGNORE INTO site_settings (id) VALUES (1)');
+
+        const query = `UPDATE site_settings SET ${setClauses.join(', ')} WHERE id = 1`;
+        await pool.query(query, values);
 
         return await SiteSettings.getSettings();
     }
@@ -100,47 +71,9 @@ class SiteSettings {
                 UPDATE site_settings
                 SET ${column} = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = 1
-            `;const conn = await pool.getConnection();
-
-try {
-    console.log("Column:", column);
-    console.log("Image length:", imageData?.length);
-    console.log("First 50 chars:", imageData?.substring(0, 50));
-
-    const sql = `
-        UPDATE site_settings
-        SET ${column} = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = 1
-    `;
-
-    const [result] = await conn.query(sql, [imageData]);
-
-    console.log("UPDATE RESULT:", result);
-
-    const [rows] = await conn.query(
-        `SELECT LENGTH(${column}) AS len FROM site_settings WHERE id = 1`
-    );
-
-    console.log("VERIFY:", rows);
-
-    return await SiteSettings.getSettings();
-
-} finally {
-    conn.release();
-}
-
+            `;
             const [result] = await conn.query(sql, [imageData]);
-            console.log('UPDATE RESULT:', result);
-
-            const [rows] = await conn.query(
-    `SELECT
-        ${column},
-        LENGTH(${column}) AS len
-     FROM site_settings
-     WHERE id = 1`
-);
-
-console.log("VERIFY:", rows);
+            console.log(`[updateLogo] type=${type} affectedRows=${result.affectedRows} changedRows=${result.changedRows}`);
 
             return await SiteSettings.getSettings();
         } finally {
