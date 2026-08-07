@@ -133,9 +133,14 @@ try {
             console.log('UPDATE RESULT:', result);
 
             const [rows] = await conn.query(
-                `SELECT LENGTH(${column}) AS len FROM site_settings WHERE id = 1`
-            );
-            console.log('VERIFY:', rows);
+    `SELECT
+        ${column},
+        LENGTH(${column}) AS len
+     FROM site_settings
+     WHERE id = 1`
+);
+
+console.log("VERIFY:", rows);
 
             return await SiteSettings.getSettings();
         } finally {
