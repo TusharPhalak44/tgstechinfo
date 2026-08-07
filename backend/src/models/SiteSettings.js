@@ -79,14 +79,14 @@ class SiteSettings {
 
     static async updateLogo(type, imageData) {
         const columnMap = {
-            'cms_logo1': 'cms_logo1',
-            'cms_logo2': 'cms_logo2',
-            'cms_favicon': 'cms_favicon',
-            'website_logo': 'website_logo',
-            'website_favicon': 'website_favicon',
-            'website_main_logo': 'website_main_logo',
-            'website_navbar_logo': 'website_navbar_logo',
-            'website_footer_logo': 'website_footer_logo'
+            cms_logo1: 'cms_logo1',
+            cms_logo2: 'cms_logo2',
+            cms_favicon: 'cms_favicon',
+            website_logo: 'website_logo',
+            website_favicon: 'website_favicon',
+            website_main_logo: 'website_main_logo',
+            website_navbar_logo: 'website_navbar_logo',
+            website_footer_logo: 'website_footer_logo'
         };
 
         const column = columnMap[type];
@@ -94,25 +94,26 @@ class SiteSettings {
             throw new Error('Invalid logo type');
         }
 
-        const query = `
-            INSERT INTO site_settings (id, ${column}, updated_at)
-            VALUES (1, ?, CURRENT_TIMESTAMP)
-            ON DUPLICATE KEY UPDATE
-                ${column} = VALUES(${column}),
-                updated_at = CURRENT_TIMESTAMP
-        `;
+        const conn = await pool.getConnection();
+        try {
+            const sql = `
+                UPDATE site_settings
+                SET ${column} = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+            `;
 
-        // Use a single dedicated connection so SET SESSION and INSERT are
-        // guaranteed to run on the same connection. pool.query() can hand out
-        // a different connection for each call, making SET SESSION ineffective.
-       const conn = await pool.getConnection();
-try {
-    await conn.query(query, [imageData]);
-} finally {
-    conn.release();
-}
+            const [result] = await conn.query(sql, [imageData]);
+            console.log('UPDATE RESULT:', result);
 
-return await SiteSettings.getSettings();
+            const [rows] = await conn.query(
+                `SELECT LENGTH(${column}) AS len FROM site_settings WHERE id = 1`
+            );
+            console.log('VERIFY:', rows);
+
+            return await SiteSettings.getSettings();
+        } finally {
+            conn.release();
+        }
     }
 }
 
