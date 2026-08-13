@@ -71,6 +71,7 @@ import StandaloneLandingPage from './pages/StandaloneLandingPage';
 import CaseStudyPage from './pages/CaseStudyPage';
 import Unsubscribe from './components/public/Unsubscribe';
 import ResetPassword from './pages/ResetPassword';
+import { Navigate } from 'react-router-dom';
 import { ChatProvider } from './context/ChatContext';
 import ChatWidget from './components/common/chatbot/ChatWidget';
 import { SiteSettingsProvider, useSiteSettings } from './context/SiteSettingsContext';
@@ -151,7 +152,7 @@ function AppContent() {
   const { favicon } = useSiteSettings();
   // All URL prefixes that render as a full-screen standalone landing page (no Navbar/Footer)
   const STANDALONE_PREFIXES = ['/content/', '/lp/', '/landing-page/'];
-  const dashboardRoutes = ['/dashboard', '/create-content', '/my-content', '/my-submissions', '/admin', '/admin/users', '/admin/submissions', '/dashboard/analytics', '/dashboard/create-post', '/dashboard/drafts', '/dashboard/scheduled', '/dashboard/categories', '/dashboard/profile', '/dashboard/settings'];
+  const dashboardRoutes = ['/dashboard', '/admin', '/user-dashboard'];
   // Auth pages (login/register) are accessed via new tab — hide navbar/footer for them
   const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password'];
   const location = useLocation();
@@ -271,25 +272,29 @@ function AppContent() {
               <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
               <Route path="/reset-password" element={<ResetPassword />} />
 
-              {/* Dashboard — Admin gets DashboardLayout, regular users get UserDashboardLayout */}
+              {/* Dashboard — Admin gets DashboardLayout */}
               <Route path="/dashboard" element={
                 <PrivateRoute>
-                  <AdminRoute fallback={<UserDashboardLayout />}>
+                  <AdminRoute>
                     <DashboardLayout />
                   </AdminRoute>
                 </PrivateRoute>
               }>
-                {/* Admin sub-routes */}
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="content" element={<AdminContent />} />
                 <Route path="pending-review" element={<ContentReview />} />
-                <Route path="drafts" element={<ContentListing />} />
+               <Route path="drafts" element={
+                  <AdminRoute fallback={<MyContent />}>
+                    <ContentListing />
+                  </AdminRoute>
+                } />
+                <Route path="media-library" element={<MediaLibrary />} />
                 <Route path="create-post" element={<CreateContent />} />
                 <Route path="tags" element={<Tags />} />
                 <Route path="media-library" element={<MediaLibrary />} />
                 <Route path="uploads" element={<Uploads />} />
                 <Route path="categories" element={<Categories />} />
-                 <Route path="forms" element={<Forms />} />
+                <Route path="forms" element={<Forms />} />
                 <Route path="seo" element={<SEO />} />
                 <Route path="users" element={<UserManagement />} />
                 <Route path="roles" element={<Roles />} />
@@ -298,14 +303,26 @@ function AppContent() {
                 <Route path="integrations" element={<Integrations />} />
                 <Route path="sessions" element={<SessionManagement />} />
                 <Route path="profile" element={<UserProfile />} />
-                {/* <Route path="settings" element={<UserProfile />} /> */}
                 <Route path="settings" element={<Settings />} />
                 <Route path="email-templates" element={<EmailTemplates />} />
-                {/* User sub-routes */}
                 <Route index element={<Dashboard />} />
                 <Route path="my-content" element={<MyContent />} />
                 <Route path="my-submissions" element={<UserSubmissions />} />
- 
+                <Route path="scheduled" element={<MyContent />} />
+              </Route>
+
+              {/* User Dashboard — Regular users get UserDashboardLayout with sidebar+header */}
+              <Route path="/user-dashboard" element={
+                <PrivateRoute>
+                  <UserDashboardLayout />
+                </PrivateRoute>
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="my-content" element={<MyContent />} />
+                <Route path="my-submissions" element={<UserSubmissions />} />
+                <Route path="create-post" element={<CreateContent />} />
+                <Route path="drafts" element={<ContentListing />} />
+                <Route path="profile" element={<UserProfile />} />
                 <Route path="scheduled" element={<MyContent />} />
               </Route>
 
@@ -341,30 +358,18 @@ function AppContent() {
                 <Route path="edit/:id" element={<AdminEditContent />} />
               </Route>
 
-              {/* Legacy routes for backward compatibility */}
-              <Route path="/create-content" element={
-                <PrivateRoute>
-                  <CreateContent />
-                </PrivateRoute>
-              } />
+              {/* Legacy routes - redirect to user-dashboard */}
+              <Route path="/create-content" element={<Navigate to="/user-dashboard/create-post" replace />} />
+              <Route path="/my-content" element={<Navigate to="/user-dashboard/my-content" replace />} />
+              <Route path="/my-submissions" element={<Navigate to="/user-dashboard/my-submissions" replace />} />
               <Route path="/edit-content/:id" element={
                 <PrivateRoute>
                   <CreateContent />
                 </PrivateRoute>
               } />
               <Route path="/:type-preview/:id" element={
-                  <PrivateRoute>
+                <PrivateRoute>
                   <ArticlePreview />
-                </PrivateRoute>
-              } />
-              <Route path="/my-content" element={
-                <PrivateRoute>
-                  <MyContent />
-                </PrivateRoute>
-              } />
-              <Route path="/my-submissions" element={
-                <PrivateRoute>
-                  <UserSubmissions />
                 </PrivateRoute>
               } />
 

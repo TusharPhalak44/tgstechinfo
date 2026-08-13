@@ -462,4 +462,12 @@ html, body {
   flex-shrink: 0 !important;
 }
 
+/* Force DatePicker placeholder to single line */
+.single-line-datepicker .ant-picker-input input::placeholder {
+  white-space: nowrap !important;
+}
+.single-line-datepicker .ant-picker-input input {
+  white-space: nowrap !important;
+}
+
 

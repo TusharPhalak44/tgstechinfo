@@ -567,11 +567,10 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
                   e.currentTarget.style.color = c.color;
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = `0 4px 12px ${c.color}25`;
-                  // Update count span color on hover
                   const countSpan = e.currentTarget.querySelector('span');
                   if (countSpan) {
-                    countSpan.style.background = 'rgba(255,255,255,0.2)';
-                    countSpan.style.color = '#fff';
+                    countSpan.style.background = `${c.color}20`;
+                    countSpan.style.color = c.color;
                   }
                 }
               }}
@@ -581,7 +580,6 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
                   e.currentTarget.style.color = 'var(--color-heading)';
                   e.currentTarget.style.transform = 'translateY(0)';
                   e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.06)';
-                  // Restore count span color on mouse leave
                   const countSpan = e.currentTarget.querySelector('span');
                   if (countSpan) {
                     countSpan.style.background = 'var(--color-primary-light)';
@@ -1666,7 +1664,7 @@ const LatestArticlesSection = ({ articles, blogs, navigate }) => {
             >
                     <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(140px, 12vw, 160px)', background: '#f3f4f6' }}>
                 {article.banner_image
-                  ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center top', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                  ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
                   : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 36, color: 'var(--color-primary)', opacity: 0.5 }} /></div>
                 }
                 {article.content_type_name && <span style={{ position: 'absolute', top: 10, left: 10, background: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase' }}>{article.content_type_name}</span>}

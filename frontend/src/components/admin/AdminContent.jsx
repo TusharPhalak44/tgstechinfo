@@ -175,7 +175,7 @@ const AdminContent = () => {
         },
       }}
     >
-      <div style={{ padding: 'clamp(16px, 2vw, 24px)' }}>
+      <div className="admin-content-scroll" style={{ padding: 'clamp(16px, 2vw, 24px)', height: 'calc(100vh - 120px)', overflowY: 'auto' }}>
         {/* Header */}
         <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
@@ -394,15 +394,24 @@ const AdminContent = () => {
         )}
       </div>
       <style>{`
-        /* Hide scrollbar for all scrollable elements */
-        *::-webkit-scrollbar {
-          width: 0px !important;
-          height: 0px !important;
-          display: none !important;
+        .admin-content-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #4a7cff #f0f0f0;
         }
-        * {
-          -ms-overflow-style: none !important;
-          scrollbar-width: none !important;
+        .admin-content-scroll::-webkit-scrollbar {
+          width: 6px !important;
+          display: block !important;
+        }
+        .admin-content-scroll::-webkit-scrollbar-track {
+          background: ${darkMode ? '#1e293b' : '#f0f0f0'};
+          border-radius: 4px;
+        }
+        .admin-content-scroll::-webkit-scrollbar-thumb {
+          background: #4a7cff;
+          border-radius: 4px;
+        }
+        .admin-content-scroll::-webkit-scrollbar-thumb:hover {
+          background: #3b6de8;
         }
         .ant-tabs-content,
         .ant-tabs-content-holder,
@@ -412,17 +421,6 @@ const AdminContent = () => {
         .ant-space,
         .ant-space-item {
           overflow: visible !important;
-          scrollbar-width: none !important;
-          -ms-overflow-style: none !important;
-        }
-        .ant-tabs-content::-webkit-scrollbar,
-        .ant-tabs-content-holder::-webkit-scrollbar,
-        .ant-card-body::-webkit-scrollbar,
-        .ant-row::-webkit-scrollbar,
-        .ant-col::-webkit-scrollbar {
-          display: none !important;
-          width: 0 !important;
-          height: 0 !important;
         }
       `}</style>
     </ConfigProvider>

@@ -41,9 +41,9 @@ const CONTENT_TABS = [
   { key: 'event', label: 'Event' },
 ];
 
-const ITEMS_PER_PAGE = 18;
+const ITEMS_PER_PAGE = 20;
 const INITIAL_SHOW = 12;
-const LOAD_MORE_COUNT = 3;
+const LOAD_MORE_COUNT = 4;
 
 const ArticleCard = ({ article, submitting, onSubmit, navigate, darkMode }) => {
   const status = statusConfig[article.status] || { color: 'default', text: article.status };
@@ -445,11 +445,12 @@ const Dashboard = () => {
         },
       }}
     >
-      <div style={{ 
+      <div className="user-dashboard-scroll" style={{ 
         padding: isMobile ? '12px' : isTablet ? '20px' : '24px',
         width: '100%',
         background: darkMode ? '#0f172a' : '#F8FAFC',
-        minHeight: '100vh'
+        height: 'calc(100vh - 64px)',
+        overflowY: 'auto'
       }}>
       {/* Header */}
       <div style={{ 
@@ -485,7 +486,7 @@ const Dashboard = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/dashboard/create-post')}
+            onClick={() => navigate('/user-dashboard/create-post')}
             size="small"
             style={{
               flex: isMobile ? 1 : 'none',
@@ -603,7 +604,7 @@ const Dashboard = () => {
           description={activeTab === 'all' ? 'No content yet' : `No ${CONTENT_TABS.find(t => t.key === activeTab)?.label.toLowerCase() || 'content'} yet`}
           style={{ padding: isMobile ? '40px 0' : '48px 0' }}
         >
-          <Button type="primary" onClick={() => navigate('/dashboard/create-post')}>
+          <Button type="primary" onClick={() => navigate('/user-dashboard/create-post')}>
             Create Your First Content
           </Button>
         </Empty>
@@ -748,6 +749,26 @@ const Dashboard = () => {
         
         .dashboard-tabs .ant-tabs-tab {
           flex-shrink: 0 !important;
+        }
+
+        .user-dashboard-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #4a7cff ${darkMode ? '#1e293b' : '#f0f0f0'};
+        }
+        .user-dashboard-scroll::-webkit-scrollbar {
+          width: 6px !important;
+          display: block !important;
+        }
+        .user-dashboard-scroll::-webkit-scrollbar-track {
+          background: ${darkMode ? '#1e293b' : '#f0f0f0'};
+          border-radius: 4px;
+        }
+        .user-dashboard-scroll::-webkit-scrollbar-thumb {
+          background: #4a7cff;
+          border-radius: 4px;
+        }
+        .user-dashboard-scroll::-webkit-scrollbar-thumb:hover {
+          background: #3b6de8;
         }
 
         @media (max-width: 768px) {

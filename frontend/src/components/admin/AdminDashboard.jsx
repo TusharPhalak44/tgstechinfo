@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Tag, message, Popconfirm, Pagination, Tabs, Card, Row, Col, Statistic, Space, Badge, ConfigProvider } from 'antd';
+import { Button, Tag, message, Popconfirm, Pagination, Tabs, Card, Row, Col, Statistic, Space, Badge, ConfigProvider, DatePicker } from 'antd';
+import dayjs from 'dayjs';
 import { 
   FileTextOutlined, 
   UserOutlined, 
@@ -39,6 +40,7 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('content');
   const [visibleCards, setVisibleCards] = useState(9);
+  const [dateRange, setDateRange] = useState(null);
   const pageSize = 15;
   const navigate = useNavigate();
 
@@ -139,17 +141,28 @@ const AdminDashboard = () => {
   const startIndex = (currentPage - 1) * pageSize + 1;
   const endIndex = Math.min(currentPage * pageSize, totalItems);
 
-  const filteredContent = searchQuery.trim()
-    ? allContent.filter(r => {
-        const q = searchQuery.toLowerCase();
-        return (
-          (r.title || '').toLowerCase().includes(q) ||
-          (`${r.first_name || ''} ${r.last_name || ''}`).toLowerCase().includes(q) ||
-          (r.content_type_name || '').toLowerCase().includes(q) ||
-          (statusTagMap[r.status]?.text || r.status || '').toLowerCase().includes(q)
-        );
-      })
-    : allContent;
+  const filteredContent = allContent.filter(r => {
+    // Search filter
+    const matchesSearch = !searchQuery.trim() || (() => {
+      const q = searchQuery.toLowerCase();
+      return (
+        (r.title || '').toLowerCase().includes(q) ||
+        (`${r.first_name || ''} ${r.last_name || ''}`).toLowerCase().includes(q) ||
+        (r.content_type_name || '').toLowerCase().includes(q) ||
+        (statusTagMap[r.status]?.text || r.status || '').toLowerCase().includes(q)
+      );
+    })();
+
+    // Date filter
+    const matchesDate = !dateRange || (() => {
+      if (!r.published_date) return false;
+      const publishDate = dayjs(r.published_date);
+      const [startDate, endDate] = dateRange;
+      return publishDate.isAfter(startDate.subtract(1, 'day')) && publishDate.isBefore(endDate.add(1, 'day'));
+    })();
+
+    return matchesSearch && matchesDate;
+  });
 
   if (loading) {
     return (
@@ -217,20 +230,35 @@ const AdminDashboard = () => {
                     <h2 style={{ fontSize: 'clamp(16px, 1.5vw, 18px)', fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}>Content Submissions</h2>
                     <span style={{ fontSize: 'clamp(12px, 1vw, 14px)', color: darkMode ? '#94a3b8' : '#6b7280' }}>Total: {stats.totalContent} submissions</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: darkMode ? '#0f172a' : '#f7f8fa', border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb', borderRadius: 8, padding: 'clamp(6px, 1vw, 12px)', width: window.innerWidth < 768 ? '100%' : 200 }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={darkMode ? '#94a3b8' : '#9ca3af'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <input
-                      type="text"
-                      placeholder="Search by title, author, type, status..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 'clamp(12px, 0.9vw, 13px)', color: darkMode ? '#f1f5f9' : '#1a1a2e', width: '100%', minWidth: window.innerWidth < 768 ? 120 : 150 }}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: darkMode ? '#0f172a' : '#f7f8fa', border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb', borderRadius: 8, padding: 'clamp(6px, 1vw, 12px)', width: window.innerWidth < 768 ? '100%' : 200 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={darkMode ? '#94a3b8' : '#9ca3af'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        placeholder="Search by title, author, type, status..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 'clamp(12px, 0.9vw, 13px)', color: darkMode ? '#f1f5f9' : '#1a1a2e', width: '100%', minWidth: window.innerWidth < 768 ? 120 : 150 }}
+                      />
+                      {searchQuery && (
+                        <button onClick={() => setSearchQuery('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: darkMode ? '#94a3b8' : '#9ca3af', fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
+                      )}
+                    </div>
+                    <DatePicker.RangePicker
+                      value={dateRange}
+                      onChange={setDateRange}
+                      format="YYYY-MM-DD"
+                      placeholder={['Start Date', 'End Date']}
+                      style={{ 
+                        background: darkMode ? '#0f172a' : '#f7f8fa', 
+                        border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb',
+                        borderRadius: 8,
+                        fontSize: 'clamp(12px, 0.9vw, 13px)',
+                        color: darkMode ? '#f1f5f9' : '#1a1a2e'
+                      }}
                     />
-                    {searchQuery && (
-                      <button onClick={() => setSearchQuery('')} style={{ border: 'none', background: 'none', cursor: 'pointer', color: darkMode ? '#94a3b8' : '#9ca3af', fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}>×</button>
-                    )}
                   </div>
                 </div>
                 {searchQuery && (
@@ -247,13 +275,14 @@ const AdminDashboard = () => {
                       <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Author</th>
                       <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</th>
                       <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                      <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>Published Date</th>
                       <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody style={{ display: window.innerWidth < 768 ? 'block' : 'table-row-group', maxHeight: window.innerWidth < 768 ? 'none' : '520px', overflowY: window.innerWidth < 768 ? 'visible' : 'auto', background: darkMode ? '#1e293b' : '#fff' }}>
                     {filteredContent.length === 0 ? (
                       <tr style={{ display: window.innerWidth < 768 ? 'block' : 'table-row' }}>
-                        <td colSpan={5} style={{ display: 'block', textAlign: 'center', padding: '32px 16px', color: darkMode ? '#94a3b8' : '#6b7280' }}>
+                        <td colSpan={6} style={{ display: 'block', textAlign: 'center', padding: '32px 16px', color: darkMode ? '#94a3b8' : '#6b7280' }}>
                           {searchQuery ? `No results found for "${searchQuery}"` : 'No content found'}
                         </td>
                       </tr>
@@ -289,6 +318,9 @@ const AdminDashboard = () => {
                               <Tag color={statusTagMap[record.status]?.color || 'default'}>
                                 {statusTagMap[record.status]?.text || record.status}
                               </Tag>
+                            </td>
+                            <td style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1vw, 14px)', color: darkMode ? '#cbd5e1' : '#111827' }}>
+                              {record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
                             </td>
                             <td style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1vw, 14px)', color: darkMode ? '#94a3b8' : '#6b7280' }}>
                               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
@@ -348,6 +380,12 @@ const AdminDashboard = () => {
                               <div>
                                 <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Type</span>
                                 <div style={{ marginTop: 4 }}><Tag color="blue" style={{ fontSize: 12 }}>{record.content_type_name}</Tag></div>
+                              </div>
+                            </div>
+                            <div style={{ marginBottom: 12 }}>
+                              <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Published Date</span>
+                              <div style={{ marginTop: 4, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>
+                                {record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
                               </div>
                             </div>
                             <div style={{ marginBottom: 12 }}>

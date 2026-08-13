@@ -225,7 +225,7 @@ const UserSubmissions = () => {
         },
       }}
     >
-      <div style={{ padding: isMobile ? '12px' : '24px', background: darkMode ? '#0f172a' : '#F8FAFC', minHeight: '100vh' }}>
+      <div className="submissions-scroll" style={{ padding: isMobile ? '12px' : '24px', background: darkMode ? '#0f172a' : '#F8FAFC', height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: isMobile ? '16px' : '24px', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: isMobile ? '20px' : '28px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#111827', margin: 0 }}>My Submissions</h1>
@@ -389,6 +389,27 @@ const UserSubmissions = () => {
           </div>
         </>
       )}
+      <style>{`
+        .submissions-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #4a7cff ${darkMode ? '#1e293b' : '#f0f0f0'};
+        }
+        .submissions-scroll::-webkit-scrollbar {
+          width: 6px !important;
+          display: block !important;
+        }
+        .submissions-scroll::-webkit-scrollbar-track {
+          background: ${darkMode ? '#1e293b' : '#f0f0f0'};
+          border-radius: 4px;
+        }
+        .submissions-scroll::-webkit-scrollbar-thumb {
+          background: #4a7cff;
+          border-radius: 4px;
+        }
+        .submissions-scroll::-webkit-scrollbar-thumb:hover {
+          background: #3b6de8;
+        }
+      `}</style>
       </div>
     </ConfigProvider>
   );

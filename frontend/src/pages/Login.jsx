@@ -38,7 +38,7 @@ const Login = () => {
     if (isAuthenticated) {
       setSuccess(true);
       setTimeout(() => {
-        navigate(user?.role === 'admin' ? '/admin' : '/dashboard');
+        navigate(user?.role === 'admin' ? '/admin' : '/user-dashboard');
       }, 500);
     }
   }, [isAuthenticated, user, navigate]);

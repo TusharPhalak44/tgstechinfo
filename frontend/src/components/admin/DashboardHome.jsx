@@ -163,7 +163,28 @@ const DashboardHome = () => {
   };
 
   return (
-    <div>
+    <div className="admin-dashboard-scroll" style={{ height: 'calc(100vh - 64px)', overflowY: 'auto', padding: '0 4px' }}>
+      <style>{`
+        .admin-dashboard-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #4a7cff #f0f0f0;
+        }
+        .admin-dashboard-scroll::-webkit-scrollbar {
+          width: 6px !important;
+          display: block !important;
+        }
+        .admin-dashboard-scroll::-webkit-scrollbar-track {
+          background: #f0f0f0;
+          border-radius: 4px;
+        }
+        .admin-dashboard-scroll::-webkit-scrollbar-thumb {
+          background: #4a7cff;
+          border-radius: 4px;
+        }
+        .admin-dashboard-scroll::-webkit-scrollbar-thumb:hover {
+          background: #3b6de8;
+        }
+      `}</style>
       {/* Greeting Section */}
       <div style={{ marginBottom: 32 }}>
         <Title level={2} style={{ fontSize: 30, fontWeight: 600, color: '#111827', marginBottom: 8 }}>

@@ -333,6 +333,27 @@ const DashboardLayout = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: darkMode ? '#0F172A' : '#F8FAFC' }}>
+      <style>{`
+        .admin-layout-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: #4a7cff ${darkMode ? '#1e293b' : '#f0f0f0'};
+        }
+        .admin-layout-scroll::-webkit-scrollbar {
+          width: 6px !important;
+          display: block !important;
+        }
+        .admin-layout-scroll::-webkit-scrollbar-track {
+          background: ${darkMode ? '#1e293b' : '#f0f0f0'};
+          border-radius: 4px;
+        }
+        .admin-layout-scroll::-webkit-scrollbar-thumb {
+          background: #4a7cff;
+          border-radius: 4px;
+        }
+        .admin-layout-scroll::-webkit-scrollbar-thumb:hover {
+          background: #3b6de8;
+        }
+      `}</style>
       {/* Mobile Overlay */}
       {isMobile && mobileMenuOpen && (
         <div
@@ -625,10 +646,12 @@ const DashboardLayout = () => {
           </div>
         </Header>
         <Content
+          className="admin-layout-scroll"
           style={{
             margin: 0,
             padding: isMobile ? '64px 0 0' : '64px 32px 32px',
-            minHeight: 'calc(100vh - 64px)',
+            height: 'calc(100vh - 64px)',
+            overflowY: 'auto',
             background: darkMode ? '#0F172A' : '#F8FAFC',
           }}
         >

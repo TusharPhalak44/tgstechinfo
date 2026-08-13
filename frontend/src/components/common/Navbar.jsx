@@ -380,13 +380,13 @@ const Navbar = () => {
   };
 
   const userMenuItems = [
-    { key: 'dashboard', icon: <DashboardOutlined />, label: isAdmin ? 'Admin Dashboard' : 'Dashboard', onClick: () => navigate(isAdmin ? '/admin' : '/dashboard') },
-    { key: 'my-content', icon: <UserOutlined />, label: 'My Content', onClick: () => navigate('/my-content') },
+    { key: 'dashboard', icon: <DashboardOutlined />, label: isAdmin ? 'Admin Dashboard' : 'Dashboard', onClick: () => navigate(isAdmin ? '/admin' : '/user-dashboard') },
+    { key: 'my-content', icon: <UserOutlined />, label: 'My Content', onClick: () => navigate(isAdmin ? '/admin/content' : '/user-dashboard/my-content') },
     ...(isAdmin
       ? [{ key: 'submissions', icon: <UserOutlined />, label: 'Submissions', onClick: () => navigate('/admin/submissions') }]
       : [
-          { key: 'create', icon: <UserOutlined />, label: 'Create Content', onClick: () => navigate('/create-content') },
-          { key: 'my-submissions', icon: <UserOutlined />, label: 'My Submissions', onClick: () => navigate('/my-submissions') },
+          { key: 'create', icon: <UserOutlined />, label: 'Create Content', onClick: () => navigate('/user-dashboard/create-post') },
+          { key: 'my-submissions', icon: <UserOutlined />, label: 'My Submissions', onClick: () => navigate('/user-dashboard/my-submissions') },
         ]
     ),
     { type: 'divider' },

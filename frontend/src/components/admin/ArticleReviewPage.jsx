@@ -116,11 +116,11 @@ const ArticleReviewPage = () => {
         {/* Back Button */}
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/admin')}
+          onClick={() => navigate('/dashboard/pending-review')}
           className="mb-6"
           style={{ color: darkMode ? '#94a3b8' : undefined }}
         >
-          Back to Dashboard
+          Back to Pending Review
         </Button>
 
         <Row gutter={[24, 24]}>
