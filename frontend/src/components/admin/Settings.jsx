@@ -7,6 +7,19 @@ import axios from 'axios';
 
 const { Title, Text } = Typography;
 
+const DEFAULT_LOGO_SIZES = {
+  main: { height: 60, width: 200 },
+  navbar: { height: 40, width: 120 },
+  footer: { height: 50, width: 150 }
+};
+
+const deepEqualLogoSizes = (a, b) => {
+  if (!a || !b) return false;
+  return ['main', 'navbar', 'footer'].every(k =>
+    a[k]?.height === b[k]?.height && a[k]?.width === b[k]?.width
+  );
+};
+
 const Settings = () => {
   const { darkMode } = useTheme();
   const { refreshSettings } = useSiteSettings();
@@ -19,11 +32,14 @@ const Settings = () => {
   const [websiteMainLogoUrl, setWebsiteMainLogoUrl] = useState('');
   const [websiteNavbarLogoUrl, setWebsiteNavbarLogoUrl] = useState('');
   const [websiteFooterLogoUrl, setWebsiteFooterLogoUrl] = useState('');
-  const [logoSizes, setLogoSizes] = useState({ main: { height: 60, width: 200 }, navbar: { height: 40, width: 120 }, footer: { height: 50, width: 150 } });
+  const [logoSizes, setLogoSizes] = useState({ ...DEFAULT_LOGO_SIZES });
+  const [originalLogoSizes, setOriginalLogoSizes] = useState({ ...DEFAULT_LOGO_SIZES });
   const [siteName, setSiteName] = useState('TgsTechInfo');
   const [siteDescription, setSiteDescription] = useState('');
   const [siteKeywords, setSiteKeywords] = useState('');
   const [pendingLogoUploads, setPendingLogoUploads] = useState({});
+
+  const logoSizesChanged = !deepEqualLogoSizes(logoSizes, originalLogoSizes);
 
   useEffect(() => {
     fetchSettings();
@@ -74,6 +90,7 @@ const Settings = () => {
           }
         }
         setLogoSizes(parsedLogoSizes);
+        setOriginalLogoSizes(parsedLogoSizes);
         setSiteName(settings.site_name || 'TgsTechInfo');
         setSiteDescription(settings.site_description || '');
         setSiteKeywords(settings.site_keywords || '');
@@ -151,10 +168,12 @@ const Settings = () => {
       if (updates.website_navbar_logo) setWebsiteNavbarLogoUrl(updates.website_navbar_logo);
       if (updates.website_footer_logo) setWebsiteFooterLogoUrl(updates.website_footer_logo);
       
-      // Save logo sizes
+      // Save logo sizes (runs even when no uploads, so size-only changes persist)
       await axios.put('/api/site-settings', { logo_sizes: logoSizes });
       
       setPendingLogoUploads({});
+      // Reset dirty baseline so the Save button goes away after size-only saves
+      setOriginalLogoSizes(logoSizes);
       message.success('Logo changes saved successfully');
       await refreshSettings?.();
     } catch (error) {
@@ -239,6 +258,8 @@ const Settings = () => {
         logo_sizes: logoSizes
       });
       message.success('Settings saved successfully');
+      // Reset dirty baseline so Save Logo Changes button also hides
+      setOriginalLogoSizes(logoSizes);
       // Refresh settings to get updated data
       await fetchSettings();
       await refreshSettings?.();
@@ -419,11 +440,11 @@ const Settings = () => {
                   </Space>
                 </div>
 
-                {Object.keys(pendingLogoUploads).length > 0 && (
+                {(Object.keys(pendingLogoUploads).length > 0 || logoSizesChanged) && (
                   <>
                     <Divider />
                     <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveLogoChanges} loading={loading} style={{ marginTop: 16 }}>
-                      Save Logo Changes
+                      {logoSizesChanged && Object.keys(pendingLogoUploads).length === 0 ? 'Save Logo Size Changes' : 'Save Logo Changes'}
                     </Button>
                   </>
                 )}
@@ -693,11 +714,11 @@ const Settings = () => {
                   </Space>
                 </div>
 
-                {Object.keys(pendingLogoUploads).length > 0 && (
+                {(Object.keys(pendingLogoUploads).length > 0 || logoSizesChanged) && (
                   <>
                     <Divider />
                     <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveLogoChanges} loading={loading} style={{ marginTop: 16 }}>
-                      Save Logo Changes
+                      {logoSizesChanged && Object.keys(pendingLogoUploads).length === 0 ? 'Save Logo Size Changes' : 'Save Logo Changes'}
                     </Button>
                   </>
                 )}
