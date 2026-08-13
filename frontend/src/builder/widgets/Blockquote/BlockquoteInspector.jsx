@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Form, Input, Select } from 'antd';
+import { Input, Select } from 'antd';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 
 const { Option } = Select;
@@ -28,24 +28,24 @@ export default function BlockquoteInspector({ node, onUpdate }) {
   };
 
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="Quote Text">
+    <InspectorPanel>
+      <InspectorFormItem label="Quote Text">
         <Input.TextArea
           value={content.text || ''}
           onChange={(e) => handleChange('text', e.target.value)}
           rows={4}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Citation">
+      <InspectorFormItem label="Citation">
         <Input
           value={content.citation || ''}
           onChange={(e) => handleChange('citation', e.target.value)}
           placeholder="- Author Name"
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Alignment">
+      <InspectorFormItem label="Alignment">
         <Select
           value={settings.alignment || 'left'}
           onChange={(value) => handleSettingChange('alignment', value)}
@@ -54,9 +54,9 @@ export default function BlockquoteInspector({ node, onUpdate }) {
           <Option value="center">Center</Option>
           <Option value="right">Right</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Style">
+      <InspectorFormItem label="Style">
         <Select
           value={settings.style || 'default'}
           onChange={(value) => handleSettingChange('style', value)}
@@ -65,7 +65,7 @@ export default function BlockquoteInspector({ node, onUpdate }) {
           <Option value="modern">Modern</Option>
           <Option value="minimal">Minimal</Option>
         </Select>
-      </Form.Item>
-    </Form>
+      </InspectorFormItem>
+    </InspectorPanel>
   );
 }

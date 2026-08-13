@@ -9,6 +9,7 @@ import { useBuilderPage } from '../core/BuilderStore.jsx';
 import widgetRegistry from '../registry/WidgetRegistry';
 import FallbackRenderer from './FallbackRenderer';
 import WidgetErrorBoundary from './WidgetErrorBoundary';
+import { BuilderContentIdContext } from './VisualBuilder.jsx';
 
 const LAYOUT_TYPES = new Set(['page', 'section', 'container', 'column',
   'column-1', 'column-2', 'column-3', 'column-4']);
@@ -34,7 +35,7 @@ function hasColumnChildren(node) {
 }
 
 // ─── Recursive node renderer ─────────────────────────────────────────────────
-function PreviewNode({ node }) {
+function PreviewNode({ node, contentWebhookUrl }) {
   if (!node) return null;
 
   const isLayout = LAYOUT_TYPES.has(node.type);
@@ -52,13 +53,13 @@ function PreviewNode({ node }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', margin: '0 -8px' }}>
             {node.children.map((child, idx) => (
               <div key={child.id} style={columnStyle(child, node.children.length)}>
-                <PreviewNode node={child} />
+                <PreviewNode node={child} contentWebhookUrl={contentWebhookUrl} />
               </div>
             ))}
           </div>
         ) : (
           (node.children || []).map(child => (
-            <PreviewNode key={child.id} node={child} />
+            <PreviewNode key={child.id} node={child} contentWebhookUrl={contentWebhookUrl} />
           ))
         )}
       </div>
@@ -72,7 +73,7 @@ function PreviewNode({ node }) {
 
   return (
     <WidgetErrorBoundary>
-      <Renderer node={node} />
+      <Renderer node={node} contentWebhookUrl={contentWebhookUrl} />
     </WidgetErrorBoundary>
   );
 }
@@ -88,7 +89,7 @@ function getLayoutStyle(type, extraStyles = {}) {
 }
 
 // ─── Public component ─────────────────────────────────────────────────────────
-export default function PreviewCanvas() {
+export default function PreviewCanvas({ contentWebhookUrl }) {
   const page = useBuilderPage();
 
   if (!page || !page.root) {
@@ -111,7 +112,7 @@ export default function PreviewCanvas() {
   return (
     <div className="preview-canvas" style={{ background: '#fff', minHeight: '60vh' }}>
       {children.map(node => (
-        <PreviewNode key={node.id} node={node} />
+        <PreviewNode key={node.id} node={node} contentWebhookUrl={contentWebhookUrl} />
       ))}
     </div>
   );

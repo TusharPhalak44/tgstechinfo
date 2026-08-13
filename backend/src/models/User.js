@@ -30,14 +30,14 @@ class User {
 
     static async findById(id) {
         const [rows] = await pool.query(
-            'SELECT id, first_name, last_name, email, role, is_active, created_at FROM users WHERE id = ?',
+            'SELECT id, first_name, last_name, email, role, is_active, avatar, created_at FROM users WHERE id = ?',
             [id]
         );
         return rows[0];
     }
 
     static async update(id, userData) {
-        const { first_name, last_name, email, is_active } = userData;
+        const { first_name, last_name, email, is_active, avatar } = userData;
         
         // Build dynamic update query with only provided fields
         const updates = [];
@@ -58,6 +58,10 @@ class User {
         if (is_active !== undefined) {
             updates.push('is_active = ?');
             values.push(is_active);
+        }
+        if (avatar !== undefined) {
+            updates.push('avatar = ?');
+            values.push(avatar);
         }
         
         if (updates.length === 0) {

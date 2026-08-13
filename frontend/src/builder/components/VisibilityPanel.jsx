@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Select, Switch, Collapse, Button, Space, Input, DatePicker, InputNumber, Tag, Popconfirm } from 'antd';
-import { EyeOutlined, EyeInvisibleOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Form, Select, Switch, Collapse, Button, Space, Input, DatePicker, InputNumber, Tag, Popconfirm, Alert } from 'antd';
+import { EyeOutlined, EyeInvisibleOutlined, PlusOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import visibilityManager from '../core/VisibilityManager';
 import { visibilityRuleTypes } from '../utils/types';
 
@@ -63,6 +63,36 @@ export default function VisibilityPanel({ node, onUpdate }) {
 
   return (
     <div className="visibility-panel">
+      {/* Info Section */}
+      <Alert
+        message="Visibility Rules"
+        description={
+          <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+            <p style={{ marginBottom: 8 }}>
+              Control when and where this element appears on your website based on various conditions.
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>Common Use Cases:</strong>
+            </p>
+            <ul style={{ marginLeft: 16, marginBottom: 8 }}>
+              <li><strong>Device:</strong> Show different content on mobile vs desktop</li>
+              <li><strong>Authentication:</strong> Display content only to logged-in users or guests</li>
+              <li><strong>Page Type:</strong> Show elements only on specific page types (blog, product, etc.)</li>
+              <li><strong>Custom Variables:</strong> Advanced rules based on user roles, preferences, etc.</li>
+              <li><strong>Date Range:</strong> Temporary promotions or seasonal content</li>
+            </ul>
+            <p style={{ marginBottom: 0 }}>
+              <strong>Tip:</strong> You can combine multiple rules. All rules must be satisfied for the element to be visible.
+            </p>
+          </div>
+        }
+        type="info"
+        icon={<InfoCircleOutlined />}
+        showIcon
+        closable
+        style={{ marginBottom: 16 }}
+      />
+
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
         <EyeOutlined style={{ color: '#52c41a' }} />
         <span style={{ fontWeight: 600 }}>Visibility Rules</span>

@@ -8,6 +8,7 @@ import { Input, Select, InputNumber, Switch, Button, Upload, Modal, message, Spi
 import { UploadOutlined, PictureOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useAuth } from '../../../context/AuthContext';
 
 const { Option } = Select;
 
@@ -15,43 +16,30 @@ const { Option } = Select;
 function MediaLibraryPicker({ visible, onSelect, onClose }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   React.useEffect(() => {
     if (!visible) return;
     setLoading(true);
-    axios.get('/api/admin/content/all')
+    // Use appropriate endpoint based on user role
+    // Admin sees all media, regular users see only their own
+    const endpoint = user?.role === 'admin' ? '/api/media/all' : '/api/media/user/all';
+    axios.get(endpoint, { params: { file_type: 'image' } })
       .then(res => {
-        // Flatten all banner_image / pdf_file paths from content records into media items
-        const media = [];
-        (res.data || []).forEach(c => {
-          if (c.banner_image) {
-            media.push({
-              url: `/uploads/${c.banner_image}`,
-              name: c.banner_image,
-              title: c.title || c.banner_image,
-            });
-          }
-        });
+        const files = res.data?.data || [];
+        const media = files.filter(f => f.type === 'image' || f.thumbnail).map(f => ({
+          url: f.url,
+          name: f.name,
+          title: f.name,
+        }));
         setItems(media);
       })
       .catch(() => {
-        // Fallback: try the dedicated media endpoint
-        axios.get('/api/admin/media')
-          .then(r => {
-            const media = (r.data || []).map(m => ({
-              url: m.url || `/uploads/${m.filename || m.name}`,
-              name: m.filename || m.name,
-              title: m.title || m.filename || m.name,
-            }));
-            setItems(media);
-          })
-          .catch(() => {
-            message.warning('Could not load media library');
-            setItems([]);
-          });
+        message.warning('Could not load media library');
+        setItems([]);
       })
       .finally(() => setLoading(false));
-  }, [visible]);
+  }, [visible, user?.role]);
 
   return (
     <Modal

@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { Form, Select, InputNumber, Switch, ColorPicker } from 'antd';
+import { Select, InputNumber, Switch, ColorPicker, Alert } from 'antd';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 const { Option } = Select;
 
@@ -19,8 +20,16 @@ export default function SplitSectionInspector({ node, onUpdate }) {
   };
 
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="Column Layout">
+    <InspectorPanel>
+      <Alert
+        message="How to use Split Section"
+        description="This widget creates a two-column layout. After dragging it to the canvas, drag other widgets into the left or right column areas shown in the preview."
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
+
+      <InspectorFormItem label="Column Layout">
         <Select
           value={settings.layout || '50-50'}
           onChange={(value) => handleSettingChange('layout', value)}
@@ -32,11 +41,11 @@ export default function SplitSectionInspector({ node, onUpdate }) {
           <Option value="30-70">30% / 70%</Option>
           <Option value="custom">Custom</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
       {settings.layout === 'custom' && (
         <>
-          <Form.Item label="Left Column Width (%)">
+          <InspectorFormItem label="Left Column Width (%)">
             <InputNumber
               value={settings.customLeftWidth || 50}
               onChange={(value) => handleSettingChange('customLeftWidth', value)}
@@ -44,8 +53,8 @@ export default function SplitSectionInspector({ node, onUpdate }) {
               max={90}
               style={{ width: '100%' }}
             />
-          </Form.Item>
-          <Form.Item label="Right Column Width (%)">
+          </InspectorFormItem>
+          <InspectorFormItem label="Right Column Width (%)">
             <InputNumber
               value={settings.customRightWidth || 50}
               onChange={(value) => handleSettingChange('customRightWidth', value)}
@@ -53,11 +62,11 @@ export default function SplitSectionInspector({ node, onUpdate }) {
               max={90}
               style={{ width: '100%' }}
             />
-          </Form.Item>
+          </InspectorFormItem>
         </>
       )}
 
-      <Form.Item label="Gap Between Columns (px)">
+      <InspectorFormItem label="Gap Between Columns (px)">
         <InputNumber
           value={settings.gap || 20}
           onChange={(value) => handleSettingChange('gap', value)}
@@ -65,9 +74,9 @@ export default function SplitSectionInspector({ node, onUpdate }) {
           max={100}
           style={{ width: '100%' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Vertical Alignment">
+      <InspectorFormItem label="Vertical Alignment">
         <Select
           value={settings.verticalAlign || 'top'}
           onChange={(value) => handleSettingChange('verticalAlign', value)}
@@ -77,25 +86,25 @@ export default function SplitSectionInspector({ node, onUpdate }) {
           <Option value="bottom">Bottom</Option>
           <Option value="stretch">Stretch</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Reverse on Mobile">
+      <InspectorFormItem label="Reverse on Mobile">
         <Switch
           checked={settings.reverseMobile || false}
           onChange={(checked) => handleSettingChange('reverseMobile', checked)}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Background Color">
+      <InspectorFormItem label="Background Color">
         <ColorPicker
           value={settings.backgroundColor || 'transparent'}
           onChange={(color) => handleSettingChange('backgroundColor', color.toHexString())}
           showText
           style={{ width: '100%' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Padding (px)">
+      <InspectorFormItem label="Padding (px)">
         <InputNumber
           value={settings.padding || 40}
           onChange={(value) => handleSettingChange('padding', value)}
@@ -103,7 +112,7 @@ export default function SplitSectionInspector({ node, onUpdate }) {
           max={100}
           style={{ width: '100%' }}
         />
-      </Form.Item>
-    </Form>
+      </InspectorFormItem>
+    </InspectorPanel>
   );
 }

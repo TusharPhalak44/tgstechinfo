@@ -5,7 +5,8 @@
  */
 
 import React, { useState } from 'react';
-import { Tabs, Empty, Form, Input, Select, Button, InputNumber, ColorPicker, Slider, Collapse, Switch } from 'antd';
+import { Tabs, Empty, Form, Input, Select, Button, InputNumber, ColorPicker, Slider, Collapse, Switch, Alert } from 'antd';
+import { PictureOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useBuilderSelection, useBuilderActions, useBuilderPage } from '../core/BuilderStore.jsx';
 import widgetRegistry from '../registry/WidgetRegistry';
 import ResponsivePropertyPanel from './ResponsivePropertyPanel';
@@ -17,6 +18,7 @@ import FormWidget from '../widgets/Form/FormWidget';
 import ImageInspector from '../widgets/Image/ImageInspector.jsx';
 import VideoInspector from '../widgets/Video/VideoInspector.jsx';
 import HeadingInspector from '../widgets/Heading/HeadingInspector.jsx';
+import MediaLibraryModal from '../../components/common/MediaLibraryModal';
 
 const { TabPane } = Tabs;
 
@@ -169,6 +171,12 @@ function ContentPanel({ node, widget, onUpdate }) {
     onUpdate(changedValues);
   };
 
+  // If widget has a custom inspector, use it
+  if (widget && widget.inspector) {
+    const Inspector = widget.inspector;
+    return <Inspector node={node} onUpdate={onUpdate} />;
+  }
+
   // Render content editor based on widget type
   const renderContentEditor = () => {
     switch (node.type) {
@@ -268,7 +276,9 @@ function ContentPanel({ node, widget, onUpdate }) {
  */
 function StylePanel({ node, widget, onUpdate }) {
   const styles = node.styles || {};
+  const defaultStyles = widget?.defaultStyles || {};
   const [form] = Form.useForm();
+  const [mediaLibraryVisible, setMediaLibraryVisible] = useState(false);
 
   // Normalize color values for ColorPicker
   const normalizeColorValue = (value) => {
@@ -282,15 +292,34 @@ function StylePanel({ node, widget, onUpdate }) {
     return undefined;
   };
 
+  // Parse numeric values from CSS strings (e.g., "16px" → 16)
+  const parseNumericValue = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const num = parseFloat(value);
+      return isNaN(num) ? undefined : num;
+    }
+    return undefined;
+  };
+
   React.useEffect(() => {
+    // Merge default styles with node styles (node styles take precedence)
+    // This ensures the form always shows current values, not blank fields
+    const mergedStyles = { ...defaultStyles, ...styles };
     const formValues = {};
-    Object.keys(styles).forEach(key => {
-      const val = styles[key];
+    
+    Object.keys(mergedStyles).forEach(key => {
+      const val = mergedStyles[key];
       if (key.toLowerCase().includes('color')) {
         // Color fields: normalize objects → hex string
         formValues[key] = normalizeColorValue(val) || val;
       } else if (key === 'backgroundGradient') {
-        formValues[key] = val;
+        // Check if background is a gradient and extract it
+        if (styles.background && typeof styles.background === 'string' && styles.background.includes('gradient')) {
+          formValues[key] = styles.background;
+        } else {
+          formValues[key] = val || 'none';
+        }
       } else if (key === 'backgroundImage') {
         // Strip url() wrapper so the Input shows a plain URL
         if (typeof val === 'string' && val.startsWith('url(')) {
@@ -298,12 +327,19 @@ function StylePanel({ node, widget, onUpdate }) {
         } else {
           formValues[key] = val;
         }
+      } else if (['fontSize', 'lineHeight', 'letterSpacing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 
+                   'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'gap', 'borderRadius', 'borderWidth',
+                   'width', 'height', 'maxWidth', 'maxHeight', 'minWidth', 'minHeight'].includes(key)) {
+        // Parse numeric values from CSS strings
+        formValues[key] = parseNumericValue(val);
       } else {
         formValues[key] = val;
       }
     });
+    
+    // Set all form values at once to populate fields
     form.setFieldsValue(formValues);
-  }, [styles, form]);
+  }, [styles, defaultStyles, form, node.id]); // Re-run when node changes
 
   const handleValuesChange = (changedValues) => {
     const normalized = {};
@@ -323,8 +359,9 @@ function StylePanel({ node, widget, onUpdate }) {
             normalized.background = '';
           }
         } else {
+          // Store gradient as both internal flag and actual CSS background
           normalized.backgroundGradient = val;
-          normalized.background = val; // apply as real CSS background
+          normalized.background = val; // This applies the gradient to the element
         }
       } else if (key === 'backgroundImage') {
         // backgroundImage URL needs url() wrapping for CSS
@@ -332,6 +369,10 @@ function StylePanel({ node, widget, onUpdate }) {
         if (val && val !== 'none' && !val.startsWith('url(')) {
           normalized.backgroundImage = `url(${val})`;
         }
+      } else if (['fontSize', 'letterSpacing', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                   'marginTop', 'marginRight', 'marginBottom', 'marginLeft', 'gap', 'borderRadius', 'borderWidth'].includes(key)) {
+        // Add 'px' suffix for numeric CSS properties
+        normalized[key] = typeof val === 'number' ? `${val}px` : val;
       } else {
         normalized[key] = val;
       }
@@ -340,6 +381,7 @@ function StylePanel({ node, widget, onUpdate }) {
   };
 
   return (
+    <>
     <Form form={form} layout="vertical" size="small" onValuesChange={handleValuesChange}>
       <Collapse defaultActiveKey={['typography']} size="small" ghost>
         <Collapse.Panel header="Typography" key="typography">
@@ -519,6 +561,16 @@ function StylePanel({ node, widget, onUpdate }) {
           <Form.Item label="Background Image URL" name="backgroundImage">
             <Input placeholder="https://example.com/image.jpg" />
           </Form.Item>
+          
+          <Button
+            icon={<PictureOutlined />}
+            onClick={() => setMediaLibraryVisible(true)}
+            size="small"
+            block
+            style={{ marginBottom: 12 }}
+          >
+            Select from Media Library
+          </Button>
 
           <Form.Item label="Background Size" name="backgroundSize">
             <Select>
@@ -889,6 +941,20 @@ function StylePanel({ node, widget, onUpdate }) {
         </Collapse.Panel>
       </Collapse>
     </Form>
+    
+    {/* Media Library Modal */}
+    <MediaLibraryModal
+      visible={mediaLibraryVisible}
+      onClose={() => setMediaLibraryVisible(false)}
+      onSelect={(media) => {
+        // Set the backgroundImage field with the selected media URL
+        const imageUrl = media.file_path || media.url;
+        form.setFieldsValue({ backgroundImage: imageUrl });
+        handleValuesChange({ backgroundImage: imageUrl });
+        setMediaLibraryVisible(false);
+      }}
+    />
+  </>
   );
 }
 
@@ -909,6 +975,37 @@ function AdvancedPanel({ node, widget, onUpdate }) {
   };
 
   return (
+    <>
+      {/* Info Section */}
+      <Alert
+        message="Advanced Settings"
+        description={
+          <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+            <p style={{ marginBottom: 8 }}>
+              Fine-tune technical aspects and add custom code for advanced customization.
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>Key Features:</strong>
+            </p>
+            <ul style={{ marginLeft: 16, marginBottom: 8 }}>
+              <li><strong>CSS Classes & IDs:</strong> Add custom identifiers for styling or JavaScript targeting</li>
+              <li><strong>Visibility Controls:</strong> Show/hide on specific devices (desktop, tablet, mobile)</li>
+              <li><strong>Custom Attributes:</strong> Add data attributes for JavaScript or tracking</li>
+              <li><strong>ARIA Labels:</strong> Improve accessibility for screen readers</li>
+              <li><strong>Custom CSS:</strong> Write custom styles specific to this element</li>
+            </ul>
+            <p style={{ marginBottom: 0 }}>
+              <strong>Note:</strong> Use the Animation tab (not this panel) for animation effects.
+            </p>
+          </div>
+        }
+        type="info"
+        icon={<InfoCircleOutlined />}
+        showIcon
+        closable
+        style={{ marginBottom: 16 }}
+      />
+
     <Form form={form} layout="vertical" size="small" onValuesChange={handleValuesChange}>
       <Collapse defaultActiveKey={['general']} size="small" ghost>
         <Collapse.Panel header="General" key="general">
@@ -1006,5 +1103,6 @@ function AdvancedPanel({ node, widget, onUpdate }) {
         </Collapse.Panel>
       </Collapse>
     </Form>
+    </>
   );
 }

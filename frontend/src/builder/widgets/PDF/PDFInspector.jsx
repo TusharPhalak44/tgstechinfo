@@ -3,18 +3,23 @@
  * Property inspector for PDF widget
  */
 
-import React from 'react';
-import { Form, Input, Select, InputNumber, Switch } from 'antd';
+import React, { useState } from 'react';
+import { Input, Select, InputNumber, Switch, Button, message } from 'antd';
+import { PictureOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import MediaLibraryModal from '../../../components/common/MediaLibraryModal';
 
 const { Option } = Select;
 
 export default function PDFInspector({ node, onUpdate }) {
   const content = safeParseJsonContent(node.content, { url: '', fileName: '' });
   const settings = node.settings || {};
+  const [mediaLibraryVisible, setMediaLibraryVisible] = useState(false);
 
   const handleChange = (field, value) => {
-    const updatedContent = { ...content, [field]: value };
+    // Ensure value is a string (not an object from ColorPicker or other components)
+    const stringValue = typeof value === 'object' && value !== null ? String(value) : value;
+    const updatedContent = { ...content, [field]: stringValue };
     onUpdate({
       content: JSON.stringify(updatedContent),
     });
@@ -27,16 +32,31 @@ export default function PDFInspector({ node, onUpdate }) {
     });
   };
 
+  const handleMediaSelect = (url) => {
+    // Set the PDF URL directly
+    handleChange('url', url);
+    message.success('PDF URL added!');
+  };
+
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="PDF URL">
+    <InspectorPanel>
+      <InspectorFormItem label="PDF URL">
         <Input
           value={content.url || ''}
           onChange={(e) => handleChange('url', e.target.value)}
+          placeholder="https://example.com/document.pdf"
         />
-      </Form.Item>
+        <Button
+          icon={<FilePdfOutlined />}
+          onClick={() => setMediaLibraryVisible(true)}
+          size="small"
+          style={{ marginTop: 8 }}
+        >
+          Select from Media Library
+        </Button>
+      </InspectorFormItem>
 
-      <Form.Item label="Width">
+      <InspectorFormItem label="Width">
         <Select
           value={settings.width || '100%'}
           onChange={(value) => handleSettingChange('width', value)}
@@ -46,10 +66,10 @@ export default function PDFInspector({ node, onUpdate }) {
           <Option value="50%">50%</Option>
           <Option value="custom">Custom</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
       {settings.width === 'custom' && (
-        <Form.Item label="Custom Width (px)">
+        <InspectorFormItem label="Custom Width (px)">
           <InputNumber
             value={settings.customWidth || 800}
             onChange={(value) => handleSettingChange('customWidth', value)}
@@ -57,10 +77,10 @@ export default function PDFInspector({ node, onUpdate }) {
             max={1920}
             style={{ width: '100%' }}
           />
-        </Form.Item>
+        </InspectorFormItem>
       )}
 
-      <Form.Item label="Height (px)">
+      <InspectorFormItem label="Height (px)">
         <InputNumber
           value={settings.height || 600}
           onChange={(value) => handleSettingChange('height', value)}
@@ -68,21 +88,27 @@ export default function PDFInspector({ node, onUpdate }) {
           max={2000}
           style={{ width: '100%' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Download Button">
+      <InspectorFormItem label="Download Button">
         <Switch
           checked={settings.showDownload !== false}
           onChange={(checked) => handleSettingChange('showDownload', checked)}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Download Button Text">
+      <InspectorFormItem label="Download Button Text">
         <Input
           value={settings.downloadText || 'Download PDF'}
           onChange={(e) => handleSettingChange('downloadText', e.target.value)}
         />
-      </Form.Item>
-    </Form>
+      </InspectorFormItem>
+
+      <MediaLibraryModal
+        visible={mediaLibraryVisible}
+        onSelect={handleMediaSelect}
+        onClose={() => setMediaLibraryVisible(false)}
+      />
+    </InspectorPanel>
   );
 }

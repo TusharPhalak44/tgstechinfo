@@ -22,6 +22,7 @@ import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { notificationApi } from '../../services/notificationApi';
+import axios from 'axios';
 
 const { Header, Sider, Content } = Layout;
 const { Text } = Typography;
@@ -38,6 +39,42 @@ const UserDashboardLayout = () => {
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [siteName, setSiteName] = useState('TgsTechInfo');
+  const [cmsLogo1, setCmsLogo1] = useState('');
+  const [cmsLogo2, setCmsLogo2] = useState('');
+  const [cmsFavicon, setCmsFavicon] = useState('');
+
+  // Load site settings
+  useEffect(() => {
+    fetchSiteSettings();
+  }, []);
+
+  const fetchSiteSettings = async () => {
+    try {
+      const response = await axios.get('/api/site-settings');
+      const settings = response.data.settings;
+      if (settings) {
+        setSiteName(settings.site_name || 'TgsTechInfo');
+        setCmsLogo1(settings.cms_logo1 || '');
+        setCmsLogo2(settings.cms_logo2 || '');
+        setCmsFavicon(settings.cms_favicon || '');
+       
+        // Apply favicon
+        if (settings.cms_favicon) {
+          let link = document.querySelector("link[rel~='icon']");
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            link.sizes = '64x64';
+            document.head.appendChild(link);
+          }
+          link.href = settings.cms_favicon;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch site settings:', error);
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -79,7 +116,7 @@ const UserDashboardLayout = () => {
   const getMenuItems = () => {
     const items = [
       {
-        key: '/dashboard',
+        key: '/user-dashboard',
         icon: <DashboardOutlined />,
         label: 'Dashboard',
       },
@@ -92,24 +129,36 @@ const UserDashboardLayout = () => {
         type: 'group',
         children: [
           {
-            key: '/dashboard/my-content',
+            key: '/user-dashboard/my-content',
             icon: <FileTextOutlined />,
             label: 'My Content',
           },
           {
-            key: '/dashboard/my-submissions',
+            key: '/user-dashboard/my-submissions',  
             icon: <FileTextOutlined />,
             label: 'My Submissions',
           },
           {
-            key: '/dashboard/drafts',
+            key: '/user-dashboard/drafts',
             icon: <EditOutlined />,
             label: 'Drafts',
           },
           {
-            key: '/dashboard/create-post',
+            key: '/user-dashboard /create-post',
             icon: <PlusOutlined />,
             label: 'Create Content',
+          },
+        ],
+      },
+      {
+        key: 'media-section',
+        label: 'MEDIA',
+        type: 'group',
+        children: [
+          {
+            key: '/user-dashboard/media-library',
+            icon: <AppstoreOutlined />,
+            label: 'Media Library',
           },
         ],
       },
@@ -119,7 +168,7 @@ const UserDashboardLayout = () => {
         type: 'group',
         children: [
           {
-            key: '/dashboard/profile',
+            key: '/user-dashboard/profile',
             icon: <UserOutlined />,
             label: 'Profile',
           },
@@ -148,7 +197,7 @@ const UserDashboardLayout = () => {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profile',
-      onClick: () => navigate('/dashboard/profile'),
+      onClick: () => navigate('/user-dashboard/profile'),
     },
     {
       type: 'divider',
@@ -206,11 +255,58 @@ const UserDashboardLayout = () => {
           }}
         >
           {collapsed ? (
-            <AppstoreOutlined style={{ fontSize: 24, color: '#0AAEEF' }} />
+            <>
+              {(cmsLogo1 || cmsLogo2) ? (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {cmsLogo1 && (
+                    <img
+                      src={cmsLogo1}
+                      alt="Logo"
+                      style={{
+                        height: 32,
+                        maxWidth: 32,
+                        objectFit: 'contain'
+                      }}
+                    />
+                  )}
+                </div>
+              ) : (
+                <AppstoreOutlined style={{ fontSize: 24, color: '#0AAEEF' }} />
+              )}
+            </>
           ) : (
             <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <AppstoreOutlined style={{ fontSize: 24, color: '#0AAEEF' }} />
-              <span>TgsTechInfo</span>
+              {(cmsLogo1 || cmsLogo2) ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {cmsLogo1 && (
+                    <img
+                      src={cmsLogo1}
+                      alt="Logo 1"
+                      style={{
+                        height: 40,
+                        maxWidth: 70,
+                        objectFit: 'contain'
+                      }}
+                    />
+                  )}
+                  {cmsLogo2 && (
+                    <img
+                      src={cmsLogo2}
+                      alt="Logo 2"
+                      style={{
+                        height: 48,
+                        maxWidth: 120,
+                        objectFit: 'contain'
+                      }}
+                    />
+                  )}
+                </div>
+              ) : (
+                <>
+                  <AppstoreOutlined style={{ fontSize: 24, color: '#0AAEEF' }} />
+                  <span>{siteName}</span>
+                </>
+              )}
             </span>
           )}
           {isMobile && mobileMenuOpen && (
@@ -389,7 +485,7 @@ const UserDashboardLayout = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => navigate('/dashboard/create-post')}
+                onClick={() => navigate('/user-dashboard/create-post')}
                 size="small"
                 style={{
                   background: '#0AAEEF',

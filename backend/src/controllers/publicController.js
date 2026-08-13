@@ -12,16 +12,73 @@ const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName }
 
 // Forward form data to client's external webhook URL
 const forwardToWebhook = async (webhookUrl, payload) => {
+    console.log(`[Webhook] Starting webhook call to: ${webhookUrl}`);
+    console.log(`[Webhook] Payload size: ${JSON.stringify(payload).length} bytes`);
+    
     try {
-        const response = await axios.post(webhookUrl, payload, {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 10000
+        // Validate webhook URL format
+        if (!webhookUrl || typeof webhookUrl !== 'string') {
+            throw new Error('Invalid webhook URL: URL is empty or not a string');
+        }
+
+        // Ensure URL has protocol
+        let normalizedUrl = webhookUrl.trim();
+        if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+            normalizedUrl = 'https://' + normalizedUrl;
+        }
+
+        console.log(`[Webhook] Normalized URL: ${normalizedUrl}`);
+        console.log(`[Webhook] Sending payload:`, JSON.stringify(payload, null, 2));
+
+        const startTime = Date.now();
+        const response = await axios.post(normalizedUrl, payload, {
+            headers: { 
+                'Content-Type': 'application/json',
+                'User-Agent': 'TGSTechInfo-Webhook/1.0',
+                'X-Webhook-Source': 'TGSTechInfo-Platform'
+            },
+            timeout: 15000, // 15 second timeout
+            maxRedirects: 5,
+            validateStatus: (status) => status >= 200 && status < 500 // Don't throw on 4xx errors
         });
-        console.log(`Webhook delivered to ${webhookUrl} — status: ${response.status}`);
+        
+        const duration = Date.now() - startTime;
+        console.log(`[Webhook] SUCCESS — ${normalizedUrl}`);
+        console.log(`[Webhook] Response status: ${response.status} ${response.statusText}`);
+        console.log(`[Webhook] Response time: ${duration}ms`);
+        console.log(`[Webhook] Response data:`, JSON.stringify(response.data).substring(0, 500));
+        
+        return { success: true, status: response.status, data: response.data };
     } catch (e) {
+        const duration = Date.now() - (e.config?._startTime || Date.now());
         const status = e.response?.status;
         const body = e.response?.data;
-        console.error(`Webhook failed [${webhookUrl}] — status: ${status || 'no response'} — error: ${e.message}`, body || '');
+        const errorDetails = {
+            url: webhookUrl,
+            status: status || 'no response',
+            error: e.message,
+            code: e.code,
+            responseData: body,
+            duration: duration
+        };
+
+        console.error(`[Webhook] FAILED — ${webhookUrl}`);
+        console.error(`[Webhook] Error details:`, JSON.stringify(errorDetails, null, 2));
+        
+        if (e.code === 'ECONNREFUSED') {
+            console.error(`[Webhook] Connection refused - server may be down or URL is incorrect`);
+        } else if (e.code === 'ETIMEDOUT' || e.code === 'ECONNABORTED') {
+            console.error(`[Webhook] Request timed out after ${duration}ms`);
+        } else if (e.response) {
+            console.error(`[Webhook] Server responded with error ${status}: ${JSON.stringify(body)}`);
+        } else if (e.request) {
+            console.error(`[Webhook] No response received from server`);
+        } else {
+            console.error(`[Webhook] Request setup error: ${e.message}`);
+        }
+
+        // Re-throw to allow caller to handle
+        throw new Error(`Webhook failed: ${e.message}`);
     }
 };
 
@@ -59,7 +116,7 @@ const normalizeContentTypeSlug = (value) => {
 exports.getPublishedContent = async (req, res) => {
     try {
         const { category, content_type, limit = 10, offset = 0 } = req.query;
-        const filters = { status: 'published' };
+        const filters = { status: 'published', is_visible_on_site: true };
 
         if (category) {
             if (/^\d+$/.test(category)) {
@@ -102,7 +159,9 @@ exports.getPublishedContent = async (req, res) => {
 exports.getContentBySlug = async (req, res) => {
     try {
         const { slug } = req.params;
-        const content = await Content.findBySlug(slug);
+        // Decode the slug if it was URL-encoded
+        const decodedSlug = decodeURIComponent(slug);
+        const content = await Content.findBySlugAny(decodedSlug);
 
         if (!content) {
             return res.status(404).json({ message: 'Content not found' });
@@ -120,10 +179,16 @@ exports.getContentBySlug = async (req, res) => {
 
 exports.submitLandingPage = async (req, res) => {
     try {
+        console.log('========== FORM SUBMISSION START ==========');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        console.log('Headers:', JSON.stringify(req.headers, null, 2));
+        
         const { content_id, extra_fields, ...rest } = req.body;
         
         let normalizedContentId = content_id ? Number(content_id) : null;
         if (normalizedContentId && Number.isNaN(normalizedContentId)) normalizedContentId = null;
+        
+        console.log('Normalized content_id:', normalizedContentId);
 
         // If content_id is missing, try to resolve it from the Referer header slug
         // Uses findBySlugAny so draft/pending pages also work (findBySlug is published-only)
@@ -200,16 +265,49 @@ exports.submitLandingPage = async (req, res) => {
         const emailField = customFieldsDef.find(f => f.type === 'email' || f.name === 'email' || (f.webhook_key || '').toLowerCase() === 'email');
         const emailValue = emailField ? normalizedExtraData[emailField.name] : null;
 
-        const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, normalizedContentId) : null;
+        // Dedup: check the dynamic table first (primary storage).
+        // Only fall back to landing_page_submissions if the dynamic table doesn't exist yet.
+        let existing = null;
+        if (emailValue) {
+            try {
+                const { pool: dbPool } = require('../config/database');
+                const dynTable = `form_submissions_${normalizedContentId}`;
+                const [dynTables] = await dbPool.query(`SHOW TABLES LIKE '${dynTable}'`);
+                if (dynTables.length > 0) {
+                    const [dupRows] = await dbPool.query(
+                        `SELECT id FROM ${dynTable} WHERE email = ? LIMIT 1`,
+                        [emailValue]
+                    );
+                    existing = dupRows[0] || null;
+                } else {
+                    // Dynamic table not yet created — check legacy JSON table
+                    existing = await LandingPage.findByEmailAndContent(emailValue, normalizedContentId);
+                }
+            } catch (dedupErr) {
+                // Non-fatal — if dedup check fails, allow the insert
+                console.warn('[submitLandingPage] Dedup check failed (non-fatal):', dedupErr.message);
+                existing = null;
+            }
+        }
         if (!existing) {
+            console.log('No duplicate found, attempting to insert into dynamic table...');
             // Store in dynamic table — auto-create it if it doesn't exist yet
             try {
+                console.log('Calling insertIntoDynamicTable with contentId:', normalizedContentId);
+                console.log('Data to insert:', JSON.stringify({
+                    ...normalizedExtraData,
+                    ip_address: req.ip,
+                    user_agent: req.headers['user-agent']
+                }, null, 2));
+                
                 await insertIntoDynamicTable(normalizedContentId, {
                     ...normalizedExtraData,
                     ip_address: req.ip,
                     user_agent: req.headers['user-agent']
                 });
+                console.log('✅ Successfully inserted into dynamic table!');
             } catch (dynamicTableError) {
+                console.error('❌ Dynamic table insert failed:', dynamicTableError);
                 // Table doesn't exist — create it from submitted field names and retry
                 if (dynamicTableError.message && dynamicTableError.message.includes('does not exist')) {
                     try {
@@ -238,32 +336,63 @@ exports.submitLandingPage = async (req, res) => {
                     await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
                 }
             }
+        } else {
+            console.log('⚠️ Duplicate found, skipping insert. Existing record:', existing);
         }
 
 
+        // ── Forward to webhook ────────────────────────────────────────────────────
+        const debugTimestamp = new Date().toISOString();
+        console.log('='.repeat(80));
+        console.log(`[DEBUG ${debugTimestamp}] WEBHOOK CHECK STARTED`);
+        console.log('[DEBUG] Checking webhook conditions...');
+        console.log('[DEBUG] content exists?', !!content);
+        console.log('[DEBUG] content.webhook_url:', content?.webhook_url);
+        console.log('[DEBUG] Full content object:', JSON.stringify(content, null, 2));
+        console.log('='.repeat(80));
+        
         if (content?.webhook_url) {
-            // Build payload using webhook_key (original field name) when available,
-            // falling back to the normalized DB column name.
-            // We also spread the raw submitted keys first so any camelCase or
-            // original-casing fields the client wrote are preserved even when
-            // webhook_key is not explicitly set in custom_fields.
+            console.log('[Webhook] ✅ Processing webhook for content:', normalizedContentId);
+            console.log('[Webhook] Webhook URL:', content.webhook_url);
+            
+            // Build webhook payload using ORIGINAL field names from the HTML form
+            // This preserves camelCase, snake_case, or any other casing the user defined
+            // in their HTML form's "name" attributes
             const webhookPayload = {};
 
-            // Layer 1: include all raw submitted fields with their original keys
-            // This preserves camelCase / original casing from the form HTML.
-            const { content_id: _cid, extra_fields: _ef, ...rawSubmitted } = req.body;
-            Object.assign(webhookPayload, rawSubmitted);
+            // Use extraData (before normalization) to preserve original field names
+            // extraData contains the raw field names as they came from the HTML form
+            Object.assign(webhookPayload, extraData);
 
-            // Layer 2: override / add using the custom_fields definition and webhook_key mapping
-            customFieldsDef.forEach(field => {
-                const clientKey = (field.webhook_key || '').trim() || field.name;
-                const value = normalizedExtraData[field.name] ?? normalizedExtraData[clientKey] ?? '';
-                webhookPayload[clientKey] = value;
-            });
+            // Add metadata fields if they don't exist
+            if (!webhookPayload.ip_address && req.ip) {
+                webhookPayload.ip_address = req.ip;
+            }
+            if (!webhookPayload.user_agent && req.headers['user-agent']) {
+                webhookPayload.user_agent = req.headers['user-agent'];
+            }
+            if (!webhookPayload.submitted_at) {
+                webhookPayload.submitted_at = new Date().toISOString();
+            }
 
-            console.log('[Webhook] URL:', content.webhook_url);
-            console.log('[Webhook] Payload:', JSON.stringify(webhookPayload));
-            await forwardToWebhook(content.webhook_url, webhookPayload);
+            console.log('[Webhook] Payload (using original field names from HTML):', JSON.stringify(webhookPayload, null, 2));
+            
+            // Call webhook - don't await so we don't block the response
+            // Run webhook in background and handle errors gracefully
+            forwardToWebhook(content.webhook_url, webhookPayload)
+                .then(() => {
+                    console.log('[Webhook] Successfully forwarded to client URL');
+                })
+                .catch((err) => {
+                    console.error('[Webhook] Failed to forward to client URL:', err.message);
+                    // Log webhook failure to database for debugging
+                    pool.query(
+                        'INSERT INTO webhook_failures (content_id, webhook_url, payload, error_message) VALUES (?, ?, ?, ?)',
+                        [normalizedContentId, content.webhook_url, JSON.stringify(webhookPayload), err.message]
+                    ).catch(dbErr => console.error('[Webhook] Failed to log webhook failure:', dbErr.message));
+                });
+        } else {
+            console.log('[Webhook] No webhook URL configured for content:', normalizedContentId);
         }
 
         // Find name/email for email template
@@ -317,8 +446,11 @@ exports.submitLandingPage = async (req, res) => {
             has_access: true,
             pdf_file: content?.pdf_file || null
         });
+        console.log('========== FORM SUBMISSION END (SUCCESS) ==========');
     } catch (error) {
+        console.error('========== FORM SUBMISSION ERROR ==========');
         console.error('Landing page submission error:', error);
+        console.error('Stack trace:', error.stack);
         res.status(500).json({ message: error.message || 'Server error' });
     }
 };
@@ -410,43 +542,16 @@ exports.subscribeNewsletter = async (req, res) => {
             [email, unsubscribeToken]
         );
 
-        // Send confirmation email
+        // Send confirmation email using template
         try {
-            // Use SITE_URL if set, otherwise take the first value from FRONTEND_URL
             const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
             const frontendUrl = rawFrontend.split(',')[0].trim();
-            const emailHtml = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                        .header { background: #1a237e; color: white; padding: 20px; text-align: center; }
-                        .content { padding: 30px; background: #f5f5f5; }
-                        .footer { padding: 20px; text-align: center; background: #e0e0e0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header"><h2>Newsletter Subscription Confirmed</h2></div>
-                        <div class="content">
-                            <h3>Welcome!</h3>
-                            <p>Thank you for subscribing to the TGS Tech Info newsletter.</p>
-                            <p>You'll receive the latest insights, case studies, and industry updates directly in your inbox.</p>
-                            <p>If you have any questions, feel free to contact us at <a href="mailto:info@tgstechinfo.com">info@tgstechinfo.com</a></p>
-                            <br>
-                            <p>To unsubscribe, click <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}">here</a></p>
-                            <br>
-                            <p>Regards,</p>
-                            <p><strong>TGS Tech Info Team</strong></p>
-                        </div>
-                        <div class="footer"><p>© 2024 TGS Tech Info. All rights reserved.</p></div>
-                    </div>
-                </body>
-                </html>
-            `;
-            await sendEmail(email, 'Newsletter Subscription Confirmed - TGS Tech Info', emailHtml);
+            
+            await sendTemplatedEmail('newsletter_subscription', email, {
+                name: email.split('@')[0], // Use email prefix as name fallback
+                site_url: frontendUrl,
+                unsubscribe_url: `${frontendUrl}/unsubscribe?token=${unsubscribeToken}`
+            });
         } catch (emailError) {
             console.warn('Newsletter confirmation email failed:', emailError.message);
         }

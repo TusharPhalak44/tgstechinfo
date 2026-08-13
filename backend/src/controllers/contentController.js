@@ -180,15 +180,63 @@ exports.updateContent = async (req, res) => {
         if (content.status === 'published')
             return res.status(400).json({ message: 'Published content cannot be edited' });
 
-        let updateData = { ...req.body };
+        let updateData = {};
+        Object.keys(req.body).forEach(key => {
+            updateData[key] = req.body[key];
+        });
         if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
-        if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
-        if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
-        if (req.body.builder_layout !== undefined) updateData.builder_layout = req.body.builder_layout;
-        if (req.body.builder_content_elements !== undefined) updateData.builder_content_elements = req.body.builder_content_elements;
-        if (req.body.builder_page_data !== undefined) updateData.builder_page_data = req.body.builder_page_data;
-        if (req.body.tags) updateData.tags = JSON.stringify(req.body.tags.split(',').map(t => t.trim()).filter(Boolean));
+        if (req.body.custom_fields) {
+            try {
+                updateData.custom_fields = typeof req.body.custom_fields === 'string'
+                    ? JSON.parse(req.body.custom_fields)
+                    : req.body.custom_fields;
+            } catch (e) {
+                console.error('Error parsing custom_fields on update:', e);
+                updateData.custom_fields = [];
+            }
+        }
+        if (req.body.webhook_field_mapping) {
+            try {
+                updateData.webhook_field_mapping = typeof req.body.webhook_field_mapping === 'string'
+                    ? JSON.parse(req.body.webhook_field_mapping)
+                    : req.body.webhook_field_mapping;
+            } catch (e) {
+                console.error('Error parsing webhook_field_mapping on update:', e);
+                updateData.webhook_field_mapping = null;
+            }
+        }
+        if (req.body.builder_content_elements !== undefined) {
+            try {
+                updateData.builder_content_elements = typeof req.body.builder_content_elements === 'string'
+                    ? JSON.parse(req.body.builder_content_elements)
+                    : req.body.builder_content_elements;
+            } catch (e) {
+                console.error('Error parsing builder_content_elements on update:', e);
+                updateData.builder_content_elements = null;
+            }
+        }
+        if (req.body.builder_page_data !== undefined) {
+            try {
+                updateData.builder_page_data = typeof req.body.builder_page_data === 'string'
+                    ? req.body.builder_page_data
+                    : JSON.stringify(req.body.builder_page_data);
+            } catch (e) {
+                console.error('Error processing builder_page_data on update:', e);
+                updateData.builder_page_data = null;
+            }
+        }
+        if (req.body.builder_layout !== undefined) {
+            try {
+                updateData.builder_layout = typeof req.body.builder_layout === 'string'
+                    ? JSON.parse(req.body.builder_layout)
+                    : req.body.builder_layout;
+            } catch (e) {
+                console.error('Error parsing builder_layout on update:', e);
+                updateData.builder_layout = null;
+            }
+        }
+        if (req.body.tags) updateData.tags = req.body.tags.split(',').map(t => t.trim()).filter(Boolean);
         updateData = stripEmDash(updateData);
 
         await Content.update(id, updateData);

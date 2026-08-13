@@ -36,6 +36,7 @@ router.put('/content/:id',
 // User management
 router.get('/users', hasPermission('user.read'), adminController.getAllUsers);
 router.post('/users', hasPermission('user.create'), adminController.createUser);
+router.put('/users/:id', hasPermission('user.update'), adminController.updateUser);
 router.put('/users/:id/status', hasPermission('user.update'), adminController.updateUserStatus);
 router.get('/users/:id/content', hasPermission('user.read'), adminController.getUserContent);
 
@@ -58,6 +59,9 @@ router.put('/content/:id/edit',
     adminController.adminEditContent
 );
 router.delete('/content/:id', hasPermission('content.delete'), adminController.deleteContent);
+
+// Toggle content visibility on site
+router.put('/content/:id/visibility', hasPermission('content.update'), adminController.toggleContentVisibility);
 
 // Category management
 router.get('/categories', hasPermission('content.read'), async (req, res) => {

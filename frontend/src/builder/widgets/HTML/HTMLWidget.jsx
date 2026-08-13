@@ -1,82 +1,95 @@
 /**
  * HTML Widget Component
- * Builder component for HTML editing
+ * Builder component for HTML editing - shows preview in canvas
  */
 
-import React from 'react';
-import { Input, Alert } from 'antd';
+import React, { useRef, useEffect } from 'react';
+import { CodeOutlined } from '@ant-design/icons';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 
-export default function HTMLWidget({ node, onUpdate }) {
+export default function HTMLWidget({ node }) {
   const content = safeParseJsonContent(node.content, { html: '', css: '', js: '' });
-  const settings = node.settings || {};
+  const previewRef = useRef(null);
 
-  const handleChange = (field, value) => {
-    const updatedContent = { ...content, [field]: value };
-    onUpdate?.({
-      ...node,
-      content: JSON.stringify(updatedContent),
-    });
-  };
+  useEffect(() => {
+    if (previewRef.current && content.html) {
+      // Inject HTML content
+      previewRef.current.innerHTML = content.html;
 
-  const handleSettingChange = (field, value) => {
-    const updatedSettings = { ...settings, [field]: value };
-    onUpdate?.({
-      ...node,
-      settings: updatedSettings,
-    });
-  };
+      // Inject CSS if provided
+      if (content.css) {
+        const styleId = `html-widget-preview-css-${node.id}`;
+        let styleEl = document.getElementById(styleId);
+        if (!styleEl) {
+          styleEl = document.createElement('style');
+          styleEl.id = styleId;
+          document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = content.css;
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      const styleId = `html-widget-preview-css-${node.id}`;
+      const styleEl = document.getElementById(styleId);
+      if (styleEl) {
+        styleEl.remove();
+      }
+    };
+  }, [content.html, content.css, node.id]);
 
   return (
-    <div style={{ padding: 16 }}>
-      <div style={{ marginBottom: 16 }}>
-        <Alert
-          message="Custom HTML"
-          description="Add custom HTML code directly to your page. Be careful with scripts and external resources."
-          type="info"
-          showIcon
-          style={{ marginBottom: 12 }}
-        />
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-          HTML Code
-        </label>
-        <Input.TextArea
-          value={content.html || ''}
-          onChange={(e) => handleChange('html', e.target.value)}
-          placeholder="<div>Your HTML code here</div>"
-          rows={12}
-          style={{ fontFamily: 'monospace', fontSize: '13px' }}
-        />
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-          CSS (Optional)
-        </label>
-        <Input.TextArea
-          value={content.css || ''}
-          onChange={(e) => handleChange('css', e.target.value)}
-          placeholder=".custom-class { color: red; }"
-          rows={6}
-          style={{ fontFamily: 'monospace', fontSize: '13px' }}
-        />
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
-          JavaScript (Optional)
-        </label>
-        <Input.TextArea
-          value={content.js || ''}
-          onChange={(e) => handleChange('js', e.target.value)}
-          placeholder="// Your JavaScript code"
-          rows={6}
-          style={{ fontFamily: 'monospace', fontSize: '13px' }}
-        />
-      </div>
+    <div style={{ padding: 16, minHeight: 120 }}>
+      {content.html ? (
+        // Show HTML preview
+        <div style={{
+          border: '1px solid #e8e8e8',
+          borderRadius: 8,
+          padding: 16,
+          minHeight: 100,
+          background: '#fff',
+          position: 'relative',
+        }}>
+          <div
+            ref={previewRef}
+            style={{ minHeight: 60 }}
+          />
+          <div style={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            fontSize: 10,
+            color: '#999',
+            background: '#f5f5f5',
+            padding: '2px 6px',
+            borderRadius: 4,
+            pointerEvents: 'none',
+          }}>
+            HTML Preview
+          </div>
+        </div>
+      ) : (
+        // Show placeholder when no HTML is set
+        <div style={{
+          border: '2px dashed #d9d9d9',
+          borderRadius: 8,
+          padding: 40,
+          textAlign: 'center',
+          background: '#fafafa',
+          minHeight: 120,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <CodeOutlined style={{ fontSize: 48, color: '#bfbfbf', marginBottom: 12 }} />
+          <div style={{ fontSize: 14, color: '#8c8c8c', marginBottom: 4 }}>HTML Block Widget</div>
+          <div style={{ fontSize: 12, color: '#bfbfbf' }}>
+            Configure HTML code in the inspector panel
+          </div>
+        </div>
+      )}
     </div>
   );
 }

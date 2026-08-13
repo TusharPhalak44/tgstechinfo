@@ -236,9 +236,21 @@ const Footer = ({ simplified = false }) => {
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <PhoneOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>+1 346-487-8307</span>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
                 <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>The Space Business Complex Office No 512-516, Grant Rd, Kharadi, Pune, Maharashtra 411014</span>
+              </div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
+                </div>
+                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>762, Fulton St, San Francisco, California 94115</span>
               </div>
             </div>
 

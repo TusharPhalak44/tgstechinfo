@@ -4,6 +4,9 @@ import { TagOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
+// Lazy load BuilderPageRenderer to avoid circular dependencies
+const BuilderPageRenderer = React.lazy(() => import('./BuilderPageRenderer'));
+
 const parseTags = (tags) => {
   if (!tags) return [];
   if (Array.isArray(tags)) return tags;
@@ -61,6 +64,81 @@ const restoreRawHtml = (html = '') =>
 const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkMode = false }) => {
   const tags = parseTags(content.tags);
   const order = getSectionOrder(content.builder_layout);
+
+  // Check if this is HTML Builder content (full HTML page or builder_layout with 'html')
+  const builderLayout = content.builder_layout ? (typeof content.builder_layout === 'string' ? JSON.parse(content.builder_layout) : content.builder_layout) : null;
+  const isHtmlBuilderLayout = Array.isArray(builderLayout) && builderLayout[0] === 'html';
+  const isHtmlBuilderContent = content.content && content.content.trim().startsWith('<!DOCTYPE html>');
+  const isHtmlBuilder = isHtmlBuilderLayout || isHtmlBuilderContent;
+
+  // For HTML Builder: render the full HTML page as-is
+  if (isHtmlBuilder) {
+    return (
+      <div key="html-builder-content" style={{ width: '100%', minHeight: '400px' }}>
+        <iframe
+          srcDoc={content.content}
+          style={{
+            width: '100%',
+            minHeight: '600px',
+            border: 'none',
+            borderRadius: '8px',
+            background: '#fff'
+          }}
+          title="HTML Builder Content"
+          sandbox="allow-same-origin allow-scripts allow-forms"
+        />
+        {extraAfter}
+      </div>
+    );
+  }
+
+  // Check for builder_page_data (new Visual Builder v2.0 format) - Priority check
+  // Render using BuilderProvider and PreviewCanvas
+  if (content.builder_page_data) {
+    return (
+      <div key="visual-builder-v2-content">
+        <React.Suspense fallback={
+          <div style={{ padding: '40px', textAlign: 'center', color: darkMode ? '#94a3b8' : '#8c8c8c' }}>
+            <Text type="secondary">Loading visual builder content...</Text>
+          </div>
+        }>
+          <BuilderPageRenderer 
+            content={content} 
+            darkMode={darkMode}
+          />
+        </React.Suspense>
+        {extraAfter}
+      </div>
+    );
+  }
+
+  // For legacy Visual Builder: render from builder_content_elements JSON
+  if (content.builder_content_elements && content.builder_content_elements.length > 0) {
+    try {
+      const elements = typeof content.builder_content_elements === 'string' 
+        ? JSON.parse(content.builder_content_elements) 
+        : content.builder_content_elements;
+      
+      return (
+        <div key="visual-builder-content">
+          <div style={{ padding: '20px', background: darkMode ? '#1e293b' : '#fff', borderRadius: '8px' }}>
+            <div style={{ marginBottom: '16px', padding: '12px', background: darkMode ? '#0f172a' : '#f0f9ff', borderRadius: '8px', borderLeft: `4px solid ${darkMode ? '#3b82f6' : '#0ea5e9'}` }}>
+              <Text strong style={{ color: darkMode ? '#60a5fa' : '#0369a1' }}>Visual Builder Content</Text>
+              <div style={{ fontSize: '12px', color: darkMode ? '#94a3b8' : '#64748b', marginTop: '4px' }}>
+                This page was created with the drag-and-drop visual builder. Preview rendering coming soon.
+              </div>
+            </div>
+            <pre style={{ background: darkMode ? '#0f172a' : '#f8f9fa', padding: '16px', borderRadius: '8px', overflow: 'auto', color: darkMode ? '#cbd5e1' : '#1a1a2e', maxHeight: '500px' }}>
+              {JSON.stringify(elements, null, 2)}
+            </pre>
+          </div>
+          {extraAfter}
+        </div>
+      );
+    } catch (error) {
+      console.error('Failed to parse visual builder elements:', error);
+    }
+  }
 
   // Default order if no layout saved
   const defaultOrder = ['meta', 'title', 'banner', 'tags', 'content'];

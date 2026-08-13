@@ -3,13 +3,16 @@
  * Property inspector for HTML widget
  */
 
-import React from 'react';
-import { Form, Input, Switch } from 'antd';
+import React, { useState } from 'react';
+import { Input, Switch, Button, message } from 'antd';
+import { PictureOutlined } from '@ant-design/icons';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import MediaLibraryModal from '../../../components/common/MediaLibraryModal';
 
 export default function HTMLInspector({ node, onUpdate }) {
   const content = safeParseJsonContent(node.content, { html: '', css: '', js: '' });
   const settings = node.settings || {};
+  const [mediaLibraryVisible, setMediaLibraryVisible] = useState(false);
 
   const handleChange = (field, value) => {
     const updatedContent = { ...content, [field]: value };
@@ -25,41 +28,68 @@ export default function HTMLInspector({ node, onUpdate }) {
     });
   };
 
+  const handleMediaSelect = (url) => {
+    // Copy URL to clipboard
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        message.success('Image URL copied to clipboard! You can now paste it in your HTML code.');
+      }).catch(() => {
+        message.info(`Image URL: ${url}`);
+      });
+    } else {
+      message.info(`Image URL: ${url}`);
+    }
+  };
+
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="HTML Code">
+    <InspectorPanel>
+      <InspectorFormItem label="HTML Code">
         <Input.TextArea
           value={content.html || ''}
           onChange={(e) => handleChange('html', e.target.value)}
           rows={12}
           style={{ fontFamily: 'monospace', fontSize: '13px' }}
         />
-      </Form.Item>
+        <Button
+          icon={<PictureOutlined />}
+          onClick={() => setMediaLibraryVisible(true)}
+          size="small"
+          style={{ marginTop: 8 }}
+        >
+          Insert Image from Media Library
+        </Button>
+      </InspectorFormItem>
 
-      <Form.Item label="CSS (Optional)">
+      <InspectorFormItem label="CSS (Optional)">
         <Input.TextArea
           value={content.css || ''}
           onChange={(e) => handleChange('css', e.target.value)}
           rows={6}
           style={{ fontFamily: 'monospace', fontSize: '13px' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="JavaScript (Optional)">
+      <InspectorFormItem label="JavaScript (Optional)">
         <Input.TextArea
           value={content.js || ''}
           onChange={(e) => handleChange('js', e.target.value)}
           rows={6}
           style={{ fontFamily: 'monospace', fontSize: '13px' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Enable JavaScript">
+      <InspectorFormItem label="Enable JavaScript">
         <Switch
           checked={settings.enableJS !== false}
           onChange={(checked) => handleSettingChange('enableJS', checked)}
         />
-      </Form.Item>
-    </Form>
+      </InspectorFormItem>
+
+      <MediaLibraryModal
+        visible={mediaLibraryVisible}
+        onSelect={handleMediaSelect}
+        onClose={() => setMediaLibraryVisible(false)}
+      />
+    </InspectorPanel>
   );
 }

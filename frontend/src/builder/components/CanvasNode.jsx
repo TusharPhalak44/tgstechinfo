@@ -4,7 +4,7 @@
  * Uses dragState singleton for reliable cross-browser drag data access.
  */
 
-import React, { useState, useCallback, useRef, memo } from 'react';
+import React, { useState, useCallback, useRef, memo, useEffect } from 'react';
 import { Tooltip } from 'antd';
 import { NodeType } from '../utils/types';
 import widgetRegistry from '../registry/WidgetRegistry';
@@ -140,6 +140,95 @@ const CanvasNode = memo(function CanvasNode({
   const isWidgetSafeParent = WIDGET_SAFE_PARENTS.includes(node.type);
   const isColumnWrapper = node.type === 'column-1' || node.type === 'column-2' || node.type === 'column-3' || node.type === 'column-4';
   const renderAsColumns = hasColumnChildren(node);
+
+  // Apply animations when node is rendered
+  useEffect(() => {
+    if (!nodeRef.current || !node.settings?.animation) return;
+    
+    const animation = node.settings.animation;
+    
+    // Only apply if animation is enabled and has a type
+    if (!animation.type || animation.type === 'none') return;
+    
+    // Keyframes matching AnimationPanel presets
+    const KEYFRAMES = {
+      fadeIn:     [{ opacity: 0, transform: 'translateY(0)' },     { opacity: 1, transform: 'translateY(0)' }],
+      slideUp:    [{ opacity: 0, transform: 'translateY(30px)' },  { opacity: 1, transform: 'translateY(0)' }],
+      slideDown:  [{ opacity: 0, transform: 'translateY(-30px)' }, { opacity: 1, transform: 'translateY(0)' }],
+      slideLeft:  [{ opacity: 0, transform: 'translateX(30px)' },  { opacity: 1, transform: 'translateX(0)' }],
+      slideRight: [{ opacity: 0, transform: 'translateX(-30px)' }, { opacity: 1, transform: 'translateX(0)' }],
+      zoomIn:     [{ opacity: 0, transform: 'scale(0.8)' },        { opacity: 1, transform: 'scale(1)' }],
+      zoomOut:    [{ opacity: 0, transform: 'scale(1.2)' },        { opacity: 1, transform: 'scale(1)' }],
+      bounce: [
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-20px)' },
+        { transform: 'translateY(0)' },
+        { transform: 'translateY(-10px)' },
+        { transform: 'translateY(0)' },
+      ],
+      rotate: [{ opacity: 0, transform: 'rotate(-180deg)' }, { opacity: 1, transform: 'rotate(0)' }],
+      flip:   [{ transform: 'perspective(400px) rotateY(90deg)' }, { transform: 'perspective(400px) rotateY(0)' }],
+      pulse:  [{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }],
+    };
+    
+    const keyframes = KEYFRAMES[animation.type];
+    if (!keyframes) return;
+    
+    const duration = animation.duration || 600;
+    const delay    = animation.delay    || 0;
+    const easing   = animation.easing   || 'ease-out';
+    const iterations = animation.iteration === 'infinite' ? Infinity : (animation.iteration || 1);
+    
+    // Apply animation based on trigger
+    const trigger = animation.trigger || 'onLoad';
+    
+    if (trigger === 'onLoad') {
+      // Apply immediately
+      const anim = nodeRef.current.animate(keyframes, {
+        duration,
+        delay,
+        easing,
+        iterations,
+        fill: 'both',
+      });
+    } else if (trigger === 'onScroll') {
+      // Use Intersection Observer for scroll-triggered animations
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.animate(keyframes, {
+              duration,
+              delay,
+              easing,
+              iterations,
+              fill: 'both',
+            });
+          }
+        });
+      }, { threshold: animation.scrollThreshold || 0.2 });
+      
+      observer.observe(nodeRef.current);
+      
+      return () => observer.disconnect();
+    } else if (trigger === 'onHover' || animation.hover) {
+      // Hover animations are handled by CSS or event listeners
+      const handleMouseEnterAnim = () => {
+        nodeRef.current.animate(keyframes, {
+          duration,
+          delay: 0,
+          easing,
+          iterations: 1,
+          fill: 'both',
+        });
+      };
+      
+      nodeRef.current.addEventListener('mouseenter', handleMouseEnterAnim);
+      
+      return () => {
+        nodeRef.current?.removeEventListener('mouseenter', handleMouseEnterAnim);
+      };
+    }
+  }, [node.settings?.animation, node.id]);
 
   const handleMouseEnter = useCallback(() => {
     setIsHovered(true);

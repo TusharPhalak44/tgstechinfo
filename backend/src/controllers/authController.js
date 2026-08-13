@@ -501,7 +501,10 @@ exports.revokeSession = async (req, res) => {
         res.json({ message: 'Session revoked successfully' });
     } catch (error) {
         console.error('Revoke session error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ 
+            message: error.message || 'Failed to revoke session',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
  
@@ -516,7 +519,10 @@ exports.revokeAllSessions = async (req, res) => {
         res.json({ message: 'All other sessions revoked successfully' });
     } catch (error) {
         console.error('Revoke all sessions error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ 
+            message: error.message || 'Failed to revoke sessions',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
  
@@ -557,40 +563,17 @@ exports.forgotPassword = async (req, res) => {
         await User.setResetToken(user.id, hashedToken, resetExpiry);
 
         // Build reset URL
-        const { pool } = require('../config/database');
         const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
         const frontendUrl = rawFrontend.split(',')[0].trim();
         const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-        // Send email
-        const { sendEmail } = require('../config/email');
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="background: #0B1F4D; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-                    <h2 style="color: #fff; margin: 0;">Password Reset Request</h2>
-                </div>
-                <div style="padding: 30px; background: #f8f9fa; border: 1px solid #e0e0e0;">
-                    <p>Hi ${user.first_name},</p>
-                    <p>We received a request to reset your password. Click the button below to proceed:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${resetUrl}" style="background: #F7941D; color: #fff; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
-                            Reset My Password
-                        </a>
-                    </div>
-                    <p style="color: #666; font-size: 13px;">This link expires in 1 hour. If you didn't request this, ignore this email.</p>
-                    <p style="color: #666; font-size: 12px;">Or copy this link: <a href="${resetUrl}">${resetUrl}</a></p>
-                </div>
-                <div style="background: #e0e0e0; padding: 15px; text-align: center; border-radius: 0 0 8px 8px;">
-                    <p style="margin: 0; font-size: 12px; color: #666;">© ${new Date().getFullYear()} TGS Tech Info</p>
-                </div>
-            </body>
-            </html>
-        `;
-
+        // Send templated email with logo
         try {
-            await sendEmail(user.email, 'Password Reset – TGS Tech Info', html);
+            await sendTemplatedEmail('password_reset', user.email, {
+                first_name: user.first_name,
+                last_name: user.last_name,
+                reset_url: resetUrl
+            });
         } catch (emailError) {
             console.error('Forgot password email error:', emailError);
             // Don't fail the request if email fails - still return success to prevent email enumeration
@@ -636,5 +619,97 @@ exports.resetPassword = async (req, res) => {
     } catch (error) {
         console.error('Reset password error:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.changePassword = async (req, res) => {
+    try {
+        const { current_password, new_password } = req.body;
+        const userId = req.user.id;
+
+        console.log('[changePassword] Request received for user:', userId);
+
+        // Validate inputs
+        if (!current_password || !new_password) {
+            return res.status(400).json({ message: 'Current password and new password are required' });
+        }
+
+        if (new_password.length < 12) {
+            return res.status(400).json({ message: 'New password must be at least 12 characters' });
+        }
+
+        // Validate password complexity
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/;
+        if (!passwordRegex.test(new_password)) {
+            return res.status(400).json({ 
+                message: 'Password must include uppercase, lowercase, number and special character' 
+            });
+        }
+
+        // Get user from database
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log('[changePassword] User found, verifying current password');
+
+        // Verify current password
+        const isPasswordValid = await comparePassword(current_password, user.password_hash);
+        if (!isPasswordValid) {
+            console.log('[changePassword] Current password incorrect');
+            try {
+                await logAudit(req, 'change_password', 'user', userId, `Failed password change attempt - wrong current password`, 'failed');
+            } catch (auditError) {
+                console.error('[changePassword] Audit log error (non-fatal):', auditError);
+            }
+            return res.status(401).json({ message: 'Current password is incorrect' });
+        }
+
+        // Check if new password is same as current
+        const isSamePassword = await comparePassword(new_password, user.password_hash);
+        if (isSamePassword) {
+            console.log('[changePassword] New password same as current');
+            return res.status(400).json({ message: 'New password must be different from current password' });
+        }
+
+        console.log('[changePassword] Hashing new password');
+
+        // Hash new password
+        const hashedPassword = await hashPassword(new_password);
+
+        console.log('[changePassword] Updating password in database');
+
+        // Update password in database
+        await User.updatePassword(userId, hashedPassword);
+
+        console.log('[changePassword] Password updated successfully');
+
+        // Log successful password change (non-fatal if fails)
+        try {
+            await logAudit(req, 'change_password', 'user', userId, `Password changed successfully`, 'success');
+        } catch (auditError) {
+            console.error('[changePassword] Audit log error (non-fatal):', auditError);
+        }
+
+        // Invalidate all other sessions except current one for security
+        try {
+            const currentSessionToken = req.cookies?.sessionToken;
+            if (currentSessionToken) {
+                const currentSession = await UserSession.findBySessionToken(currentSessionToken);
+                if (currentSession) {
+                    await UserSession.deactivateAllForUser(userId, currentSession.id);
+                    console.log('[changePassword] Other sessions invalidated');
+                }
+            }
+        } catch (sessionError) {
+            console.error('[changePassword] Session invalidation error (non-fatal):', sessionError);
+        }
+
+        res.json({ message: 'Password changed successfully. Other sessions have been logged out.' });
+    } catch (error) {
+        console.error('[changePassword] Error:', error);
+        console.error('[changePassword] Stack:', error.stack);
+        res.status(500).json({ message: 'Server error. Please try again.' });
     }
 };

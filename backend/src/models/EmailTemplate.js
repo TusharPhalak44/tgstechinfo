@@ -2,11 +2,11 @@ const { pool } = require('../config/database');
 
 class EmailTemplate {
     static async create(data) {
-        const { template_type, template_name, subject, html_body, is_active = true } = data;
+        const { template_type, template_name, subject, html_body, is_active = true, include_logo = false } = data;
         const [result] = await pool.query(
-            `INSERT INTO email_templates (template_type, template_name, subject, html_body, is_active)
-             VALUES (?, ?, ?, ?, ?)`,
-            [template_type, template_name, subject, html_body, is_active]
+            `INSERT INTO email_templates (template_type, template_name, subject, html_body, is_active, include_logo)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [template_type, template_name, subject, html_body, is_active, include_logo]
         );
         return this.findById(result.insertId);
     }
@@ -45,12 +45,12 @@ class EmailTemplate {
     }
 
     static async update(id, data) {
-        const { template_type, template_name, subject, html_body, is_active } = data;
+        const { template_type, template_name, subject, html_body, is_active, include_logo } = data;
         const [result] = await pool.query(
             `UPDATE email_templates 
-             SET template_type = ?, template_name = ?, subject = ?, html_body = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+             SET template_type = ?, template_name = ?, subject = ?, html_body = ?, is_active = ?, include_logo = ?, updated_at = CURRENT_TIMESTAMP
              WHERE id = ?`,
-            [template_type, template_name, subject, html_body, is_active, id]
+            [template_type, template_name, subject, html_body, is_active, include_logo, id]
         );
         return this.findById(id);
     }

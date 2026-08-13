@@ -47,7 +47,8 @@ const SessionManagement = () => {
       fetchSessions();
     } catch (error) {
       console.error('Error revoking session:', error);
-      message.error('Failed to revoke session');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to revoke session';
+      message.error(errorMessage);
     }
   };
 
@@ -58,7 +59,8 @@ const SessionManagement = () => {
       fetchSessions();
     } catch (error) {
       console.error('Error revoking sessions:', error);
-      message.error('Failed to revoke sessions');
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to revoke sessions';
+      message.error(errorMessage);
     }
   };
 

@@ -69,7 +69,8 @@ const SessionManagement = () => {
           fetchSessions();
         } catch (error) {
           console.error('Revoke session error:', error);
-          message.error('Failed to revoke session');
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to revoke session';
+          message.error(errorMessage);
         }
       }
     });
@@ -89,7 +90,8 @@ const SessionManagement = () => {
           fetchSessions();
         } catch (error) {
           console.error('Revoke all sessions error:', error);
-          message.error('Failed to revoke sessions');
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to revoke sessions';
+          message.error(errorMessage);
         }
       }
     });

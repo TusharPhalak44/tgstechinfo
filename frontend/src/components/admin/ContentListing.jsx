@@ -86,9 +86,24 @@ const ContentListing = () => {
 
       if (filters.search) params.search = filters.search;
 
-      const response = await axios.get('/api/admin/content/all', { params });
-      setContent(response.data.data || []);
-      setPagination(prev => ({ ...prev, total: response.data.total || 0 }));
+      // Use appropriate endpoint based on user role
+      // Admin sees all content, regular users see only their own
+      const endpoint = user?.role === 'admin' 
+        ? '/api/admin/content/all' 
+        : '/api/user/content';
+      
+      const response = await axios.get(endpoint, { params });
+      
+      // Handle different response formats
+      if (user?.role === 'admin') {
+        setContent(response.data.data || []);
+        setPagination(prev => ({ ...prev, total: response.data.total || 0 }));
+      } else {
+        // User endpoint returns array directly
+        const contentArray = response.data || [];
+        setContent(contentArray);
+        setPagination(prev => ({ ...prev, total: contentArray.length }));
+      }
     } catch (error) {
       console.error('Error fetching content:', error);
       setContent([]);

@@ -17,6 +17,8 @@ function richTextToHtml(node) {
 
 /**
  * Widget Registration
+ * Note: Using RichTextWidget as renderer so WYSIWYG editor shows in canvas.
+ * RichTextRenderer is only used for final output/preview.
  */
 export const richTextWidgetRegistration = {
   type: 'rich_text',
@@ -24,7 +26,7 @@ export const richTextWidgetRegistration = {
   icon: '📝',
   category: 'text',
   component: RichTextWidget,
-  renderer: RichTextRenderer,
+  renderer: RichTextWidget, // Use Widget in canvas for editing
   inspector: RichTextInspector,
   toHtml: richTextToHtml,
   defaultSettings: {},

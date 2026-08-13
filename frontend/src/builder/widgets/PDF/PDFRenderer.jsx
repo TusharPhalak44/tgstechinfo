@@ -1,9 +1,10 @@
 /**
  * PDF Renderer Component
- * Frontend renderer for PDF widget
+ * Frontend renderer for PDF widget - shows in canvas
  */
 
 import React from 'react';
+import { FilePdfOutlined } from '@ant-design/icons';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 import { useTheme } from '../../../context/ThemeContext';
 
@@ -23,6 +24,32 @@ export default function PDFRenderer({ node }) {
     ...styles,
   };
 
+  // Show placeholder when no URL is set
+  if (!url) {
+    return (
+      <div style={{
+        ...containerStyles,
+        border: '2px dashed #d9d9d9',
+        borderRadius: 8,
+        padding: 40,
+        textAlign: 'center',
+        background: darkMode ? '#1e293b' : '#fafafa',
+        minHeight: 200,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <FilePdfOutlined style={{ fontSize: 48, color: darkMode ? '#64748b' : '#bfbfbf', marginBottom: 12 }} />
+        <div style={{ fontSize: 14, color: darkMode ? '#94a3b8' : '#8c8c8c', marginBottom: 4 }}>PDF Widget</div>
+        <div style={{ fontSize: 12, color: darkMode ? '#64748b' : '#bfbfbf' }}>
+          Select this widget and add a PDF URL in the Content panel →
+        </div>
+      </div>
+    );
+  }
+
+  // Show PDF iframe when URL is set
   const iframeStyles = {
     width: width,
     height: `${height}px`,

@@ -19,6 +19,16 @@ export default function ResponsivePropertyPanel({ node, onUpdate }) {
   const [activeDevice, setActiveDevice] = useState(responsiveMode);
   const [form] = Form.useForm();
 
+  // Parse numeric values from CSS strings (e.g., "16px" → 16)
+  const parseNumericValue = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const num = parseFloat(value);
+      return isNaN(num) ? undefined : num;
+    }
+    return undefined;
+  };
+
   // Get responsive styles for current device
   const getResponsiveStyles = () => {
     const responsive = node.responsive || {};
@@ -30,12 +40,24 @@ export default function ResponsivePropertyPanel({ node, onUpdate }) {
     const currentResponsive = node.responsive || {};
     const deviceStyles = currentResponsive[activeDevice] || {};
     
+    // Normalize values with 'px' suffix for numeric properties
+    const normalized = {};
+    Object.keys(changedValues).forEach(key => {
+      const val = changedValues[key];
+      if (['fontSize', 'letterSpacing', 'padding', 'margin', 'gap', 'borderRadius',
+           'width', 'height', 'maxWidth', 'minHeight'].includes(key)) {
+        normalized[key] = typeof val === 'number' ? `${val}px` : val;
+      } else {
+        normalized[key] = val;
+      }
+    });
+    
     onUpdate({
       responsive: {
         ...currentResponsive,
         [activeDevice]: {
           ...deviceStyles,
-          ...changedValues,
+          ...normalized,
         },
       },
     });
@@ -52,8 +74,34 @@ export default function ResponsivePropertyPanel({ node, onUpdate }) {
   };
 
   React.useEffect(() => {
-    form.setFieldsValue(getResponsiveStyles());
-  }, [activeDevice, node, form]);
+    // Merge base styles with device-specific overrides
+    // This ensures fields show current values (from base) and device overrides
+    const responsive = node.responsive || {};
+    const deviceStyles = responsive[activeDevice] || {};
+    
+    // Start with base styles, then apply device overrides
+    const mergedStyles = {};
+    
+    // Extract relevant base styles and parse numeric values
+    const relevantBaseStyles = ['fontSize', 'lineHeight', 'letterSpacing', 'textAlign',
+                                'width', 'height', 'maxWidth', 'minHeight',
+                                'padding', 'margin', 'gap', 'borderRadius',
+                                'imageSize', 'visibility', 'customWidth', 'customHeight',
+                                'order', 'flexDirection'];
+    
+    relevantBaseStyles.forEach(key => {
+      if (baseStyles[key] !== undefined) {
+        mergedStyles[key] = parseNumericValue(baseStyles[key]) ?? baseStyles[key];
+      }
+    });
+    
+    // Apply device-specific overrides (already in correct format)
+    Object.keys(deviceStyles).forEach(key => {
+      mergedStyles[key] = parseNumericValue(deviceStyles[key]) ?? deviceStyles[key];
+    });
+    
+    form.setFieldsValue(mergedStyles);
+  }, [activeDevice, node, form, baseStyles]);
 
   return (
     <div className="responsive-property-panel">

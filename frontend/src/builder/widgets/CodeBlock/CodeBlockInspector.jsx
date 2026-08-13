@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Form, Input, Select } from 'antd';
+import { Input, Select } from 'antd';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 
 const { Option } = Select;
@@ -28,17 +28,17 @@ export default function CodeBlockInspector({ node, onUpdate }) {
   };
 
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="Code">
+    <InspectorPanel>
+      <InspectorFormItem label="Code">
         <Input.TextArea
           value={content.code || ''}
           onChange={(e) => handleChange('code', e.target.value)}
           rows={10}
           style={{ fontFamily: 'monospace', fontSize: '13px' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Language">
+      <InspectorFormItem label="Language">
         <Select
           value={settings.language || 'javascript'}
           onChange={(value) => handleSettingChange('language', value)}
@@ -59,9 +59,9 @@ export default function CodeBlockInspector({ node, onUpdate }) {
           <Option value="xml">XML</Option>
           <Option value="text">Plain Text</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Theme">
+      <InspectorFormItem label="Theme">
         <Select
           value={settings.theme || 'dark'}
           onChange={(value) => handleSettingChange('theme', value)}
@@ -69,9 +69,9 @@ export default function CodeBlockInspector({ node, onUpdate }) {
           <Option value="dark">Dark</Option>
           <Option value="light">Light</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Show Line Numbers">
+      <InspectorFormItem label="Show Line Numbers">
         <Select
           value={settings.showLineNumbers !== false}
           onChange={(value) => handleSettingChange('showLineNumbers', value)}
@@ -79,7 +79,7 @@ export default function CodeBlockInspector({ node, onUpdate }) {
           <Option value={true}>Yes</Option>
           <Option value={false}>No</Option>
         </Select>
-      </Form.Item>
-    </Form>
+      </InspectorFormItem>
+    </InspectorPanel>
   );
 }

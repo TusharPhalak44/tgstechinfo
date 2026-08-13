@@ -154,6 +154,35 @@ class Media {
         return counts;
     }
 
+    static async getFolderCountsByUser(userId) {
+        const counts = {
+            'All Media': 0,
+            'Images': 0,
+            'Videos': 0,
+            'Documents': 0
+        };
+        
+        const [allFiles] = await pool.query(
+            'SELECT folder, filename FROM media_files WHERE uploaded_by = ?',
+            [userId]
+        );
+        
+        // Deduplicate by filename
+        const seenFilenames = new Set();
+        const uniqueFiles = allFiles.filter(media => {
+            if (seenFilenames.has(media.filename)) return false;
+            seenFilenames.add(media.filename);
+            return true;
+        });
+        
+        uniqueFiles.forEach(file => {
+            if (counts[file.folder] !== undefined) counts[file.folder]++;
+            counts['All Media']++;
+        });
+        
+        return counts;
+    }
+
     static async delete(id) {
         const [result] = await pool.query(
             'DELETE FROM media_files WHERE id = ?',

@@ -14,7 +14,7 @@ import { BuilderContentIdContext } from '../builder/components/VisualBuilder.jsx
 import { useTheme } from '../context/ThemeContext';
 
 // ── Inner component — has access to BuilderStore ──────────────────────────────
-function BuilderPageContent({ content }) {
+function BuilderPageContent({ content, contentWebhookUrl }) {
   const actions = useBuilderActions();
   const { darkMode } = useTheme();
 
@@ -45,7 +45,7 @@ function BuilderPageContent({ content }) {
       margin: 0,
       padding: 0,
     }}>
-      <PreviewCanvas />
+      <PreviewCanvas contentWebhookUrl={contentWebhookUrl} />
     </div>
   );
 }
@@ -73,7 +73,7 @@ export default function StandaloneBuilderPage({ content }) {
       <BuilderContentIdContext.Provider value={content.id}>
         <ConfigProvider theme={{ algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm }}>
           <BuilderProvider>
-            <BuilderPageContent content={content} />
+            <BuilderPageContent content={content} contentWebhookUrl={content?.webhook_url} />
           </BuilderProvider>
         </ConfigProvider>
       </BuilderContentIdContext.Provider>

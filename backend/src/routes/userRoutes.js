@@ -8,21 +8,45 @@ const { upload, uploadWithPdf } = require('../middleware/upload');
 
 // All user routes require authentication
 router.use(authenticate);
+
+// Avatar upload
+router.post('/avatar', upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const User = require('../models/User');
+        const avatarUrl = `/uploads/${req.file.filename}`;
+        
+        // Update user's avatar in database
+        await User.update(req.user.id, { avatar: avatarUrl });
+
+        res.json({ 
+            message: 'Avatar uploaded successfully',
+            url: avatarUrl 
+        });
+    } catch (error) {
+        console.error('Avatar upload error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 // User stats
 router.get('/stats', async (req, res) => {
     try {
-        const Content = require('../models/Content');
+        const { pool } = require('../config/database');
         const userId = req.user.id;
        
         // Get content created count
-        const [contentResult] = await Content.pool.query(
-            'SELECT COUNT(*) as count FROM content WHERE user_id = ?',
+        const [contentResult] = await pool.query(
+            'SELECT COUNT(*) as count FROM contents WHERE user_id = ?',
             [userId]
         );
        
         // Get total views (sum of view counts for user's content)
-        const [viewsResult] = await Content.pool.query(
-            'SELECT COALESCE(SUM(view_count), 0) as total_views FROM content WHERE user_id = ?',
+        const [viewsResult] = await pool.query(
+            'SELECT COALESCE(SUM(view_count), 0) as total_views FROM contents WHERE user_id = ?',
             [userId]
         );
        
@@ -32,7 +56,10 @@ router.get('/stats', async (req, res) => {
         });
     } catch (error) {
         console.error('Get user stats error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ 
+            message: error.message || 'Failed to fetch user stats',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
  

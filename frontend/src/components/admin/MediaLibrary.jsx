@@ -34,6 +34,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -42,6 +43,7 @@ const { Dragger } = Upload;
 const MediaLibrary = () => {
   const { darkMode } = useTheme();
   const { message } = App.useApp();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [media, setMedia] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
@@ -74,15 +76,24 @@ const MediaLibrary = () => {
       if (filters.folder && filters.folder !== 'all') params.folder = filters.folder;
       if (filters.search) params.search = filters.search;
       
-      const response = await axios.get('/api/media/all', { 
+      // Use appropriate endpoint based on user role
+      // Admin sees all media, regular users see only their own
+      const endpoint = user?.role === 'admin' 
+        ? '/api/media/all' 
+        : '/api/media/user/all';
+      
+      const response = await axios.get(endpoint, { 
         params,
         headers: { 'Cache-Control': 'no-cache' }
       });
       let items = response.data.data || [];
       console.log('Media fetched from database:', items.length);
       
-      // Fetch folder counts
-      const countsResponse = await axios.get('/api/media/folder-counts');
+      // Fetch folder counts with appropriate endpoint
+      const countsEndpoint = user?.role === 'admin'
+        ? '/api/media/folder-counts'
+        : '/api/media/user/folder-counts';
+      const countsResponse = await axios.get(countsEndpoint);
       const folderCounts = countsResponse.data || {
         'All Media': 0,
         'Images': 0,

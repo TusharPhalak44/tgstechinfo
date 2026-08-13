@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Select, Input, Switch, Collapse, Button, Space, InputNumber } from 'antd';
-import { ThunderboltOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Form, Select, Input, Switch, Collapse, Button, Space, InputNumber, Alert } from 'antd';
+import { ThunderboltOutlined, PlusOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import interactionManager from '../core/InteractionManager';
 
 /**
@@ -46,6 +46,35 @@ export default function InteractionPanel({ node, onUpdate }) {
 
   return (
     <div className="interaction-panel">
+      {/* Info Section */}
+      <Alert
+        message="Interactions"
+        description={
+          <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+            <p style={{ marginBottom: 8 }}>
+              Add interactive behaviors to make your elements responsive to user actions.
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>Available Interactions:</strong>
+            </p>
+            <ul style={{ marginLeft: 16, marginBottom: 8 }}>
+              <li><strong>Click:</strong> Navigate, open popups, trigger actions when clicked</li>
+              <li><strong>Hover:</strong> Change appearance or reveal content on mouse hover</li>
+              <li><strong>Scroll:</strong> Trigger actions when scrolling to specific positions</li>
+              <li><strong>Viewport:</strong> React when element enters or leaves viewport</li>
+            </ul>
+            <p style={{ marginBottom: 0 }}>
+              <strong>Examples:</strong> Download PDF on click, smooth scroll to section, copy text to clipboard, show/hide elements, custom JavaScript actions.
+            </p>
+          </div>
+        }
+        type="info"
+        icon={<InfoCircleOutlined />}
+        showIcon
+        closable
+        style={{ marginBottom: 16 }}
+      />
+
       <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
         <ThunderboltOutlined style={{ color: '#f59e0b' }} />
         <span style={{ fontWeight: 600 }}>Interactions</span>

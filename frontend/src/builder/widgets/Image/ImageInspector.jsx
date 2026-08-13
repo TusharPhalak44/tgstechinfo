@@ -9,6 +9,7 @@ import { Input, Select, InputNumber, Switch, Slider, Button, Upload, Modal, Spin
 import { UploadOutlined, LinkOutlined, PictureOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import { useAuth } from '../../../context/AuthContext';
 
 const { Option } = Select;
 
@@ -16,12 +17,15 @@ const { Option } = Select;
 function MediaLibraryPicker({ visible, onSelect, onClose }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   React.useEffect(() => {
     if (!visible) return;
     setLoading(true);
-    // GET /api/media/all  →  { data: [ { id, name, filename, type, url, thumbnail } ] }
-    axios.get('/api/media/all', { params: { file_type: 'image' } })
+    // Use appropriate endpoint based on user role
+    // Admin sees all media, regular users see only their own
+    const endpoint = user?.role === 'admin' ? '/api/media/all' : '/api/media/user/all';
+    axios.get(endpoint, { params: { file_type: 'image' } })
       .then(res => {
         const files = res.data?.data || [];
         setItems(files.filter(f => f.type === 'image' || f.thumbnail));
@@ -31,7 +35,7 @@ function MediaLibraryPicker({ visible, onSelect, onClose }) {
         setItems([]);
       })
       .finally(() => setLoading(false));
-  }, [visible]);
+  }, [visible, user?.role]);
 
   return (
     <Modal

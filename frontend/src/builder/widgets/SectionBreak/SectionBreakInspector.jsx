@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Form, Select, InputNumber, ColorPicker } from 'antd';
+import { Select, InputNumber, ColorPicker } from 'antd';
 
 const { Option } = Select;
 
@@ -19,8 +19,8 @@ export default function SectionBreakInspector({ node, onUpdate }) {
   };
 
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="Break Style">
+    <InspectorPanel>
+      <InspectorFormItem label="Break Style">
         <Select
           value={settings.style || 'line'}
           onChange={(value) => handleSettingChange('style', value)}
@@ -31,9 +31,9 @@ export default function SectionBreakInspector({ node, onUpdate }) {
           <Option value="double">Double Line</Option>
           <Option value="space">Space Only</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Thickness (px)">
+      <InspectorFormItem label="Thickness (px)">
         <InputNumber
           value={settings.thickness || 1}
           onChange={(value) => handleSettingChange('thickness', value)}
@@ -41,18 +41,18 @@ export default function SectionBreakInspector({ node, onUpdate }) {
           max={10}
           style={{ width: '100%' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Color">
+      <InspectorFormItem label="Color">
         <ColorPicker
           value={settings.color || '#e8e8e8'}
           onChange={(color) => handleSettingChange('color', color.toHexString())}
           showText
           style={{ width: '100%' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Width">
+      <InspectorFormItem label="Width">
         <Select
           value={settings.width || '100%'}
           onChange={(value) => handleSettingChange('width', value)}
@@ -63,10 +63,10 @@ export default function SectionBreakInspector({ node, onUpdate }) {
           <Option value="25%">25%</Option>
           <Option value="custom">Custom</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
       {settings.width === 'custom' && (
-        <Form.Item label="Custom Width (px)">
+        <InspectorFormItem label="Custom Width (px)">
           <InputNumber
             value={settings.customWidth || 200}
             onChange={(value) => handleSettingChange('customWidth', value)}
@@ -74,10 +74,10 @@ export default function SectionBreakInspector({ node, onUpdate }) {
             max={1200}
             style={{ width: '100%' }}
           />
-        </Form.Item>
+        </InspectorFormItem>
       )}
 
-      <Form.Item label="Alignment">
+      <InspectorFormItem label="Alignment">
         <Select
           value={settings.alignment || 'center'}
           onChange={(value) => handleSettingChange('alignment', value)}
@@ -86,9 +86,9 @@ export default function SectionBreakInspector({ node, onUpdate }) {
           <Option value="center">Center</Option>
           <Option value="right">Right</Option>
         </Select>
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Spacing Above (px)">
+      <InspectorFormItem label="Spacing Above (px)">
         <InputNumber
           value={settings.spacingAbove || 20}
           onChange={(value) => handleSettingChange('spacingAbove', value)}
@@ -96,9 +96,9 @@ export default function SectionBreakInspector({ node, onUpdate }) {
           max={100}
           style={{ width: '100%' }}
         />
-      </Form.Item>
+      </InspectorFormItem>
 
-      <Form.Item label="Spacing Below (px)">
+      <InspectorFormItem label="Spacing Below (px)">
         <InputNumber
           value={settings.spacingBelow || 20}
           onChange={(value) => handleSettingChange('spacingBelow', value)}
@@ -106,7 +106,7 @@ export default function SectionBreakInspector({ node, onUpdate }) {
           max={100}
           style={{ width: '100%' }}
         />
-      </Form.Item>
-    </Form>
+      </InspectorFormItem>
+    </InspectorPanel>
   );
 }

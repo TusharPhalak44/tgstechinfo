@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Dropdown, Menu, Modal, message, Tooltip } from 'antd';
+import { Button, Dropdown, Modal, message, Tooltip } from 'antd';
 import { 
   ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, 
   DeleteOutlined, SaveOutlined, UpOutlined, DownOutlined,
@@ -23,65 +23,6 @@ export default function SectionControls({ section, onMoveUp, onMoveDown, onDupli
       setBlockName('');
     }
   };
-
-  const menu = (
-    <Menu onClick={({ key }) => {
-      switch (key) {
-        case 'moveUp':
-          onMoveUp?.();
-          break;
-        case 'moveDown':
-          onMoveDown?.();
-          break;
-        case 'duplicate':
-          onDuplicate?.();
-          message.success('Section duplicated');
-          break;
-        case 'delete':
-          Modal.confirm({
-            title: 'Delete this section?',
-            content: 'This action cannot be undone.',
-            onOk: () => {
-              onDelete?.();
-              message.success('Section deleted');
-            },
-          });
-          break;
-        case 'saveBlock':
-          setSaveModalVisible(true);
-          break;
-        case 'collapse':
-          onCollapse?.();
-          break;
-        case 'expand':
-          onExpand?.();
-          break;
-        case 'addAbove':
-          onAddAbove?.();
-          break;
-        case 'addBelow':
-          onAddBelow?.();
-          break;
-      }
-    }}>
-      <Menu.Item key="moveUp" icon={<ArrowUpOutlined />}>Move Up</Menu.Item>
-      <Menu.Item key="moveDown" icon={<ArrowDownOutlined />}>Move Down</Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="duplicate" icon={<CopyOutlined />}>Duplicate</Menu.Item>
-      <Menu.Item key="saveBlock" icon={<SaveOutlined />}>Save as Block</Menu.Item>
-      <Menu.Divider />
-      <Menu.Item key="addAbove" icon={<PlusOutlined />}>Add Section Above</Menu.Item>
-      <Menu.Item key="addBelow" icon={<PlusOutlined />}>Add Section Below</Menu.Item>
-      <Menu.Divider />
-      {isCollapsed ? (
-        <Menu.Item key="expand" icon={<DownOutlined />}>Expand</Menu.Item>
-      ) : (
-        <Menu.Item key="collapse" icon={<MinusOutlined />}>Collapse</Menu.Item>
-      )}
-      <Menu.Divider />
-      <Menu.Item key="delete" icon={<DeleteOutlined />} danger>Delete</Menu.Item>
-    </Menu>
-  );
 
   return (
     <div style={{
@@ -151,7 +92,63 @@ export default function SectionControls({ section, onMoveUp, onMoveDown, onDupli
         />
       </Tooltip>
       
-      <Dropdown overlay={menu} trigger={['click']}>
+      <Dropdown menu={{ 
+        items: [
+          { key: 'moveUp', icon: <ArrowUpOutlined />, label: 'Move Up' },
+          { key: 'moveDown', icon: <ArrowDownOutlined />, label: 'Move Down' },
+          { type: 'divider' },
+          { key: 'duplicate', icon: <CopyOutlined />, label: 'Duplicate' },
+          { key: 'saveBlock', icon: <SaveOutlined />, label: 'Save as Block' },
+          { type: 'divider' },
+          { key: 'addAbove', icon: <PlusOutlined />, label: 'Add Section Above' },
+          { key: 'addBelow', icon: <PlusOutlined />, label: 'Add Section Below' },
+          { type: 'divider' },
+          isCollapsed 
+            ? { key: 'expand', icon: <DownOutlined />, label: 'Expand' }
+            : { key: 'collapse', icon: <MinusOutlined />, label: 'Collapse' },
+          { type: 'divider' },
+          { key: 'delete', icon: <DeleteOutlined />, label: 'Delete', danger: true }
+        ],
+        onClick: ({ key }) => {
+          switch (key) {
+            case 'moveUp':
+              onMoveUp?.();
+              break;
+            case 'moveDown':
+              onMoveDown?.();
+              break;
+            case 'duplicate':
+              onDuplicate?.();
+              message.success('Section duplicated');
+              break;
+            case 'delete':
+              Modal.confirm({
+                title: 'Delete this section?',
+                content: 'This action cannot be undone.',
+                onOk: () => {
+                  onDelete?.();
+                  message.success('Section deleted');
+                },
+              });
+              break;
+            case 'saveBlock':
+              setSaveModalVisible(true);
+              break;
+            case 'collapse':
+              onCollapse?.();
+              break;
+            case 'expand':
+              onExpand?.();
+              break;
+            case 'addAbove':
+              onAddAbove?.();
+              break;
+            case 'addBelow':
+              onAddBelow?.();
+              break;
+          }
+        }
+      }} trigger={['click']}>
         <Tooltip title="More Options">
           <Button
             type="text"

@@ -53,15 +53,27 @@ async function setup() {
                 short_description TEXT,
                 tags JSON,
                 banner_image VARCHAR(500),
+                pdf_file VARCHAR(255),
+                custom_fields JSON,
                 content LONGTEXT,
+                webhook_url VARCHAR(500),
+                webhook_field_mapping JSON,
+                builder_layout JSON,
+                builder_content_elements LONGTEXT,
+                builder_page_data LONGTEXT,
                 seo_meta_title VARCHAR(255),
                 seo_meta_description TEXT,
-                seo_meta_keywords TEXT,
+                seo_meta_keywords VARCHAR(500),
                 scheduled_publish_date DATETIME,
                 published_date DATETIME,
                 reading_time INT DEFAULT 0,
                 view_count INT DEFAULT 0,
                 status ENUM('draft','pending','approved','published','rejected','changes_requested') DEFAULT 'draft',
+                is_visible_on_site BOOLEAN DEFAULT TRUE,
+                email_subject VARCHAR(500),
+                email_template LONGTEXT,
+                case_study_headline VARCHAR(500),
+                case_study_summary VARCHAR(1000),
                 admin_comment TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -86,6 +98,28 @@ async function setup() {
             )
         `);
         console.log('✅ landing_page_submissions table ready');
+
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS media_files (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                filename VARCHAR(255) NOT NULL,
+                original_name VARCHAR(255) NOT NULL,
+                file_path VARCHAR(500) NOT NULL,
+                file_type ENUM('image', 'video', 'document', 'other') NOT NULL DEFAULT 'other',
+                file_size BIGINT NOT NULL,
+                mime_type VARCHAR(100),
+                folder VARCHAR(50) DEFAULT 'Documents',
+                uploaded_by INT,
+                file_data LONGBLOB,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_file_type (file_type),
+                INDEX idx_folder (folder),
+                INDEX idx_uploaded_by (uploaded_by),
+                INDEX idx_created_at (created_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        `);
+        console.log('✅ media_files table ready');
 
         await pool.query(`
             CREATE TABLE IF NOT EXISTS newsletter_subscribers (

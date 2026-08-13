@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Tooltip, Popconfirm, Dropdown, Menu } from 'antd';
+import { Button, Tooltip, Popconfirm, Dropdown } from 'antd';
 import { 
   CopyOutlined, DeleteOutlined, 
   ArrowUpOutlined, ArrowDownOutlined,
@@ -61,20 +61,6 @@ export default function NodeToolbar({ node, isSelected }) {
     console.log('Save as block:', node.id);
     // This would need to be implemented in BuilderStore
   };
-
-  const moreMenu = (
-    <Menu>
-      <Menu.Item key="lock" icon={isLocked ? <UnlockOutlined /> : <LockOutlined />} onClick={handleLock}>
-        {isLocked ? 'Unlock' : 'Lock'}
-      </Menu.Item>
-      <Menu.Item key="hide" icon={isHidden ? <EyeOutlined /> : <EyeInvisibleOutlined />} onClick={handleHide}>
-        {isHidden ? 'Show' : 'Hide'}
-      </Menu.Item>
-      <Menu.Item key="save" icon={<SaveOutlined />} onClick={handleSaveAsBlock}>
-        Save as Block
-      </Menu.Item>
-    </Menu>
-  );
 
   return (
     <div 
@@ -151,7 +137,26 @@ export default function NodeToolbar({ node, isSelected }) {
         />
       </Tooltip>
       
-      <Dropdown overlay={moreMenu} trigger={['click']}>
+      <Dropdown menu={{ items: [
+        {
+          key: 'lock',
+          icon: isLocked ? <UnlockOutlined /> : <LockOutlined />,
+          label: isLocked ? 'Unlock' : 'Lock',
+          onClick: handleLock
+        },
+        {
+          key: 'hide',
+          icon: isHidden ? <EyeOutlined /> : <EyeInvisibleOutlined />,
+          label: isHidden ? 'Show' : 'Hide',
+          onClick: handleHide
+        },
+        {
+          key: 'save',
+          icon: <SaveOutlined />,
+          label: 'Save as Block',
+          onClick: handleSaveAsBlock
+        }
+      ]}} trigger={['click']}>
         <Tooltip title="More Options">
           <Button 
             type="text" 

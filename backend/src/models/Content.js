@@ -23,6 +23,9 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
     let processedContent = htmlContent;
     let detectedWebhookUrl = existingWebhookUrl;
 
+    console.log('[processHtmlContent] Starting HTML processing...');
+    console.log('[processHtmlContent] Existing webhook URL:', existingWebhookUrl);
+
     // ── Step 1: Extract any client-defined API_URL from the inline script ────
     // Matches both:  const API_URL = "...";  and  const API_URL="...";
     // Also handles strings that mistakenly use backslashes (e.g. ngrok URL pasted from Windows)
@@ -31,6 +34,7 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
 
     if (apiUrlMatch) {
         const rawUrl = apiUrlMatch[1];
+        console.log('[processHtmlContent] Found API_URL in HTML:', rawUrl);
 
         // Determine if this is already the platform endpoint or a real external URL
         const isPlatformEndpoint = rawUrl.includes('/api/public/landing-page') ||
@@ -40,23 +44,93 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
             // Fix backslashes → forward slashes  (common copy-paste mistake: "https://x.ngrok.io\api\users")
             const cleanedUrl = rawUrl.replace(/\\/g, '/');
             detectedWebhookUrl = cleanedUrl;
-            console.log(`[HTML Builder] Detected client API URL: ${cleanedUrl} — saving as webhook_url`);
+            console.log(`[processHtmlContent] Detected client API URL: ${cleanedUrl} — saving as webhook_url`);
+        } else {
+            console.log(`[processHtmlContent] API_URL is a platform endpoint or placeholder, skipping webhook detection`);
         }
 
         // ── Step 2: Rewrite the API_URL in the HTML to always hit the platform ──
+        // Don't inject const CONTENT_ID because StandaloneLandingPage.jsx already sets window.__CONTENT_ID
         processedContent = processedContent.replace(
             apiUrlRegex,
             `const API_URL = "/api/public/landing-page"`
         );
-        console.log('[HTML Builder] Rewrote API_URL to /api/public/landing-page in HTML content');
+        console.log('[processHtmlContent] Rewrote API_URL to /api/public/landing-page in HTML content');
+
+        // ── Step 2b: Patch the fetch body to wrap form data with content_id + extra_fields ──
+        // Replace:  body: JSON.stringify(leadData)
+        // With:     body: JSON.stringify({ content_id: window.__CONTENT_ID, extra_fields: leadData })
+        // This ensures the backend can resolve the correct content record and
+        // insert the submission into the right form_submissions_<id> table.
+        // We use window.__CONTENT_ID because StandaloneLandingPage.jsx sets it automatically.
+        const bodyPatterns = [
+            // Pattern 1: body: JSON.stringify(leadData)
+            /body\s*:\s*JSON\.stringify\(\s*(\w+)\s*\)/g,
+            // Pattern 2: body: JSON.stringify({...leadData})
+            /body\s*:\s*JSON\.stringify\(\s*\{\s*\.\.\.(\w+)\s*\}\s*\)/g
+        ];
+
+        bodyPatterns.forEach(pattern => {
+            processedContent = processedContent.replace(
+                pattern,
+                (match, varName) => {
+                    console.log('[processHtmlContent] Patching fetch body pattern:', match);
+                    return `body: JSON.stringify({ content_id: window.__CONTENT_ID, extra_fields: ${varName} })`;
+                }
+            );
+        });
+    } else {
+        console.log('[processHtmlContent] No API_URL found in HTML content');
     }
 
     // ── Step 3: Also rewrite any HTML <form action="..."> pointing to external URLs ──
     // Some clients set action= on the form tag directly instead of using JS
     processedContent = processedContent.replace(
         /<form(\b[^>]*)\baction=["'](?!(?:\/api\/public\/landing-page|#|javascript:))[^"']*["']/gi,
-        (match, attrs) => `<form${attrs} action="/api/public/landing-page"`
+        (match, attrs) => {
+            console.log('[processHtmlContent] Rewriting form action:', match);
+            return `<form${attrs} action="/api/public/landing-page"`;
+        }
     );
+
+    // ── Step 3b: Add hidden content_id field to HTML forms that submit to /api/public/landing-page
+    // This ensures HTML forms (without JS) also include the content_id
+    processedContent = processedContent.replace(
+        /<form([^>]*action=["']\/api\/public\/landing-page["'][^>]*)>/gi,
+        (match, attrs) => {
+            // Check if content_id hidden field already exists
+            if (match.includes('name="content_id"')) {
+                return match; // Already has content_id field
+            }
+            // Insert hidden content_id field right after the form tag
+            console.log('[processHtmlContent] Adding hidden content_id field to form');
+            return `<form${attrs}>
+    <input type="hidden" name="content_id" value="" id="form-content-id" />`;
+        }
+    );
+
+    // ── Step 3c: Add script to populate content_id hidden field from window.__CONTENT_ID
+    // This script runs after the page loads to set the correct content_id
+    const contentIdScript = `
+    <script>
+    (function() {
+        console.log('HTML Builder: Setting up content_id injection');
+        setTimeout(function() {
+            const contentIdField = document.getElementById('form-content-id');
+            if (contentIdField && window.__CONTENT_ID) {
+                contentIdField.value = window.__CONTENT_ID;
+                console.log('HTML Builder: Set content_id to:', window.__CONTENT_ID);
+            } else {
+                console.warn('HTML Builder: Could not set content_id - field or window.__CONTENT_ID not found');
+            }
+        }, 100);
+    })();
+    </script>`;
+    // Only add the script if it doesn't already exist and if there's a form
+    if (processedContent.includes('action="/api/public/landing-page"') && !processedContent.includes('HTML Builder: Setting up content_id injection')) {
+        processedContent = processedContent.replace(/<\/body>/gi, `${contentIdScript}</body>`);
+        console.log('[processHtmlContent] Added content_id injection script');
+    }
 
     // ── Step 4: Parse form fields from the HTML ──────────────────────────────
     const customFields = [];
@@ -98,6 +172,9 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
         fieldIndex++;
     }
 
+    console.log('[processHtmlContent] Parsed', customFields.length, 'form fields');
+    console.log('[processHtmlContent] Final webhook URL:', detectedWebhookUrl);
+
     return {
         content: processedContent,
         webhook_url: detectedWebhookUrl,
@@ -113,7 +190,8 @@ class Content {
             webhook_field_mapping, builder_layout, builder_content_elements, builder_page_data,
             seo_meta_title, seo_meta_description, seo_meta_keywords,         
             scheduled_publish_date, status = 'draft',
-            email_subject, email_template, case_study_headline, case_study_summary
+            email_subject, email_template, case_study_headline, case_study_summary,
+            is_visible_on_site = true
         } = contentData;
 
         // ── Auto-process HTML builder content ────────────────────────────────
@@ -128,12 +206,30 @@ class Content {
         })();
 
         if (isHtmlBuilder && content) {
-            const processed = processHtmlContent(content, webhook_url || null);
-            content     = processed.content;
-            webhook_url = processed.webhook_url;
+            // Use manually provided webhook_url if available, otherwise extract from HTML
+            const manualWebhookUrl = webhook_url || null;
+            console.log('[Content.create] Manual webhook_url:', manualWebhookUrl);
+            console.log('[Content.create] Processing HTML content...');
+            const processed = processHtmlContent(content, manualWebhookUrl);
+            content = processed.content;
+            
+            // Priority: manual webhook_url > HTML-extracted webhook_url
+            // If manual webhook_url is explicitly provided (not null/undefined), use it
+            // Otherwise, use the HTML-extracted webhook_url
+            if (manualWebhookUrl !== null && manualWebhookUrl !== undefined && manualWebhookUrl !== '') {
+                webhook_url = manualWebhookUrl;
+                console.log('[Content.create] Using manual webhook_url:', webhook_url);
+            } else {
+                webhook_url = processed.webhook_url;
+                console.log('[Content.create] Using HTML-extracted webhook_url:', webhook_url);
+            }
+            
+            console.log('[Content.create] Final webhook_url:', webhook_url);
+            
             // Auto-fill custom_fields from HTML form inputs if not already set by the user
             if ((!custom_fields || (Array.isArray(custom_fields) && custom_fields.length === 0)) && processed.custom_fields.length > 0) {
                 custom_fields = processed.custom_fields;
+                console.log('[Content.create] Auto-filled custom_fields from HTML:', custom_fields.length, 'fields');
             }
         }
 
@@ -141,30 +237,70 @@ class Content {
         const wordCount = (content || '').split(/\s+/).length;
         const reading_time = Math.ceil(wordCount / 200);
 
-       const query = `
-            INSERT INTO contents (
-                user_id, content_type_id, category_id, title, slug,
-                short_description, tags, banner_image, pdf_file, custom_fields, content, webhook_url,
-                webhook_field_mapping, builder_layout, builder_content_elements, builder_page_data,
-                seo_meta_title, seo_meta_description, seo_meta_keywords,
-                scheduled_publish_date, reading_time, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const values = [
-            user_id, content_type_id, category_id, title, slug,
-            short_description, JSON.stringify(tags), banner_image,
+        console.log('[Content.create] Input data keys:', Object.keys(contentData));
+        console.log('[Content.create] user_id:', user_id, 'content_type_id:', content_type_id, 'category_id:', category_id);
+        console.log('[Content.create] title:', title, 'slug:', slug);
+
+        const scalarize = (val) => {
+            if (val === null || val === undefined) return null;
+            if (typeof val === 'string') return val;
+            if (typeof val === 'number' || typeof val === 'boolean') return val;
+            return JSON.stringify(val);
+        };
+
+        const insertColumns = [
+            'user_id', 'content_type_id', 'category_id', 'title', 'slug', 'short_description',
+            'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content', 'webhook_url',
+            'webhook_field_mapping', 'builder_layout', 'builder_content_elements',
+            'builder_page_data', 'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
+            'scheduled_publish_date', 'reading_time', 'status', 'is_visible_on_site',
+            'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
+        ];
+
+        const rawValues = [
+            user_id,
+            content_type_id,
+            category_id,
+            title,
+            slug,
+            short_description,
+            tags,
+            banner_image,
             pdf_file || null,
-            custom_fields ? JSON.stringify(custom_fields) : null,
+            custom_fields,
             content,
             webhook_url || null,
-            webhook_field_mapping ? JSON.stringify(webhook_field_mapping) : null,
-            builder_layout ? (typeof builder_layout === 'string' ? builder_layout : JSON.stringify(builder_layout)) : null,
-            builder_content_elements ? (typeof builder_content_elements === 'string' ? builder_content_elements : JSON.stringify(builder_content_elements)) : null,
-            builder_page_data ? (typeof builder_page_data === 'string' ? builder_page_data : JSON.stringify(builder_page_data)) : null,
-            seo_meta_title, seo_meta_description, seo_meta_keywords,
-            scheduled_publish_date, reading_time, status
+            webhook_field_mapping,
+            builder_layout,
+            builder_content_elements,
+            builder_page_data,
+            seo_meta_title,
+            seo_meta_description,
+            seo_meta_keywords,
+            scheduled_publish_date,
+            reading_time,
+            status,
+            is_visible_on_site,
+            email_subject || null,
+            email_template || null,
+            case_study_headline || null,
+            case_study_summary || null
         ];
-        const [result] = await pool.query(query, values);
+
+        const insertValues = rawValues.map(v => scalarize(v));
+        const placeholders = insertColumns.map(() => '?').join(', ');
+        const query = `INSERT INTO contents (${insertColumns.join(', ')}) VALUES (${placeholders})`;
+
+        console.log('[Content.create] Columns:', insertColumns.length);
+        console.log('[Content.create] Values count:', insertValues.length, 'Placeholders count:', insertColumns.length);
+        if (insertColumns.length !== insertValues.length) {
+            console.error('[Content.create] FATAL: Column/value mismatch!', insertColumns.length, 'vs', insertValues.length);
+        }
+
+        const [result] = await pool.query(query, insertValues);
+
+        // No need to replace placeholder anymore since we're using window.__CONTENT_ID
+
         const newContent = await Content.findById(result.insertId);
         
         // Create dynamic table for form submissions if custom_fields exist
@@ -244,6 +380,13 @@ class Content {
         if (filters.user_id) { baseWhere += ' AND c.user_id = ?'; values.push(filters.user_id); }
         if (filters.category_id) { baseWhere += ' AND c.category_id = ?'; values.push(filters.category_id); }
         if (filters.content_type_id) { baseWhere += ' AND c.content_type_id = ?'; values.push(filters.content_type_id); }
+        
+        // Filter by is_visible_on_site if explicitly provided (for public listings)
+        // Admin queries don't set this filter, so they see all content
+        if (filters.is_visible_on_site !== undefined) { 
+            baseWhere += ' AND c.is_visible_on_site = ?'; 
+            values.push(filters.is_visible_on_site); 
+        }
 
         // total count
         const countQuery = `SELECT COUNT(*) as total FROM contents c LEFT JOIN content_types ct ON c.content_type_id = ct.id LEFT JOIN categories cat ON c.category_id = cat.id${baseWhere}`;
@@ -272,6 +415,9 @@ class Content {
     }
 
     static async update(id, contentData) {
+        console.log('[Content.update] Starting update for content ID:', id);
+        console.log('[Content.update] contentData.webhook_url:', contentData.webhook_url);
+        
         // ── Auto-process HTML builder content on update ───────────────────────
         const isHtmlBuilder = (() => {
             try {
@@ -285,39 +431,78 @@ class Content {
         })();
 
         if (isHtmlBuilder && contentData.content) {
-            // Fetch existing webhook_url so we don't overwrite a real one with null
-            let existingWebhookUrl = contentData.webhook_url || null;
-            if (!existingWebhookUrl) {
-                try {
-                    const [rows] = await pool.query('SELECT webhook_url FROM contents WHERE id = ?', [id]);
-                    existingWebhookUrl = rows[0]?.webhook_url || null;
-                } catch { /* ignore */ }
+            console.log('[Content.update] Processing HTML builder content');
+            
+            // Fetch existing webhook_url from database
+            let existingWebhookUrl = null;
+            try {
+                const [rows] = await pool.query('SELECT webhook_url FROM contents WHERE id = ?', [id]);
+                existingWebhookUrl = rows[0]?.webhook_url || null;
+                console.log('[Content.update] Existing webhook_url from DB:', existingWebhookUrl);
+            } catch (err) {
+                console.error('[Content.update] Error fetching existing webhook_url:', err);
             }
 
-            const processed = processHtmlContent(contentData.content, existingWebhookUrl);
+            // Determine which webhook URL to use as the base for processing
+            const manualWebhookUrl = contentData.webhook_url;
+            const baseWebhookUrl = manualWebhookUrl !== undefined ? manualWebhookUrl : existingWebhookUrl;
+            
+            console.log('[Content.update] Manual webhook_url:', manualWebhookUrl);
+            console.log('[Content.update] Base webhook_url for processing:', baseWebhookUrl);
+
+            const processed = processHtmlContent(contentData.content, baseWebhookUrl);
             contentData.content = processed.content;
-            contentData.webhook_url = processed.webhook_url;
+            
+            // Priority logic:
+            // 1. If webhook_url is explicitly provided in contentData (even if empty string), use it
+            // 2. Otherwise, use HTML-extracted webhook_url if found
+            // 3. Otherwise, preserve existing webhook_url
+            if (contentData.webhook_url !== undefined) {
+                // Explicitly provided (could be null, empty string, or a URL) - use as-is
+                console.log('[Content.update] Using explicitly provided webhook_url:', contentData.webhook_url);
+            } else if (processed.webhook_url) {
+                // HTML-extracted webhook URL found
+                contentData.webhook_url = processed.webhook_url;
+                console.log('[Content.update] Using HTML-extracted webhook_url:', processed.webhook_url);
+            } else {
+                // Preserve existing webhook URL
+                contentData.webhook_url = existingWebhookUrl;
+                console.log('[Content.update] Preserving existing webhook_url:', existingWebhookUrl);
+            }
+
+            console.log('[Content.update] Final webhook_url:', contentData.webhook_url);
 
             // Auto-fill custom_fields from parsed HTML fields if not explicitly provided
             if (!contentData.custom_fields && processed.custom_fields.length > 0) {
                 contentData.custom_fields = JSON.stringify(processed.custom_fields);
+                console.log('[Content.update] Auto-filled custom_fields from HTML:', processed.custom_fields.length, 'fields');
             }
         }
+
+        const scalarizeVal = (val) => {
+            if (val === null || val === undefined) return null;
+            if (typeof val === 'string') return val;
+            if (typeof val === 'number' || typeof val === 'boolean') return val;
+            return JSON.stringify(val);
+        };
 
         const allowedFields = [
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
-            'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data'
+            'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data',
+            'is_visible_on_site'
         ];
 
         const updates = [];
         const values = [];
+        let placeholderCount = 0;
 
         for (const field of allowedFields) {
             if (contentData[field] !== undefined) {
                 updates.push(`${field} = ?`);
-                values.push(contentData[field]);
+                values.push(scalarizeVal(contentData[field]));
+                placeholderCount++;
             }
         }
 
@@ -328,11 +513,19 @@ class Content {
                 const [conflict] = await pool.query('SELECT id FROM contents WHERE slug = ? AND id != ?', [newSlug, id]);
                 updates.push('slug = ?');
                 values.push(conflict.length > 0 ? `${newSlug}-${id}` : newSlug);
+                placeholderCount++;
             }
         }
 
         updates.push('updated_at = CURRENT_TIMESTAMP');
         values.push(id);
+        placeholderCount++;
+
+        const placeholdersExpected = updates.filter(u => u.includes('?')).length + 1;
+        console.log('[Content.update] Placeholders:', placeholderCount, 'Values:', values.length);
+        if (placeholderCount !== values.length) {
+            console.error('[Content.update] FATAL: Placeholder/value mismatch!', placeholderCount, 'vs', values.length);
+        }
 
         await pool.query(`UPDATE contents SET ${updates.join(', ')} WHERE id = ?`, values);
         const updatedContent = await Content.findById(id);

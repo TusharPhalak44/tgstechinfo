@@ -1,16 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const mediaController = require('../controllers/mediaController');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // Upload file — requires authentication
-router.post('/upload', mediaController.uploadMiddleware, mediaController.uploadFile);
+router.post('/upload', authenticate, mediaController.uploadMiddleware, mediaController.uploadFile);
 
-// Get all files
-router.get('/all', mediaController.getAllFiles);
+// Get all files (admin endpoint - requires admin role)
+router.get('/all', authenticate, requireAdmin, mediaController.getAllFiles);
 
-// Get folder counts
-router.get('/folder-counts', mediaController.getFolderCounts);
+// Get user's own files (requires authentication)
+router.get('/user/all', authenticate, mediaController.getUserFiles);
+
+// Get folder counts (admin endpoint - requires admin role)
+router.get('/folder-counts', authenticate, requireAdmin, mediaController.getFolderCounts);
+
+// Get user folder counts (requires authentication)
+router.get('/user/folder-counts', authenticate, mediaController.getUserFolderCounts);
 
 // Serve file from DB (filesystem-independent)
 router.get('/file/:filename', mediaController.serveFile);

@@ -13,7 +13,7 @@ import { BuilderContentIdContext } from '../../components/VisualBuilder.jsx';
 const { TextArea } = Input;
 const { Option } = Select;
 
-export default function FormRenderer({ node }) {
+export default function FormRenderer({ node, contentWebhookUrl }) {
   const { darkMode } = useTheme();
   const contextContentId = useContext(BuilderContentIdContext);
   const content = safeParseJsonContent(node.content, {
@@ -35,7 +35,8 @@ export default function FormRenderer({ node }) {
   const formName = content.formName || 'Contact Form';
   const submitText = content.submitText || 'Submit';
   const successMessage = content.successMessage || 'Thank you for your submission!';
-  const apiUrl = content.apiUrl || '';
+  // Priority: content-level webhook_url > form widget apiUrl
+  const apiUrl = contentWebhookUrl || content.apiUrl || '';
   // Priority: context (set by CreateContent when editing) > stored in node > empty (falls back to Referer slug on backend)
   const contentId = contextContentId || content.contentId || '';
 
@@ -73,9 +74,18 @@ export default function FormRenderer({ node }) {
           await axios.post(apiUrl, mappedValues, {
             headers: { 'Content-Type': 'application/json' },
             timeout: 10000,
+            withCredentials: false, // Don't send cookies to external APIs
           });
+          console.log('✅ External API submission successful');
         } catch (webhookErr) {
-          console.warn('External API submission failed (non-blocking):', webhookErr.message);
+          // Log detailed error but don't fail the form submission
+          console.warn('⚠️ External API submission failed (non-blocking):', webhookErr.message);
+          if (webhookErr.response) {
+            console.warn('Response status:', webhookErr.response.status);
+            console.warn('Response data:', webhookErr.response.data);
+          } else if (webhookErr.request) {
+            console.warn('No response received - possible CORS or network issue');
+          }
         }
       }
 

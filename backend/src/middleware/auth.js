@@ -62,6 +62,9 @@ exports.isAdmin = (req, res, next) => {
     next();
 };
 
+// Alias for isAdmin (for clarity in some routes)
+exports.requireAdmin = exports.isAdmin;
+
 exports.isUser = (req, res, next) => {
     if (req.user.role !== 'user' && req.user.role !== 'admin') {
         return res.status(403).json({ message: 'Access denied' });

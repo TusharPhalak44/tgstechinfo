@@ -12,7 +12,8 @@ const EmailTemplates = () => {
         template_name: '',
         subject: '',
         html_body: '',
-        is_active: true
+        is_active: true,
+        include_logo: false
     });
 
     const templateTypes = [
@@ -59,7 +60,8 @@ const EmailTemplates = () => {
             template_name: '',
             subject: '',
             html_body: '',
-            is_active: true
+            is_active: true,
+            include_logo: false
         });
         setShowModal(true);
     };
@@ -71,7 +73,8 @@ const EmailTemplates = () => {
             template_name: template.template_name,
             subject: template.subject,
             html_body: template.html_body,
-            is_active: template.is_active
+            is_active: template.is_active,
+            include_logo: template.include_logo || false
         });
         setShowModal(true);
     };
@@ -289,6 +292,36 @@ const EmailTemplates = () => {
                                     required
                                     placeholder="Use {{variable}} for dynamic content"
                                 />
+                            </div>
+
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Include Company Logo
+                                        </label>
+                                        <p className="text-xs text-gray-500">
+                                            Display the Website Main Logo from Branding settings in this email
+                                        </p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.include_logo}
+                                            onChange={(e) => setFormData({...formData, include_logo: e.target.checked})}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </label>
+                                </div>
+                                {formData.include_logo && (
+                                    <div className="mt-3 p-3 bg-white rounded border border-blue-100">
+                                        <p className="text-xs text-blue-700">
+                                            ℹ️ The logo will be automatically inserted from your CMS Branding settings. 
+                                            Make sure your Website Main Logo is configured in the Branding section.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mb-4">

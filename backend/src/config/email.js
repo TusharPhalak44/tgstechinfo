@@ -4,56 +4,97 @@ const { pool } = require('./database');
 
 dotenv.config();
 
-const parseBase64ImageDataUri = (value) => {
-    if (!value || typeof value !== 'string') return null;
-    const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/i.exec(value);
-    if (!match) return null;
-    return { mimeType: match[1], base64: match[2] };
+/**
+ * Get the public URL for the website
+ * Uses FRONTEND_URL from environment or constructs from API_URL
+ */
+const getPublicUrl = () => {
+    // Check for explicitly set public URL
+    if (process.env.FRONTEND_URL) {
+        return process.env.FRONTEND_URL.replace(/\/$/, ''); // Remove trailing slash
+    }
+    
+    // Fallback to API_URL if set
+    if (process.env.API_URL) {
+        return process.env.API_URL.replace(/\/$/, '');
+    }
+    
+    // Default fallback (development)
+    return 'http://localhost:5173';
 };
 
-const getWebsiteLogoFromSettings = async () => {
+/**
+ * Convert a logo path/data to a public HTTPS URL
+ * @param {string} logoValue - Logo path or base64 data from database
+ * @returns {string|null} - Public HTTPS URL or null
+ */
+const convertLogoToPublicUrl = (logoValue) => {
+    if (!logoValue || typeof logoValue !== 'string') {
+        return null;
+    }
+
+    // If it's already a full HTTP/HTTPS URL, return it
+    if (logoValue.startsWith('http://') || logoValue.startsWith('https://')) {
+        return logoValue;
+    }
+
+    // If it's a base64 data URI, we can't convert it to a public URL
+    // Return null - the caller should handle this case
+    if (logoValue.startsWith('data:')) {
+        console.warn('Logo is base64 data URI - cannot convert to public URL. Logo will not be displayed in email.');
+        return null;
+    }
+
+    // If it's a relative path like /uploads/branding/logo.png
+    if (logoValue.startsWith('/uploads/')) {
+        const publicUrl = getPublicUrl();
+        return `${publicUrl}${logoValue}`;
+    }
+
+    // If it's just a filename or relative path
+    if (logoValue.startsWith('uploads/')) {
+        const publicUrl = getPublicUrl();
+        return `${publicUrl}/${logoValue}`;
+    }
+
+    // Unknown format
+    console.warn('Unknown logo format:', logoValue);
+    return null;
+};
+
+/**
+ * Get website logo from settings and convert to public URL
+ * @returns {Promise<string|null>} - Public URL of the logo or null
+ */
+const getWebsiteLogoUrl = async () => {
     try {
         const [settingsRows] = await pool.query(
             'SELECT website_main_logo, website_logo FROM site_settings LIMIT 1'
         );
         if (settingsRows && settingsRows[0]) {
-            return settingsRows[0].website_main_logo || settingsRows[0].website_logo || '';
+            const logoValue = settingsRows[0].website_main_logo || settingsRows[0].website_logo || '';
+            if (logoValue) {
+                return convertLogoToPublicUrl(logoValue);
+            }
         }
-        return '';
+        return null;
     } catch (error) {
         console.error('Error fetching website logo for email:', error);
-        return '';
+        return null;
     }
 };
 
-const buildEmailLogoAssets = async () => {
-    const logoOriginal = await getWebsiteLogoFromSettings();
-    if (!logoOriginal) {
-        return { logoOriginal: '', logoSrc: '', logoHtml: '', logoImgOnly: '', attachments: [] };
-    }
-
-    const parsed = parseBase64ImageDataUri(logoOriginal);
-    if (parsed) {
-        const cid = 'tgstechinfo-logo';
-        const logoSrc = `cid:${cid}`;
-        const logoHtml = `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" /></div>`;
-        const logoImgOnly = `<img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" />`;
-        const attachments = [
-            {
-                filename: 'logo',
-                cid,
-                content: Buffer.from(parsed.base64, 'base64'),
-                contentType: parsed.mimeType
-            }
-        ];
-
-        return { logoOriginal, logoSrc, logoHtml, logoImgOnly, attachments };
-    }
-
-    const logoSrc = logoOriginal;
-    const logoHtml = `<div style="text-align: center; margin-bottom: 20px;"><img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" /></div>`;
-    const logoImgOnly = `<img src="${logoSrc}" alt="Logo" style="max-height: 50px; width: auto; display: inline-block; object-fit: contain;" />`;
-    return { logoOriginal, logoSrc, logoHtml, logoImgOnly, attachments: [] };
+/**
+ * Build logo HTML for email (centered with styling)
+ * @param {string} logoUrl - Public URL of the logo
+ * @returns {string} - HTML string for logo
+ */
+const buildLogoHtml = (logoUrl) => {
+    if (!logoUrl) return '';
+    
+    return `<div style="text-align:center;margin-bottom:20px;">
+    <img src="${logoUrl}" alt="Company Logo" style="max-width:180px;height:auto;display:block;margin:0 auto;" />
+</div>`;
 };
 
 const sendEmail = async (to, subject, html, options = {}) => {
@@ -75,36 +116,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
         return { skipped: true, reason: 'credentials_not_configured', from: fromAddress };
     }
 
-    const originalHtml = html || '';
-    let finalHtml = originalHtml;
-    const hadLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(originalHtml);
-
-    const { logoOriginal, logoSrc, logoHtml, logoImgOnly, attachments: logoAttachments } = await buildEmailLogoAssets();
-
-    if (logoSrc) {
-        finalHtml = finalHtml
-            .replace(/\{\{website_logo_html\}\}/g, logoHtml)
-            .replace(/\{\{website_logo_img\}\}/g, logoImgOnly)
-            .replace(/\{\{website_logo\}\}/g, logoSrc)
-            .replace(/\{\{logo\}\}/g, logoSrc);
-
-        if (logoOriginal && logoOriginal !== logoSrc) {
-            finalHtml = finalHtml.split(logoOriginal).join(logoSrc);
-        }
-
-        const alreadyHasLogo = finalHtml.includes(logoSrc);
-        if (!hadLogoPlaceholder && !alreadyHasLogo) {
-            finalHtml = `${logoHtml}${finalHtml}`;
-        }
-    } else {
-        finalHtml = finalHtml
-            .replace(/\{\{website_logo_html\}\}/g, '')
-            .replace(/\{\{website_logo_img\}\}/g, '')
-            .replace(/\{\{website_logo\}\}/g, '')
-            .replace(/\{\{logo\}\}/g, '');
-    }
-
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransporter({
         host,
         port,
         secure: port === 465,
@@ -114,15 +126,19 @@ const sendEmail = async (to, subject, html, options = {}) => {
         logger: true
     });
 
-    const info = await transporter.sendMail({
+    const mailOptions = {
         from: fromAddress,
         to,
         subject,
-        html: finalHtml,
-        ...(logoAttachments.length || options.attachments?.length
-            ? { attachments: [...logoAttachments, ...(options.attachments || [])] }
-            : {})
-    });
+        html
+    };
+
+    // Add custom attachments if provided (but NOT the logo)
+    if (options.attachments && options.attachments.length > 0) {
+        mailOptions.attachments = options.attachments;
+    }
+
+    const info = await transporter.sendMail(mailOptions);
     return info;
 };
 
@@ -143,7 +159,6 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
         <body>
             <div class="container">
                 <div class="header">
-                    {{website_logo_html}}
                     <h2>Subscription Confirmed</h2>
                 </div>
                 <div class="content">
@@ -182,7 +197,6 @@ const accessGrantEmailTemplate = (name, contentTitle) => {
         <body>
             <div class="container">
                 <div class="header">
-                    {{website_logo_html}}
                     <h2>Content Access Granted</h2>
                 </div>
                 <div class="content">
@@ -225,7 +239,6 @@ const chatbotQueryAdminTemplate = (email, query, submittedAt) => {
         <body>
             <div class="container">
                 <div class="header">
-                    {{website_logo_html}}
                     <h2>New Chatbot Query Received</h2>
                 </div>
                 <div class="content">
@@ -279,7 +292,6 @@ const chatbotQueryResponseTemplate = (query, adminResponse) => {
         <body>
             <div class="container">
                 <div class="header">
-                    {{website_logo_html}}
                     <h2>🤖 Response to Your Chatbot Query</h2>
                 </div>
                 <div class="content">
@@ -359,7 +371,43 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             renderedHtml = renderedHtml.replace(new RegExp(placeholder, 'g'), value);
         });
 
-        // Send email
+        // Handle company logo if include_logo is enabled
+        if (template.include_logo) {
+            const logoUrl = await getWebsiteLogoUrl();
+            if (logoUrl) {
+                const logoHtml = buildLogoHtml(logoUrl);
+                
+                // Replace logo placeholders
+                renderedHtml = renderedHtml
+                    .replace(/\{\{website_logo_html\}\}/g, logoHtml)
+                    .replace(/\{\{website_logo_img\}\}/g, `<img src="${logoUrl}" alt="Company Logo" style="max-width:180px;height:auto;display:block;margin:0 auto;" />`)
+                    .replace(/\{\{website_logo\}\}/g, logoUrl)
+                    .replace(/\{\{logo\}\}/g, logoUrl);
+                
+                // If no placeholder exists, prepend logo to content
+                const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
+                if (!hasLogoPlaceholder) {
+                    renderedHtml = `${logoHtml}${renderedHtml}`;
+                }
+            } else {
+                console.warn('Company logo is enabled but no valid logo URL found');
+                // Remove any logo placeholders
+                renderedHtml = renderedHtml
+                    .replace(/\{\{website_logo_html\}\}/g, '')
+                    .replace(/\{\{website_logo_img\}\}/g, '')
+                    .replace(/\{\{website_logo\}\}/g, '')
+                    .replace(/\{\{logo\}\}/g, '');
+            }
+        } else {
+            // Remove any logo placeholders if logo is not enabled
+            renderedHtml = renderedHtml
+                .replace(/\{\{website_logo_html\}\}/g, '')
+                .replace(/\{\{website_logo_img\}\}/g, '')
+                .replace(/\{\{website_logo\}\}/g, '')
+                .replace(/\{\{logo\}\}/g, '');
+        }
+
+        // Send email (NO ATTACHMENTS for logo)
         const result = await sendEmail(to, renderedSubject, renderedHtml);
         return result;
     } catch (error) {
@@ -375,5 +423,8 @@ module.exports = {
     subscriptionEmailTemplate,
     renderCaseStudyEmail,
     chatbotQueryAdminTemplate,
-    chatbotQueryResponseTemplate
+    chatbotQueryResponseTemplate,
+    getWebsiteLogoUrl,
+    buildLogoHtml,
+    convertLogoToPublicUrl
 };

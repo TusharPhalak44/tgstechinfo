@@ -15,7 +15,8 @@ import {
   EditOutlined,
   KeyOutlined,
   SecurityScanOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import SessionManagement from '../admin/SessionManagement';
@@ -43,6 +44,7 @@ const UserProfile = () => {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordStrengthText, setPasswordStrengthText] = useState('');
   const [stats, setStats] = useState({ contentCreated: 0, totalViews: 0 });
+  const [statsLoading, setStatsLoading] = useState(false);
 
   useEffect(() => {
     fetchUserProfile();
@@ -65,16 +67,23 @@ const UserProfile = () => {
   };
 
   const fetchUserStats = async () => {
+    setStatsLoading(true);
     try {
       const response = await axios.get('/api/user/stats');
+      console.log('Stats response:', response.data); // Debug log
       setStats({
         contentCreated: response.data.contentCreated || 0,
         totalViews: response.data.totalViews || 0
       });
     } catch (error) {
       console.error('Fetch user stats error:', error);
-      // Set default values if API fails
-      setStats({ contentCreated: 0, totalViews: 0 });
+      // Don't set to 0 if there's an error, keep existing values
+      // Only show error if it's not a network issue
+      if (error.response) {
+        message.error('Failed to load stats: ' + (error.response.data?.message || 'Server error'));
+      }
+    } finally {
+      setStatsLoading(false);
     }
   };
 
@@ -181,6 +190,8 @@ const UserProfile = () => {
     headers: {
       authorization: `Bearer ${localStorage.getItem('token')}`,
     },
+    showUploadList: false,
+    withCredentials: true, // Include cookies in the request
     beforeUpload: (file) => {
       const isImage = file.type.startsWith('image/');
       if (!isImage) {
@@ -211,7 +222,7 @@ const UserProfile = () => {
     >
       <div style={{ padding: isMobile ? '16px' : '24px' }}>
         <Title level={isMobile ? 4 : 3} style={{ marginBottom: isMobile ? 16 : 24, fontSize: isMobile ? 20 : 24, color: darkMode ? '#f1f5f9' : '#111827' }}>
-          <UserOutlined />real conversion tracking implement
+          <UserOutlined /> User Profile
         </Title>
 
         <Row gutter={[isMobile ? 16 : 24, isMobile ? 16 : 24]}>
@@ -276,13 +287,26 @@ const UserProfile = () => {
             </Card>
 
             <Card 
-              title="Quick Stats" 
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Quick Stats</span>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ReloadOutlined spin={statsLoading} />}
+                    onClick={fetchUserStats}
+                    disabled={statsLoading}
+                    style={{ color: darkMode ? '#94a3b8' : '#6B7280' }}
+                  />
+                </div>
+              }
               style={{ 
                 marginTop: 16,
                 borderRadius: 12,
                 border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
                 boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
               }}
+              loading={statsLoading}
             >
               <Row gutter={isMobile ? 12 : 16}>
                 <Col span={12}>
@@ -385,7 +409,7 @@ const UserProfile = () => {
                   children: (
                     <>
                   <Alert
-                    message="Password Requirements"
+                    title="Password Requirements"
                     description="Your password must be at least 12 characters long and include uppercase, lowercase, numbers, and special characters."
                     type="info"
                     showIcon
@@ -420,7 +444,7 @@ const UserProfile = () => {
 
                     {passwordStrength > 0 && (
                       <div style={{ marginBottom: isMobile ? 12 : 16 }}>
-                        <Space direction="vertical" style={{ width: '100%' }}>
+                        <Space orientation="vertical" style={{ width: '100%' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Text style={{ fontSize: isMobile ? 12 : 14, color: darkMode ? '#cbd5e1' : '#111827' }}>Password Strength:</Text>
                             <Text strong style={{ color: getStrengthColor(passwordStrength), fontSize: isMobile ? 12 : 14 }}>
@@ -480,7 +504,7 @@ const UserProfile = () => {
                   children: (
                     <>
                   <Alert
-                    message="Active Sessions"
+                    title="Active Sessions"
                     description="Manage your active sessions across devices. Revoking a session will log you out from that device."
                     type="info"
                     showIcon
@@ -496,7 +520,7 @@ const UserProfile = () => {
                   children: (
                     <>
                   <Alert
-                    message="Recent Activity"
+                    title="Recent Activity"
                     description="View your recent login and account activity."
                     type="info"
                     showIcon

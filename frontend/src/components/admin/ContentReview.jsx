@@ -24,7 +24,8 @@ import {
   Segmented,
   Grid,
   ConfigProvider,
-  theme
+  theme,
+  Switch
 } from 'antd';
 import { 
   CheckOutlined, 
@@ -43,7 +44,8 @@ import {
   AppstoreOutlined,
   UnorderedListOutlined,
   DeleteOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  EyeInvisibleOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -78,6 +80,8 @@ const ContentReview = () => {
   const [pageSize, setPageSize] = useState(10);
   const [publishingId, setPublishingId] = useState(null);
   const [viewMode, setViewMode] = useState('table');
+  const [togglingVisibility, setTogglingVisibility] = useState(null);
+  const [dateRange, setDateRange] = useState(null);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -101,10 +105,18 @@ const ContentReview = () => {
         (item.category_name && item.category_name.toLowerCase().includes(searchLower))
       );
     }
+     if (dateRange && dateRange.length === 2) {
+      const [startDate, endDate] = dateRange;
+      filtered = filtered.filter(item => {
+        if (!item.published_date) return false;
+        const publishDate = moment(item.published_date);
+        return publishDate.isAfter(startDate.subtract(1, 'day')) && publishDate.isBefore(endDate.add(1, 'day'));
+      });
+    }
     setContents(filtered);
     setTotalItems(filtered.length);
     setCurrentPage(1);
-  }, [searchText, allContents]);
+  }, [searchText, allContents,dateRange]);
 
   useEffect(() => {
     if (reviewId && contents.length > 0) {
@@ -194,6 +206,44 @@ const ContentReview = () => {
     }
   };
 
+  const handleToggleVisibility = async (contentId, currentVisibility, event) => {
+    // Stop event propagation to prevent triggering parent click handlers
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    
+    console.log('Toggle visibility called:', { contentId, currentVisibility });
+    setTogglingVisibility(contentId);
+    
+    try {
+      const newVisibility = !currentVisibility;
+      console.log('Sending request to:', `/api/admin/content/${contentId}/visibility`);
+      console.log('Request body:', { is_visible_on_site: newVisibility });
+      
+      const response = await axios.put(`/api/admin/content/${contentId}/visibility`, { 
+        is_visible_on_site: newVisibility 
+      });
+      
+      console.log('Response:', response.data);
+      
+      message.success(
+        newVisibility 
+          ? 'Content is now visible on the website' 
+          : 'Content is now hidden from website (direct URL still works)'
+      );
+      
+      // Refresh the content list
+      await fetchContents();
+    } catch (error) {
+      console.error('Toggle visibility error:', error);
+      console.error('Error response:', error.response?.data);
+      message.error(error.response?.data?.message || 'Failed to toggle visibility');
+    } finally {
+      setTogglingVisibility(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const statusMap = {
       draft: { color: 'default', text: 'Draft', icon: <FileTextOutlined /> },
@@ -272,6 +322,49 @@ const ContentReview = () => {
       width: 80,
       responsive: ['lg'],
       render: (views) => <span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{views || 0}</span>
+    },
+    {
+      title: 'Visible',
+      dataIndex: 'is_visible_on_site',
+      key: 'is_visible_on_site',
+      width: 100,
+      responsive: ['md'],
+      render: (isVisible, record) => {
+        // Convert tinyint (0/1) to proper boolean
+        const isVisibleBool = isVisible === 1 || isVisible === true;
+        console.log(`Rendering visibility for content ${record.id}:`, { raw: isVisible, converted: isVisibleBool });
+        return (
+          <Tooltip title={isVisibleBool ? 'Content visible on website' : 'Hidden from website listings (direct URL still works)'}>
+            <Switch
+              checked={isVisibleBool}
+              loading={togglingVisibility === record.id}
+              onChange={(checked, event) => {
+                console.log('Switch onChange triggered:', { checked, contentId: record.id });
+                event.stopPropagation();
+                handleToggleVisibility(record.id, isVisibleBool, event);
+              }}
+              onClick={(checked, event) => {
+                console.log('Switch onClick triggered');
+                event.stopPropagation();
+              }}
+              checkedChildren={<EyeOutlined />}
+              unCheckedChildren={<EyeInvisibleOutlined />}
+              size={isMobile ? 'small' : 'default'}
+            />
+          </Tooltip>
+        );
+      }
+    },
+    {
+      title: <span style={{ whiteSpace: 'nowrap' }}>Published Date</span>,
+      dataIndex: 'published_date',
+      key: 'published_date',
+      width: 120,
+      render: (date) => (
+        <span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e', whiteSpace: 'nowrap' }}>
+          {date ? moment(date).format('YYYY-MM-DD') : '-'}
+        </span>
+      )
     },
     {
       title: 'Actions',
@@ -510,6 +603,64 @@ const ContentReview = () => {
           </Card>
         )}
 
+        {/* Visibility Control */}
+        <Card 
+          size={isMobile ? 'small' : 'default'} 
+          title={
+            <Space>
+              <span>Website Visibility</span>
+              <Tooltip title="Control whether this content appears in website listings. Direct URL access always works.">
+                <ExclamationCircleOutlined style={{ fontSize: 14, color: '#8c8c8c' }} />
+              </Tooltip>
+            </Space>
+          }
+          className="mb-4 rounded-lg shadow-sm"
+          style={{ background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <Text strong style={{ display: 'block', marginBottom: 4, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                Show on Website
+              </Text>
+              <Text type="secondary" style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#6b7280' }}>
+                {(selectedContent.is_visible_on_site === 1 || selectedContent.is_visible_on_site === true)
+                  ? 'Content is visible in website listings' 
+                  : 'Content is hidden from listings (direct URL still works)'}
+              </Text>
+            </div>
+            <Switch
+              checked={selectedContent.is_visible_on_site === 1 || selectedContent.is_visible_on_site === true}
+              loading={togglingVisibility === selectedContent.id}
+              onChange={(checked, event) => {
+                if (event) event.stopPropagation();
+                const currentVisibility = selectedContent.is_visible_on_site === 1 || selectedContent.is_visible_on_site === true;
+                handleToggleVisibility(selectedContent.id, currentVisibility, event);
+                // Update local state to reflect change immediately
+                setSelectedContent(prev => ({ 
+                  ...prev, 
+                  is_visible_on_site: currentVisibility ? 0 : 1 
+                }));
+              }}
+              onClick={(checked, event) => {
+                if (event) event.stopPropagation();
+              }}
+              checkedChildren={<EyeOutlined />}
+              unCheckedChildren={<EyeInvisibleOutlined />}
+              size="default"
+            />
+          </div>
+          {(selectedContent.is_visible_on_site === 0 || selectedContent.is_visible_on_site === false) && (
+            <Alert
+              message="Hidden Content"
+              description="This content won't appear in website listings or feeds, but can still be accessed via its direct URL."
+              type="warning"
+              showIcon
+              style={{ marginTop: 12, fontSize: 12 }}
+              icon={<EyeInvisibleOutlined />}
+            />
+          )}
+        </Card>
+
         {/* Admin Comment */}
         <Card 
           size={isMobile ? 'small' : 'default'} 
@@ -738,7 +889,7 @@ const ContentReview = () => {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 items-center">
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Input.Search
               placeholder="Search..."
               allowClear
@@ -748,8 +899,18 @@ const ContentReview = () => {
               onClear={() => { setSearchText(''); setCurrentPage(1); }}
               style={{ width: isMobile ? 200 : 250, background: darkMode ? '#0f172a' : '#fff' }}
             />
-            <Button onClick={() => { setSearchText(''); setFilterStatus('all'); setActiveTab('all'); setCurrentPage(1); fetchContents(); }} icon={<RollbackOutlined />} className="rounded-lg">
-              Refresh
+ <DatePicker.RangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              format="YYYY-MM-DD"
+              placeholder={['Start Date', 'End Date']}
+              style={{
+                background: darkMode ? '#0f172a' : '#fff',
+                borderColor: darkMode ? '#334155' : '#e5e7eb'
+              }}
+            />
+            <Button onClick={() => { setSearchText(''); setFilterStatus('all'); setActiveTab('all'); setCurrentPage(1); fetchContents(); setDateRange(null); }} icon={<RollbackOutlined />} className="rounded-lg">
+               Refresh
             </Button>
           </div>
         </div>
@@ -852,6 +1013,26 @@ const ContentReview = () => {
                           <Badge status={s.color} />{s.text}
                         </span>
                       </div>
+                      {(record.is_visible_on_site === 0 || record.is_visible_on_site === false) && (
+                        <div style={{ position: 'absolute', top: 10, right: 10 }}>
+                          <Tooltip title="Hidden from website listings">
+                            <span style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              background: darkMode ? 'rgba(239, 68, 68, 0.9)' : 'rgba(239, 68, 68, 0.9)', 
+                              borderRadius: 6, 
+                              padding: '4px 8px', 
+                              fontSize: isMobile ? 10 : 12, 
+                              fontWeight: 500, 
+                              boxShadow: '0 1px 4px rgba(0,0,0,0.12)',
+                              color: '#fff'
+                            }}>
+                              <EyeInvisibleOutlined />
+                            </span>
+                          </Tooltip>
+                        </div>
+                      )}
                     </div>
                     <div style={{ padding: isMobile ? '10px 12px' : '14px 16px' }}>
                       <div style={{ marginBottom: 6 }}>

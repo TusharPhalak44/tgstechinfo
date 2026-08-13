@@ -21,6 +21,7 @@ import { registerAllWidgets } from '../../builder/registry/registerWidgets';
 import BuilderIntegration from '../../builder/components/BuilderIntegration';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import MediaLibraryModal from '../common/MediaLibraryModal';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -88,6 +89,7 @@ const CreateContent = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewData, setPreviewData] = useState(null);
   const [htmlPreviewVisible, setHtmlPreviewVisible] = useState(false);
+  const [mediaLibraryVisible, setMediaLibraryVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('standard'); // 'standard' | 'builder' | 'html'
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [builderPageData, setBuilderPageData] = useState(null); // v2.0 full page tree from VisualBuilder
@@ -103,6 +105,8 @@ const CreateContent = () => {
 
   const [selectedTypeName, setSelectedTypeName] = useState('');
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
 // Initialize new builder architecture - register widgets once globally
   useEffect(() => {
     if (!window.__widgetsRegistered) {
@@ -111,6 +115,20 @@ const CreateContent = () => {
       console.log('[CreateContent] Widgets registered');
     }
   }, []);
+
+  // Warn before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges && activeTab === 'builder') {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes in the builder. Your work is auto-saved, but leaving now may lose very recent changes.';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, activeTab]);
 
   useEffect(() => {
     fetchCategoriesAndTypes().then(() => {
@@ -147,24 +165,33 @@ const CreateContent = () => {
       setContentStatus(data.status || 'draft');
       
       // Restore layout first to determine which tab to use
-     if (data.builder_page_data) {
-        // v2.0 visual builder data — restore it directly
-        let pageData = data.builder_page_data;
-        if (typeof pageData === 'string') {
-          try { pageData = JSON.parse(pageData); } catch { pageData = null; }
-        }
-        setBuilderPageData(pageData);
-        setBuilderSections(data.builder_layout && typeof data.builder_layout !== 'string'
-          ? (Array.isArray(data.builder_layout) ? data.builder_layout : [])
-          : [{ id: 'sec-1', type: 'content_type_category' }, { id: 'sec-2', type: 'title_description' }, { id: 'sec-3', type: 'banner_image' }, { id: 'sec-4', type: 'content' }]);
-        setActiveTab('builder');
-        setInitialContent('');
-        setContent('');
-        setEditorReady(true);
-      } else if (data.builder_layout) {
+      if (data.builder_layout) {
         try {
           const layout = typeof data.builder_layout === 'string' ? JSON.parse(data.builder_layout) : data.builder_layout;
-          if (Array.isArray(layout) && layout.length > 0) {
+          
+          // Check if this is HTML Builder content (layout === ['html'])
+          if (Array.isArray(layout) && layout.length > 0 && layout[0] === 'html') {
+            // HTML Builder mode
+            setActiveTab('html');
+            setHtmlContent(data.content || '');
+            setInitialContent('');
+            setContent('');
+            setEditorReady(true);
+          } else if (data.builder_page_data) {
+            // v2.0 visual builder data — restore it directly
+            let pageData = data.builder_page_data;
+            if (typeof pageData === 'string') {
+              try { pageData = JSON.parse(pageData); } catch { pageData = null; }
+            }
+            setBuilderPageData(pageData);
+            setBuilderSections(Array.isArray(layout) && typeof layout[0] !== 'string'
+              ? layout
+              : [{ id: 'sec-1', type: 'content_type_category' }, { id: 'sec-2', type: 'title_description' }, { id: 'sec-3', type: 'banner_image' }, { id: 'sec-4', type: 'content' }]);
+            setActiveTab('builder');
+            setInitialContent('');
+            setContent('');
+            setEditorReady(true);
+          } else if (Array.isArray(layout) && layout.length > 0) {
             // Standard layout: array of strings like ['meta','title',...]
             if (typeof layout[0] === 'string') {
               setStandardLayout(layout);
@@ -177,7 +204,6 @@ const CreateContent = () => {
               setBuilderSections(layout);
               setBuilderContent(data.content || '');
               setActiveTab('builder');
-              // Don't set content for standard editor when in builder mode
               setInitialContent('');
               setContent('');
               setEditorReady(true);
@@ -213,6 +239,14 @@ const CreateContent = () => {
       // Use content_type_name directly from API — don't depend on contentTypes state
       const typeName = (data.content_type_name || '').toLowerCase();
       setSelectedTypeName(typeName);
+      
+      // Clear any stale localStorage backup since we loaded fresh data from server
+      if (id) {
+        const storageKey = `builder_autosave_${id}`;
+        localStorage.removeItem(storageKey);
+        localStorage.removeItem(`${storageKey}_timestamp`);
+        console.log('[CreateContent] Cleared localStorage after loading content from server');
+      }
     } catch {
       message.error('Failed to load article');
     }
@@ -324,9 +358,14 @@ const CreateContent = () => {
           const formFields = formContent.fields || [];
           formFields.forEach(f => {
             if (f.label || f.id) {
+              // Use apiKey if set, otherwise generate from label
+              const fieldName = f.apiKey && f.apiKey.trim() 
+                ? f.apiKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_|_$/g, '').substring(0, 64)
+                : (f.label || f.id).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').substring(0, 64) || f.id;
+              
               fields.push({
                 id: f.id,
-                name: (f.label || f.id).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').substring(0, 64) || f.id,
+                name: fieldName,
                 label: f.label || f.id,
                 type: f.type || 'text',
                 required: f.required !== false,
@@ -418,13 +457,17 @@ const CreateContent = () => {
     }
     if (finalCustomFields.length > 0) formData.append('custom_fields', JSON.stringify(finalCustomFields));
 
-    // Visual Builder: extract webhook URL from Form widget's apiUrl and save to content.webhook_url
-    if (activeTab === 'builder' && builderPageData) {
+    // Visual Builder: extract webhook URL from Form widget's apiUrl only if manual field is empty
+    // Priority: manual webhook_url field > Form widget apiUrl
+    if (activeTab === 'builder' && builderPageData && !values.webhook_url) {
       const builderWebhookUrl = extractBuilderWebhookUrl(builderPageData);
       if (builderWebhookUrl) {
         formData.set('webhook_url', builderWebhookUrl);
       }
     }
+    
+    // HTML Builder: always use manual webhook_url field if provided
+    // The backend will prioritize manual webhook_url over HTML-extracted URLs
     
     return formData;
   };
@@ -440,30 +483,63 @@ const CreateContent = () => {
 
       if (savedContentId) {
         const existing = (await axios.get(`${apiBase}/content/${savedContentId}`)).data;
+        
         if (existing.status === 'published') {
-          const finalCustomFields = activeTab === 'html' ? parseFormFieldsFromHtml(htmlContent) : customFields;
+          // For published content, only update webhook settings and custom fields
+          let finalCustomFields = customFields;
+          if (activeTab === 'html') {
+            finalCustomFields = parseFormFieldsFromHtml(htmlContent);
+          } else if (activeTab === 'builder' && builderPageData) {
+            finalCustomFields = extractBuilderFormFields(builderPageData);
+          }
+          
           await axios.put(`${apiBase}/content/${savedContentId}/webhook`, {
-            webhook_url: values.webhook_url || '',
+            webhook_url: values.webhook_url || existing.webhook_url || '',
             ...(finalCustomFields.length > 0 ? { custom_fields: JSON.stringify(finalCustomFields) } : {})
           });
           message.success('Settings updated successfully!');
         } else {
+-          // For draft/pending/changes_requested content, update full content and force status to 'draft'
+          formData.append('status', 'draft'); // Explicitly set status to 'draft' on manual save
           await axios.put(`${apiBase}/content/${savedContentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-          setContentStatus(existing.status);
+          setContentStatus('draft'); // Update local state to reflect draft status
           setDraftSaved(true);
           message.success(`${typeName} updated! Edit anytime before submitting.`);
         }
       } else {
+        // Creating new content - explicitly set status to 'draft'
+        formData.append('status', 'draft');
         const response = await axios.post(`${apiBase}/content`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         setSavedContentId(response.data.content.id);
         setContentStatus('draft');
         setDraftSaved(true);
-               message.success(`${typeName} saved! Edit anytime before submitting.`);
+        message.success(`${typeName} saved! Edit anytime before submitting.`);
       }
     } catch (error) {
-        //  message.success(`${typeName} saved! Edit anytime before submitting.`);
-         console.error('Error saving content:', error);
-      message.error(error.response?.data?.message || 'Failed to save content');
+      console.error('Error saving content:', error);
+      // Handle validation errors
+      if (error.errorFields && error.errorFields.length > 0) {
+        const missingFields = error.errorFields.map(field => {
+          const fieldName = Array.isArray(field.name) ? field.name.join('.') : field.name;
+          return field.errors[0] || fieldName;
+        });
+        message.error({
+          content: (
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Please complete the following required fields:</div>
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {missingFields.map((msg, idx) => (
+                  <li key={idx}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          ),
+          duration: 5
+        });
+      } else {
+        // Handle server errors
+        message.error(error.response?.data?.message || 'Failed to save content');
+      }
     } finally {
       setLoading(false);
     }
@@ -475,32 +551,6 @@ const handleSubmit = async () => {
       setSubmitLoading(true);
       const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
-
-      // // Generate content based on active tab for SEO calculation
-      // let finalContent = content;
-      // if (activeTab === 'builder') {
-      //   finalContent = builderContent;
-      // } else if (activeTab === 'html') {
-      //   finalContent = htmlContent;
-      // }
-
-      // // Calculate SEO score before submission
-      // const seoScore = calculateSEOScore(
-      //   values.title,
-      //   values.short_description,
-      //   finalContent,
-      //   values.tags,
-      //   values.seo_meta_title,
-      //   values.seo_meta_description,
-      //   values.seo_meta_keywords
-      // );
-
-      // // Check if SEO score is below 80%
-      // if (seoScore.percentage < 80) {
-      //   setSubmitLoading(false);
-      //   message.error('Please improve your content SEO score before submitting. Your current SEO score is ' + seoScore.percentage + '%. Aim for at least 80% to ensure better visibility and performance.');
-      //   return;
-      // }
 
       const apiBase = isAdmin ? '/api/admin' : '/api/user';
       const redirectPath = isAdmin ? '/admin' : '/dashboard';
@@ -515,11 +565,39 @@ const handleSubmit = async () => {
       }
       const response = await axios.post(`${apiBase}/content/${contentId}/submit`);
       setContentStatus(response.data.content.status);
+      
+      // Clear localStorage backup after successful submission
+      const storageKey = `builder_autosave_${contentId || 'draft'}`;
+      localStorage.removeItem(storageKey);
+      localStorage.removeItem(`${storageKey}_timestamp`);
+      
       message.success(`${typeName} submitted for review!`);
       navigate(redirectPath);
     } catch (error) {
       console.error('Error submitting content:', error);
-      message.error(error.response?.data?.message || 'Failed to submit content');
+      // Handle validation errors
+      if (error.errorFields && error.errorFields.length > 0) {
+        const missingFields = error.errorFields.map(field => {
+          const fieldName = Array.isArray(field.name) ? field.name.join('.') : field.name;
+          return field.errors[0] || fieldName;
+        });
+        message.error({
+          content: (
+            <div>
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>Please complete the following required fields:</div>
+              <ul style={{ margin: 0, paddingLeft: 20 }}>
+                {missingFields.map((msg, idx) => (
+                  <li key={idx}>{msg}</li>
+                ))}
+              </ul>
+            </div>
+          ),
+          duration: 5
+        });
+      } else {
+        // Handle server errors
+        message.error(error.response?.data?.message || 'Failed to submit content');
+      }
     } finally {
       setSubmitLoading(false);
     }
@@ -740,17 +818,32 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
   const bannerImageUrl = fileList.length > 0 ? getImageUrl(fileList[0]) : null;
 
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorBgContainer: darkMode ? '#1e293b' : '#fff',
-          colorText: darkMode ? '#cbd5e1' : '#374151',
-          colorBorder: darkMode ? '#334155' : '#e5e7eb',
-          colorBgElevated: darkMode ? '#1e293b' : '#fff',
-          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
-        },
-      }}
-    >
+    <>
+      <style>
+        {`
+          @keyframes propertiesIndicator {
+            0%, 100% {
+              transform: translateY(-50%) scaleY(1);
+              opacity: 0.6;
+            }
+            50% {
+              transform: translateY(-50%) scaleY(1.3);
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
+      <ConfigProvider
+        theme={{
+          token: {
+            colorBgContainer: darkMode ? '#1e293b' : '#fff',
+            colorText: darkMode ? '#cbd5e1' : '#374151',
+            colorBorder: darkMode ? '#334155' : '#e5e7eb',
+            colorBgElevated: darkMode ? '#1e293b' : '#fff',
+            colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+          },
+        }}
+      >
       <div style={{ minHeight: '100vh', background: darkMode ? '#0f172a' : '#f5f5f5', paddingTop: '64px' }}>
 
         {/* Top Header */}
@@ -761,7 +854,7 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 16px)' }}>
-            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')} style={{ color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(12px, 0.9vw, 13px)' }} size={window.innerWidth < 768 ? 'small' : 'middle'}>
+            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/admin' : '/user-dashboard')} style={{ color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(12px, 0.9vw, 13px)' }} size={window.innerWidth < 768 ? 'small' : 'middle'}>
               {window.innerWidth < 768 ? '' : (isAdmin ? 'Dashboard' : 'Dashboard')}
             </Button>
             {window.innerWidth >= 768 && <Divider orientation="vertical" style={{ margin: 0, borderColor: darkMode ? '#334155' : '#e8e8e8' }} />}
@@ -937,6 +1030,7 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                   flexShrink: 0,
                   transition: 'all 0.15s',
                   marginLeft: 'auto',
+                  position: 'relative',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.borderColor = '#4a7cff';
@@ -947,6 +1041,24 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                   e.currentTarget.style.color = sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b');
                 }}
               >
+                {/* Animated indicator line on the left side */}
+                {!sidebarOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: -6,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: 3,
+                      height: '80%',
+                      background: 'linear-gradient(to bottom, transparent, #4a7cff, transparent)',
+                      borderRadius: 2,
+                      animation: 'propertiesIndicator 2s ease-in-out infinite',
+                      pointerEvents: 'none',
+                      boxShadow: '0 0 8px rgba(74, 124, 255, 0.6)',
+                    }}
+                  />
+                )}
                 <SettingOutlined style={{ fontSize: 13 }} />
                 Properties
                 <span style={{ fontSize: 11, opacity: 0.7 }}>{sidebarOpen ? '›' : '‹'}</span>
@@ -1040,7 +1152,7 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                               Duplicate content detected
                             </div>
                             <div style={{ fontSize: 13, color: '#991b1b' }}>
-                              Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.
+                              Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.While testing landing page on local from html builder and inserted the api the table created in backedn and also in html code and webhook input i have added url but its not working the data is not insrted in the table also not hit to the api
                             </div>
                           </div>
                         </div>
@@ -1319,6 +1431,19 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                   </Form.Item>
                 </div>
  
+                {/* Webhook URL for Visual Builder */}
+                {showLandingFields && (
+                  <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
+                    <div style={{ marginBottom: 16 }}>
+                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                      <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Form data will be forwarded to this URL after submission</div>
+                    </div>
+                    <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                      <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                    </Form.Item>
+                  </div>
+                )}
+
                 {/* BuilderIntegration — always Visual Builder */}
                 <BuilderIntegration
                   darkMode={darkMode}
@@ -1351,7 +1476,15 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                     builder_content_elements: [],
                     content: builderContent,
                   }}
-                  onSave={(data, options) => {
+                  onSave={async (data, options) => {
+                    console.log('[CreateContent] onSave callback triggered', { 
+                      hasData: !!data, 
+                      isAutoSync: options?.autoSync,
+                      savedContentId,
+                      builderPageDataSize: data.builder_page_data ? JSON.stringify(data.builder_page_data).length : 0
+                    });
+
+                    // Update local state for both auto-sync and manual saves
                     if (data.builder_page_data !== undefined) {
                       setBuilderPageData(data.builder_page_data);
                     }
@@ -1360,6 +1493,66 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                     }
                     if (data.content) {
                       setBuilderContent(data.content);
+                    }
+
+                    // Auto-save to backend when auto-sync is triggered
+                    if (options?.autoSync) {
+                      // Mark as having unsaved changes (will be cleared after backend save)
+                      setHasUnsavedChanges(true);
+
+                      try {
+                        const values = form.getFieldsValue();
+                        
+                        // Validate minimum required fields for auto-save
+                        if (!values.title || !values.content_type_id) {
+                          console.log('[CreateContent] Auto-save skipped - missing required fields (title or content_type_id)');
+                          // Still mark as having unsaved changes
+                          return;
+                        }
+
+                        const formData = buildFormData(values);
+                        const apiBase = isAdmin ? '/api/admin' : '/api/user';
+                        
+                        if (savedContentId) {
+                          // Update existing content - keep its current status (draft/published)
+                          console.log('[CreateContent] Auto-saving to existing content:', savedContentId);
+                          const response = await axios.put(`${apiBase}/content/${savedContentId}`, formData, { 
+                            headers: { 'Content-Type': 'multipart/form-data' } 
+                          });
+                          console.log('[CreateContent] Auto-save SUCCESS');
+                        } else {
+                          // Create new draft automatically
+                          console.log('[CreateContent] Auto-creating new draft content');
+                          // Explicitly set status to 'draft' for auto-save
+                          formData.append('status', 'draft');
+                          const response = await axios.post(`${apiBase}/content`, formData, { 
+                            headers: { 'Content-Type': 'multipart/form-data' } 
+                          });
+                          const newContentId = response.data.content?.id || response.data.id;
+                          console.log('[CreateContent] Draft created with ID:', newContentId);
+                          setSavedContentId(newContentId);
+                          setContentStatus('draft');
+                          setDraftSaved(true);
+                          
+                          // Update URL to edit mode without page reload
+                          window.history.replaceState({}, '', isAdmin ? `/admin/edit-content/${newContentId}` : `/edit-content/${newContentId}`);
+                        }
+                        
+                        // Clear unsaved changes flag after successful save
+                        setHasUnsavedChanges(false);
+                        
+                        // Clear localStorage backup after successful backend save
+                        const storageKey = `builder_autosave_${savedContentId || 'draft'}`;
+                        localStorage.removeItem(storageKey);
+                        localStorage.removeItem(`${storageKey}_timestamp`);
+                        
+                        console.log('[CreateContent] Auto-save complete - draft saved to database');
+                      } catch (error) {
+                        console.error('[CreateContent] Auto-save to backend failed:', error);
+                        console.error('[CreateContent] Error details:', error.response?.data);
+                        // Don't show error message to avoid disturbing user during editing
+                        // Changes remain in localStorage as backup
+                      }
                     }
                   }}
                   enableNewBuilder={true}
@@ -1498,7 +1691,16 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                 <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 40 }}>
                   <div style={{ padding: '14px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><CodeOutlined style={{ marginRight: 8, color: '#4a7cff' }} />HTML Content</Text>
-                    <Button size="small" icon={<EyeOutlined />} onClick={() => setHtmlPreviewVisible(true)}>Preview</Button>
+                    <Space>
+                      <Button 
+                        size="small" 
+                        icon={<PictureOutlined />} 
+                        onClick={() => setMediaLibraryVisible(true)}
+                      >
+                        Media Library
+                      </Button>
+                      <Button size="small" icon={<EyeOutlined />} onClick={() => setHtmlPreviewVisible(true)}>Preview</Button>
+                    </Space>
                   </div>
                   <div style={{ padding: '0 4px 4px' }}>
                     <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" />
@@ -1569,17 +1771,16 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                   </div>
                 )}
 
-                {/* Webhook URL */}
-                {showLandingFields && (
-                  <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
-                    <div style={{ marginBottom: 16 }}>
-                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
-                    </div>
-                    <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
-                      <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                    </Form.Item>
+                {/* Webhook URL - Always visible in HTML Builder for form submissions */}
+                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                    <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Form data will be forwarded to this URL after submission</div>
                   </div>
-                )}
+                  <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                    <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                  </Form.Item>
+                </div>
               </>
             )}
           </div>
@@ -1814,6 +2015,17 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
           </div>
         </Modal>
       )}
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal
+        visible={mediaLibraryVisible}
+        onClose={() => setMediaLibraryVisible(false)}
+        onSelect={(media) => {
+          // URL is already copied to clipboard by the modal
+          console.log('Selected media:', media);
+        }}
+      />
+
       <style>{`
         @media (max-width: 768px) {
           .create-content-tabs {
@@ -1838,6 +2050,7 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
       `}</style>
       </div>
     </ConfigProvider>
+    </>
   );
 };
 

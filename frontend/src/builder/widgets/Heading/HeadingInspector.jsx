@@ -4,7 +4,8 @@
  */
 
 import React from 'react';
-import { Form, Input, Select, InputNumber, ColorPicker } from 'antd';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
+import { Input, Select, InputNumber, ColorPicker } from 'antd';
 
 const { TextArea } = Input;
 
@@ -34,16 +35,16 @@ export default function HeadingInspector({ node, onUpdate }) {
 
   return (
     <div style={{ padding: 16 }}>
-      <Form layout="vertical">
-        <Form.Item label="Text">
+      <InspectorPanel>
+        <InspectorFormItem label="Text">
           <TextArea
             rows={2}
             value={node.content || ''}
             onChange={(e) => onUpdate({ content: e.target.value })}
             placeholder="Enter heading text"
           />
-        </Form.Item>
-        <Form.Item label="Heading Level">
+        </InspectorFormItem>
+        <InspectorFormItem label="Heading Level">
           <Select
             value={node.headingLevel || 'h2'}
             onChange={(value) => onUpdate({ headingLevel: value })}
@@ -56,9 +57,9 @@ export default function HeadingInspector({ node, onUpdate }) {
             <Option value="h5">H5</Option>
             <Option value="h6">H6</Option>
           </Select>
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Alignment">
+        <InspectorFormItem label="Alignment">
           <Select
             value={node.alignment || 'left'}
             onChange={(value) => onUpdate({ alignment: value })}
@@ -69,17 +70,17 @@ export default function HeadingInspector({ node, onUpdate }) {
             <Option value="right">Right</Option>
             <Option value="justify">Justify</Option>
           </Select>
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Color">
+        <InspectorFormItem label="Color">
           <ColorPicker
             value={styles.color || '#262626'}
             onChange={(color) => handleStyleChange('color', color.toHexString())}
             style={{ width: '100%' }}
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Font Size">
+        <InspectorFormItem label="Font Size">
           <InputNumber
             value={parseInt(styles.fontSize) || 24}
             onChange={(value) => handleStyleChange('fontSize', `${value}px`)}
@@ -89,9 +90,9 @@ export default function HeadingInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="px"
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Font Weight">
+        <InspectorFormItem label="Font Weight">
           <Select
             value={styles.fontWeight || '600'}
             onChange={(value) => handleStyleChange('fontWeight', value)}
@@ -104,9 +105,9 @@ export default function HeadingInspector({ node, onUpdate }) {
             <Option value="700">Bold</Option>
             <Option value="800">Extra Bold</Option>
           </Select>
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Line Height">
+        <InspectorFormItem label="Line Height">
           <InputNumber
             value={parseFloat(styles.lineHeight) || 1.2}
             onChange={(value) => handleStyleChange('lineHeight', value)}
@@ -115,9 +116,9 @@ export default function HeadingInspector({ node, onUpdate }) {
             step={0.1}
             style={{ width: '100%' }}
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Margin Bottom">
+        <InspectorFormItem label="Margin Bottom">
           <InputNumber
             value={parseInt(styles.marginBottom) || 16}
             onChange={(value) => handleStyleChange('marginBottom', `${value}px`)}
@@ -127,8 +128,8 @@ export default function HeadingInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="px"
           />
-        </Form.Item>
-      </Form>
+        </InspectorFormItem>
+      </InspectorPanel>
     </div>
   );
 }

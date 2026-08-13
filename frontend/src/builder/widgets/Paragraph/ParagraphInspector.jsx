@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Form, Input, Select, InputNumber, ColorPicker } from 'antd';
+import { Input, Select, InputNumber, ColorPicker } from 'antd';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -33,17 +33,17 @@ export default function ParagraphInspector({ node, onUpdate }) {
 
   return (
     <div style={{ padding: 16 }}>
-      <Form layout="vertical">
-        <Form.Item label="Content">
+      <InspectorPanel>
+        <InspectorFormItem label="Content">
           <TextArea
             value={node.content || ''}
             onChange={(e) => onUpdate({ content: e.target.value })}
             rows={4}
             placeholder="Enter paragraph text"
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Alignment">
+        <InspectorFormItem label="Alignment">
           <Select
             value={node.alignment || 'left'}
             onChange={(value) => onUpdate({ alignment: value })}
@@ -54,17 +54,17 @@ export default function ParagraphInspector({ node, onUpdate }) {
             <Option value="right">Right</Option>
             <Option value="justify">Justify</Option>
           </Select>
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Color">
+        <InspectorFormItem label="Color">
           <ColorPicker
             value={styles.color || '#262626'}
             onChange={(color) => handleStyleChange('color', color.toHexString())}
             style={{ width: '100%' }}
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Font Size">
+        <InspectorFormItem label="Font Size">
           <InputNumber
             value={parseInt(styles.fontSize) || 16}
             onChange={(value) => handleStyleChange('fontSize', `${value}px`)}
@@ -74,9 +74,9 @@ export default function ParagraphInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="px"
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Font Weight">
+        <InspectorFormItem label="Font Weight">
           <Select
             value={styles.fontWeight || '400'}
             onChange={(value) => handleStyleChange('fontWeight', value)}
@@ -88,9 +88,9 @@ export default function ParagraphInspector({ node, onUpdate }) {
             <Option value="600">Semi Bold</Option>
             <Option value="700">Bold</Option>
           </Select>
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Line Height">
+        <InspectorFormItem label="Line Height">
           <InputNumber
             value={parseFloat(styles.lineHeight) || 1.6}
             onChange={(value) => handleStyleChange('lineHeight', value)}
@@ -99,9 +99,9 @@ export default function ParagraphInspector({ node, onUpdate }) {
             step={0.1}
             style={{ width: '100%' }}
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Letter Spacing">
+        <InspectorFormItem label="Letter Spacing">
           <InputNumber
             value={parseFloat(styles.letterSpacing) || 0}
             onChange={(value) => handleStyleChange('letterSpacing', `${value}px`)}
@@ -111,9 +111,9 @@ export default function ParagraphInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="px"
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Margin Bottom">
+        <InspectorFormItem label="Margin Bottom">
           <InputNumber
             value={parseInt(styles.marginBottom) || 16}
             onChange={(value) => handleStyleChange('marginBottom', `${value}px`)}
@@ -123,8 +123,8 @@ export default function ParagraphInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="px"
           />
-        </Form.Item>
-      </Form>
+        </InspectorFormItem>
+      </InspectorPanel>
     </div>
   );
 }

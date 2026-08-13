@@ -170,6 +170,69 @@ exports.getAllFiles = async (req, res) => {
     }
 };
 
+exports.getUserFiles = async (req, res) => {
+    try {
+        const { file_type, folder, search } = req.query;
+        
+        // Capitalize folder to match DB values (images -> Images)
+        const folderValue = folder && folder !== 'all'
+            ? folder.charAt(0).toUpperCase() + folder.slice(1)
+            : 'all';
+
+        const filters = {
+            file_type: file_type || 'all',
+            folder: folderValue,
+            search: search || '',
+            uploaded_by: req.user.id, // Filter by current user
+            limit: 500,
+            offset: 0
+        };
+        
+        const mediaFiles = await Media.findAll(filters);
+        
+        // Show all DB records — file_data in DB or file on filesystem
+        const seenFilenames = new Set();
+        const uniqueFiles = mediaFiles.filter(media => {
+            if (seenFilenames.has(media.filename)) return false;
+            seenFilenames.add(media.filename);
+            return true;
+        });
+        
+        // Transform database records to match frontend format
+        const formattedFiles = uniqueFiles.map(media => ({
+            id: media.id,
+            name: media.original_name,
+            filename: media.filename,
+            type: media.file_type,
+            url: media.file_path,
+            thumbnail: media.file_type === 'image' ? media.file_path : null,
+            size: media.file_size,
+            folder: media.folder,
+            createdAt: media.created_at,
+            usageCount: 0,
+            content_title: null,
+        }));
+        
+        res.json({
+            data: formattedFiles,
+            total: uniqueFiles.length
+        });
+    } catch (error) {
+        console.error('Error fetching user files:', error);
+        res.status(500).json({ message: 'Failed to fetch files' });
+    }
+};
+
+exports.getUserFolderCounts = async (req, res) => {
+    try {
+        const counts = await Media.getFolderCountsByUser(req.user.id);
+        res.json(counts);
+    } catch (error) {
+        console.error('Error fetching user folder counts:', error);
+        res.status(500).json({ message: 'Failed to fetch folder counts' });
+    }
+};
+
 exports.getFolderCounts = async (req, res) => {
     try {
         const counts = await Media.getFolderCounts();

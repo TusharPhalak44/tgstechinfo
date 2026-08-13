@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Form, Input } from 'antd';
+import { Input } from 'antd';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 
 export default function RichTextInspector({ node, onUpdate }) {
@@ -18,15 +18,15 @@ export default function RichTextInspector({ node, onUpdate }) {
   };
 
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="HTML Content">
+    <InspectorPanel>
+      <InspectorFormItem label="HTML Content">
         <Input.TextArea
           value={content.html || ''}
           onChange={(e) => handleChange('html', e.target.value)}
           rows={12}
           style={{ fontFamily: 'monospace', fontSize: '13px' }}
         />
-      </Form.Item>
-    </Form>
+      </InspectorFormItem>
+    </InspectorPanel>
   );
 }

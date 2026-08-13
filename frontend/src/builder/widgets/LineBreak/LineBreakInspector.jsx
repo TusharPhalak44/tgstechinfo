@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Form, InputNumber, Select } from 'antd';
+import { InputNumber, Select } from 'antd';
 
 const { Option } = Select;
 
@@ -22,8 +22,8 @@ export default function LineBreakInspector({ node, onUpdate }) {
 
   return (
     <div style={{ padding: 16 }}>
-      <Form layout="vertical">
-        <Form.Item label="Height">
+      <InspectorPanel>
+        <InspectorFormItem label="Height">
           <InputNumber
             value={parseFloat(styles.height) || 1}
             onChange={(value) => handleStyleChange('height', `${value}em`)}
@@ -33,9 +33,9 @@ export default function LineBreakInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="em"
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Display">
+        <InspectorFormItem label="Display">
           <Select
             value={styles.display || 'block'}
             onChange={(value) => handleStyleChange('display', value)}
@@ -46,9 +46,9 @@ export default function LineBreakInspector({ node, onUpdate }) {
             <Option value="inline-block">Inline Block</Option>
             <Option value="none">None</Option>
           </Select>
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Margin Top">
+        <InspectorFormItem label="Margin Top">
           <InputNumber
             value={parseFloat(styles.marginTop) || 0}
             onChange={(value) => handleStyleChange('marginTop', `${value}px`)}
@@ -58,9 +58,9 @@ export default function LineBreakInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="px"
           />
-        </Form.Item>
+        </InspectorFormItem>
 
-        <Form.Item label="Margin Bottom">
+        <InspectorFormItem label="Margin Bottom">
           <InputNumber
             value={parseFloat(styles.marginBottom) || 0}
             onChange={(value) => handleStyleChange('marginBottom', `${value}px`)}
@@ -70,8 +70,8 @@ export default function LineBreakInspector({ node, onUpdate }) {
             style={{ width: '100%' }}
             addonAfter="px"
           />
-        </Form.Item>
-      </Form>
+        </InspectorFormItem>
+      </InspectorPanel>
     </div>
   );
 }

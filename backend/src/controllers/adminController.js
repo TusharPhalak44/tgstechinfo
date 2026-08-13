@@ -249,6 +249,40 @@ exports.getAllUsers = async (req, res) => {
     }
 };
 
+// ✅ Update user details
+exports.updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { first_name, last_name, role } = req.body;
+
+        // Check if user exists
+        const existingUser = await User.findById(id);
+        if (!existingUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const updateData = {};
+        if (first_name !== undefined) updateData.first_name = first_name;
+        if (last_name !== undefined) updateData.last_name = last_name;
+        if (role !== undefined) updateData.role = role;
+
+        const user = await User.update(id, updateData);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        delete user.password_hash;
+
+        // Log to audit logs
+        await logAudit(req, 'update', 'user', id, `Updated user details for: ${user.email}`, 'success');
+
+        res.json({ message: 'User updated successfully', user });
+    } catch (error) {
+        console.error('Update user error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // ✅ Update user status (active/inactive)
 exports.updateUserStatus = async (req, res) => {
     try {
@@ -500,6 +534,44 @@ exports.getContentByStatus = async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Get content by status error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Toggle content visibility on site
+exports.toggleContentVisibility = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { is_visible_on_site } = req.body;
+
+        if (is_visible_on_site === undefined) {
+            return res.status(400).json({ message: 'is_visible_on_site is required' });
+        }
+
+        const content = await Content.findById(id);
+        if (!content) {
+            return res.status(404).json({ message: 'Content not found' });
+        }
+
+        const updatedContent = await Content.update(id, { is_visible_on_site });
+
+        // Log to audit logs
+        const visibilityStatus = is_visible_on_site ? 'visible' : 'hidden';
+        await logAudit(
+            req, 
+            'update', 
+            'content', 
+            id, 
+            `Changed content visibility to ${visibilityStatus}: ${content.title}`, 
+            'success'
+        );
+
+        res.json({ 
+            message: `Content ${visibilityStatus} on site successfully`, 
+            content: updatedContent 
+        });
+    } catch (error) {
+        console.error('Toggle content visibility error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

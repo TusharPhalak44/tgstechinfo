@@ -81,6 +81,15 @@ const AdminEditContent = () => {
         navigate(`/edit-content/${id}`, { replace: true });
         return;
       }
+      
+      // HTML Builder content — redirect to CreateContent with HTML editor mode
+      const builderLayout = data.builder_layout ? (typeof data.builder_layout === 'string' ? JSON.parse(data.builder_layout) : data.builder_layout) : null;
+      const isHtmlBuilder = Array.isArray(builderLayout) && builderLayout[0] === 'html';
+      if (isHtmlBuilder) {
+        navigate(`/edit-content/${id}`, { replace: true });
+        return;
+      }
+      
       setInitialContent(data.content || '');
       setContent(data.content || '');
       setEditorReady(true);

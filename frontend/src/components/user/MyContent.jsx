@@ -514,7 +514,7 @@ const MyContent = () => {
         <Button 
           type="primary" 
           icon={<PlusOutlined />} 
-          onClick={() => navigate('/create-content')}
+          onClick={() => navigate('/dashboard/create-post')}
           size="small"
           style={{
             flex: isMobile ? 1 : 'none',
@@ -554,7 +554,7 @@ const MyContent = () => {
           description={activeTab === 'all' ? 'No content yet' : `No ${activeTab}s yet`}
           style={{ padding: isMobile ? '40px 0' : '48px 0' }}
         >
-          <Button type="primary" onClick={() => navigate('/create-content')} size="small" style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}>
+          <Button type="primary" onClick={() => navigate('/dashboard/create-post')} size="small" style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}>
             Create Now
           </Button>
         </Empty>

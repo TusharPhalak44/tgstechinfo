@@ -4,8 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Select, Button, Tag, Space, Tooltip, Card, Collapse, message } from 'antd';
-import { LinkOutlined, ThunderboltOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Form, Input, Select, Button, Tag, Space, Tooltip, Card, Collapse, message, Alert } from 'antd';
+import { LinkOutlined, ThunderboltOutlined, PlusOutlined, DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import dynamicContentManager from '../core/DynamicContentManager';
 
 /**
@@ -63,6 +63,36 @@ export default function DynamicContentPanel({ node, onUpdate }) {
 
   return (
     <div className="dynamic-content-panel">
+      {/* Info Section */}
+      <Alert
+        message="What is Dynamic Content?"
+        description={
+          <div style={{ fontSize: 12, lineHeight: 1.6 }}>
+            <p style={{ marginBottom: 8 }}>
+              Dynamic content allows you to create personalized, data-driven pages that automatically update based on user context, page data, or external variables.
+            </p>
+            <p style={{ marginBottom: 8 }}>
+              <strong>Why use it?</strong>
+            </p>
+            <ul style={{ marginLeft: 16, marginBottom: 8 }}>
+              <li>Display personalized greetings with user names</li>
+              <li>Show current date, time, or year automatically</li>
+              <li>Populate content from database fields (author, title, etc.)</li>
+              <li>Create reusable templates with variable placeholders</li>
+            </ul>
+            <p style={{ marginBottom: 0 }}>
+              <strong>How to use:</strong> Type <code style={{ background: '#f0f0f0', padding: '2px 6px', borderRadius: 3 }}>{'{{variable}}'}</code> in your content. 
+              Available variables are listed below. Example: <code style={{ background: '#f0f0f0', padding: '2px 6px', borderRadius: 3 }}>Hello {'{{user.name}}'}, welcome back!</code>
+            </p>
+          </div>
+        }
+        type="info"
+        icon={<InfoCircleOutlined />}
+        showIcon
+        closable
+        style={{ marginBottom: 16 }}
+      />
+
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <ThunderboltOutlined style={{ color: '#f59e0b' }} />
