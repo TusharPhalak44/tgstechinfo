@@ -16,6 +16,7 @@ import InteractionPanel from './InteractionPanel';
 import FormWidget from '../widgets/Form/FormWidget';
 import ImageInspector from '../widgets/Image/ImageInspector.jsx';
 import VideoInspector from '../widgets/Video/VideoInspector.jsx';
+import HeadingInspector from '../widgets/Heading/HeadingInspector.jsx';
 
 const { TabPane } = Tabs;
 
@@ -173,37 +174,7 @@ function ContentPanel({ node, widget, onUpdate }) {
     switch (node.type) {
       case 'heading':
         return (
-          <>
-            <Form.Item label="Text" name="content">
-              <Input.TextArea 
-                rows={2} 
-                placeholder="Enter heading text"
-                onChange={(e) => onUpdate({ content: e.target.value })}
-              />
-            </Form.Item>
-            <Form.Item label="Heading Level" name="headingLevel">
-              <Select 
-                onChange={(value) => onUpdate({ headingLevel: value })}
-              >
-                <Select.Option value="h1">H1</Select.Option>
-                <Select.Option value="h2">H2</Select.Option>
-                <Select.Option value="h3">H3</Select.Option>
-                <Select.Option value="h4">H4</Select.Option>
-                <Select.Option value="h5">H5</Select.Option>
-                <Select.Option value="h6">H6</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item label="Alignment" name="alignment">
-              <Select 
-                onChange={(value) => onUpdate({ alignment: value })}
-              >
-                <Select.Option value="left">Left</Select.Option>
-                <Select.Option value="center">Center</Select.Option>
-                <Select.Option value="right">Right</Select.Option>
-                <Select.Option value="justify">Justify</Select.Option>
-              </Select>
-            </Form.Item>
-          </>
+          <HeadingInspector node={node} onUpdate={onUpdate} />
         );
 
       case 'paragraph':
@@ -273,8 +244,9 @@ function ContentPanel({ node, widget, onUpdate }) {
     }
   };
 
-  // For form and image widgets, render without Form wrapper to avoid conflicts
-  if (node.type === 'form' || node.type === 'image' || node.type === 'video') {
+  // Widgets that manage their own state — render without Ant Design Form wrapper
+  // to avoid circular update loops from onValuesChange + useEffect
+  if (node.type === 'form' || node.type === 'image' || node.type === 'video' || node.type === 'heading') {
     return renderContentEditor();
   }
 

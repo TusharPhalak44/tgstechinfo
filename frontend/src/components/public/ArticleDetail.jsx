@@ -170,19 +170,17 @@ const ArticleDetail = () => {
           return;
         }
 
-        console.log('[ArticleDetail] builder_layout raw:', c.builder_layout);
-        console.log('[ArticleDetail] builder_layout type:', typeof c.builder_layout);
-
         try {
           const layout = typeof c.builder_layout === 'string'
             ? JSON.parse(c.builder_layout)
             : c.builder_layout;
-          console.log('[ArticleDetail] layout parsed:', layout);
           const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-          console.log('[ArticleDetail] isHtmlBuilder:', isHtmlBuilder);
-          if (isHtmlBuilder) {
-            window.open(`/content/${c.slug}`, '_blank', 'noopener,noreferrer');
-            navigate(-1);
+          // Visual Builder pages have builder_page_data set
+          const isVisualBuilder = !!c.builder_page_data;
+          if (isHtmlBuilder || isVisualBuilder) {
+            // Redirect to the standalone page renderer (no navbar/footer)
+            // encodeURIComponent handles slugs that may contain spaces or special chars
+            navigate(`/content/${encodeURIComponent(c.slug)}`, { replace: true });
             return;
           }
         } catch (e) {
@@ -798,8 +796,10 @@ const ArticleDetail = () => {
                         const layout = typeof article.builder_layout === 'string'
                           ? JSON.parse(article.builder_layout)
                           : article.builder_layout;
-                        if (Array.isArray(layout) && layout[0] === 'html') {
-                          window.open(`/content/${article.slug}`, '_blank', 'noopener,noreferrer');
+                        const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
+                        const isVisualBuilder = !!article.builder_page_data;
+                        if (isHtmlBuilder || isVisualBuilder) {
+                          navigate(`/content/${encodeURIComponent(article.slug)}`);
                           return;
                         }
                       } catch { /* fall through */ }

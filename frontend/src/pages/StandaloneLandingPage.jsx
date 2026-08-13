@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet-async';
 import { Spin, Result, Button } from 'antd';
 import { useCookieConsent } from '../context/CookieContext';
 import { useTheme } from '../context/ThemeContext';
+import StandaloneBuilderPage from './StandaloneBuilderPage';
 
 const StandaloneLandingPage = () => {
   const { slug } = useParams();
@@ -25,14 +26,18 @@ const StandaloneLandingPage = () => {
       const res = await axios.get(`/api/public/content/${slug}`);
       const data = res.data.content;
 
-      // Verify this is an HTML Builder page OR a Landing Page content type
-      const builderLayout = data.builder_layout ? JSON.parse(data.builder_layout) : null;
+      // Verify this is an HTML Builder page, Visual Builder page, or Landing Page content type
+      const builderLayout = data.builder_layout ? (typeof data.builder_layout === 'string' ? JSON.parse(data.builder_layout) : data.builder_layout) : null;
       const isHtmlBuilder = Array.isArray(builderLayout) && builderLayout[0] === 'html';
+      const isVisualBuilder = !!data.builder_page_data;
       const isLandingPageType = ['landing-page', 'landing page'].includes(
         (data.content_type || data.content_type_name || '').toLowerCase().trim()
       );
-      if (!isHtmlBuilder && !isLandingPageType) {
-        setError('This content is not a standalone landing page');
+      // Allow ANY Visual Builder or HTML Builder content regardless of content type
+      // Also allow dedicated landing page content types
+      if (!isHtmlBuilder && !isVisualBuilder && !isLandingPageType) {
+        // Not a builder page — redirect to the normal article view
+        navigate(`/article/${data.slug}`, { replace: true });
         return;
       }
 
@@ -127,6 +132,33 @@ const StandaloneLandingPage = () => {
           return _originalFetch.call(this, url, options);
         };
       })();
+
+      // Also patch XMLHttpRequest (used by axios and some native HTML forms)
+      (function() {
+        const _XHROpen = XMLHttpRequest.prototype.open;
+        const _XHRSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function(method, url) {
+          this._patchUrl = (typeof url === 'string') ? url : String(url);
+          return _XHROpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function(body) {
+          try {
+            if (this._patchUrl && this._patchUrl.includes('/api/public/landing-page') && body) {
+              let parsed;
+              try { parsed = JSON.parse(body); } catch(e) { parsed = null; }
+              if (parsed && typeof parsed === 'object') {
+                if (!parsed.content_id) parsed.content_id = window.__CONTENT_ID;
+                if (!parsed.session_uuid) parsed.session_uuid = window.__SESSION_UUID;
+                if (!parsed.consent_uuid) parsed.consent_uuid = window.__CONSENT_UUID;
+                body = JSON.stringify(parsed);
+                // Ensure Content-Type is set for JSON
+                this.setRequestHeader('Content-Type', 'application/json');
+              }
+            }
+          } catch(e) { /* never break XHR */ }
+          return _XHRSend.call(this, body);
+        };
+      })();
     `;
     document.body.insertBefore(globalsScript, document.body.firstChild);
 
@@ -208,6 +240,11 @@ const StandaloneLandingPage = () => {
   // Pre-process raw HTML to replace target placeholder endpoints in form elements too
   const rawHtml = (content.content || '')
     .replace(/https:\/\/your-api-url\.com\/api\/leads/g, '/api/public/landing-page');
+
+  // Visual Builder content — render using PreviewCanvas instead of dangerouslySetInnerHTML
+  if (content?.builder_page_data) {
+    return <StandaloneBuilderPage content={content} />;
+  }
 
   return (
     <>

@@ -76,6 +76,11 @@ const AdminEditContent = () => {
         seo_meta_keywords: data.seo_meta_keywords,
         scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null
       });
+      // Visual Builder content — redirect to CreateContent which handles builder_page_data
+      if (data.builder_page_data) {
+        navigate(`/edit-content/${id}`, { replace: true });
+        return;
+      }
       setInitialContent(data.content || '');
       setContent(data.content || '');
       setEditorReady(true);

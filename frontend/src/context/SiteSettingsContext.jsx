@@ -27,6 +27,8 @@ export const SiteSettingsProvider = ({ children }) => {
   const navbarLogo = settings?.website_navbar_logo || settings?.website_main_logo || settings?.website_logo || '';
   const footerLogo = settings?.website_footer_logo || settings?.website_main_logo || settings?.website_logo || '';
   const mainLogo   = settings?.website_main_logo   || settings?.website_logo || '';
+  // CMS logo — used in the admin login page and dashboard; uploaded via Admin > Settings
+  const cmsLogo    = settings?.cms_logo1 || settings?.cms_logo2 || mainLogo || '';
   const favicon    = settings?.website_favicon || '';
 
   // Logo sizes with safe defaults
@@ -45,7 +47,7 @@ export const SiteSettingsProvider = ({ children }) => {
   }
 
   return (
-    <SiteSettingsContext.Provider value={{ settings, loading, navbarLogo, footerLogo, mainLogo, favicon, logoSizes, refreshSettings: fetchSettings }}>
+    <SiteSettingsContext.Provider value={{ settings, loading, navbarLogo, footerLogo, mainLogo, cmsLogo, favicon, logoSizes, refreshSettings: fetchSettings }}>
       {children}
     </SiteSettingsContext.Provider>
   );

@@ -1,9 +1,10 @@
 services:
-  # MySQL Database (running on VPS via Docker)
+  # MySQL Database
   mysql:
     image: mysql:8.0
     container_name: tgstechinfo_mysql
     restart: unless-stopped
+    command: --max_allowed_packet=67108864
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -21,6 +22,23 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: tgstechinfo_phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8080:80"
+    networks:
+      - tgstechinfo_network
 
   # Backend API
   backend:
@@ -86,14 +104,16 @@ services:
     networks:
       - tgstechinfo_network
 
-  # Certbot for SSL certificates
+  # Certbot
   certbot:
     image: certbot/certbot
     container_name: tgstechinfo_certbot
+    restart: unless-stopped
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    entrypoint: >
+      /bin/sh -c "trap exit TERM; while :; do certbot renew; sleep 12h & wait $$!; done;"
 
 volumes:
   mysql_data:

@@ -86,15 +86,42 @@ const Settings = () => {
     }
   };
 
-  const handleImageUpload = async (file, type) => {
-    try {
+  // Compress image to max 400px wide at 75% quality before storing as base64.
+  // This keeps logo data well under MySQL's max_allowed_packet limit on hosted servers.
+  const compressImageToBase64 = (file, maxWidth = 400, quality = 0.75) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64Url = reader.result;
-        setPendingLogoUploads(prev => ({ ...prev, [type]: base64Url }));
-        message.success('Image ready to save. Click "Save Changes" to apply.');
+      reader.onload = (e) => {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          // Use image/png for images with transparency, else jpeg for smaller size
+          const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+          resolve(canvas.toDataURL(mimeType, quality));
+        };
+        img.onerror = reject;
       };
+      reader.onerror = reject;
+    });
+  };
+
+  const handleImageUpload = async (file, type) => {
+    try {
+      const compressed = await compressImageToBase64(file);
+      setPendingLogoUploads(prev => ({ ...prev, [type]: compressed }));
+      message.success('Image ready to save. Click "Save Changes" to apply.');
     } catch (error) {
       console.error('Upload error:', error);
       message.error('Failed to process image');

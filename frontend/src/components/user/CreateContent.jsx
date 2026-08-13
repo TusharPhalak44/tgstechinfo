@@ -340,10 +340,30 @@ const CreateContent = () => {
         node.children.forEach(walk);
       }
     };
-    // pageData is serialized as { version, layout: { root: {...} } } or { root: {...} }
-    const root = pageData?.layout?.root || pageData?.root || pageData;
+    // v2.0 format: { version, layout: <rootNode> }  — layout IS the root node (type:'page')
+    // Legacy format: { root: <rootNode> }
+    const root = pageData?.layout || pageData?.root || pageData;
     walk(root);
     return fields;
+  };
+
+  // Extract the first Form widget's apiUrl from the Visual Builder tree.
+  // Saved as content.webhook_url so the backend POSTs to it on form submission.
+  const extractBuilderWebhookUrl = (pageData) => {
+    let found = null;
+    const walk = (node) => {
+      if (found || !node) return;
+      if (node.type === 'form') {
+        try {
+          const fc = typeof node.content === 'string' ? JSON.parse(node.content) : (node.content || {});
+          if (fc.apiUrl && fc.apiUrl.trim()) found = fc.apiUrl.trim();
+        } catch (e) { /* skip */ }
+      }
+      if (!found && Array.isArray(node.children)) node.children.forEach(walk);
+    };
+    const root = pageData?.layout || pageData?.root || pageData;
+    walk(root);
+    return found;
   };
 
   const buildFormData = (values) => {
@@ -397,6 +417,14 @@ const CreateContent = () => {
       }
     }
     if (finalCustomFields.length > 0) formData.append('custom_fields', JSON.stringify(finalCustomFields));
+
+    // Visual Builder: extract webhook URL from Form widget's apiUrl and save to content.webhook_url
+    if (activeTab === 'builder' && builderPageData) {
+      const builderWebhookUrl = extractBuilderWebhookUrl(builderPageData);
+      if (builderWebhookUrl) {
+        formData.set('webhook_url', builderWebhookUrl);
+      }
+    }
     
     return formData;
   };
