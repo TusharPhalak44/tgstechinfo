@@ -6,12 +6,25 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-// Load .env but do NOT override variables already set by Docker/OS environment
 dotenv.config({ override: false });
 
 const app = express();
 
-// Security middleware
+const DEV_ORIGINS = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+const ENV_ORIGINS = (process.env.FRONTEND_URL || '').split(',').map(url => url.trim()).filter(Boolean);
+const ALLOWED_ORIGINS = [...new Set([...DEV_ORIGINS, ...ENV_ORIGINS])];
+
+const CSP_CONNECT_SRC = [
+    "'self'",
+    ...ALLOWED_ORIGINS,
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
+    'ws://localhost:5173',
+    'ws://localhost:5174',
+    'wss://*.supabase.co',
+    'https://*.supabase.co'
+];
+
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
@@ -20,18 +33,18 @@ app.use(helmet({
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:"],
             scriptSrc: ["'self'"],
-             connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "http://localhost:5174"],
+            connectSrc: CSP_CONNECT_SRC,
             frameSrc: ["'none'"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             manifestSrc: ["'self'"]
         }
     },
-    hsts: {
-        maxAge: 31536000, // 1 year
+    hsts: process.env.NODE_ENV === 'production' ? {
+        maxAge: 31536000,
         includeSubDomains: true,
         preload: true
-    },
+    } : false,
     noSniff: true,
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     xssFilter: true,
@@ -41,15 +54,10 @@ app.use(helmet({
 
 app.use(cors({
     origin: function(origin, callback) {
-        // Always allow these dev origins regardless of env
-        const devOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
-        const envOrigins = (process.env.FRONTEND_URL || '').split(',').map(url => url.trim()).filter(Boolean);
-        const allowedOrigins = [...new Set([...devOrigins, ...envOrigins])];
-
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || ALLOWED_ORIGINS.includes(origin)) {
             callback(null, true);
         } else {
-            console.warn(`CORS blocked origin: ${origin} | Allowed: ${allowedOrigins.join(', ')}`);
+            console.warn(`CORS blocked origin: ${origin} | Allowed: ${ALLOWED_ORIGINS.join(', ')}`);
             callback(null, false);
         }
     },
@@ -59,42 +67,33 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// Trust proxy for IP address detection - only trust localhost in development
 app.set('trust proxy', process.env.NODE_ENV === 'production' ? 1 : ['loopback', 'linklocal', 'uniquelocal']);
 
-// Rate limiting
 const limiter = rateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 1000, // 1000 requests per minute (increased for development)
+    windowMs: 60 * 1000,
+    max: 1000,
     message: 'Too many requests, please try again later.',
-    skip: (req) => process.env.NODE_ENV === 'development' || true // Skip in development
+    skip: (req) => process.env.NODE_ENV === 'development'
 });
 app.use('/api', limiter);
 
-// Body parser middleware
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use(cookieParser());
 
-// Static files — serve from filesystem first, then fall back to DB blob
 const uploadsDir = path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
-// DB blob fallback — fires when the file isn't found on disk
 app.use('/uploads/:filename', async (req, res, next) => {
     try {
         const { pool } = require('./src/config/database');
         const filename = req.params.filename;
 
-        // 1. Check filesystem first (handles cases where uploads dir exists)
         const filePath = path.join(uploadsDir, filename);
         if (require('fs').existsSync(filePath)) {
             return res.sendFile(filePath);
         }
 
-        // 2. Try DB blob
         const [rows] = await pool.query(
             'SELECT file_data, mime_type FROM media_files WHERE filename = ? LIMIT 1',
             [filename]
@@ -106,8 +105,6 @@ app.use('/uploads/:filename', async (req, res, next) => {
             return res.send(rows[0].file_data);
         }
 
-        // 3. file_data is NULL (large file stored on disk only, but disk missing on this server)
-        //    Return a transparent 1x1 pixel PNG placeholder so the page doesn't show broken images
         const placeholder = Buffer.from(
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
             'base64'
@@ -121,7 +118,6 @@ app.use('/uploads/:filename', async (req, res, next) => {
     }
 });
 
-// Routes
 app.use('/api/auth', require('./src/routes/authRoutes'));
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 app.use('/api/user', require('./src/routes/userRoutes'));
@@ -139,7 +135,6 @@ app.use('/api/email-templates', require('./src/routes/emailTemplateRoutes'));
 app.use('/api/site-settings', require('./src/routes/siteSettingsRoutes'));
 app.use('/api/audit-logs', require('./src/routes/auditLogRoutes'));
 
-// Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(err.status || 500).json({
@@ -151,9 +146,11 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`[Startup] NODE_ENV=${process.env.NODE_ENV}`);
+    console.log(`[Startup] CORS allowed origins: ${ALLOWED_ORIGINS.join(', ')}`);
+    console.log(`[Startup] CSP connectSrc: ${CSP_CONNECT_SRC.join(', ')}`);
 });
 
-// Catch unhandled promise rejections and exceptions so nodemon doesn't silently crash
 process.on('uncaughtException', (err) => {
     console.error('❌ Uncaught Exception:', err.message, err.stack);
 });

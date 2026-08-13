@@ -1,26 +1,43 @@
 const { verifyToken } = require('../config/auth');
 const User = require('../models/User');
 const UserSession = require('../models/UserSession');
+const { clearAuthCookies } = require('../utils/cookieOptions');
 
 exports.authenticate = async (req, res, next) => {
     try {
-        // Try to get token from httpOnly cookie first, fallback to Authorization header
         const token = req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '');
         const sessionToken = req.cookies?.sessionToken;
-        
+
         if (!token) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] 401: No access token provided. Cookies:', Object.keys(req.cookies || {}), '| Auth header present:', !!req.header('Authorization'));
+            }
             return res.status(401).json({ message: 'Authentication required' });
         }
 
         if (sessionToken) {
             const session = await UserSession.findBySessionToken(sessionToken);
-            if (!session || !session.is_active || session.expires_at < new Date()) {
-                if (sessionToken) {
-                    await UserSession.deactivate(sessionToken);
+            if (!session) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('[Auth] 401: Session token not found in DB:', sessionToken.substring(0, 12) + '...');
                 }
-                res.clearCookie('accessToken', { path: '/' });
-                res.clearCookie('refreshToken', { path: '/' });
-                res.clearCookie('sessionToken', { path: '/' });
+                await UserSession.deactivate(sessionToken);
+                clearAuthCookies(res);
+                return res.status(401).json({ message: 'Session expired. Please login again.' });
+            }
+            if (!session.is_active) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('[Auth] 401: Session is_active=false for session:', session.id);
+                }
+                clearAuthCookies(res);
+                return res.status(401).json({ message: 'Session expired. Please login again.' });
+            }
+            if (session.expires_at < new Date()) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('[Auth] 401: Session expired_at passed for session:', session.id, 'exp:', session.expires_at);
+                }
+                await UserSession.deactivate(sessionToken);
+                clearAuthCookies(res);
                 return res.status(401).json({ message: 'Session expired. Please login again.' });
             }
 
@@ -29,20 +46,47 @@ exports.authenticate = async (req, res, next) => {
             const timeSinceActivity = Date.now() - lastActivity.getTime();
 
             if (timeSinceActivity > idleTimeoutMs) {
+                if (process.env.NODE_ENV === 'development') {
+                    const minutesIdle = Math.round(timeSinceActivity / 60000);
+                    console.log(`[Auth] 401: Idle timeout for session ${session.id}: ${minutesIdle}min > 30min`);
+                }
                 await UserSession.deactivate(sessionToken);
-                res.clearCookie('accessToken', { path: '/' });
-                res.clearCookie('refreshToken', { path: '/' });
-                res.clearCookie('sessionToken', { path: '/' });
+                clearAuthCookies(res);
                 return res.status(401).json({ message: 'Session expired due to inactivity. Please login again.' });
             }
 
             await UserSession.updateLastActivity(sessionToken);
+        } else {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] Warning: accessToken present but no sessionToken cookie. Skipping session checks.');
+            }
         }
 
-        const decoded = verifyToken(token);
+        let decoded;
+        try {
+            decoded = verifyToken(token);
+        } catch (verifyErr) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] 401: verifyToken failed:', verifyErr.message, '| token prefix:', token.substring(0, 20) + '...');
+            }
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Invalid token' });
+        }
+
         const user = await User.findById(decoded.id);
 
-        if (!user || !user.is_active) {
+        if (!user) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] 401: User not found for decoded id:', decoded.id);
+            }
+            clearAuthCookies(res);
+            return res.status(401).json({ message: 'Invalid or inactive user' });
+        }
+        if (!user.is_active) {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('[Auth] 401: User is_active=false for id:', user.id);
+            }
+            clearAuthCookies(res);
             return res.status(401).json({ message: 'Invalid or inactive user' });
         }
 
@@ -50,7 +94,8 @@ exports.authenticate = async (req, res, next) => {
         req.token = token;
         next();
     } catch (error) {
-        console.error('Auth middleware error:', error);
+        console.error('[Auth] Unexpected middleware error:', error.message, error.stack);
+        clearAuthCookies(res);
         res.status(401).json({ message: 'Invalid token' });
     }
 };
@@ -62,7 +107,6 @@ exports.isAdmin = (req, res, next) => {
     next();
 };
 
-// Alias for isAdmin (for clarity in some routes)
 exports.requireAdmin = exports.isAdmin;
 
 exports.isUser = (req, res, next) => {
@@ -72,11 +116,10 @@ exports.isUser = (req, res, next) => {
     next();
 };
 
-// ✅ New: Check if user is content creator (not admin)
 exports.isContentCreator = (req, res, next) => {
     if (req.user.role === 'admin') {
-        return res.status(403).json({ 
-            message: 'Admin cannot create content. Admin is only for reviewing and managing content.' 
+        return res.status(403).json({
+            message: 'Admin cannot create content. Admin is only for reviewing and managing content.'
         });
     }
     next();
