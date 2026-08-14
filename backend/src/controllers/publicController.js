@@ -116,7 +116,7 @@ const normalizeContentTypeSlug = (value) => {
 exports.getPublishedContent = async (req, res) => {
     try {
         const { category, content_type, limit = 10, offset = 0 } = req.query;
-        const filters = { status: 'published', is_visible_on_site: true };
+        const filters = { status: 'published' };
 
         if (category) {
             if (/^\d+$/.test(category)) {

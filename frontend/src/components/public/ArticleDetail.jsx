@@ -393,7 +393,7 @@ const ArticleDetail = () => {
                 </Space>
                 <Space>
                   <CalendarOutlined style={{ color: darkMode ? '#94a3b8' : '#666' }} />
-                  <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{moment(content.published_date || content.created_at).format('MMMM D, YYYY')}</Text>
+                  <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{moment(content.scheduled_publish_date || content.published_date || content.created_at).format('MMMM D, YYYY')}</Text>
                 </Space>
                 <Space>
                   <ClockCircleOutlined style={{ color: darkMode ? '#94a3b8' : '#666' }} />
@@ -825,7 +825,7 @@ const ArticleDetail = () => {
                       </div>
                       <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#9ca3af', marginTop: 6 }}>
                         <CalendarOutlined style={{ marginRight: 3 }} />
-                        {moment(article.published_date || article.created_at).format('MMM D, YYYY')}
+                        {moment(article.scheduled_publish_date || article.published_date || article.created_at).format('MMM D, YYYY')}
                       </div>
                     </div>
                   </div>

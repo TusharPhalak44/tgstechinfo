@@ -333,15 +333,18 @@ const ContentListing = () => {
       },
     },
     {
-      title: 'Updated',
-      dataIndex: 'updated_at',
+      title: 'Publish Date',
+      dataIndex: 'scheduled_publish_date',
       width: 120,
       responsive: ['lg', 'xl'],
-      render: (date) => (
-        <Text style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#6B7280' }}>
-          {date ? moment(date).fromNow() : '—'}
-        </Text>
-      ),
+      render: (_, record) => {
+        const date = record.scheduled_publish_date || record.published_date || record.created_at;
+        return (
+          <Text style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#6B7280' }}>
+            {date ? moment(date).format('MMM D, YYYY') : '—'}
+          </Text>
+        );
+      },
     },
     {
       title: '',
@@ -476,7 +479,7 @@ const ContentListing = () => {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6B7280' }}>
-            {record.updated_at ? moment(record.updated_at).fromNow() : '—'}
+            {(record.scheduled_publish_date || record.published_date || record.created_at) ? moment(record.scheduled_publish_date || record.published_date || record.created_at).format('MMM D, YYYY') : '—'}
           </Text>
           <Dropdown
             menu={{

@@ -753,7 +753,7 @@ const Dashboard = () => {
 
         .user-dashboard-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #4a7cff ${darkMode ? '#1e293b' : '#f0f0f0'};
+          scrollbar-color: #636363 ${darkMode ? '#1e293b' : '#f0f0f0'};
         }
         .user-dashboard-scroll::-webkit-scrollbar {
           width: 6px !important;
@@ -764,11 +764,11 @@ const Dashboard = () => {
           border-radius: 4px;
         }
         .user-dashboard-scroll::-webkit-scrollbar-thumb {
-          background: #4a7cff;
+          background: #636363;
           border-radius: 4px;
         }
         .user-dashboard-scroll::-webkit-scrollbar-thumb:hover {
-          background: #3b6de8;
+          background: #4a4a4a;
         }
 
         @media (max-width: 768px) {

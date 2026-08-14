@@ -321,6 +321,7 @@ function AppContent() {
                 <Route path="my-content" element={<MyContent />} />
                 <Route path="my-submissions" element={<UserSubmissions />} />
                 <Route path="create-post" element={<CreateContent />} />
+                <Route path="media-library" element={<MediaLibrary />} />
                 <Route path="drafts" element={<ContentListing />} />
                 <Route path="profile" element={<UserProfile />} />
                 <Route path="scheduled" element={<MyContent />} />

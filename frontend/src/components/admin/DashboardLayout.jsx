@@ -334,24 +334,22 @@ const DashboardLayout = () => {
   return (
     <Layout style={{ minHeight: '100vh', background: darkMode ? '#0F172A' : '#F8FAFC' }}>
       <style>{`
-        .admin-layout-scroll {
+        .admin-scroll-wrap::-webkit-scrollbar {
+          width: 8px;
+        }
+        .admin-scroll-wrap::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .admin-scroll-wrap::-webkit-scrollbar-thumb {
+          background: #636363;
+          border-radius: 4px;
+        }
+        .admin-scroll-wrap::-webkit-scrollbar-thumb:hover {
+          background: #4a4a4a;
+        }
+        .admin-scroll-wrap {
           scrollbar-width: thin;
-          scrollbar-color: #4a7cff ${darkMode ? '#1e293b' : '#f0f0f0'};
-        }
-        .admin-layout-scroll::-webkit-scrollbar {
-          width: 6px !important;
-          display: block !important;
-        }
-        .admin-layout-scroll::-webkit-scrollbar-track {
-          background: ${darkMode ? '#1e293b' : '#f0f0f0'};
-          border-radius: 4px;
-        }
-        .admin-layout-scroll::-webkit-scrollbar-thumb {
-          background: #4a7cff;
-          border-radius: 4px;
-        }
-        .admin-layout-scroll::-webkit-scrollbar-thumb:hover {
-          background: #3b6de8;
+          scrollbar-color: #636363 transparent;
         }
       `}</style>
       {/* Mobile Overlay */}
@@ -363,7 +361,7 @@ const DashboardLayout = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
+            background: 'rgba(99, 99, 99, 0.5)',
             zIndex: 999,
             onClick: () => setMobileMenuOpen(false)
           }}
@@ -480,7 +478,7 @@ const DashboardLayout = () => {
             top: 0,
             left: isMobile ? 0 : (collapsed ? 80 : 280),
             right: 0,
-            zIndex: 10,
+            zIndex: 50,
             transition: isMobile ? 'none' : 'left 0.2s',
           }}
         >
@@ -646,16 +644,26 @@ const DashboardLayout = () => {
           </div>
         </Header>
         <Content
-          className="admin-layout-scroll"
           style={{
             margin: 0,
-            padding: isMobile ? '64px 0 0' : '64px 32px 32px',
+            padding: 0,
             height: 'calc(100vh - 64px)',
-            overflowY: 'auto',
+            overflow: 'hidden',
             background: darkMode ? '#0F172A' : '#F8FAFC',
           }}
         >
-          <Outlet />
+          <div
+            className="admin-scroll-wrap"
+            style={{
+              height: '100%',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: isMobile ? '64px 0 0' : '64px 32px 32px',
+              background: darkMode ? '#0F172A' : '#F8FAFC',
+            }}
+          >
+            <Outlet />
+          </div>
         </Content>
       </Layout>
     </Layout>

@@ -848,7 +848,6 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
 
         {/* Top Header */}
         <div style={{
-          position: 'sticky', top: '64px', zIndex: 9,
           background: darkMode ? '#1e293b' : '#fff', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
           padding: '0 clamp(12px, 2vw, 24px)', height: 'clamp(48px, 6vw, 56px)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
@@ -968,10 +967,7 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
         {/* Page-level Tabs */}
         <div style={{ 
           background: darkMode ? '#1e293b' : '#fff', 
-          borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
-          position: 'sticky',
-          top: '120px',
-          zIndex: 8
+          borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8'
         }}>
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(12px, 2vw, 24px)', display: 'flex', gap: 0, alignItems: 'center', justifyContent: 'space-between' }} className="create-content-tabs">
             {[

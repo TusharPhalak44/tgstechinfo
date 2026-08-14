@@ -183,7 +183,7 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <CalendarOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
-          {moment(item.published_date || item.created_at).format('MMM D, YYYY')}
+          {moment(item.scheduled_publish_date || item.published_date || item.created_at).format('MMM D, YYYY')}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <EyeOutlined style={{ fontSize: isMobile ? 10 : 11 }} />

@@ -144,7 +144,7 @@ const UserDashboardLayout = () => {
             label: 'Drafts',
           },
           {
-            key: '/user-dashboard /create-post',
+            key: '/user-dashboard/create-post',
             icon: <PlusOutlined />,
             label: 'Create Content',
           },
@@ -220,6 +220,25 @@ const UserDashboardLayout = () => {
 
   return (
     <Layout style={{ minHeight: '100vh', background: darkMode ? '#0F172A' : '#F8FAFC' }}>
+      <style>{`
+        .user-scroll-wrap::-webkit-scrollbar {
+          width: 8px;
+        }
+        .user-scroll-wrap::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .user-scroll-wrap::-webkit-scrollbar-thumb {
+          background: #636363;
+          border-radius: 4px;
+        }
+        .user-scroll-wrap::-webkit-scrollbar-thumb:hover {
+          background: #4a4a4a;
+        }
+        .user-scroll-wrap {
+          scrollbar-width: thin;
+          scrollbar-color: #636363 transparent;
+        }
+      `}</style>
       <Sider
         trigger={null}
         collapsible
@@ -356,7 +375,7 @@ const UserDashboardLayout = () => {
             top: 0,
             right: 0,
             left: isMobile ? 0 : (collapsed ? 80 : 280),
-            zIndex: isMobile ? 999 : 10,
+            zIndex: isMobile ? 999 : 50,
             transition: isMobile ? 'none' : 'left 0.2s',
           }}
         >
@@ -518,13 +537,26 @@ const UserDashboardLayout = () => {
         <Content
           style={{
             margin: 0,
-            padding: isMobile ? '64px 0 0 0' : '88px 24px 24px 24px',
+            padding: 0,
             minHeight: '100vh',
+            overflow: 'hidden',
             background: darkMode ? '#0F172A' : '#F8FAFC',
             width: '100%',
           }}
         >
-          <Outlet />
+          <div
+            className="user-scroll-wrap"
+            style={{
+              height: '100vh',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: isMobile ? '64px 0 0 0' : '88px 24px 24px 24px',
+              background: darkMode ? '#0F172A' : '#F8FAFC',
+              width: '100%',
+            }}
+          >
+            <Outlet />
+          </div>
         </Content>
       </Layout>
       
@@ -535,7 +567,7 @@ const UserDashboardLayout = () => {
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.5)',
+            background: 'rgba(99, 99, 99, 0.5)',
             zIndex: 998,
           }}
         />

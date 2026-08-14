@@ -753,7 +753,7 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
                   <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                     <span style={{ fontSize: 12, color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CalendarOutlined style={{ fontSize: 11 }} />
-                      {moment(cs.published_date || cs.created_at).format('MMM D, YYYY')}
+                      {moment(cs.scheduled_publish_date || cs.published_date || cs.created_at).format('MMM D, YYYY')}
                     </span>
                     <button className="download-btn" style={{
                       display: 'inline-flex',
@@ -1595,7 +1595,7 @@ const ListCard = ({ article, navigate, onImgClick, isLast }) => (
     <div style={{ flex: 1, minWidth: 0 }}>
       {article.category_name && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .6 }}>{article.category_name} · </span>}
       <div style={{ fontWeight: 600, fontSize: 'clamp(13px, 0.9vw, 14px)', color: 'var(--color-heading)', lineHeight: 1.4, margin: '2px 0 4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
-      <span style={{ fontSize: 'clamp(11px, 0.7vw, 12px)', color: 'var(--color-muted)' }}><CalendarOutlined style={{ marginRight: 3 }} />{moment(article.published_date || article.created_at).format('MMM D, YYYY')}</span>
+      <span style={{ fontSize: 'clamp(11px, 0.7vw, 12px)', color: 'var(--color-muted)' }}><CalendarOutlined style={{ marginRight: 3 }} />{moment(article.scheduled_publish_date || article.published_date || article.created_at).format('MMM D, YYYY')}</span>
     </div>
   </div>
 );
@@ -1603,7 +1603,7 @@ const ListCard = ({ article, navigate, onImgClick, isLast }) => (
 // ── Latest Posts Section ─────────────────────────────────────────
 const LatestArticlesSection = ({ articles, blogs, navigate }) => {
   const combined = [...(articles || []), ...(blogs || [])]
-    .sort((a, b) => new Date(b.published_date || b.created_at) - new Date(a.published_date || a.created_at))
+    .sort((a, b) => new Date(b.scheduled_publish_date || b.published_date || b.created_at) - new Date(a.scheduled_publish_date || a.published_date || a.created_at))
     .slice(0, 4);
   const [ref, visible] = useReveal();
   if (!combined.length) return null;
@@ -1669,7 +1669,7 @@ const LatestArticlesSection = ({ articles, blogs, navigate }) => {
                 }
                 {article.content_type_name && <span style={{ position: 'absolute', top: 10, left: 10, background: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase' }}>{article.content_type_name}</span>}
                 {/* <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(11,31,77,0.72) 0%, transparent 100%)', padding: '24px 12px 8px' }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.88)', display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined />{moment(article.published_date || article.created_at).format('MMM D, YYYY')}</span>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.88)', display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined />{moment(article.scheduled_publish_date || article.published_date || article.created_at).format('MMM D, YYYY')}</span>
                 </div> */}
               </div>
               <CardContent style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)' }}>
@@ -1761,7 +1761,7 @@ const TrendingTopicsSection = ({ items, navigate, darkMode = false }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 6 }}>
                   <span style={{ fontSize: 'clamp(12px, 0.8vw, 13px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <CalendarOutlined style={{ color: 'var(--color-primary)', fontSize: 13 }} />
-                    {moment(item.published_date || item.created_at).format('MMM D, YYYY')}
+                    {moment(item.scheduled_publish_date || item.published_date || item.created_at).format('MMM D, YYYY')}
                   </span>
                   {item.category_name && (
                     <span style={{
@@ -2021,7 +2021,7 @@ const Home = () => {
                                 </span>
                                 <span style={{ fontWeight: 500 }}>{a.author_name || a.author || 'TgsTechInfo'}</span>
                               </span>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CalendarOutlined />{moment(a.published_date || a.created_at).format('MMM D, YYYY')}</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CalendarOutlined />{moment(a.scheduled_publish_date || a.published_date || a.created_at).format('MMM D, YYYY')}</span>
                             </div>
                             <div style={{ marginTop: 'auto', paddingTop: 4 }}>
                               <button onClick={(e) => { e.stopPropagation(); navigateArticle(a, navigate); }}

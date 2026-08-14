@@ -167,7 +167,7 @@ const DashboardHome = () => {
       <style>{`
         .admin-dashboard-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #4a7cff #f0f0f0;
+          scrollbar-color: #636363 #f0f0f0;
         }
         .admin-dashboard-scroll::-webkit-scrollbar {
           width: 6px !important;
@@ -178,11 +178,11 @@ const DashboardHome = () => {
           border-radius: 4px;
         }
         .admin-dashboard-scroll::-webkit-scrollbar-thumb {
-          background: #4a7cff;
+          background: #636363;
           border-radius: 4px;
         }
         .admin-dashboard-scroll::-webkit-scrollbar-thumb:hover {
-          background: #3b6de8;
+          background: #4a4a4a;
         }
       `}</style>
       {/* Greeting Section */}

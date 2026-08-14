@@ -234,7 +234,7 @@ const Home = () => {
                                 <span style={{ fontWeight: 500 }}>{a.author_name || a.author || 'TgsTechInfo'}</span>
                               </span>
                               <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                <CalendarOutlined />{moment(a.published_date || a.created_at).format('MMM D, YYYY')}
+                                <CalendarOutlined />{moment(a.scheduled_publish_date || a.published_date || a.created_at).format('MMM D, YYYY')}
                               </span>
                             </div>
 
@@ -303,7 +303,7 @@ const Home = () => {
                       </div>
                       <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--color-muted)', borderTop: '1px solid var(--color-border)', paddingTop: 14 }}>
                         <span><EyeOutlined style={{ marginRight: 4 }} />{featuredArticle.view_count || 0}</span>
-                        <span><CalendarOutlined style={{ marginRight: 4 }} />{moment(featuredArticle.published_date || featuredArticle.created_at).format('MMM D, YYYY')}</span>
+                        <span><CalendarOutlined style={{ marginRight: 4 }} />{moment(featuredArticle.scheduled_publish_date || featuredArticle.published_date || featuredArticle.created_at).format('MMM D, YYYY')}</span>
                       </div>
                     </div>
                   </div>

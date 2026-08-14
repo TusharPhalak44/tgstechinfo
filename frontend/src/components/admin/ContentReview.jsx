@@ -375,28 +375,31 @@ const ContentReview = () => {
           display: 'flex', 
           gap: isMobile ? '4px' : '8px',
           alignItems: 'center',
-          justifyContent: 'flex-start',
-          flexWrap: 'nowrap'
         }}>
           {record.status === 'pending' ? (
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<EyeOutlined />}
-              onClick={() => navigate(`/admin/review/${record.id}`)}
-              style={{ 
-                flex: isMobile ? '1' : 'none',
-                minWidth: isMobile ? '28px' : 'auto',
-                padding: isMobile ? '0 4px' : '0 12px',
-                height: isMobile ? '28px' : '32px',
-                background: '#52c41a', 
-                borderColor: '#52c41a',
-                fontSize: isMobile ? '11px' : '14px',
-                borderRadius: '6px'
+            <Popconfirm
+              title="Review Content"
+              description="Proceed to review this content?"
+              onConfirm={() => {
+                sessionStorage.setItem('fromPendingReview', 'true');
+                navigate(`/admin/review/${record.id}`, { state: { fromPendingReview: true } });
               }}
+              okText="Yes"
+              cancelText="No"
             >
-              {!isMobile && 'Review'}
-            </Button>
+              <Button
+                type="primary"
+                size="small"
+                icon={<EyeOutlined />}
+                style={{
+                  flex: isMobile ? '1' : 'none',
+                  minWidth: isMobile ? '28px' : 'auto',
+                  borderRadius: '6px'
+                }}
+              >
+                {!isMobile && 'Review'}
+              </Button>
+            </Popconfirm>
           ) : record.status === 'approved' ? (
             <Button 
               type="primary" 
@@ -418,11 +421,16 @@ const ContentReview = () => {
               {!isMobile && 'Publish'}
             </Button>
           ) : (
-            <Button 
-              size="small" 
+            <Button
+              size="small"
               icon={<EyeOutlined />}
-              onClick={() => navigate(`/admin/review/${record.id}`)}
-              style={{ 
+              onClick={() => {
+                if (activeTab === 'pending') {
+                  sessionStorage.setItem('fromPendingReview', 'true');
+                }
+                navigate(`/admin/review/${record.id}`, { state: { fromPendingReview: activeTab === 'pending' } });
+              }}
+              style={{
                 flex: isMobile ? '1' : 'none',
                 minWidth: isMobile ? '28px' : 'auto',
                 padding: isMobile ? '0 4px' : '0 12px',
@@ -966,10 +974,15 @@ const ContentReview = () => {
               return (
                 <Col xs={24} sm={12} lg={8} xl={6} key={record.id}>
                   <Card 
-                    hoverable 
-                    styles={{ body: { padding: 0 } }} 
+                    hoverable
+                    styles={{ body: { padding: 0 } }}
                     style={{ borderRadius: 12, background: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb' }}
-                    onClick={() => navigate(`/admin/review/${record.id}`)}
+                    onClick={() => {
+                      if (activeTab === 'pending') {
+                        sessionStorage.setItem('fromPendingReview', 'true');
+                      }
+                      navigate(`/admin/review/${record.id}`, { state: { fromPendingReview: activeTab === 'pending' } });
+                    }}
                   >
                     <div style={{ position: 'relative', lineHeight: 0 }}>
                       {record.banner_image ? (

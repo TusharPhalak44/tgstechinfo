@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Row, Col, Button, Tag, Space, Typography, Avatar, Divider, Skeleton, Badge, message } from 'antd';
 import {
   UserOutlined, ClockCircleOutlined, ArrowLeftOutlined,
@@ -9,6 +9,7 @@ import axios from 'axios';
 import moment from 'moment';
 import ContentRenderer from '../common/ContentRenderer';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 import StandaloneBuilderPage from '../../pages/StandaloneBuilderPage';
 
 const { Title, Text } = Typography;
@@ -27,13 +28,18 @@ const statusColorMap = {
 const ArticlePreview = () => {
   const { type, id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { darkMode } = useTheme();
+  const { user } = useAuth();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Extract content type from URL parameter (remove -preview suffix)
   const contentType = type ? type.replace('-preview', '') : 'article';
+
+  // Determine if user is admin based on role or previous route
+  const isAdmin = user?.role === 'admin' || location.state?.fromAdmin || location.pathname.startsWith('/admin');
 
   useEffect(() => { fetchContent(); }, [id]);
 
@@ -44,7 +50,7 @@ const ArticlePreview = () => {
       setContent(res.data);
     } catch {
       message.error('Failed to load article');
-      navigate('/user-dashboard');
+      navigate(isAdmin ? '/admin' : '/user-dashboard');
     } finally {
       setLoading(false);
     }
@@ -76,7 +82,7 @@ const ArticlePreview = () => {
       <div style={{ minHeight: '100vh' }}>
         {/* Top bar for navigation and actions */}
         <div style={{ padding: '12px 24px', background: darkMode ? '#1e293b' : '#fff', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
             Back to Dashboard
           </Button>
           {canEdit && (
@@ -96,7 +102,7 @@ const ArticlePreview = () => {
     <div className="px-4 py-6 md:px-8" style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
       {/* Top Bar */}
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3 max-w-7xl mx-auto">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/user-dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/admin' : '/user-dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
           Back to Dashboard
         </Button>
         {canEdit && (

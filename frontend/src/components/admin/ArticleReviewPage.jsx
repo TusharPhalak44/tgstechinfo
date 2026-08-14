@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Row, Col, Card, Button, Tag, Space, Typography, Avatar,
   Divider, Input, Popconfirm, message, Skeleton, Badge, Modal, ConfigProvider, theme
@@ -36,6 +36,7 @@ const statusColorMap = {
 const ArticleReviewPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { darkMode } = useTheme();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -43,6 +44,18 @@ const ArticleReviewPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [changesModalOpen, setChangesModalOpen] = useState(false);
   const [changesComment, setChangesComment] = useState('');
+
+  // Determine if user came from pending-review page
+  const fromPendingReview = location.state?.fromPendingReview ||
+                            document.referrer?.includes('pending-review') ||
+                            sessionStorage.getItem('fromPendingReview') === 'true';
+
+  // Clear sessionStorage after reading
+  useEffect(() => {
+    if (sessionStorage.getItem('fromPendingReview') === 'true') {
+      sessionStorage.removeItem('fromPendingReview');
+    }
+  }, []);
 
   useEffect(() => {
     fetchContent();
@@ -116,11 +129,11 @@ const ArticleReviewPage = () => {
         {/* Back Button */}
         <Button
           icon={<ArrowLeftOutlined />}
-          onClick={() => navigate('/dashboard/pending-review')}
+          onClick={() => navigate(fromPendingReview ? '/admin/pending-review' : '/admin')}
           className="mb-6"
           style={{ color: darkMode ? '#94a3b8' : undefined }}
         >
-          Back to Pending Review
+          {fromPendingReview ? 'Back to Pending Review' : 'Back to Dashboard'}
         </Button>
 
         <Row gutter={[24, 24]}>
@@ -149,9 +162,7 @@ const ArticleReviewPage = () => {
               <Space>
                 <CalendarOutlined style={{ color: darkMode ? '#94a3b8' : '#9ca3af' }} />
                 <Text type="secondary" style={{ color: darkMode ? '#94a3b8' : '#6b7280' }}>
-                  {content.scheduled_publish_date
-                    ? moment(content.scheduled_publish_date).format('MMMM D, YYYY')
-                    : moment(content.created_at).format('MMMM D, YYYY')}
+                  {moment(content.scheduled_publish_date || content.published_date || content.created_at).format('MMMM D, YYYY')}
                 </Text>
               </Space>
               <Space>

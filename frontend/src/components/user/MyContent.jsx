@@ -461,7 +461,7 @@ const MyContent = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                 <CalendarOutlined style={{ fontSize: 10, color: darkMode ? '#64748b' : '#8c8c8c' }} />
                 <Text style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>
-                  {moment(article.created_at).format('MMM D, YYYY')}
+                  {moment(article.scheduled_publish_date || article.published_date || article.created_at).format('MMM D, YYYY')}
                 </Text>
               </div>
             </div>

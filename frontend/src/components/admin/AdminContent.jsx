@@ -216,7 +216,7 @@ const AdminContent = () => {
                         style={{ borderRadius: 12, cursor: 'pointer', background: darkMode ? '#1e293b' : '#fff', border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb' }}
                         styles={{ body: { padding: 0 } }}
                     className="h-full"
-                    onClick={() => navigate(`/${item.content_type || 'article'}-preview/${item.id}`)}
+                    onClick={() => navigate(`/${item.content_type || 'article'}-preview/${item.id}`, { state: { fromAdmin: true } })}
                   >
                     {/* Banner Image */}
                     {item.banner_image ? (
@@ -313,7 +313,7 @@ const AdminContent = () => {
                       <div style={{ marginBottom: 8 }} onClick={e => e.stopPropagation()}>
                         <Space size={4} wrap>
                           <Button size="small" icon={<EyeOutlined />}
-                            onClick={(e) => { e.stopPropagation(); navigate(`/${item.content_type || 'article'}-preview/${item.id}`); }}>
+                            onClick={(e) => { e.stopPropagation(); navigate(`/${item.content_type || 'article'}-preview/${item.id}`, { state: { fromAdmin: true } }); }}>
                             View
                           </Button>
                           {canEdit && (
@@ -359,7 +359,7 @@ const AdminContent = () => {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <CalendarOutlined style={{ fontSize: 10, color: darkMode ? '#64748b' : '#8c8c8c' }} />
-                          <Text style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>{moment(item.created_at).format('MMM D, YYYY')}</Text>
+                          <Text style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>{moment(item.scheduled_publish_date || item.published_date || item.created_at).format('MMM D, YYYY')}</Text>
                         </div>
                       </div>
                     </div>
@@ -396,7 +396,7 @@ const AdminContent = () => {
       <style>{`
         .admin-content-scroll {
           scrollbar-width: thin;
-          scrollbar-color: #4a7cff #f0f0f0;
+          scrollbar-color: #636363 #f0f0f0;
         }
         .admin-content-scroll::-webkit-scrollbar {
           width: 6px !important;
@@ -407,11 +407,11 @@ const AdminContent = () => {
           border-radius: 4px;
         }
         .admin-content-scroll::-webkit-scrollbar-thumb {
-          background: #4a7cff;
+          background: #636363;
           border-radius: 4px;
         }
         .admin-content-scroll::-webkit-scrollbar-thumb:hover {
-          background: #3b6de8;
+          background: #4a4a4a;
         }
         .ant-tabs-content,
         .ant-tabs-content-holder,
