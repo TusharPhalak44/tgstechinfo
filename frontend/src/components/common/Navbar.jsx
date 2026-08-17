@@ -42,7 +42,7 @@ const STATIC_NAV = [
   { key: 'technology', label: 'Technology', dynamic: true },
   
   { key: 'industries', label: 'Industries', dynamic: true },
-  { key: 'about', label: 'About', to: '/about' },
+  { key: 'about', label: 'About Us', to: '/about' },
   { key: 'contact', label: 'Contact', to: '/contact' },
 ];
 

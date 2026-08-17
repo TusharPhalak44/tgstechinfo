@@ -116,7 +116,7 @@ const normalizeContentTypeSlug = (value) => {
 exports.getPublishedContent = async (req, res) => {
     try {
         const { category, content_type, limit = 10, offset = 0 } = req.query;
-        const filters = { status: 'published' };
+        const filters = { status: 'published', is_visible_on_site: true };
 
         if (category) {
             if (/^\d+$/.test(category)) {
@@ -164,6 +164,11 @@ exports.getContentBySlug = async (req, res) => {
         const content = await Content.findBySlugAny(decodedSlug);
 
         if (!content) {
+            return res.status(404).json({ message: 'Content not found' });
+        }
+
+        // Check if content is visible on site
+        if (content.is_visible_on_site === false || content.is_visible_on_site === 0) {
             return res.status(404).json({ message: 'Content not found' });
         }
 
@@ -647,7 +652,7 @@ exports.getCategoriesWithCount = async (req, res) => {
         const countQuery = `
             SELECT cat.id, COUNT(c.id) as count
             FROM categories cat
-            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published'${contentTypeFilter}
+            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published' AND c.is_visible_on_site = 1${contentTypeFilter}
             GROUP BY cat.id
         `;
         const [counts] = await pool.query(countQuery, values);
@@ -686,7 +691,7 @@ exports.getTopCategoriesByViews = async (req, res) => {
                 COALESCE(SUM(c.view_count), 0) as total_views,
                 COUNT(c.id) as content_count
             FROM categories cat
-            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published'
+            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published' AND c.is_visible_on_site = 1
             WHERE (cat.parent_id IS NULL OR cat.parent_id = 0)
             GROUP BY cat.id, cat.name, cat.slug, cat.parent_id
             ORDER BY total_views DESC, content_count DESC
@@ -942,6 +947,7 @@ exports.getCaseStudies = async (req, res) => {
              FROM contents c
              LEFT JOIN content_types ct ON ct.id = c.content_type_id
              WHERE c.status = 'published'
+               AND c.is_visible_on_site = 1
                AND ct.slug = 'case-study'
              ORDER BY c.published_date DESC, c.created_at DESC
              LIMIT ? OFFSET ?`,
@@ -971,6 +977,7 @@ exports.getCaseStudyBySlug = async (req, res) => {
              LEFT JOIN content_types ct ON ct.id = c.content_type_id
              WHERE c.slug = ?
                AND c.status = 'published'
+               AND c.is_visible_on_site = 1
                AND ct.slug = 'case-study'
              LIMIT 1`,
             [slug]

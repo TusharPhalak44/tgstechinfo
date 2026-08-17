@@ -576,7 +576,7 @@ class Content {
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
-            WHERE c.category_id = ? AND c.id != ? AND c.status = 'published'
+            WHERE c.category_id = ? AND c.id != ? AND c.status = 'published' AND c.is_visible_on_site = 1
             ORDER BY c.published_date DESC
             LIMIT ?
         `;

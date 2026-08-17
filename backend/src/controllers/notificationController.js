@@ -57,7 +57,7 @@ exports.searchContent = async (req, res) => {
         if (!q || q.trim().length < 2) return res.json([]);
 
         const term = `%${q.trim()}%`;
-        let where = `c.status = 'published' AND (
+        let where = `c.status = 'published' AND c.is_visible_on_site = 1 AND (
             c.title LIKE ? OR
             c.short_description LIKE ? OR
             c.tags LIKE ? OR
