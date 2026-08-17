@@ -30,6 +30,7 @@ exports.createContent = async (req, res) => {
         const contentData = stripEmDash({
             ...req.body,
             user_id: req.user.id,
+            status: String(req.body.status || 'draft').trim(),
             banner_image: req.files?.banner_image?.[0]?.filename || null,
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
             tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -55,6 +56,12 @@ exports.createContent = async (req, res) => {
                 }
             })() : null
         });
+
+        // Log status value for debugging
+        console.log('[createContent] Raw req.body.status:', req.body.status);
+        console.log('[createContent] status value:', contentData.status, 'type:', typeof contentData.status, 'length:', contentData.status?.length);
+        console.log('[createContent] status JSON:', JSON.stringify(contentData.status));
+        console.log('[createContent] status char codes:', contentData.status ? Array.from(contentData.status).map(c => c.charCodeAt(0)) : 'null');
 
         const content = await Content.create(contentData);
         
@@ -184,6 +191,12 @@ exports.updateContent = async (req, res) => {
         Object.keys(req.body).forEach(key => {
             updateData[key] = req.body[key];
         });
+        
+        // Ensure status is never empty/null - default to 'draft' if provided but empty
+        if (updateData.status === '' || updateData.status === null || updateData.status === undefined) {
+            updateData.status = 'draft';
+        }
+        
         if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.body.custom_fields) {

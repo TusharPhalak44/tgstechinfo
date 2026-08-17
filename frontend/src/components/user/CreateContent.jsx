@@ -407,7 +407,7 @@ const CreateContent = () => {
 
   const buildFormData = (values) => {
     const formData = new FormData();
-    const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file'];
+    const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file', 'status'];
     Object.keys(values).forEach(key => {
       if (!skip.includes(key) && values[key] !== undefined && values[key] !== null) {
         formData.append(key, values[key]);
