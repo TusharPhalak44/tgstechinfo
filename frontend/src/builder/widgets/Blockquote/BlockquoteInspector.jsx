@@ -6,6 +6,7 @@
 import React from 'react';
 import { Input, Select } from 'antd';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 const { Option } = Select;
 

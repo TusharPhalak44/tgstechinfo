@@ -7,6 +7,8 @@ const EmailTemplates = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [viewingTemplate, setViewingTemplate] = useState(null);
+    const [previewHtml, setPreviewHtml] = useState('');
+    const [previewLoading, setPreviewLoading] = useState(false);
     const [formData, setFormData] = useState({
         template_type: '',
         template_name: '',
@@ -79,8 +81,19 @@ const EmailTemplates = () => {
         setShowModal(true);
     };
 
-    const handleView = (template) => {
+    const handleView = async (template) => {
         setViewingTemplate(template);
+        setPreviewHtml('');
+        setPreviewLoading(true);
+        try {
+            const renderedHtml = await renderPreviewHtml(template);
+            setPreviewHtml(renderedHtml);
+        } catch (error) {
+            console.error('Error rendering preview:', error);
+            setPreviewHtml('<div style="padding: 20px; text-align: center; color: red;">Error rendering preview</div>');
+        } finally {
+            setPreviewLoading(false);
+        }
     };
 
     const handleDelete = async (id) => {
@@ -152,6 +165,58 @@ const EmailTemplates = () => {
         }));
     };
 
+    const renderPreviewHtml = async (template) => {
+        let html = template.html_body;
+        
+        // Handle logo rendering in preview
+        if (template.include_logo) {
+            try {
+                const response = await fetch('/api/site-settings');
+                const data = await response.json();
+                const settings = data.settings;
+                const logoUrl = settings?.website_main_logo || settings?.website_logo || '';
+                
+                if (logoUrl) {
+                    const logoHtml = `<div style="text-align:center;margin-bottom:15px;">
+                        <img src="${logoUrl}" alt="Company Logo" style="max-width:150px;height:auto;display:block;margin:0 auto;" />
+                    </div>`;
+                    
+                    // Replace logo placeholders
+                    html = html
+                        .replace(/\{\{website_logo_html\}\}/g, logoHtml)
+                        .replace(/\{\{website_logo_img\}\}/g, `<img src="${logoUrl}" alt="Company Logo" style="max-width:180px;height:auto;display:block;margin:0 auto;" />`)
+                        .replace(/\{\{website_logo\}\}/g, logoUrl)
+                        .replace(/\{\{logo\}\}/g, logoUrl);
+                    
+                    // If no placeholder exists, prepend logo to content
+                    const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
+                    if (!hasLogoPlaceholder) {
+                        html = `${logoHtml}${html}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching logo for preview:', error);
+            }
+        } else {
+            // Remove logo placeholders if logo is not enabled
+            html = html
+                .replace(/\{\{website_logo_html\}\}/g, '')
+                .replace(/\{\{website_logo_img\}\}/g, '')
+                .replace(/\{\{website_logo\}\}/g, '')
+                .replace(/\{\{logo\}\}/g, '');
+        }
+        
+        // Replace basic variables for preview
+        html = html
+            .replace(/\{\{first_name\}\}/g, 'John')
+            .replace(/\{\{last_name\}\}/g, 'Doe')
+            .replace(/\{\{email\}\}/g, 'john.doe@example.com')
+            .replace(/\{\{site_name\}\}/g, 'TgsTechInfo')
+            .replace(/\{\{year\}\}/g, new Date().getFullYear().toString());
+        
+        return html;
+    };
+
     if (loading) {
         return <div className="p-6">Loading templates...</div>;
     }
@@ -175,6 +240,7 @@ const EmailTemplates = () => {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -192,6 +258,11 @@ const EmailTemplates = () => {
                                 </td>
                                 <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                                     {template.subject}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={template.include_logo ? 'text-green-600' : 'text-gray-400'}>
+                                        {template.include_logo ? '✓' : '✗'}
+                                    </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <button
@@ -229,7 +300,7 @@ const EmailTemplates = () => {
                         ))}
                         {templates.length === 0 && (
                             <tr>
-                                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                                     No templates found. Create your first template to get started.
                                 </td>
                             </tr>
@@ -425,14 +496,32 @@ const EmailTemplates = () => {
                             </div>
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Include Company Logo
+                                </label>
+                                <p className="text-gray-900">
+                                    {viewingTemplate.include_logo ? '✓ Yes' : '✗ No'}
+                                </p>
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
                                     HTML Preview
                                 </label>
                                 <div className="border rounded-lg p-4 bg-gray-50">
-                                    <iframe
-                                        srcDoc={viewingTemplate.html_body}
-                                        className="w-full h-96 border-0"
-                                        title="Email Preview"
-                                    />
+                                    {previewLoading ? (
+                                        <div className="flex items-center justify-center h-96 text-gray-500">
+                                            Loading preview...
+                                        </div>
+                                    ) : previewHtml ? (
+                                        <iframe
+                                            srcDoc={previewHtml}
+                                            className="w-full h-96 border-0"
+                                            title="Email Preview"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-96 text-gray-500">
+                                            No preview available
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             <div className="mb-4">

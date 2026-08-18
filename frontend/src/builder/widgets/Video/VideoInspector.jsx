@@ -9,6 +9,7 @@ import { Input, Select, Switch, InputNumber, Button, Upload, message } from 'ant
 import { LinkOutlined, UploadOutlined, DeleteOutlined, CheckOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 const { Option } = Select;
 

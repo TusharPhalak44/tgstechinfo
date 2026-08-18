@@ -66,10 +66,9 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
       message.success('URL copied to clipboard!');
       setTimeout(() => setCopiedId(null), 2000);
       
-      // If onSelect callback provided, call it
+      // If onSelect callback provided, call it with the URL string
       if (onSelect) {
-        const selectedMedia = media.find(m => m.id === id);
-        onSelect(selectedMedia);
+        onSelect(url);
       }
     }).catch(() => {
       message.error('Failed to copy URL');

@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { Input, Select, InputNumber, ColorPicker } from 'antd';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 const { Option } = Select;
 const { TextArea } = Input;

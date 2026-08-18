@@ -4,10 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { Input, Select, InputNumber, Switch, Button, message } from 'antd';
-import { PictureOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { Input, Select, InputNumber, Switch, Button, Upload, message } from 'antd';
+import { PictureOutlined, FilePdfOutlined, UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 import MediaLibraryModal from '../../../components/common/MediaLibraryModal';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 const { Option } = Select;
 
@@ -15,6 +17,7 @@ export default function PDFInspector({ node, onUpdate }) {
   const content = safeParseJsonContent(node.content, { url: '', fileName: '' });
   const settings = node.settings || {};
   const [mediaLibraryVisible, setMediaLibraryVisible] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const handleChange = (field, value) => {
     // Ensure value is a string (not an object from ColorPicker or other components)
@@ -32,14 +35,90 @@ export default function PDFInspector({ node, onUpdate }) {
     });
   };
 
-  const handleMediaSelect = (url) => {
-    // Set the PDF URL directly
-    handleChange('url', url);
-    message.success('PDF URL added!');
+  const handleMediaSelect = (mediaItem) => {
+    // Handle both string URL and media object
+    const url = typeof mediaItem === 'string' ? mediaItem : mediaItem?.url;
+    if (url) {
+      handleChange('url', url);
+      message.success('PDF URL added!');
+    } else {
+      message.error('Invalid media item selected');
+    }
+  };
+
+  const handleUpload = async ({ file }) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await axios.post('/api/admin/media/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const url = res.data?.file?.path || res.data?.path || res.data?.url
+        ? (res.data.file?.path || res.data.path || res.data.url)
+        : null;
+      if (url) {
+        handleChange('url', url);
+        message.success('PDF uploaded');
+      } else {
+        throw new Error('No URL in response');
+      }
+    } catch {
+      const objectUrl = URL.createObjectURL(file);
+      handleChange('url', objectUrl);
+      message.warning('Upload endpoint unavailable — using local preview. Save the page to persist.');
+    } finally {
+      setUploading(false);
+    }
+    return false;
   };
 
   return (
     <InspectorPanel>
+      <InspectorFormItem label="PDF Upload">
+        <Upload
+          beforeUpload={() => false}
+          customRequest={handleUpload}
+          showUploadList={false}
+          accept=".pdf"
+          style={{ width: '100%' }}
+        >
+          <div 
+            style={{
+              width: '100%',
+              border: '2px dashed #d9d9d9',
+              borderRadius: 8,
+              padding: '24px 16px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              background: '#fafafa',
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 100
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#4a7cff';
+              e.currentTarget.style.background = '#f0f7ff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#d9d9d9';
+              e.currentTarget.style.background = '#fafafa';
+            }}
+          >
+            <FilePdfOutlined style={{ fontSize: 32, color: '#4a7cff', marginBottom: 12 }} />
+            <div style={{ fontSize: 14, color: '#666', fontWeight: 500 }}>
+              {uploading ? 'Uploading PDF...' : 'Click to Upload PDF'}
+            </div>
+            <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+              or drag and drop
+            </div>
+          </div>
+        </Upload>
+      </InspectorFormItem>
+
       <InspectorFormItem label="PDF URL">
         <Input
           value={content.url || ''}
@@ -47,7 +126,7 @@ export default function PDFInspector({ node, onUpdate }) {
           placeholder="https://example.com/document.pdf"
         />
         <Button
-          icon={<FilePdfOutlined />}
+          icon={<PictureOutlined />}
           onClick={() => setMediaLibraryVisible(true)}
           size="small"
           style={{ marginTop: 8 }}

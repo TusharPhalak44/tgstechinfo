@@ -46,12 +46,41 @@ class EmailTemplate {
 
     static async update(id, data) {
         const { template_type, template_name, subject, html_body, is_active, include_logo } = data;
-        const [result] = await pool.query(
-            `UPDATE email_templates 
-             SET template_type = ?, template_name = ?, subject = ?, html_body = ?, is_active = ?, include_logo = ?, updated_at = CURRENT_TIMESTAMP
-             WHERE id = ?`,
-            [template_type, template_name, subject, html_body, is_active, include_logo, id]
-        );
+        
+        // Build dynamic update query based on provided fields
+        const updates = [];
+        const values = [];
+        
+        if (template_type !== undefined) {
+            updates.push('template_type = ?');
+            values.push(template_type);
+        }
+        if (template_name !== undefined) {
+            updates.push('template_name = ?');
+            values.push(template_name);
+        }
+        if (subject !== undefined) {
+            updates.push('subject = ?');
+            values.push(subject);
+        }
+        if (html_body !== undefined) {
+            updates.push('html_body = ?');
+            values.push(html_body);
+        }
+        if (is_active !== undefined) {
+            updates.push('is_active = ?');
+            values.push(is_active);
+        }
+        if (include_logo !== undefined) {
+            updates.push('include_logo = ?');
+            values.push(include_logo);
+        }
+        
+        updates.push('updated_at = CURRENT_TIMESTAMP');
+        values.push(id);
+        
+        const query = `UPDATE email_templates SET ${updates.join(', ')} WHERE id = ?`;
+        const [result] = await pool.query(query, values);
         return this.findById(id);
     }
 

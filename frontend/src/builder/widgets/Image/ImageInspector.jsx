@@ -10,6 +10,7 @@ import { UploadOutlined, LinkOutlined, PictureOutlined, DeleteOutlined, CheckOut
 import axios from 'axios';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 import { useAuth } from '../../../context/AuthContext';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 const { Option } = Select;
 

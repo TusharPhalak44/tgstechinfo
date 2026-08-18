@@ -84,6 +84,10 @@ app.use(cookieParser());
 const uploadsDir = path.join(__dirname, 'uploads');
 app.use('/uploads', express.static(uploadsDir));
 
+// Also serve branding folder specifically
+const brandingDir = path.join(__dirname, 'uploads', 'branding');
+app.use('/uploads/branding', express.static(brandingDir));
+
 app.use('/uploads/:filename', async (req, res, next) => {
     try {
         const { pool } = require('./src/config/database');

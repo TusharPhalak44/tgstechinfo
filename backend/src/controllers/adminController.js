@@ -304,6 +304,31 @@ exports.updateUserStatus = async (req, res) => {
     }
 };
 
+// ✅ Delete user
+exports.deleteUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Prevent deleting yourself
+        if (parseInt(id) === req.user.id) {
+            return res.status(400).json({ message: 'Cannot delete your own account' });
+        }
+
+        const deleted = await User.delete(id);
+        if (!deleted) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Log to audit logs
+        await logAudit(req, 'delete', 'user', id, `Deleted user with ID: ${id}`, 'success');
+
+        res.json({ message: 'User deleted successfully' });
+    } catch (error) {
+        console.error('Delete user error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 // ✅ Get user's content (for admin to see user's work)
 exports.getUserContent = async (req, res) => {
     try {

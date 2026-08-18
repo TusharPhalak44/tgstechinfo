@@ -8,6 +8,7 @@ import { Input, Switch, Button, message } from 'antd';
 import { PictureOutlined } from '@ant-design/icons';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
 import MediaLibraryModal from '../../../components/common/MediaLibraryModal';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 export default function HTMLInspector({ node, onUpdate }) {
   const content = safeParseJsonContent(node.content, { html: '', css: '', js: '' });

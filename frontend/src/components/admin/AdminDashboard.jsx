@@ -320,7 +320,7 @@ const AdminDashboard = () => {
                               </Tag>
                             </td>
                             <td style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1vw, 14px)', color: darkMode ? '#cbd5e1' : '#111827' }}>
-                              {record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                              {record.scheduled_publish_date ? new Date(record.scheduled_publish_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-')}
                             </td>
                             <td style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1vw, 14px)', color: darkMode ? '#94a3b8' : '#6b7280' }}>
                               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
@@ -385,7 +385,7 @@ const AdminDashboard = () => {
                             <div style={{ marginBottom: 12 }}>
                               <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Published Date</span>
                               <div style={{ marginTop: 4, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>
-                                {record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-'}
+                                {record.scheduled_publish_date ? new Date(record.scheduled_publish_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-')}
                               </div>
                             </div>
                             <div style={{ marginBottom: 12 }}>
@@ -475,9 +475,9 @@ const AdminDashboard = () => {
           <SecurityDashboard />
         </Tabs.TabPane>
 
-        <Tabs.TabPane tab={<span><TeamOutlined /> RBAC Management</span>} key="rbac">
+        {/* <Tabs.TabPane tab={<span><TeamOutlined /> RBAC Management</span>} key="rbac">
           <RBACManagement />
-        </Tabs.TabPane>
+        </Tabs.TabPane> */}
       </Tabs>
       <style>{`
         @media (max-width: 768px) {

@@ -946,11 +946,10 @@ function StylePanel({ node, widget, onUpdate }) {
     <MediaLibraryModal
       visible={mediaLibraryVisible}
       onClose={() => setMediaLibraryVisible(false)}
-      onSelect={(media) => {
+      onSelect={(url) => {
         // Set the backgroundImage field with the selected media URL
-        const imageUrl = media.file_path || media.url;
-        form.setFieldsValue({ backgroundImage: imageUrl });
-        handleValuesChange({ backgroundImage: imageUrl });
+        form.setFieldsValue({ backgroundImage: url });
+        handleValuesChange({ backgroundImage: url });
         setMediaLibraryVisible(false);
       }}
     />

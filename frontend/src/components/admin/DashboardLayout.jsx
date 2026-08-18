@@ -190,18 +190,18 @@ const DashboardLayout = () => {
           },
         ],
       },
-      {
-        key: 'website-section',
-        label: 'WEBSITE',
-        type: 'group',
-        children: [
-          {
-            key: '/dashboard/forms',
-            icon: <FormOutlined />,
-            label: 'Forms',
-          },
-        ],
-      },
+      // {
+      //   key: 'website-section',
+      //   label: 'WEBSITE',
+      //   type: 'group',
+      //   children: [
+      //     {
+      //       key: '/dashboard/forms',
+      //       icon: <FormOutlined />,
+      //       label: 'Forms',
+      //     },
+      //   ],
+      // },
       {
         key: 'marketing-section',
         label: 'MARKETING',
@@ -232,16 +232,16 @@ const DashboardLayout = () => {
           icon: <TeamOutlined />,
           label: 'Users',
         },
-        {
-          key: '/dashboard/roles',
-          icon: <SecurityScanOutlined />,
-          label: 'Roles',
-        },
-        {
-          key: '/dashboard/permissions',
-          icon: <LockOutlined />,
-          label: 'Permissions',
-        },
+        // {
+        //   key: '/dashboard/roles',
+        //   icon: <SecurityScanOutlined />,
+        //   label: 'Roles',
+        // },
+        // {
+        //   key: '/dashboard/permissions',
+        //   icon: <LockOutlined />,
+        //   label: 'Permissions',
+        // },
       ],
     };
 
@@ -266,11 +266,11 @@ const DashboardLayout = () => {
           icon: <HistoryOutlined />,
           label: 'Audit Logs',
         },
-        {
-          key: '/dashboard/integrations',
-          icon: <ApiOutlined />,
-          label: 'Integrations',
-        },
+        // {
+        //   key: '/dashboard/integrations',
+        //   icon: <ApiOutlined />,
+        //   label: 'Integrations',
+        // },
       ],
     };
 

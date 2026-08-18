@@ -38,6 +38,7 @@ router.get('/users', hasPermission('user.read'), adminController.getAllUsers);
 router.post('/users', hasPermission('user.create'), adminController.createUser);
 router.put('/users/:id', hasPermission('user.update'), adminController.updateUser);
 router.put('/users/:id/status', hasPermission('user.update'), adminController.updateUserStatus);
+router.delete('/users/:id', hasPermission('user.delete'), adminController.deleteUser);
 router.get('/users/:id/content', hasPermission('user.read'), adminController.getUserContent);
 
 // Dashboard stats — accessible to any authenticated user

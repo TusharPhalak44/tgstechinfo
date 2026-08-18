@@ -36,6 +36,7 @@ async function insertDefaultTemplates() {
             template_type: 'registration',
             template_name: 'User Registration Welcome',
             subject: 'Welcome to TGS Tech Info - Your Account is Ready!',
+            include_logo: true,
             html_body: `<!DOCTYPE html>
 <html>
 <head>
@@ -230,6 +231,7 @@ async function insertDefaultTemplates() {
             template_type: 'content_published',
             template_name: 'Content Published',
             subject: '🎉 Your Article "{{content_title}}" is Now Live!',
+            include_logo: true,
             html_body: `<!DOCTYPE html>
 <html>
 <head>
@@ -281,6 +283,7 @@ async function insertDefaultTemplates() {
             template_type: 'password_reset',
             template_name: 'Password Reset Request',
             subject: 'Password Reset Request - TGS Tech Info',
+            include_logo: true,
             html_body: `<!DOCTYPE html>
 <html>
 <head>
@@ -330,6 +333,7 @@ async function insertDefaultTemplates() {
             template_type: 'newsletter_subscription',
             template_name: 'Newsletter Subscription Confirmed',
             subject: 'Welcome to TGS Tech Info Newsletter!',
+            include_logo: true,
             html_body: `<!DOCTYPE html>
 <html>
 <head>
@@ -392,6 +396,7 @@ async function insertDefaultTemplates() {
             template_type: 'case_study_download',
             template_name: 'Case Study Download Access',
             subject: 'Your Case Study Access - {{title}}',
+            include_logo: true,
             html_body: `<!DOCTYPE html>
 <html>
 <head>
@@ -446,9 +451,9 @@ async function insertDefaultTemplates() {
 
     for (const template of templates) {
         await pool.query(
-            `INSERT INTO email_templates (template_type, template_name, subject, html_body, is_active)
-             VALUES (?, ?, ?, ?, ?)`,
-            [template.template_type, template.template_name, template.subject, template.html_body, true]
+            `INSERT INTO email_templates (template_type, template_name, subject, html_body, is_active, include_logo)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [template.template_type, template.template_name, template.subject, template.html_body, true, template.include_logo || false]
         );
     }
 }

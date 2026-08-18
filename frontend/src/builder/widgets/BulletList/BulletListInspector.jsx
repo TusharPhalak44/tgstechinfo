@@ -7,6 +7,7 @@ import React from 'react';
 import { Select, Input, Button, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 const { Option } = Select;
 

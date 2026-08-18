@@ -1,82 +1,47 @@
-require('dotenv').config();
-const mysql = require('mysql2/promise');
-const fs = require('fs');
-const path = require('path');
+const { pool } = require('../src/config/database');
 
 async function addIncludeLogoColumn() {
-    let connection;
-    
     try {
-        // Create connection
-        connection = await mysql.createConnection({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
-            port: process.env.DB_PORT || 3306
-        });
-
-        console.log('Connected to database');
-
+        console.log('Adding include_logo column to email_templates table...');
+        
         // Check if column already exists
-        const [columns] = await connection.query(`
-            SHOW COLUMNS FROM email_templates WHERE Field = 'include_logo'
+        const [columns] = await pool.query(`
+            SELECT COLUMN_NAME 
+            FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = DATABASE() 
+            AND TABLE_NAME = 'email_templates' 
+            AND COLUMN_NAME = 'include_logo'
         `);
         
         if (columns.length > 0) {
-            console.log('ℹ️  include_logo column already exists');
+            console.log('Column include_logo already exists in email_templates table');
             return;
         }
-
-        // Read and execute the SQL file
-        const sqlPath = path.join(__dirname, '../database/add_include_logo_to_email_templates.sql');
-        const sql = fs.readFileSync(sqlPath, 'utf8');
         
-        // Split by semicolon and execute each statement
-        const statements = sql
-            .split(';')
-            .map(s => s.trim())
-            .filter(s => s.length > 0 && !s.startsWith('--'));
-
-        for (const statement of statements) {
-            console.log('Executing:', statement.substring(0, 60) + '...');
-            await connection.query(statement);
-        }
-
-        console.log('✅ Successfully added include_logo column to email_templates table');
-        
-        // Verify the column was added
-        const [verifyColumns] = await connection.query(`
-            SHOW COLUMNS FROM email_templates WHERE Field = 'include_logo'
+        // Add the column
+        await pool.query(`
+            ALTER TABLE email_templates 
+            ADD COLUMN include_logo TINYINT(1) DEFAULT 0 
+            AFTER is_active
         `);
         
-        if (verifyColumns.length > 0) {
-            console.log('✅ Verified: include_logo column exists');
-            console.log('Column details:', verifyColumns[0]);
-        }
-
+        console.log('✅ Successfully added include_logo column to email_templates table');
+        
+        // Update existing templates to set include_logo to 0 by default
+        await pool.query(`
+            UPDATE email_templates 
+            SET include_logo = 0 
+            WHERE include_logo IS NULL
+        `);
+        
+        console.log('✅ Updated existing templates with default include_logo value');
+        
     } catch (error) {
-        if (error.code === 'ER_DUP_FIELDNAME') {
-            console.log('ℹ️  include_logo column already exists');
-        } else {
-            console.error('❌ Error adding include_logo column:', error.message);
-            throw error;
-        }
+        console.error('Error adding include_logo column:', error);
+        process.exit(1);
     } finally {
-        if (connection) {
-            await connection.end();
-            console.log('Database connection closed');
-        }
+        await pool.end();
     }
 }
 
-// Run the migration
-addIncludeLogoColumn()
-    .then(() => {
-        console.log('Migration completed');
-        process.exit(0);
-    })
-    .catch((error) => {
-        console.error('Migration failed:', error);
-        process.exit(1);
-    });
+addIncludeLogoColumn();

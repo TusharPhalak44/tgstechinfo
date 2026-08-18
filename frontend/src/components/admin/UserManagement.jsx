@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Tag, Switch, Button, Space, Typography, message, Modal, Form, Input, Select, Grid, ConfigProvider } from 'antd';
+import { Table, Card, Tag, Switch, Button, Space, Typography, message, Modal, Form, Input, Select, Grid, ConfigProvider, Popconfirm } from 'antd';
 import { UserOutlined, EditOutlined, DeleteOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -136,6 +136,17 @@ const UserManagement = () => {
     }
   };
 
+  const handleDelete = async (userId) => {
+    try {
+      await axios.delete(`/api/admin/users/${userId}`);
+      message.success('User deleted successfully');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      message.error('Failed to delete user');
+    }
+  };
+
   const columns = [
     {
       title: 'Name',
@@ -201,15 +212,23 @@ const UserManagement = () => {
               {!isMobile && 'Edit'}
             </Button>
           </PermissionWrapper>
-          <PermissionWrapper permissions="user.manage_roles">
-            <Button 
-              icon={<TeamOutlined />}
-              onClick={() => handleManageRoles(record)}
-              style={{ padding: isMobile ? '0 4px' : '0 8px' }}
-              size={isMobile ? 'small' : 'middle'}
+          <PermissionWrapper permissions="user.delete">
+            <Popconfirm
+              title="Delete User"
+              description="Are you sure you want to delete this user?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Yes"
+              cancelText="No"
             >
-              {!isMobile && 'Roles'}
-            </Button>
+              <Button 
+                danger
+                icon={<DeleteOutlined />}
+                style={{ padding: isMobile ? '0 4px' : '0 8px' }}
+                size={isMobile ? 'small' : 'middle'}
+              >
+                {!isMobile && 'Delete'}
+              </Button>
+            </Popconfirm>
           </PermissionWrapper>
         </Space>
       )

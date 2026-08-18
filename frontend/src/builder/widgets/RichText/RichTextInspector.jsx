@@ -6,6 +6,7 @@
 import React from 'react';
 import { Input } from 'antd';
 import { safeParseJsonContent } from '../../core/BuilderEngine.js';
+import InspectorPanel, { InspectorFormItem } from '../../components/InspectorPanel';
 
 export default function RichTextInspector({ node, onUpdate }) {
   const content = safeParseJsonContent(node.content, { html: '' });

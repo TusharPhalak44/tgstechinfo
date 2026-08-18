@@ -158,6 +158,7 @@ export default function ImageWidget({ node, onUpdate }) {
     return false; // prevent default Upload behaviour
   };
 
+
   return (
     <div style={{ padding: 16 }}>
       {/* Preview */}
@@ -188,9 +189,39 @@ export default function ImageWidget({ node, onUpdate }) {
           accept="image/*"
           style={{ flex: 1 }}
         >
-          <Button icon={<UploadOutlined />} loading={uploading} style={{ width: '100%' }} size="small">
-            Upload Image
-          </Button>
+          <div 
+            style={{
+              flex: 1,
+              border: '2px dashed #d9d9d9',
+              borderRadius: 8,
+              padding: '20px 16px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              background: '#fafafa',
+              transition: 'all 0.2s',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 80
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#4a7cff';
+              e.currentTarget.style.background = '#f0f7ff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#d9d9d9';
+              e.currentTarget.style.background = '#fafafa';
+            }}
+          >
+            <UploadOutlined style={{ fontSize: 24, color: '#4a7cff', marginBottom: 8 }} />
+            <div style={{ fontSize: 13, color: '#666', fontWeight: 500 }}>
+              {uploading ? 'Uploading...' : 'Click to Upload Image'}
+            </div>
+            <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
+              or drag and drop
+            </div>
+          </div>
         </Upload>
         <Button
           icon={<PictureOutlined />}

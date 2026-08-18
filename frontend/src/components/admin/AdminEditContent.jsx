@@ -1,18 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Input, Select, Button, DatePicker,
-  Upload, Space, Divider, Typography, Tooltip, App, ConfigProvider
+  Upload, Space, Divider, Typography, Tooltip, App, ConfigProvider, Checkbox
 } from 'antd';
 import {
   UploadOutlined, SaveOutlined, ArrowLeftOutlined,
   PictureOutlined, SettingOutlined, InfoCircleOutlined,
-  TagOutlined, CalendarOutlined, MailOutlined
+  TagOutlined, CalendarOutlined, MailOutlined,
+  BookOutlined, QuestionCircleOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import TipTapEditor from '../common/TipTapEditor';
 import { useTheme } from '../../context/ThemeContext';
+import { EditorialGuidelines } from '../guidelines/EditorialGuidelines';
+import { SubmissionInstructions } from '../guidelines/SubmissionInstructions';
+import { TermsAndConditions } from '../guidelines/TermsAndConditions';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -34,6 +38,12 @@ const AdminEditContent = () => {
   const [editorReady, setEditorReady] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [selectedContentType, setSelectedContentType] = useState(null);
+
+  // Guidelines modals state
+  const [guidelinesVisible, setGuidelinesVisible] = useState(false);
+  const [instructionsVisible, setInstructionsVisible] = useState(false);
+  const [termsVisible, setTermsVisible] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchMeta(), fetchContent()]);
@@ -169,6 +179,42 @@ const AdminEditContent = () => {
           )}
         </div>
         <Space size={window.innerWidth < 768 ? 4 : 8}>
+          {/* Guidelines Buttons */}
+          <Space size={4}>
+            <Tooltip title="Editorial Guidelines">
+              <Button
+                type="text"
+                icon={<BookOutlined />}
+                onClick={() => setGuidelinesVisible(true)}
+                style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                size="small"
+              >
+                {window.innerWidth >= 768 && 'Guidelines'}
+              </Button>
+            </Tooltip>
+            <Tooltip title="How to Submit">
+              <Button
+                type="text"
+                icon={<QuestionCircleOutlined />}
+                onClick={() => setInstructionsVisible(true)}
+                style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                size="small"
+              >
+                {window.innerWidth >= 768 && 'How to Submit'}
+              </Button>
+            </Tooltip>
+            <Tooltip title="Terms & Conditions">
+              <Button
+                type="text"
+                icon={<FileTextOutlined />}
+                onClick={() => setTermsVisible(true)}
+                style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12 }}
+                size="small"
+              >
+                {window.innerWidth >= 768 && 'Terms'}
+              </Button>
+            </Tooltip>
+          </Space>
           <Button
             type="primary"
             icon={<SaveOutlined />}
@@ -363,6 +409,22 @@ const AdminEditContent = () => {
           </div>
         </div>
         </Form>
+
+        {/* Guidelines Modals */}
+        <EditorialGuidelines
+          visible={guidelinesVisible}
+          onClose={() => setGuidelinesVisible(false)}
+        />
+        <SubmissionInstructions
+          visible={instructionsVisible}
+          onClose={() => setInstructionsVisible(false)}
+        />
+        <TermsAndConditions
+          visible={termsVisible}
+          onClose={() => setTermsVisible(false)}
+          accepted={termsAccepted}
+          onAccept={setTermsAccepted}
+        />
       </ConfigProvider>
     </div>
   );

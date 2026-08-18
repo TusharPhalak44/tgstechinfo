@@ -10,6 +10,8 @@ EMAIL_PASSWORD=your-email-password-or-app-password
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_FROM=max.brown@tgstechinfo.com
+EMAIL_REPLY_TO=max.brown@tgstechinfo.com
+EMAIL_ORGANIZATION=TGS Tech Info
 ```
 
 ## Email Service Providers
@@ -106,3 +108,11 @@ If emails are not being sent:
 3. Ensure your email provider allows SMTP access
 4. For Gmail, make sure you're using an App Password (not your regular password)
 5. Check if the email credentials are correct
+
+If emails are going to spam:
+1. Verify SPF, DKIM, and DMARC records are configured for your domain
+2. Ensure the from address matches your authenticated email user
+3. Check that your email content doesn't trigger spam filters (avoid excessive links, all caps, etc.)
+4. Make sure your email server reputation is good
+5. Use a dedicated IP address for sending emails if possible
+6. Implement proper authentication and verify your sending domain

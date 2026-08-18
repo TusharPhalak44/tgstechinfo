@@ -188,6 +188,11 @@ class User {
         );
         return rows[0] ? { attempts: rows[0].failed_login_attempts || 0, lastFailed: rows[0].last_failed_login } : null;
     }
+
+    static async delete(id) {
+        const [result] = await pool.query('DELETE FROM users WHERE id = ?', [id]);
+        return result.affectedRows > 0;
+    }
 }
 
 module.exports = User;

@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Input, Select, Button, message, DatePicker,
-  Upload, Space, Divider, Typography, Tooltip, Tag, Modal, ConfigProvider
+  Upload, Space, Divider, Typography, Tooltip, Tag, Modal, ConfigProvider, Checkbox
 } from 'antd';
 import {
   UploadOutlined, SaveOutlined, SendOutlined, EyeOutlined,
   CalendarOutlined, ClockCircleOutlined, UserOutlined, TagOutlined,
   PictureOutlined, SettingOutlined, InfoCircleOutlined, ArrowLeftOutlined,
-  FilePdfOutlined, PlusOutlined, DeleteOutlined, HolderOutlined, MenuOutlined, ApiOutlined, CodeOutlined
+  FilePdfOutlined, PlusOutlined, DeleteOutlined, HolderOutlined, MenuOutlined, ApiOutlined, CodeOutlined,
+  BookOutlined, QuestionCircleOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -22,6 +23,9 @@ import BuilderIntegration from '../../builder/components/BuilderIntegration';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import MediaLibraryModal from '../common/MediaLibraryModal';
+import { EditorialGuidelines } from '../guidelines/EditorialGuidelines';
+import { SubmissionInstructions } from '../guidelines/SubmissionInstructions';
+import { TermsAndConditions } from '../guidelines/TermsAndConditions';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -107,6 +111,12 @@ const CreateContent = () => {
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
+  // Guidelines modals state
+  const [guidelinesVisible, setGuidelinesVisible] = useState(false);
+  const [instructionsVisible, setInstructionsVisible] = useState(false);
+  const [termsVisible, setTermsVisible] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
 // Initialize new builder architecture - register widgets once globally
   useEffect(() => {
     if (!window.__widgetsRegistered) {
@@ -553,7 +563,7 @@ const handleSubmit = async () => {
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
 
       const apiBase = isAdmin ? '/api/admin' : '/api/user';
-      const redirectPath = isAdmin ? '/admin' : '/dashboard';
+      const redirectPath = isAdmin ? '/admin' : '/user-dashboard';
 
       let contentId = savedContentId;
       if (contentId) {
@@ -1003,40 +1013,138 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
               </button>
             ))}
 
+            {/* Guidelines Buttons */}
+            <Space size={8} style={{ marginLeft: 16 }}>
+              <Tooltip title="Editorial Guidelines">
+                <button
+                  type="button"
+                  onClick={() => setGuidelinesVisible(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '6px 12px',
+                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                    borderRadius: 6,
+                    background: darkMode ? '#1e293b' : '#f8fafc',
+                    color: darkMode ? '#94a3b8' : '#64748b',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#4a7cff';
+                    e.currentTarget.style.color = '#4a7cff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                    e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
+                  }}
+                >
+                  <BookOutlined style={{ fontSize: 13 }} />
+                  <span>Guidelines</span>
+                </button>
+              </Tooltip>
+              <Tooltip title="How to Submit">
+                <button
+                  type="button"
+                  onClick={() => setInstructionsVisible(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '6px 12px',
+                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                    borderRadius: 6,
+                    background: darkMode ? '#1e293b' : '#f8fafc',
+                    color: darkMode ? '#94a3b8' : '#64748b',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#4a7cff';
+                    e.currentTarget.style.color = '#4a7cff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                    e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
+                  }}
+                >
+                  <QuestionCircleOutlined style={{ fontSize: 13 }} />
+                  <span>How to Submit</span>
+                </button>
+              </Tooltip>
+              <Tooltip title="Terms & Conditions">
+                <button
+                  type="button"
+                  onClick={() => setTermsVisible(true)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '6px 12px',
+                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                    borderRadius: 6,
+                    background: darkMode ? '#1e293b' : '#f8fafc',
+                    color: darkMode ? '#94a3b8' : '#64748b',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#4a7cff';
+                    e.currentTarget.style.color = '#4a7cff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                    e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
+                  }}
+                >
+                  <FileTextOutlined style={{ fontSize: 13 }} />
+                  <span>Terms</span>
+                </button>
+              </Tooltip>
+            </Space>
+
             {/* Properties Panel Toggle — desktop only */}
             {window.innerWidth >= 768 && (
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(o => !o)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '6px 14px',
-                  border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                  borderRadius: 8,
-                  background: sidebarOpen
-                    ? (darkMode ? '#1e3a5f' : '#eff6ff')
-                    : (darkMode ? '#1e293b' : '#f8fafc'),
-                  color: sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b'),
-                  cursor: 'pointer',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                  transition: 'all 0.15s',
-                  marginLeft: 'auto',
-                  position: 'relative',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.borderColor = '#4a7cff';
-                  e.currentTarget.style.color = '#4a7cff';
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
-                  e.currentTarget.style.color = sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b');
-                }}
-              >
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(o => !o)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '6px 14px',
+                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                    borderRadius: 8,
+                    background: sidebarOpen
+                      ? (darkMode ? '#1e3a5f' : '#eff6ff')
+                      : (darkMode ? '#1e293b' : '#f8fafc'),
+                    color: sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b'),
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    transition: 'all 0.15s',
+                    marginLeft: 'auto',
+                    position: 'relative',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#4a7cff';
+                    e.currentTarget.style.color = '#4a7cff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                    e.currentTarget.style.color = sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b');
+                  }}
+                >
                 {/* Animated indicator line on the left side */}
                 {!sidebarOpen && (
                   <div
@@ -1055,10 +1163,24 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                     }}
                   />
                 )}
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: '#4a7cff',
+                    fontWeight: 500,
+                    whiteSpace: 'nowrap',
+                    opacity: 0.8,
+                    animation: 'shimmer 2s ease-in-out infinite',
+                    marginRight: 4,
+                  }}
+                >
+                  {sidebarOpen ? 'Hide panel' : 'Show panel'}
+                </span>
                 <SettingOutlined style={{ fontSize: 13 }} />
                 Properties
                 <span style={{ fontSize: 11, opacity: 0.7 }}>{sidebarOpen ? '›' : '‹'}</span>
               </button>
+              </>
             )}
           </div>
         </div>
@@ -2016,13 +2138,22 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
       <MediaLibraryModal
         visible={mediaLibraryVisible}
         onClose={() => setMediaLibraryVisible(false)}
-        onSelect={(media) => {
+        onSelect={(url) => {
           // URL is already copied to clipboard by the modal
-          console.log('Selected media:', media);
+          console.log('Selected media URL:', url);
         }}
       />
 
       <style>{`
+        @keyframes shimmer {
+          0%, 100% {
+            opacity: 0.5;
+          }
+          50% {
+            opacity: 1;
+          }
+        }
+
         @media (max-width: 768px) {
           .create-content-tabs {
             overflow-x: auto !important;
@@ -2044,6 +2175,22 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
           }
         }
       `}</style>
+
+      {/* Guidelines Modals */}
+      <EditorialGuidelines
+        visible={guidelinesVisible}
+        onClose={() => setGuidelinesVisible(false)}
+      />
+      <SubmissionInstructions
+        visible={instructionsVisible}
+        onClose={() => setInstructionsVisible(false)}
+      />
+      <TermsAndConditions
+        visible={termsVisible}
+        onClose={() => setTermsVisible(false)}
+        accepted={termsAccepted}
+        onAccept={setTermsAccepted}
+      />
       </div>
     </ConfigProvider>
     </>
