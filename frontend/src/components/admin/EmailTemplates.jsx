@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaToggleOn, FaToggleOff, FaEnvelope, FaCheckCircle, FaTimesCircle, FaSearch, FaFilter } from 'react-icons/fa';
 
 const EmailTemplates = () => {
     const [templates, setTemplates] = useState([]);
@@ -9,6 +9,8 @@ const EmailTemplates = () => {
     const [viewingTemplate, setViewingTemplate] = useState(null);
     const [previewHtml, setPreviewHtml] = useState('');
     const [previewLoading, setPreviewLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
     const [formData, setFormData] = useState({
         template_type: '',
         template_name: '',
@@ -19,11 +21,11 @@ const EmailTemplates = () => {
     });
 
     const templateTypes = [
-        { value: 'registration', label: 'User Registration' },
-        { value: 'content_submitted', label: 'Content Submitted for Review' },
-        { value: 'content_approved', label: 'Content Approved' },
-        { value: 'content_rejected', label: 'Content Rejected/Changes Requested' },
-        { value: 'content_published', label: 'Content Published' }
+        { value: 'registration', label: 'User Registration', color: 'bg-blue-100 text-blue-800', icon: '👤' },
+        { value: 'content_submitted', label: 'Content Submitted', color: 'bg-yellow-100 text-yellow-800', icon: '📝' },
+        { value: 'content_approved', label: 'Content Approved', color: 'bg-green-100 text-green-800', icon: '✅' },
+        { value: 'content_rejected', label: 'Content Rejected', color: 'bg-red-100 text-red-800', icon: '❌' },
+        { value: 'content_published', label: 'Content Published', color: 'bg-purple-100 text-purple-800', icon: '📢' }
     ];
 
     const availableVariables = {
@@ -217,109 +219,239 @@ const EmailTemplates = () => {
         return html;
     };
 
+    // Filter templates based on search and status
+    const filteredTemplates = templates.filter(template => {
+        const matchesSearch = searchTerm === '' || 
+            template.template_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            template.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            template.template_type.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesStatus = filterStatus === 'all' || 
+            (filterStatus === 'active' && template.is_active) ||
+            (filterStatus === 'inactive' && !template.is_active);
+        
+        return matchesSearch && matchesStatus;
+    });
+
     if (loading) {
-        return <div className="p-6">Loading templates...</div>;
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading email templates...</p>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Email Templates</h1>
-                <button
-                    onClick={handleCreate}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700"
-                >
-                    <FaPlus /> Create Template
-                </button>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+            {/* Header Section */}
+            <div className="mb-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                            <span className="bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                                <FaEnvelope className="text-blue-600" />
+                            </span>
+                            Email Templates
+                        </h1>
+                        <p className="text-gray-600 mt-2">Manage and customize your email notification templates</p>
+                    </div>
+                    <button
+                        onClick={handleCreate}
+                        className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl font-medium"
+                    >
+                        <FaPlus /> Create Template
+                    </button>
+                </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="min-w-full">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {templates.map((template) => (
-                            <tr key={template.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        {templateTypes.find(t => t.value === template.template_type)?.label || template.template_type}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {template.template_name}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                                    {template.subject}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={template.include_logo ? 'text-green-600' : 'text-gray-400'}>
-                                        {template.include_logo ? '✓' : '✗'}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <button
-                                        onClick={() => handleToggleActive(template.id)}
-                                        className={`flex items-center gap-1 ${template.is_active ? 'text-green-600' : 'text-gray-400'}`}
-                                    >
-                                        {template.is_active ? <FaToggleOn /> : <FaToggleOff />}
-                                        {template.is_active ? 'Active' : 'Inactive'}
-                                    </button>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button
-                                        onClick={() => handleView(template)}
-                                        className="text-blue-600 hover:text-blue-900 mr-3"
-                                        title="View"
-                                    >
-                                        <FaEye />
-                                    </button>
-                                    <button
-                                        onClick={() => handleEdit(template)}
-                                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                                        title="Edit"
-                                    >
-                                        <FaEdit />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(template.id)}
-                                        className="text-red-600 hover:text-red-900"
-                                        title="Delete"
-                                    >
-                                        <FaTrash />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                        {templates.length === 0 && (
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium">Total Templates</p>
+                            <p className="text-3xl font-bold text-gray-900 mt-1">{templates.length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <FaEnvelope className="text-blue-600 text-xl" />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium">Active Templates</p>
+                            <p className="text-3xl font-bold text-green-600 mt-1">{templates.filter(t => t.is_active).length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                            <FaCheckCircle className="text-green-600 text-xl" />
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-gray-500 text-sm font-medium">Inactive Templates</p>
+                            <p className="text-3xl font-bold text-gray-400 mt-1">{templates.filter(t => !t.is_active).length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <FaTimesCircle className="text-gray-400 text-xl" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Search and Filter Bar */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1 relative">
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="Search templates..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <FaFilter className="text-gray-400" />
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => setFilterStatus(e.target.value)}
+                            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Templates Table */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
-                                    No templates found. Create your first template to get started.
-                                </td>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Template Type</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Template Name</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Subject</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Logo</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredTemplates.map((template) => {
+                                const typeInfo = templateTypes.find(t => t.value === template.template_type);
+                                return (
+                                    <tr key={template.id} className="hover:bg-gray-50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg">{typeInfo?.icon || '📧'}</span>
+                                                <span className={`px-3 py-1.5 inline-flex text-xs font-semibold rounded-full ${typeInfo?.color || 'bg-gray-100 text-gray-800'}`}>
+                                                    {typeInfo?.label || template.template_type}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm font-medium text-gray-900">{template.template_name}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="text-sm text-gray-600 max-w-md" title={template.subject}>
+                                                {template.subject}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {template.include_logo ? (
+                                                <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+                                                    <FaCheckCircle className="text-xs" /> Included
+                                                </span>
+                                            ) : (
+                                                <span className="text-gray-400 text-sm font-medium flex items-center gap-1">
+                                                    <FaTimesCircle className="text-xs" /> Excluded
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => handleToggleActive(template.id)}
+                                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                                    template.is_active 
+                                                        ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {template.is_active ? <FaToggleOn /> : <FaToggleOff />}
+                                                {template.is_active ? 'Active' : 'Inactive'}
+                                            </button>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleView(template)}
+                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="View"
+                                                >
+                                                    <FaEye />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleEdit(template)}
+                                                    className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <FaEdit />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(template.id)}
+                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {filteredTemplates.length === 0 && (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-12 text-center">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                                                <FaEnvelope className="text-gray-400 text-2xl" />
+                                            </div>
+                                            <p className="text-gray-500 font-medium">No templates found</p>
+                                            <p className="text-gray-400 text-sm mt-1">
+                                                {searchTerm || filterStatus !== 'all' 
+                                                    ? 'Try adjusting your search or filters' 
+                                                    : 'Create your first template to get started'}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Create/Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b">
-                            <h2 className="text-xl font-bold">
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                            <h2 className="text-xl font-bold text-gray-900">
                                 {editingTemplate ? 'Edit Template' : 'Create Template'}
                             </h2>
                         </div>
                         <form onSubmit={handleSubmit} className="p-6">
-                            <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Template Type
@@ -327,7 +459,7 @@ const EmailTemplates = () => {
                                     <select
                                         value={formData.template_type}
                                         onChange={(e) => setFormData({...formData, template_type: e.target.value})}
-                                        className="w-full border rounded-lg px-3 py-2"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                         disabled={!!editingTemplate}
                                     >
@@ -345,7 +477,7 @@ const EmailTemplates = () => {
                                         type="text"
                                         value={formData.template_name}
                                         onChange={(e) => setFormData({...formData, template_name: e.target.value})}
-                                        className="w-full border rounded-lg px-3 py-2"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                         required
                                     />
                                 </div>
@@ -359,13 +491,13 @@ const EmailTemplates = () => {
                                     type="text"
                                     value={formData.subject}
                                     onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                                    className="w-full border rounded-lg px-3 py-2"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                     placeholder="Use {{variable}} for dynamic content"
                                 />
                             </div>
 
-                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -386,7 +518,7 @@ const EmailTemplates = () => {
                                     </label>
                                 </div>
                                 {formData.include_logo && (
-                                    <div className="mt-3 p-3 bg-white rounded border border-blue-100">
+                                    <div className="mt-3 p-3 bg-white rounded-lg border border-blue-100">
                                         <p className="text-xs text-blue-700">
                                             ℹ️ The logo will be automatically inserted from your CMS Branding settings. 
                                             Make sure your Website Main Logo is configured in the Branding section.
@@ -402,14 +534,14 @@ const EmailTemplates = () => {
                                 <textarea
                                     value={formData.html_body}
                                     onChange={(e) => setFormData({...formData, html_body: e.target.value})}
-                                    className="w-full border rounded-lg px-3 py-2 h-64 font-mono text-sm"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 h-64 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     required
                                     placeholder="Enter HTML content. Use {{variable}} for dynamic content."
                                 />
                             </div>
 
                             {formData.template_type && availableVariables[formData.template_type] && (
-                                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                                <div className="mb-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Available Variables (click to insert)
                                     </label>
@@ -419,7 +551,7 @@ const EmailTemplates = () => {
                                                 key={variable}
                                                 type="button"
                                                 onClick={() => insertVariable(variable)}
-                                                className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200"
+                                                className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 transition-colors"
                                             >
                                                 {'{{' + variable + '}}'}
                                             </button>
@@ -444,15 +576,15 @@ const EmailTemplates = () => {
                                 <button
                                     type="button"
                                     onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                                    className="px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-medium"
                                 >
-                                    {editingTemplate ? 'Update' : 'Create'}
+                                    {editingTemplate ? 'Update Template' : 'Create Template'}
                                 </button>
                             </div>
                         </form>
@@ -462,76 +594,30 @@ const EmailTemplates = () => {
 
             {/* View Modal */}
             {viewingTemplate && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b flex justify-between items-center">
-                            <h2 className="text-xl font-bold">Template Preview</h2>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center">
+                            <div>
+                                <h2 className="text-xl font-bold text-gray-900">Template Preview</h2>
+                                <p className="text-sm text-gray-600 mt-1">{viewingTemplate.template_name}</p>
+                            </div>
                             <button
                                 onClick={() => setViewingTemplate(null)}
-                                className="text-gray-500 hover:text-gray-700"
+                                className="text-gray-400 hover:text-gray-600 text-2xl"
                             >
-                                ✕
+                                ×
                             </button>
                         </div>
                         <div className="p-6">
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Type
-                                </label>
-                                <p className="text-gray-900">
-                                    {templateTypes.find(t => t.value === viewingTemplate.template_type)?.label || viewingTemplate.template_type}
-                                </p>
-                            </div>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Name
-                                </label>
-                                <p className="text-gray-900">{viewingTemplate.template_name}</p>
-                            </div>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Subject
-                                </label>
-                                <p className="text-gray-900">{viewingTemplate.subject}</p>
-                            </div>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Include Company Logo
-                                </label>
-                                <p className="text-gray-900">
-                                    {viewingTemplate.include_logo ? '✓ Yes' : '✗ No'}
-                                </p>
-                            </div>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    HTML Preview
-                                </label>
-                                <div className="border rounded-lg p-4 bg-gray-50">
-                                    {previewLoading ? (
-                                        <div className="flex items-center justify-center h-96 text-gray-500">
-                                            Loading preview...
-                                        </div>
-                                    ) : previewHtml ? (
-                                        <iframe
-                                            srcDoc={previewHtml}
-                                            className="w-full h-96 border-0"
-                                            title="Email Preview"
-                                        />
-                                    ) : (
-                                        <div className="flex items-center justify-center h-96 text-gray-500">
-                                            No preview available
-                                        </div>
-                                    )}
+                            {previewLoading ? (
+                                <div className="flex items-center justify-center h-64">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                                 </div>
-                            </div>
-                            <div className="mb-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    HTML Source
-                                </label>
-                                <pre className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm">
-                                    {viewingTemplate.html_body}
-                                </pre>
-                            </div>
+                            ) : (
+                                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                                    <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

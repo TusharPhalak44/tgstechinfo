@@ -263,6 +263,10 @@ export const ChatProvider = ({ children }) => {
 
   const handleCategoryClick = async (category) => {
     if (category === 'Other') {
+      addUserMessage(category);
+      showTypingIndicator();
+      await new Promise(resolve => setTimeout(resolve, 500));
+      hideTypingIndicator();
       addBotMessage('Please provide your detailed query below:', 'text');
       setShowQueryForm(true);
       return;
@@ -281,16 +285,11 @@ export const ChatProvider = ({ children }) => {
       let results = [];
 
       if (mappedType) {
+        // Use content_type search for exact category matching - no fallback
         const response = await api.post('/api/chatbot/search', {
-          query: mappedType, searchType: 'content_type', sessionId, limit: 10
+          query: mappedType, searchType: 'content_type', sessionId, limit: 6
         });
         results = response.data.results || [];
-        if (results.length === 0) {
-          const fallback = await api.post('/api/chatbot/search', {
-            query: mappedType, searchType: 'keyword', sessionId, limit: 10
-          });
-          results = fallback.data.results || [];
-        }
       } else {
         const categoriesResponse = await api.get('/api/chatbot/categories');
         const allCategories = categoriesResponse.data.categories || [];
@@ -298,13 +297,15 @@ export const ChatProvider = ({ children }) => {
           cat.name.toLowerCase() === category.toLowerCase()
         );
         if (matchedCategory) {
+          // Use categoryId filter to ensure only results from this category
           const response = await api.post('/api/chatbot/search', {
-            query: category, searchType: 'keyword', categoryId: matchedCategory.id, sessionId, limit: 10
+            query: category, searchType: 'keyword', categoryId: matchedCategory.id, sessionId, limit: 6
           });
           results = response.data.results || [];
         } else {
+          // If no category match, try keyword search but this should be rare
           const response = await api.post('/api/chatbot/search', {
-            query: category, searchType: 'keyword', sessionId, limit: 10
+            query: category, searchType: 'keyword', sessionId, limit: 6
           });
           results = response.data.results || [];
         }
@@ -317,7 +318,15 @@ export const ChatProvider = ({ children }) => {
         addBotMessage(`Found ${results.length} results for "${category}"`, 'content_cards', { results });
         setSearchResults(results);
       } else {
-        addBotMessage(`No content found for "${category}". Try searching for a specific topic.`, 'text');
+        addBotMessage(`Sorry, no content found for "${category}". 😔`, 'text');
+        // Show suggestions based on the search
+        const suggestions = await getRelatedSuggestions(category);
+        if (suggestions.length > 0) {
+          addBotMessage('You might be interested in these topics:', 'category_cards', {
+            categories: suggestions,
+            onCategoryClick: handleSearchWithIntent
+          });
+        }
       }
     } catch (error) {
       hideTypingIndicator();
@@ -348,10 +357,18 @@ export const ChatProvider = ({ children }) => {
       hideTypingIndicator();
 
       if (intentResult.intent === 'greeting') {
-        addBotMessage('Hello! 👋\n\nWelcome to our Content Discovery Assistant.\n\nWhat would you like to explore today?', 'category_cards', {
+        addBotMessage('Hello! 👋\n\nWelcome to our Content Discovery Assistant.\n\nHow can we help you today?', 'category_cards', {
           categories: ['Articles', 'News', 'Blogs', 'Whitepapers', 'Reports', 'Webinars', 'Events', 'Resources', 'Other'],
           onCategoryClick: handleCategoryClick
         });
+        setSearchedQuery(q);
+        setIsSearching(false);
+        return;
+      }
+
+      if (intentResult.intent === 'thank_you') {
+        addBotMessage('Thank you for chatting with us at Taraj Global! 🙏\n\nWe appreciate your time and hope we could help you find the information you were looking for.\n\nFeel free to reach out anytime if you need assistance with our content, whitepapers, reports, or any other inquiries.\n\nHave a wonderful day! 😊', 'text');
+        setChatEnded(true);
         setSearchedQuery(q);
         setIsSearching(false);
         return;
@@ -381,15 +398,15 @@ export const ChatProvider = ({ children }) => {
       let dbResults = [];
 
       if (mappedContentType) {
+        // Use content_type search for exact matching - no fallback to keyword search
         const r = await api.post('/api/chatbot/search', {
-          query: mappedContentType, searchType: 'content_type', sessionId, limit: 10
+          query: mappedContentType, searchType: 'content_type', sessionId, limit: 6
         });
         dbResults = r.data.results || [];
-      }
-
-      if (dbResults.length === 0) {
+      } else {
+        // For non-content-type searches, use keyword search
         const r = await api.post('/api/chatbot/search', {
-          query: q, searchType: 'keyword', sessionId, limit: 10
+          query: q, searchType: 'keyword', sessionId, limit: 6
         });
         dbResults = r.data.results || [];
       }
@@ -424,13 +441,14 @@ export const ChatProvider = ({ children }) => {
       const allSuggestions = [...new Set([...trendingTopics, ...suggestions])]
         .filter(s => typeof s === 'string' && s.trim()).slice(0, 8);
 
-      addBotMessage(`Sorry, no content found for "${q}".`, 'text');
+      addBotMessage(`Sorry, no content found for "${q}". 😔`, 'text');
       if (allSuggestions.length > 0) {
-        addBotMessage('You might be interested in:', 'category_cards', {
+        addBotMessage('You might be interested in these topics:', 'category_cards', {
           categories: allSuggestions,
           onCategoryClick: (suggestion) => handleSearchWithIntent(suggestion)
         });
       }
+      addBotMessage('Or submit your query below and our team will help you:', 'text');
       setShowQueryForm(true);
       setRelatedSuggestions(allSuggestions);
       setSearchedQuery(q);

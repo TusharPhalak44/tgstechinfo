@@ -45,41 +45,46 @@ const ChatMessage = ({ message }) => {
           lineHeight: 1.5
         }}>
           {type === 'text' && text}
-          {type === 'category_cards' && data && (
-            <div style={{ marginTop: 8 }}>
-              {data.categories?.filter(cat => cat && typeof cat === 'string').map((cat, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => {
-                    if (data.onCategoryClick) data.onCategoryClick(cat);
-                    else handleSearchWithIntent(cat);
-                  }}
-                  style={{
-                    display: 'inline-block',
-                    margin: '4px',
-                    padding: '8px 16px',
-                    borderRadius: 20,
-                    background: 'var(--color-primary-light)',
-                    border: '1px solid var(--color-primary)',
-                    color: 'var(--color-primary)',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--color-primary)';
-                    e.currentTarget.style.color = '#fff';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'var(--color-primary-light)';
-                    e.currentTarget.style.color = 'var(--color-primary)';
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
+          {type === 'category_cards' && (
+            <>
+              {text && <div style={{ marginBottom: 12 }}>{text}</div>}
+              {data && (
+                <div style={{ marginTop: 8 }}>
+                  {data.categories?.filter(cat => cat && typeof cat === 'string').map((cat, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (data.onCategoryClick) data.onCategoryClick(cat);
+                        else handleSearchWithIntent(cat);
+                      }}
+                      style={{
+                        display: 'inline-block',
+                        margin: '4px',
+                        padding: '8px 16px',
+                        borderRadius: 20,
+                        background: 'var(--color-primary-light)',
+                        border: '1px solid var(--color-primary)',
+                        color: 'var(--color-primary)',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'var(--color-primary)';
+                        e.currentTarget.style.color = '#fff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'var(--color-primary-light)';
+                        e.currentTarget.style.color = 'var(--color-primary)';
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
           {type === 'content_cards' && data && (
             <div style={{ marginTop: 8, width: '100%' }}>

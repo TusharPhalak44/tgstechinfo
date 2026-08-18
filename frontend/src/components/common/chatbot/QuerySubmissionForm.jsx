@@ -84,7 +84,7 @@ const QuerySubmissionForm = () => {
         margin: '0 0 20px 0',
         lineHeight: 1.5
       }}>
-        Sorry, I couldn't find an answer. Would you like to send your query to our support team?
+        Please fill out the form below and our team will get back to you via email.
       </p>
 
       <div style={{ marginBottom: 16 }}>

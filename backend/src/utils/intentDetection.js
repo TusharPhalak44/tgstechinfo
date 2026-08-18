@@ -33,11 +33,38 @@ function detectIntent(query) {
     };
   }
   
-  // Greeting detection - check BEFORE short input rejection
+  // Thank you detection - check BEFORE greeting detection
+  const thankYouVariations = [
+    'thank you', 'thanks', 'thankyou', 'thank u', 'thanx', 'thx',
+    'thank you very much', 'thanks a lot', 'many thanks', 'thank you so much',
+    'ty', 'thank u very much', 'thank', 'thankyou very much'
+  ];
+
+  const isThankYou = thankYouVariations.some(thanks =>
+    lowerQuery === thanks ||
+    lowerQuery === thanks + '!' ||
+    lowerQuery === thanks + '.' ||
+    lowerQuery === thanks + '!!' ||
+    lowerQuery === thanks + '...' ||
+    // Handle thanks with extra letters
+    /^thank[us]+!*$/.test(lowerQuery) ||
+    /^thanx+!*$/.test(lowerQuery) ||
+    /^thx+!*$/.test(lowerQuery) ||
+    /^ty+!*$/.test(lowerQuery)
+  );
+
+  if (isThankYou) {
+    console.log('[detectIntent] Detected intent: thank_you');
+    return { intent: 'thank_you', confidence: 'high' };
+  }
+
+  // Greeting detection - check AFTER thank you detection
   const greetings = [
-    'hi', 'hii', 'hiii', 'hello', 'hey', 'heyy', 'heyyy', 'greetings', 'good morning', 'good afternoon',
-    'good evening', 'how are you', 'howdy', 'thanks', 'thank you', 'ok',
-    'okay', 'bye', 'goodbye', 'sure', 'yes', 'no', 'maybe', 'sup', 'wassup', 'whatsup'
+    'hi', 'hii', 'hiii', 'hiiii', 'hieee', 'hiie', 'hie', 'hyy',
+    'hello', 'hey', 'heyy', 'heyyy', 'heyyyy',
+    'greetings', 'good morning', 'good afternoon', 'good evening',
+    'how are you', 'howdy', 'ok', 'okay',
+    'bye', 'goodbye', 'sure', 'yes', 'no', 'maybe', 'sup', 'wassup', 'whatsup'
   ];
 
   const isGreeting = greetings.some(greeting =>
@@ -45,7 +72,15 @@ function detectIntent(query) {
     lowerQuery === greeting + '!' ||
     lowerQuery === greeting + '.' ||
     lowerQuery === greeting + '!!' ||
-    lowerQuery === greeting + '...'
+    lowerQuery === greeting + '...' ||
+    lowerQuery === greeting + '!?' ||
+    lowerQuery === greeting + '?!' ||
+    // Handle hi with extra i's or e's (hii, hiii, hieee, hiiii, etc.)
+    /^h[iie]+$/.test(lowerQuery) ||
+    // Handle hey with extra y's/e's
+    /^he[yie]+$/.test(lowerQuery) ||
+    // Handle hello variations
+    /^helo+$/.test(lowerQuery)
   );
 
   if (isGreeting) {
