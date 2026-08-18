@@ -82,24 +82,31 @@ const StandaloneLandingPage = () => {
       // Initialize tracking session if analytics consent is granted and session doesn't exist
       if (hasAnalyticsConsent && consent && !window.__SESSION_UUID) {
         console.log('Initializing tracking session on landing page...');
-        const { trackingApi, generateSessionUuid, getDeviceInfo } = require('../lib/trackingUtils');
-        
-        const sessionData = {
-          consent_uuid: consent.uuid,
-          landing_page: window.location.href,
-          referrer: document.referrer,
-          ...getDeviceInfo()
-        };
-        
-        trackingApi.startSession(sessionData)
-          .then(response => {
-            window.__SESSION_UUID = response.session.session_uuid;
-            localStorage.setItem('tracking_session_uuid', response.session.session_uuid);
-            console.log('Tracking session initialized on landing page:', response.session.session_uuid);
-          })
-          .catch(err => {
-            console.error('Failed to initialize tracking on landing page:', err);
-          });
+        try {
+          const { trackingApi, generateSessionUuid, getDeviceInfo } = require('../lib/trackingUtils');
+          
+          const sessionData = {
+            consent_uuid: consent.uuid,
+            landing_page: window.location.href,
+            referrer: document.referrer,
+            ...getDeviceInfo()
+          };
+          
+          trackingApi.startSession(sessionData)
+            .then(response => {
+              window.__SESSION_UUID = response.session.session_uuid;
+              localStorage.setItem('tracking_session_uuid', response.session.session_uuid);
+              console.log('Tracking session initialized on landing page:', response.session.session_uuid);
+            })
+            .catch(err => {
+              console.error('Failed to initialize tracking on landing page:', err);
+              // Don't block page functionality if tracking fails
+              console.warn('Tracking initialization failed, but page will continue to function');
+            });
+        } catch (trackingError) {
+          console.error('Tracking system error:', trackingError);
+          console.warn('Tracking system unavailable, but page will continue to function');
+        }
       } else if (!window.__SESSION_UUID) {
         // Try to get session from localStorage
         const savedSession = localStorage.getItem('tracking_session_uuid');
@@ -138,12 +145,23 @@ const StandaloneLandingPage = () => {
 
       // Auto-patch fetch so ANY call to /api/public/landing-page automatically
       // includes content_id, session_uuid, and consent_uuid in the JSON body
+      // Also patch incorrect /api/users endpoint to correct /api/public/landing-page
       // works even if the client's HTML doesn't include it explicitly.
       (function() {
         const _originalFetch = window.fetch;
         window.fetch = function(url, options) {
           try {
             const urlStr = (typeof url === 'string') ? url : (url.url || String(url));
+            
+            // Patch incorrect /api/users endpoint to correct /api/public/landing-page
+            if (urlStr.includes('/api/users')) {
+              console.log('Patching incorrect /api/users endpoint to /api/public/landing-page');
+              url = urlStr.replace('/api/users', '/api/public/landing-page');
+              if (typeof url === 'string' && options) {
+                options = { ...options, ...(typeof url === 'object' ? {} : {}) };
+              }
+            }
+            
             if (urlStr.includes('/api/public/landing-page') && options && options.body) {
               let body;
               try { body = JSON.parse(options.body); } catch(e) { body = null; }
@@ -167,6 +185,12 @@ const StandaloneLandingPage = () => {
         const _XHRSend = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.open = function(method, url) {
           this._patchUrl = (typeof url === 'string') ? url : String(url);
+          // Patch incorrect /api/users endpoint to correct /api/public/landing-page
+          if (this._patchUrl.includes('/api/users')) {
+            console.log('Patching incorrect /api/users XHR endpoint to /api/public/landing-page');
+            this._patchUrl = this._patchUrl.replace('/api/users', '/api/public/landing-page');
+            arguments[1] = this._patchUrl;
+          }
           return _XHROpen.apply(this, arguments);
         };
         XMLHttpRequest.prototype.send = function(body) {
@@ -231,11 +255,25 @@ const StandaloneLandingPage = () => {
       // If it's an inline script, process the code
       if (!script.src) {
         let code = script.textContent;
-        // Replace legacy placeholder API URL with our actual endpoint
+        // Replace legacy placeholder API URLs with our actual endpoint
         code = code.replace(/https:\/\/your-api-url\.com\/api\/leads/g, '/api/public/landing-page');
+        code = code.replace(/\/api\/users/g, '/api/public/landing-page');
         // Wrap in IIFE to prevent variable redeclaration issues
         // The IIFE creates a new scope, so const/let/var declarations won't conflict
-        code = `(function() { try { ${code} } catch(e) { console.error('HTML Builder script error:', e); } })();`;
+        // Add additional null checks for common DOM operations
+        code = `(function() { try { 
+          // Override addEventListener to handle null targets gracefully
+          const originalAddEventListener = EventTarget.prototype.addEventListener;
+          EventTarget.prototype.addEventListener = function(type, listener, options) {
+            if (this === null || this === undefined) {
+              console.warn('Attempted to addEventListener to null/undefined target');
+              return;
+            }
+            return originalAddEventListener.call(this, type, listener, options);
+          };
+          
+          ${code} 
+        } catch(e) { console.error('HTML Builder script error:', e); } })();`;
         newScript.textContent = code;
       }
 
@@ -299,7 +337,8 @@ const StandaloneLandingPage = () => {
 
   // Pre-process raw HTML to replace target placeholder endpoints in form elements too
   const rawHtml = (content.content || '')
-    .replace(/https:\/\/your-api-url\.com\/api\/leads/g, '/api/public/landing-page');
+    .replace(/https:\/\/your-api-url\.com\/api\/leads/g, '/api/public/landing-page')
+    .replace(/\/api\/users/g, '/api/public/landing-page');
 
   console.log('🎨 Rendering content:', {
     hasBuilderPageData: !!content?.builder_page_data,
@@ -398,23 +437,32 @@ const StandaloneLandingPage = () => {
               }, true);
 
               // Monitor fetch calls and inject content_id
+              // Also patch incorrect /api/users endpoint to correct /api/public/landing-page
               const originalFetch = window.fetch;
               window.fetch = function(...args) {
-                if (args[0] && (typeof args[0] === 'string' && args[0].includes('/api/public/landing-page'))) {
-                  console.log('Fetch call to /api/public/landing-page detected');
-                  if (args[1] && args[1].body) {
-                    try {
-                      const body = typeof args[1].body === 'string' ? JSON.parse(args[1].body) : args[1].body;
-                      console.log('Fetch body before injection:', body);
+                if (args[0] && typeof args[0] === 'string') {
+                  // Patch incorrect /api/users endpoint
+                  if (args[0].includes('/api/users')) {
+                    console.log('Patching incorrect /api/users fetch endpoint to /api/public/landing-page');
+                    args[0] = args[0].replace('/api/users', '/api/public/landing-page');
+                  }
+                  
+                  if (args[0].includes('/api/public/landing-page')) {
+                    console.log('Fetch call to /api/public/landing-page detected');
+                    if (args[1] && args[1].body) {
+                      try {
+                        const body = typeof args[1].body === 'string' ? JSON.parse(args[1].body) : args[1].body;
+                        console.log('Fetch body before injection:', body);
 
-                      // Inject content_id if missing
-                      if (body && typeof body === 'object' && !body.content_id) {
-                        body.content_id = ${content.id};
-                        args[1] = { ...args[1], body: JSON.stringify(body) };
-                        console.log('Fetch body after injection:', body);
+                        // Inject content_id if missing
+                        if (body && typeof body === 'object' && !body.content_id) {
+                          body.content_id = ${content.id};
+                          args[1] = { ...args[1], body: JSON.stringify(body) };
+                          console.log('Fetch body after injection:', body);
+                        }
+                      } catch(e) {
+                        console.log('Fetch body (raw):', args[1].body);
                       }
-                    } catch(e) {
-                      console.log('Fetch body (raw):', args[1].body);
                     }
                   }
                 }

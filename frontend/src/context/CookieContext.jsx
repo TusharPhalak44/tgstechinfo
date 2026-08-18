@@ -97,8 +97,12 @@ export const CookieProvider = ({ children }) => {
         localStorage.setItem(BANNER_VERSION_KEY, CURRENT_BANNER_VERSION);
       }
     } catch (error) {
-      // If backend fails, keep local consent
+      // If backend fails (including 404), keep local consent
       console.warn('Backend sync failed, using local consent:', error);
+      // Don't break the user experience if backend is unavailable
+      if (error.response?.status === 404) {
+        console.log('No existing consent on backend (404), using local consent');
+      }
     }
   };
 

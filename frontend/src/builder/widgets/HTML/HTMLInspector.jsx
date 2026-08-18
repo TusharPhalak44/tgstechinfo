@@ -30,16 +30,9 @@ export default function HTMLInspector({ node, onUpdate }) {
   };
 
   const handleMediaSelect = (url) => {
-    // Copy URL to clipboard
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(() => {
-        message.success('Image URL copied to clipboard! You can now paste it in your HTML code.');
-      }).catch(() => {
-        message.info(`Image URL: ${url}`);
-      });
-    } else {
-      message.info(`Image URL: ${url}`);
-    }
+    // MediaLibraryModal already handles the clipboard copying
+    // Just show a helpful message to guide the user
+    message.success('Image URL copied! You can now paste it in your HTML code.');
   };
 
   return (

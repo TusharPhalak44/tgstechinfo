@@ -28,7 +28,7 @@ class VisitorSession {
         `;
 
         const values = [
-            session_uuid, consent_uuid, user_id, country, browser, operating_system,
+            session_uuid, consent_uuid || null, user_id, country, browser, operating_system,
             device_type, screen_resolution, language, timezone, ip_address, referrer, landing_page
         ];
 

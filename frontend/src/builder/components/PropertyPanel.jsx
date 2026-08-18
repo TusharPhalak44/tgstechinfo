@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Tabs, Empty, Form, Input, Select, Button, InputNumber, ColorPicker, Slider, Collapse, Switch, Alert } from 'antd';
+import { Tabs, Empty, Form, Input, Select, Button, InputNumber, ColorPicker, Slider, Collapse, Switch, Alert, message } from 'antd';
 import { PictureOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useBuilderSelection, useBuilderActions, useBuilderPage } from '../core/BuilderStore.jsx';
 import widgetRegistry from '../registry/WidgetRegistry';
@@ -951,6 +951,7 @@ function StylePanel({ node, widget, onUpdate }) {
         form.setFieldsValue({ backgroundImage: url });
         handleValuesChange({ backgroundImage: url });
         setMediaLibraryVisible(false);
+        message.success('Background image URL added!');
       }}
     />
   </>

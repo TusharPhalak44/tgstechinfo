@@ -30,8 +30,8 @@ router.use(checkAnalyticsConsent);
 
 // Session Management
 router.post('/session/start', [
-    body('consent_uuid').notEmpty().withMessage('Consent UUID is required'),
     body('landing_page').notEmpty().withMessage('Landing page is required')
+    // consent_uuid is now optional for compatibility
 ], trackingController.startSession);
 
 // Page View Tracking

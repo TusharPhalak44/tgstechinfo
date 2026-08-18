@@ -61,18 +61,100 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
   };
 
   const copyToClipboard = (url, id) => {
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiedId(id);
-      message.success('URL copied to clipboard!');
-      setTimeout(() => setCopiedId(null), 2000);
+    console.log('[MediaLibraryModal] Attempting to copy URL:', url, 'ID:', id);
+    
+    if (!url) {
+      console.error('[MediaLibraryModal] No URL provided for copying');
+      message.error('No URL available to copy');
+      return;
+    }
+    
+    // Try modern clipboard API first
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        console.log('[MediaLibraryModal] Successfully copied URL using Clipboard API');
+        setCopiedId(id);
+        message.success('URL copied to clipboard!');
+        setTimeout(() => setCopiedId(null), 2000);
+        
+        // If onSelect callback provided, call it with the URL string
+        if (onSelect) {
+          onSelect(url);
+        }
+      }).catch((err) => {
+        console.warn('[MediaLibraryModal] Clipboard API failed, falling back to legacy method:', err);
+        // Fallback to legacy method
+        fallbackCopyToClipboard(url, id);
+      });
+    } else {
+      console.log('[MediaLibraryModal] Clipboard API not available, using legacy method');
+      // Use legacy method for older browsers or non-secure contexts
+      fallbackCopyToClipboard(url, id);
+    }
+  };
+
+  const fallbackCopyToClipboard = (url, id) => {
+    console.log('[MediaLibraryModal] Using fallback copy method');
+    
+    // Create a temporary textarea element
+    const textArea = document.createElement('textarea');
+    textArea.value = url;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    
+    try {
+      textArea.focus();
+      textArea.select();
       
-      // If onSelect callback provided, call it with the URL string
+      // Try to execute copy command
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        console.log('[MediaLibraryModal] Successfully copied URL using execCommand');
+        setCopiedId(id);
+        message.success('URL copied to clipboard!');
+        setTimeout(() => setCopiedId(null), 2000);
+        
+        // If onSelect callback provided, call it with the URL string
+        if (onSelect) {
+          onSelect(url);
+        }
+      } else {
+        throw new Error('execCommand failed');
+      }
+    } catch (err) {
+      console.error('[MediaLibraryModal] Fallback copy failed:', err);
+      document.body.removeChild(textArea);
+      
+      // Final fallback: show the URL in a message for manual copying
+      message.info({
+        content: (
+          <div>
+            <div>Failed to copy automatically. Copy this URL:</div>
+            <div style={{ 
+              background: '#f5f5f5', 
+              padding: '8px', 
+              marginTop: '4px',
+              borderRadius: '4px',
+              fontFamily: 'monospace',
+              fontSize: '12px',
+              wordBreak: 'break-all'
+            }}>
+              {url}
+            </div>
+          </div>
+        ),
+        duration: 5
+      });
+      
+      // Still call onSelect even if copy failed
       if (onSelect) {
         onSelect(url);
       }
-    }).catch(() => {
-      message.error('Failed to copy URL');
-    });
+    }
   };
 
   const getFileIcon = (fileType) => {
