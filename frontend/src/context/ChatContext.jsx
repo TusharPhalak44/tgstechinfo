@@ -3,6 +3,87 @@ import api from '../services/api';
 import { message } from 'antd';
 import { useAuth } from './AuthContext';
 
+// Frontend knowledge base for website pages
+const searchWebsitePages = (query) => {
+  const lowerQuery = query.toLowerCase();
+  
+  const websitePages = {
+    'privacy policy': {
+      title: 'Privacy Policy',
+      content: 'We take your privacy seriously. Our Privacy Policy explains how we collect, use, and protect your personal information. We comply with GDPR and other data protection regulations.',
+      link: '/privacy-policy'
+    },
+    'about us': {
+      title: 'About Us',
+      content: 'TGS Tech Info is a leading technology publishing platform that provides insights, whitepapers, reports, and articles on emerging technologies. We help businesses and professionals stay informed about the latest trends.',
+      link: '/about'
+    },
+    'about': {
+      title: 'About Us',
+      content: 'TGS Tech Info is a leading technology publishing platform that provides insights, whitepapers, reports, and articles on emerging technologies. We help businesses and professionals stay informed about the latest trends.',
+      link: '/about'
+    },
+    'contact': {
+      title: 'Contact Us',
+      content: 'You can reach our team through the contact form on our website or email us at support@tgstechinfo.com. Our team is available Monday through Friday, 9 AM to 6 PM IST.',
+      link: '/contact'
+    },
+    'terms': {
+      title: 'Terms of Service',
+      content: 'Our Terms of Service outline the rules and guidelines for using our platform. By using our services, you agree to these terms.',
+      link: '/terms-of-use'
+    },
+    'terms of service': {
+      title: 'Terms of Service',
+      content: 'Our Terms of Service outline the rules and guidelines for using our platform. By using our services, you agree to these terms.',
+      link: '/terms-of-use'
+    },
+    'cookie policy': {
+      title: 'Cookie Policy',
+      content: 'We use cookies to improve your browsing experience and analyze site traffic. You can manage your cookie preferences through our cookie consent banner.',
+      link: '/cookie-policy'
+    },
+    'cookies': {
+      title: 'Cookie Policy',
+      content: 'We use cookies to improve your browsing experience and analyze site traffic. You can manage your cookie preferences through our cookie consent banner.',
+      link: '/cookie-policy'
+    },
+    'services': {
+      title: 'Our Services',
+      content: 'We offer a range of services including content publishing, lead generation, demand generation, and technology research. Our platform helps businesses reach their target audience through high-quality technical content.',
+      link: '/services'
+    },
+    'careers': {
+      title: 'Careers',
+      content: 'We are always looking for talented individuals to join our team. Check our careers page for current job openings and application details.',
+      link: '/contact'
+    },
+    'pricing': {
+      title: 'Pricing',
+      content: 'For enterprise pricing and custom solutions, please contact our sales team. We offer flexible plans based on your business needs.',
+      link: '/contact'
+    },
+    'newsletter': {
+      title: 'Newsletter',
+      content: 'Subscribe to our newsletter to receive the latest technology insights, whitepapers, and industry updates directly in your inbox.',
+      link: '/newsletter'
+    },
+    'support': {
+      title: 'Support',
+      content: 'For technical support or account-related issues, please contact our support team. You can also submit a query through this chatbot.',
+      link: '/contact'
+    }
+  };
+  
+  for (const [key, data] of Object.entries(websitePages)) {
+    if (lowerQuery.includes(key)) {
+      return data;
+    }
+  }
+  
+  return null;
+};
+
 const ChatContext = createContext();
 export const useChat = () => useContext(ChatContext);
 
@@ -318,14 +399,25 @@ export const ChatProvider = ({ children }) => {
         addBotMessage(`Found ${results.length} results for "${category}"`, 'content_cards', { results });
         setSearchResults(results);
       } else {
-        addBotMessage(`Sorry, no content found for "${category}". 😔`, 'text');
-        // Show suggestions based on the search
-        const suggestions = await getRelatedSuggestions(category);
-        if (suggestions.length > 0) {
-          addBotMessage('You might be interested in these topics:', 'category_cards', {
-            categories: suggestions,
-            onCategoryClick: handleSearchWithIntent
+        // Check for website pages when no category content found
+        const pageAnswer = searchWebsitePages(category);
+        
+        if (pageAnswer) {
+          addBotMessage(pageAnswer.content, 'page_info', {
+            title: pageAnswer.title,
+            summary: pageAnswer.content,
+            link: pageAnswer.link
           });
+        } else {
+          addBotMessage(`Sorry, no content found for "${category}". 😔`, 'text');
+          // Show suggestions based on the search
+          const suggestions = await getRelatedSuggestions(category);
+          if (suggestions.length > 0) {
+            addBotMessage('You might be interested in these topics:', 'category_cards', {
+              categories: suggestions,
+              onCategoryClick: handleSearchWithIntent
+            });
+          }
         }
       }
     } catch (error) {
@@ -434,6 +526,24 @@ export const ChatProvider = ({ children }) => {
         saveRecentSearch(q);
         setIsSearching(false);
         return;
+      }
+
+      // Check for website pages when no database content found
+      if (dbResults.length === 0) {
+        // Try to detect if this is a page query (privacy policy, about us, contact, etc.)
+        const pageAnswer = searchWebsitePages(q);
+        
+        if (pageAnswer) {
+          addBotMessage(pageAnswer.content, 'page_info', {
+            title: pageAnswer.title,
+            summary: pageAnswer.content,
+            link: pageAnswer.link
+          });
+          setSearchedQuery(q);
+          saveRecentSearch(q);
+          setIsSearching(false);
+          return;
+        }
       }
 
       const trendingTopics = trending.map(t => t.title || t.category || t.name || '').filter(Boolean).slice(0, 5);

@@ -201,27 +201,60 @@ const ChatMessage = ({ message }) => {
           )}
           {type === 'page_info' && data && (
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-heading)', marginBottom: 8 }}>
+              <div style={{ 
+                fontWeight: 600, 
+                fontSize: 15, 
+                color: 'var(--color-heading)', 
+                marginBottom: 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <span>📄</span>
                 {data.title}
               </div>
-              <div style={{ fontSize: 13, color: 'var(--color-body)', marginBottom: 12, lineHeight: 1.5 }}>
+              <div style={{ 
+                fontSize: 13, 
+                color: 'var(--color-body)', 
+                marginBottom: 12, 
+                lineHeight: 1.6,
+                maxHeight: '120px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: '-webkit-box',
+                WebkitLineClamp: 4,
+                WebkitBoxOrient: 'vertical'
+              }}>
                 {data.summary}
               </div>
               {data.link && (
                 <button
                   onClick={() => navigate(data.link)}
                   style={{
-                    padding: '8px 16px',
+                    padding: '10px 20px',
                     borderRadius: 8,
-                    background: 'var(--color-primary)',
+                    background: 'linear-gradient(135deg, #0B1F4D 0%, #123A8C 100%)',
                     color: '#fff',
                     border: 'none',
                     fontSize: 13,
                     fontWeight: 500,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(11,31,77,0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
                   }}
                 >
-                  Visit Page
+                  <span>🔗</span>
+                  Visit {data.title}
                 </button>
               )}
             </div>
