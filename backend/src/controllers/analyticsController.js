@@ -42,7 +42,7 @@ exports.getOverview = async (req, res) => {
             ${baseWhere}
         `;
         const [sessionRows] = await require('../config/database').pool.query(sessionQuery, values);
-        
+
         const sessionData = sessionRows[0] || {};
         const totalSessions = sessionData.totalSessions || 0;
         const bounceRate = totalSessions > 0 ? Math.round((sessionData.bounceCount / totalSessions) * 100) : 0;

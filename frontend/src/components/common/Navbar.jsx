@@ -4,7 +4,10 @@ import { Dropdown, Button, Avatar, Badge, List, Typography, Empty, Tag } from 'a
 import {
   UserOutlined, LogoutOutlined, DashboardOutlined,
   MenuOutlined, CloseOutlined, SearchOutlined, BellOutlined,
-  CheckOutlined, DownOutlined, RightOutlined, SunOutlined, MoonOutlined
+  CheckOutlined, DownOutlined, RightOutlined, SunOutlined, MoonOutlined,
+  FileTextOutlined, TeamOutlined, FireOutlined, ReadOutlined,
+  GlobalOutlined, FolderOpenOutlined, LineChartOutlined, CalendarOutlined,
+  AppstoreOutlined, BuildOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -23,77 +26,133 @@ const STATIC_NAV = [
   {
     key: 'insights', label: 'Insights',
     children: [
-      { label: 'Articles', to: '/articles' },
-      { label: 'Interviews', to: '/interviews' },
-      { label: 'News', to: '/news' },
-      { label: 'eBooks', to: '/ebooks' },
+      { label: 'Articles', desc: 'In-depth tech analysis & tutorials', to: '/articles', icon: <FileTextOutlined /> },
+      { label: 'Interviews', desc: 'Exclusives with CXOs & Tech Leaders', to: '/interviews', icon: <TeamOutlined /> },
+      { label: 'News', desc: 'Breaking enterprise tech news', to: '/news', icon: <FireOutlined /> },
+      { label: 'eBooks', desc: 'Comprehensive tech guides & books', to: '/ebooks', icon: <ReadOutlined /> },
     ]
   },
   {
     key: 'resources', label: 'Resources',
     children: [
-      { label: 'Blog', to: '/blogs' },
-      { label: 'Whitepaper', to: '/category/whitepaper' },
-      { label: 'Webinar', to: '/webinars' },
-      { label: 'Events', to: '/events' },
-      { label: 'Case Study', to: '/case-studies' },
+      { label: 'Blog', desc: 'Expert insights & opinion pieces', to: '/blogs', icon: <GlobalOutlined /> },
+      { label: 'Whitepapers', desc: 'Research reports & benchmarks', to: '/category/whitepaper', icon: <FolderOpenOutlined /> },
+      { label: 'Webinars', desc: 'Live & on-demand tech webinars', to: '/webinars', icon: <LineChartOutlined /> },
+      { label: 'Events', desc: 'Industry summits & conferences', to: '/events', icon: <CalendarOutlined /> },
+      { label: 'Case Studies', desc: 'Real-world customer success stories', to: '/case-studies', icon: <CheckOutlined /> },
     ]
   },
-  { key: 'technology', label: 'Technology', dynamic: true },
-  
-  { key: 'industries', label: 'Industries', dynamic: true },
+  { key: 'technology', label: 'Technology', dynamic: true, icon: <AppstoreOutlined /> },
+  { key: 'industries', label: 'Industries', dynamic: true, icon: <BuildOutlined /> },
   { key: 'about', label: 'About Us', to: '/about' },
-  { key: 'contact', label: 'Contact', to: '/contact' },
 ];
 
-// ── Dropdown panel ─ fixed position ─────────────────────────────
-const MegaPanel = ({ items, onClose, anchorRect, onMouseEnter, onMouseLeave }) => {
+// ── Rich Dropdown MegaPanel ───────────────────────────────────────────
+const MegaPanel = ({ items, onClose, anchorRect, onMouseEnter, onMouseLeave, darkMode }) => {
   if (!anchorRect) return null;
-  const left = Math.max(8, anchorRect.left + anchorRect.width / 2 - 130);
+  const width = Math.min(330, window.innerWidth - 32);
+  const left = Math.max(16, Math.min(anchorRect.left + anchorRect.width / 2 - width / 2, window.innerWidth - width - 16));
+
   return (
     <div
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       style={{
-      position: 'fixed',
-      top: anchorRect.bottom + 8,
-      left,
-      zIndex: 99999,
-      background: 'var(--color-surface)',
-      borderRadius: 14,
-      padding: '10px 6px',
-      boxShadow: '0 12px 48px rgba(11,31,77,0.16)',
-      border: '1px solid var(--color-border)',
-      minWidth: 220,
-      animation: 'navFadeDown .18s ease'
-    }}>
-      {/* arrow */}
+        position: 'fixed',
+        top: anchorRect.bottom + 10,
+        left,
+        width,
+        zIndex: 99999,
+        background: darkMode ? '#0F172A' : '#FFFFFF',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderRadius: 16,
+        padding: '10px 8px',
+        boxShadow: darkMode ? '0 16px 48px rgba(0,0,0,0.6)' : '0 16px 48px rgba(11,31,77,0.14)',
+        border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+        animation: 'navFadeDown .18s ease-out'
+      }}>
+      {/* Top pointer arrow */}
       <div style={{
-        position: 'absolute', top: -7, left: 130 - 8,
-        width: 14, height: 14, background: 'var(--color-surface)',
-        border: '1px solid var(--color-border)', borderBottom: 'none', borderRight: 'none',
+        position: 'absolute', top: -7, left: width / 2 - 7,
+        width: 14, height: 14,
+        background: darkMode ? '#0F172A' : '#FFFFFF',
+        border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+        borderBottom: 'none', borderRight: 'none',
         transform: 'rotate(45deg)', borderRadius: '2px 0 0 0'
       }} />
-      {items.map(item => (
-        <Link key={item.label} to={item.to} onClick={onClose} style={{ textDecoration: 'none' }}>
-          <div style={{
-            padding: '9px 14px', borderRadius: 8, cursor: 'pointer',
-            fontSize: 13, fontWeight: 500, color: 'var(--color-heading)',
-            transition: 'background .15s, color .15s'
-          }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary-light)'; e.currentTarget.style.color = 'var(--color-primary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-heading)'; }}
-          >
-            {item.label}
-          </div>
-        </Link>
-      ))}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {items.map(item => (
+          <Link key={item.label} to={item.to} onClick={onClose} style={{ textDecoration: 'none' }}>
+            <div
+              style={{
+                padding: '9px 12px',
+                borderRadius: 10,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                transition: 'all .18s ease'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = darkMode ? '#1E3A8A' : '#EAF2FF';
+                e.currentTarget.style.transform = 'translateX(4px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.transform = 'none';
+              }}
+            >
+              {item.icon && (
+                <div style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  background: darkMode ? '#1E293B' : '#FFF4E8',
+                  border: darkMode ? '1px solid #334155' : '1px solid #FFE0B2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#F7941D',
+                  fontSize: 16,
+                  flexShrink: 0
+                }}>
+                  {item.icon}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 13.5,
+                  fontWeight: 700,
+                  color: darkMode ? '#F1F5F9' : '#0B1F4D',
+                  lineHeight: 1.3
+                }}>
+                  {item.label}
+                </div>
+                {item.desc && (
+                  <div style={{
+                    fontSize: 11.5,
+                    color: darkMode ? '#94A3B8' : '#64748B',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    marginTop: 2
+                  }}>
+                    {item.desc}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };
 
-// ── Nav link ─────────────────────────────────────────────────────
-const NavLink = ({ item, active }) => {
+// ── Nav Link Component ─────────────────────────────────────────────
+const NavLink = ({ item, active, darkMode }) => {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState(null);
   const ref = useRef(null);
@@ -114,17 +173,49 @@ const NavLink = ({ item, active }) => {
   if (!item.children) {
     return (
       <Link to={item.to} style={{
-        fontSize: 13.5, fontWeight: 600, color: active ? 'var(--color-primary)' : 'var(--color-heading)',
-        textDecoration: 'none', padding: '4px 2px', position: 'relative',
-        transition: 'color .2s', whiteSpace: 'nowrap'
-      }}>
+        fontSize: 14,
+        fontWeight: active ? 700 : 600,
+        color: active 
+          ? (darkMode ? '#3B82F6' : '#0B1F4D') 
+          : (darkMode ? '#CBD5E1' : '#0F172A'),
+        textDecoration: 'none',
+        padding: '6px 14px',
+        borderRadius: 20,
+        background: active 
+          ? (darkMode ? 'rgba(59, 130, 246, 0.15)' : '#EAF2FF') 
+          : 'transparent',
+        transition: 'all .2s ease',
+        whiteSpace: 'nowrap',
+        display: 'inline-flex',
+        alignItems: 'center',
+        position: 'relative'
+      }}
+        onMouseEnter={e => {
+          if (!active) {
+            e.currentTarget.style.color = darkMode ? '#3B82F6' : '#0B1F4D';
+            e.currentTarget.style.background = darkMode ? 'rgba(59, 130, 246, 0.1)' : '#EAF2FF';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!active) {
+            e.currentTarget.style.color = darkMode ? '#CBD5E1' : '#0F172A';
+            e.currentTarget.style.background = 'transparent';
+          }
+        }}
+      >
         {item.label}
-        <span style={{
-          position: 'absolute', bottom: -2, left: 0, right: 0, height: 2,
-          background: 'var(--color-primary)', borderRadius: 2,
-          transform: active ? 'scaleX(1)' : 'scaleX(0)',
-          transition: 'transform .22s', transformOrigin: 'left'
-        }} />
+        {active && (
+          <span style={{
+            position: 'absolute',
+            bottom: 2,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 16,
+            height: 2,
+            borderRadius: 2,
+            background: '#F7941D'
+          }} />
+        )}
       </Link>
     );
   }
@@ -136,22 +227,46 @@ const NavLink = ({ item, active }) => {
     >
       <button
         style={{
-          background: open ? 'var(--color-primary-light)' : 'none',
-          border: 'none', cursor: 'pointer',
-          fontSize: 13.5, fontWeight: 600,
-          color: open ? 'var(--color-primary)' : 'var(--color-heading)',
-          display: 'flex', alignItems: 'center', gap: 5,
-          padding: '5px 10px', borderRadius: 8,
-          transition: 'all .2s', whiteSpace: 'nowrap'
+          background: open 
+            ? (darkMode ? 'rgba(59, 130, 246, 0.15)' : '#EAF2FF') 
+            : 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: 14,
+          fontWeight: open ? 700 : 600,
+          color: open 
+            ? (darkMode ? '#3B82F6' : '#0B1F4D') 
+            : (darkMode ? '#CBD5E1' : '#0F172A'),
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '6px 14px',
+          borderRadius: 20,
+          transition: 'all .2s ease',
+          whiteSpace: 'nowrap'
+        }}
+        onMouseEnter={e => {
+          if (!open) {
+            e.currentTarget.style.color = darkMode ? '#3B82F6' : '#0B1F4D';
+            e.currentTarget.style.background = darkMode ? 'rgba(59, 130, 246, 0.1)' : '#EAF2FF';
+          }
+        }}
+        onMouseLeave={e => {
+          if (!open) {
+            e.currentTarget.style.color = darkMode ? '#CBD5E1' : '#0F172A';
+            e.currentTarget.style.background = 'transparent';
+          }
         }}
       >
         {item.label}
         <DownOutlined style={{
           fontSize: 9,
-          transition: 'transform .22s',
+          color: open ? '#F7941D' : 'var(--color-muted)',
+          transition: 'transform .22s ease',
           transform: open ? 'rotate(180deg)' : 'none'
         }} />
       </button>
+
       {open && (
         <MegaPanel
           items={item.children}
@@ -159,13 +274,14 @@ const NavLink = ({ item, active }) => {
           anchorRect={rect}
           onMouseEnter={() => clearTimeout(closeTimer.current)}
           onMouseLeave={handleMouseLeave}
+          darkMode={darkMode}
         />
       )}
     </div>
   );
 };
 
-// ── Mobile Menu Item with Dropdown ──────────────────────────────
+// ── Mobile Menu Item with Dropdown Accordion ──────────────────────────────
 const MobileMenuItem = ({ item, onClose, isAuthenticated, setIsMobileOpen }) => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -174,7 +290,7 @@ const MobileMenuItem = ({ item, onClose, isAuthenticated, setIsMobileOpen }) => 
       <Link to={item.to} onClick={() => { onClose(); setIsMobileOpen(false); }} style={{
         display: 'block',
         padding: '14px 0',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: 600,
         color: 'var(--color-heading)',
         textDecoration: 'none',
@@ -198,10 +314,9 @@ const MobileMenuItem = ({ item, onClose, isAuthenticated, setIsMobileOpen }) => 
           background: 'none',
           border: 'none',
           cursor: 'pointer',
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: 600,
-          color: 'var(--color-heading)',
-          transition: 'color .2s'
+          color: 'var(--color-heading)'
         }}
       >
         <span>{item.label}</span>
@@ -210,15 +325,16 @@ const MobileMenuItem = ({ item, onClose, isAuthenticated, setIsMobileOpen }) => 
           transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
           display: 'flex',
           alignItems: 'center',
-          color: 'var(--color-muted)'
+          color: '#F7941D'
         }}>
-          <RightOutlined style={{ fontSize: 14 }} />
+          <RightOutlined style={{ fontSize: 13 }} />
         </span>
       </button>
+
       <div style={{
         maxHeight: isOpen ? '500px' : '0',
         overflow: 'hidden',
-        transition: 'max-height .3s ease, opacity .3s ease, margin .3s ease',
+        transition: 'max-height .3s ease, opacity .3s ease',
         opacity: isOpen ? 1 : 0,
         marginBottom: isOpen ? '8px' : '0'
       }}>
@@ -228,27 +344,29 @@ const MobileMenuItem = ({ item, onClose, isAuthenticated, setIsMobileOpen }) => 
             to={child.to}
             onClick={() => { onClose(); setIsMobileOpen(false); }}
             style={{
-              display: 'block',
-              padding: '10px 0 10px 16px',
-              fontSize: 15,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '10px 12px',
+              fontSize: 14,
               fontWeight: 500,
               color: 'var(--color-body)',
               textDecoration: 'none',
-              borderRadius: 8,
-              transition: 'background .2s, color .2s, padding-left .2s'
+              borderRadius: 10,
+              marginBottom: 4,
+              transition: 'background .2s, color .2s'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = 'var(--color-primary-light)';
-              e.currentTarget.style.color = 'var(--color-primary)';
-              e.currentTarget.style.paddingLeft = '22px';
+              e.currentTarget.style.background = '#EAF2FF';
+              e.currentTarget.style.color = '#0B1F4D';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background = 'transparent';
               e.currentTarget.style.color = 'var(--color-body)';
-              e.currentTarget.style.paddingLeft = '16px';
             }}
           >
-            {child.label}
+            {child.icon && <span style={{ color: '#F7941D', fontSize: 14 }}>{child.icon}</span>}
+            <span>{child.label}</span>
           </Link>
         ))}
       </div>
@@ -256,39 +374,54 @@ const MobileMenuItem = ({ item, onClose, isAuthenticated, setIsMobileOpen }) => 
   );
 };
 
-// ── Notification panel ───────────────────────────────────────────
+// ── Notification Panel ───────────────────────────────────────────
 const NotifPanel = ({ notifications, onMarkRead }) => (
   <div style={{
-    width: 360, background: 'var(--color-surface)', borderRadius: 14,
-    boxShadow: '0 8px 40px rgba(11,31,77,0.12)', border: '1px solid var(--color-border)', overflow: 'hidden'
+    width: 360,
+    background: 'var(--color-surface)',
+    borderRadius: 16,
+    boxShadow: '0 12px 40px rgba(11,31,77,0.16)',
+    border: '1px solid var(--color-border)',
+    overflow: 'hidden'
   }}>
-    <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', fontWeight: 700, fontSize: 14, color: 'var(--color-heading)', display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{
+      padding: '14px 18px',
+      borderBottom: '1px solid var(--color-border)',
+      fontWeight: 700,
+      fontSize: 14,
+      color: 'var(--color-heading)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8
+    }}>
       Notifications
-      {notifications.length > 0 && <Tag color="blue" style={{ borderRadius: 10, fontSize: 11 }}>{notifications.length}</Tag>}
+      {notifications.length > 0 && <Tag color="orange" style={{ borderRadius: 10, fontSize: 11 }}>{notifications.length}</Tag>}
     </div>
     {notifications.length === 0
       ? <Empty description="No new notifications" style={{ padding: '28px 0' }} />
-      : <List style={{ maxHeight: 380, overflowY: 'auto' }} dataSource={notifications}
-          renderItem={item => (
-            <List.Item style={{ padding: '10px 18px', alignItems: 'flex-start' }}
-              actions={[
-                <Button key="r" type="text" size="small" icon={<CheckOutlined />}
-                  style={{ color: 'var(--color-success)', fontSize: 12 }} onClick={e => onMarkRead(item.id, e)}>
-                  Read
-                </Button>
-              ]}>
-              <List.Item.Meta
-                title={<Tag color={NOTIF_COLOR[item.type] || 'default'} style={{ fontSize: 11 }}>{item.type?.replace('_', ' ').toUpperCase()}</Tag>}
-                description={
-                  <div>
-                    <Text style={{ fontSize: 13, color: 'var(--color-body)' }}>{item.message}</Text>
-                    <div style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 2 }}>{new Date(item.created_at).toLocaleString()}</div>
-                  </div>
-                }
-              />
-            </List.Item>
-          )}
-        />
+      : <List
+        style={{ maxHeight: 380, overflowY: 'auto' }}
+        dataSource={notifications}
+        renderItem={item => (
+          <List.Item style={{ padding: '12px 18px', alignItems: 'flex-start' }}
+            actions={[
+              <Button key="r" type="text" size="small" icon={<CheckOutlined />}
+                style={{ color: 'var(--color-success)', fontSize: 12 }} onClick={e => onMarkRead(item.id, e)}>
+                Read
+              </Button>
+            ]}>
+            <List.Item.Meta
+              title={<Tag color={NOTIF_COLOR[item.type] || 'default'} style={{ fontSize: 11 }}>{item.type?.replace('_', ' ').toUpperCase()}</Tag>}
+              description={
+                <div>
+                  <Text style={{ fontSize: 13, color: 'var(--color-body)' }}>{item.message}</Text>
+                  <div style={{ fontSize: 11, color: 'var(--color-muted)', marginTop: 2 }}>{new Date(item.created_at).toLocaleString()}</div>
+                </div>
+              }
+            />
+          </List.Item>
+        )}
+      />
     }
   </div>
 );
@@ -309,8 +442,15 @@ const Navbar = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 900);
   const [isLaptop, setIsLaptop] = useState(window.innerWidth > 900 && window.innerWidth <= 1200);
   const [navItems, setNavItems] = useState(STATIC_NAV);
+  const [themeSpin, setThemeSpin] = useState(false);
   const searchRef = useRef(null);
   const pollRef = useRef(null);
+
+  const handleThemeToggle = () => {
+    setThemeSpin(true);
+    toggleTheme();
+    setTimeout(() => setThemeSpin(false), 450);
+  };
 
   useEffect(() => {
     axios.get('/api/public/categories').then(({ data }) => {
@@ -324,7 +464,7 @@ const Navbar = () => {
         if (item.key === 'industries') return { ...item, children: toChildren('industry') };
         return item;
       }));
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -344,7 +484,7 @@ const Navbar = () => {
     try {
       const { data } = await axios.get(isAdmin ? '/api/admin/notifications' : '/api/user/notifications');
       setNotifications(data);
-    } catch {}
+    } catch { }
   }, [isAuthenticated, isAdmin]);
 
   useEffect(() => {
@@ -359,7 +499,7 @@ const Navbar = () => {
     try {
       await axios.put(isAdmin ? `/api/admin/notifications/${id}/read` : `/api/user/notifications/${id}/read`);
       setNotifications(prev => prev.filter(n => n.id !== id));
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -385,407 +525,452 @@ const Navbar = () => {
     ...(isAdmin
       ? [{ key: 'submissions', icon: <UserOutlined />, label: 'Submissions', onClick: () => navigate('/admin/submissions') }]
       : [
-          { key: 'create', icon: <UserOutlined />, label: 'Create Content', onClick: () => navigate('/user-dashboard/create-post') },
-          { key: 'my-submissions', icon: <UserOutlined />, label: 'My Submissions', onClick: () => navigate('/user-dashboard/my-submissions') },
-        ]
+        { key: 'create', icon: <UserOutlined />, label: 'Create Content', onClick: () => navigate('/user-dashboard/create-post') },
+        { key: 'my-submissions', icon: <UserOutlined />, label: 'My Submissions', onClick: () => navigate('/user-dashboard/my-submissions') },
+      ]
     ),
     { type: 'divider' },
     { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', onClick: logout, danger: true },
   ];
 
-  const showCondensedNav = isLaptop || isMobile;
-
   return (
     <>
       <style>{`
         @keyframes navFadeDown {
-          from { opacity: 0; transform: translateY(-10px); }
+          from { opacity: 0; transform: translateY(-8px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes communityPulseGlow {
+          0% { box-shadow: 0 3px 12px rgba(247, 148, 29, 0.35); }
+          100% { box-shadow: 0 6px 20px rgba(247, 148, 29, 0.6); }
         }
       `}</style>
 
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
-
-      <header style={{
-        background: scrolled ? (darkMode ? 'rgba(15,23,42,0.98)' : 'rgba(255,255,255,0.98)') : 'var(--color-surface)',
-        backdropFilter: scrolled ? 'blur(16px)' : 'none',
-        boxShadow: scrolled ? '0 4px 24px rgba(11,31,77,0.09)' : '0 1px 0 var(--color-border)',
-        transition: 'box-shadow .3s, background .3s',
-      }}>
-        <div style={{ 
-          maxWidth: 1280, 
-          margin: '0 auto', 
-          padding: isMobile ? '0 12px' : isLaptop ? '0 16px' : '0 24px', 
-          height: 58, 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: isMobile ? 12 : isLaptop ? 16 : 24 
+        <header style={{
+          background: scrolled 
+            ? (darkMode ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.96)') 
+            : (darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)'),
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+          boxShadow: scrolled 
+            ? (darkMode ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(11,31,77,0.08)') 
+            : 'none',
+          transition: 'all .3s ease',
         }}>
-
-          {/* Logo */}
-          <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-            {navbarLogo ? (
-              <img src={navbarLogo} alt="TGS TechInfo" style={{ 
-                height: isMobile ? 50 : isLaptop ? 55 : (logoSizes.navbar.height || 65), 
-                width: 'auto', 
-                display: 'block' 
-              }} />
-            ) : (
-              <span style={{ fontSize: 20, fontWeight: 'bold', color: 'var(--color-text)' }}>TGS TechInfo</span>
-            )}
-          </Link>
-
-          {/* Desktop nav - Hide on mobile */}
-          {!isMobile && (
-            <nav style={{ 
-              flex: 1, 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: isLaptop ? 8 : 16, 
-              minWidth: 0,
-              overflow: 'hidden'
-            }}>
-              {navItems.map(item => {
-                return (
-                  <NavLink key={item.key} item={item} active={location.pathname === item.to} />
-                );
-              })}
-            </nav>
-          )}
-
-          {/* Right actions */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: isMobile ? 4 : isLaptop ? 6 : 8, 
-            flexShrink: 0, 
-            marginLeft: 'auto' 
+          <div style={{
+            maxWidth: 1280,
+            margin: '0 auto',
+            padding: isMobile ? '0 14px' : isLaptop ? '0 18px' : '0 24px',
+            height: 62,
+            display: 'flex',
+            alignItems: 'center',
+            gap: isMobile ? 12 : isLaptop ? 16 : 24
           }}>
 
-            {/* Dark mode toggle */}
-            <button
-              onClick={toggleTheme}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                width: isMobile ? 32 : 36,
-                height: isMobile ? 32 : 36,
-                borderRadius: 10,
+            {/* Brand Logo */}
+            <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
+              {navbarLogo ? (
+                <img src={navbarLogo} alt="TGS TechInfo" style={{
+                  height: isMobile ? 46 : isLaptop ? 50 : (logoSizes.navbar.height || 58),
+                  width: 'auto',
+                  display: 'block'
+                }} />
+              ) : (
+                <span style={{ 
+                  fontSize: 22, 
+                  fontWeight: 900, 
+                  color: '#0B1F4D',
+                  letterSpacing: '-0.5px'
+                }}>
+                  TGS<span style={{ color: '#F7941D' }}>Tech</span><span style={{ color: '#0AAEEF' }}>Info</span>
+                </span>
+              )}
+            </Link>
+
+            {/* Desktop Navigation Links */}
+            {!isMobile && (
+              <nav style={{
+                flex: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'var(--color-muted)',
-                transition: 'background .2s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-light)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-            >
-              {darkMode ? <SunOutlined style={{ fontSize: isMobile ? 14 : 16 }} /> : <MoonOutlined style={{ fontSize: isMobile ? 14 : 16 }} />}
-            </button>
-
-            {/* Search — compact bar */}
-            <div ref={searchRef} style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{
-                display: 'flex', alignItems: 'center',
-                background: 'var(--color-primary-light)', borderRadius: 24,
-                padding: isMobile ? '0 8px' : '0 12px',
-                border: '1.5px solid var(--color-border)',
-                transition: 'border-color .2s'
-              }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-border)'}
-              >
-                <SearchOutlined style={{ 
-                  color: 'var(--color-primary)', 
-                  fontSize: isMobile ? 12 : 13, 
-                  flexShrink: 0,
-                  cursor: 'pointer'
-                }} onClick={() => { if (isMobile) setSearchVisible(!searchVisible); }} />
-                <input
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder={isMobile ? "Search..." : "Search..."}
-                  style={{
-                    border: 'none', background: 'transparent', outline: 'none',
-                    fontSize: isMobile ? 12 : 13, 
-                    padding: isMobile ? '5px 6px' : '7px 8px',
-                    width: isMobile ? (searchVisible ? 140 : 0) : (searchVisible ? (isLaptop ? 120 : 180) : (isLaptop ? 80 : 130)),
-                    maxWidth: isMobile ? (searchVisible ? 160 : 0) : (isLaptop ? 140 : 180),
-                    overflow: 'hidden',
-                    color: 'var(--color-heading)',
-                    transition: 'width .25s ease',
-                  }}
-                  onFocus={() => setSearchVisible(true)}
-                  onBlur={() => { if (!searchQuery) setSearchVisible(false); }}
-                />
-                {searchQuery && (
-                  <CloseOutlined
-                    style={{ 
-                      color: 'var(--color-muted)', 
-                      fontSize: isMobile ? 10 : 11, 
-                      cursor: 'pointer', 
-                      flexShrink: 0 
-                    }}
-                    onClick={() => { setSearchQuery(''); setSearchVisible(false); }}
+                gap: isLaptop ? 4 : 8,
+                minWidth: 0
+              }}>
+                {navItems.map(item => (
+                  <NavLink 
+                    key={item.key} 
+                    item={item} 
+                    active={location.pathname === item.to}
+                    darkMode={darkMode} 
                   />
-                )}
-              </div>
-            </div>
-
-            {/* Notifications */}
-            {isAuthenticated && (
-              <Dropdown
-                open={notifOpen} onOpenChange={setNotifOpen}
-                dropdownRender={() => <NotifPanel notifications={notifications} onMarkRead={markAsRead} />}
-                trigger={['click']} placement="bottomRight"
-              >
-                <Badge count={notifications.length} size="small" overflowCount={99}>
-                  <button style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    width: isMobile ? 32 : 36, 
-                    height: isMobile ? 32 : 36, 
-                    borderRadius: 10,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--color-muted)', transition: 'background .2s'
-                  }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-primary-light)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                  >
-                    <BellOutlined style={{ fontSize: isMobile ? 14 : 16 }} />
-                  </button>
-                </Badge>
-              </Dropdown>
+                ))}
+              </nav>
             )}
 
-            {/* User */}
-            {isAuthenticated ? (
-              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
+            {/* Right Action Controls */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: isMobile ? 6 : isLaptop ? 8 : 10,
+              flexShrink: 0,
+              marginLeft: 'auto'
+            }}>
+
+              {/* Compact Expanding Search Bar */}
+              <div ref={searchRef} style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 8, 
-                  cursor: 'pointer',
-                  padding: isMobile ? '4px 8px 4px 4px' : '5px 12px 5px 6px', 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  background: darkMode ? 'rgba(255,255,255,0.06)' : '#EAF2FF',
                   borderRadius: 24,
-                  border: '1.5px solid var(--color-primary-light)', 
-                  background: 'var(--color-primary-light)',
-                  transition: 'border-color .2s'
-                }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--color-primary-light)'}
-                >
-                  <Avatar 
-                    size={isMobile ? 22 : 26} 
-                    icon={<UserOutlined />} 
-                    style={{ background: 'var(--color-primary)', flexShrink: 0 }} 
+                  padding: isMobile ? '0 8px' : '0 12px',
+                  border: darkMode ? '1px solid #334155' : '1.5px solid #CBD5E1',
+                  transition: 'all .25s ease'
+                }}>
+                  <SearchOutlined style={{
+                    color: '#0B1F4D',
+                    fontSize: 14,
+                    flexShrink: 0,
+                    cursor: 'pointer'
+                  }} onClick={() => { if (isMobile) setSearchVisible(!searchVisible); }} />
+                  
+                  <input
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                    placeholder="Search articles..."
+                    style={{
+                      border: 'none', 
+                      background: 'transparent', 
+                      outline: 'none',
+                      fontSize: 13,
+                      padding: '7px 8px',
+                      width: isMobile ? (searchVisible ? 130 : 0) : (searchVisible ? 160 : 100),
+                      overflow: 'hidden',
+                      color: darkMode ? '#F1F5F9' : '#0F172A',
+                      transition: 'width .25s ease',
+                    }}
+                    onFocus={() => setSearchVisible(true)}
+                    onBlur={() => { if (!searchQuery) setSearchVisible(false); }}
                   />
-                  {!isMobile && !isLaptop && (
-                    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-heading)' }}>
-                      {user?.first_name}
-                    </span>
-                  )}
-                  {!isMobile && (
-                    <DownOutlined style={{ fontSize: 9, color: 'var(--color-primary)' }} />
+                  
+                  {searchQuery && (
+                    <CloseOutlined
+                      style={{
+                        color: 'var(--color-muted)',
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        flexShrink: 0
+                      }}
+                      onClick={() => { setSearchQuery(''); setSearchVisible(false); }}
+                    />
                   )}
                 </div>
-              </Dropdown>
-            ) : !isMobile ? (
-              <div style={{ display: 'flex', gap: isLaptop ? 4 : 8 }}>
-                <button onClick={() => window.open('/login', '_blank')} style={{
-                  padding: isLaptop ? '5px 12px' : '7px 18px', 
-                  borderRadius: 24, 
-                  border: '1.5px solid var(--color-primary)',
-                  background: 'transparent', 
-                  color: 'var(--color-primary)', 
-                  fontSize: isLaptop ? 12 : 13, 
-                  fontWeight: 600, 
-                  cursor: 'pointer',
-                  transition: 'all .2s',
-                  whiteSpace: 'nowrap'
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-primary)'; }}
-                >
-                  Login
-                </button>
-                <button onClick={() => navigate('/register')} style={{
-                  padding: isLaptop ? '5px 12px' : '7px 18px', 
-                  borderRadius: 24, 
-                  border: 'none',
-                  background: 'var(--color-accent)', 
-                  color: '#fff',
-                  fontSize: isLaptop ? 12 : 13, 
-                  fontWeight: 600, 
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 10px rgba(247,148,29,.3)', 
-                  transition: 'opacity .2s',
-                  whiteSpace: 'nowrap'
-                }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '.88'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                >
-                  Register
-                </button>
               </div>
-            ) : null}
 
-            {/* Mobile toggle */}
-            {isMobile && (
+              {/* Notifications */}
+              {isAuthenticated && (
+                <Dropdown
+                  open={notifOpen} onOpenChange={setNotifOpen}
+                  dropdownRender={() => <NotifPanel notifications={notifications} onMarkRead={markAsRead} />}
+                  trigger={['click']} placement="bottomRight"
+                >
+                  <Badge count={notifications.length} size="small" overflowCount={99}>
+                    <button style={{
+                      background: darkMode ? 'rgba(255,255,255,0.06)' : '#EAF2FF',
+                      border: darkMode ? '1px solid #334155' : '1px solid #CBD5E1',
+                      cursor: 'pointer',
+                      width: 34,
+                      height: 34,
+                      borderRadius: 10,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#0B1F4D',
+                      transition: 'all .2s ease'
+                    }}>
+                      <BellOutlined style={{ fontSize: 16 }} />
+                    </button>
+                  </Badge>
+                </Dropdown>
+              )}
+
+              {/* User Account / Auth Actions */}
+              {isAuthenticated ? (
+                <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
+                  <div style={{
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 8,
+                    cursor: 'pointer',
+                    padding: '4px 12px 4px 4px',
+                    borderRadius: 24,
+                    border: '1.5px solid #0B1F4D',
+                    background: '#EAF2FF',
+                    transition: 'all .2s ease'
+                  }}>
+                    <Avatar
+                      size={28}
+                      icon={<UserOutlined />}
+                      style={{ background: '#0B1F4D', flexShrink: 0 }}
+                    />
+                    {!isMobile && (
+                      <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? '#F1F5F9' : '#0B1F4D' }}>
+                        {user?.first_name}
+                      </span>
+                    )}
+                    <DownOutlined style={{ fontSize: 9, color: '#F7941D' }} />
+                  </div>
+                </Dropdown>
+              ) : !isMobile ? (
+                <div style={{ display: 'flex', gap: isLaptop ? 6 : 10, alignItems: 'center' }}>
+                  {/* Contact Us Button - Brand Navy Outlined + Scale Micro-Animation */}
+                  <button
+                    onClick={() => navigate('/contact')}
+                    style={{
+                      padding: isLaptop ? '5px 12px' : '6px 16px',
+                      borderRadius: 20,
+                      border: darkMode ? '1.5px solid #3B82F6' : '1.5px solid #0B1F4D',
+                      background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#EAF2FF',
+                      color: darkMode ? '#3B82F6' : '#0B1F4D',
+                      fontSize: isLaptop ? 11.5 : 12.5,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all .25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = darkMode ? '#3B82F6' : '#0B1F4D';
+                      e.currentTarget.style.color = '#FFFFFF';
+                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
+                      e.currentTarget.style.boxShadow = darkMode ? '0 6px 16px rgba(59, 130, 246, 0.35)' : '0 6px 16px rgba(11, 31, 77, 0.25)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = darkMode ? 'rgba(59, 130, 246, 0.1)' : '#EAF2FF';
+                      e.currentTarget.style.color = darkMode ? '#3B82F6' : '#0B1F4D';
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    Contact Us
+                  </button>
+
+                  {/* Join Our Community Button - Brand Orange CTA (#F7941D) - Compact & Animated */}
+                  <button
+                    onClick={() => navigate('/login')}
+                    style={{
+                      padding: isLaptop ? '5px 12px' : '6px 16px',
+                      borderRadius: 20,
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
+                      color: '#FFFFFF',
+                      fontSize: isLaptop ? 11.5 : 12.5,
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 3px 12px rgba(247, 148, 29, 0.35)',
+                      animation: 'communityPulseGlow 3s infinite alternate',
+                      transition: 'all .25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      whiteSpace: 'nowrap',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.boxShadow = '0 8px 22px rgba(247, 148, 29, 0.6)';
+                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(247, 148, 29, 0.35)';
+                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                    }}
+                  >
+                    Join Our Community <RightOutlined style={{ fontSize: 10 }} />
+                  </button>
+                </div>
+              ) : null}
+
+              {/* Dark Mode Theme Toggle - Placed RIGHT of Join Our Community / User Profile */}
               <button
-                onClick={() => setMobileOpen(o => !o)}
+                onClick={handleThemeToggle}
+                aria-label="Toggle Theme"
                 style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  width: 32, height: 32, borderRadius: 8,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--color-heading)', flexShrink: 0
+                  background: darkMode ? 'rgba(255,255,255,0.08)' : '#EAF2FF',
+                  border: darkMode ? '1px solid #334155' : '1px solid #CBD5E1',
+                  cursor: 'pointer',
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: darkMode ? '#FBBF24' : '#0B1F4D',
+                  transition: 'background .25s ease, border-color .25s ease, box-shadow .25s ease, transform .25s ease',
+                  flexShrink: 0,
+                  marginLeft: 2
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.16)' : '#D0E3FF';
+                  e.currentTarget.style.borderColor = darkMode ? '#FBBF24' : '#0B1F4D';
+                  e.currentTarget.style.boxShadow = darkMode 
+                    ? '0 0 12px rgba(251, 191, 36, 0.35)' 
+                    : '0 0 12px rgba(11, 31, 77, 0.2)';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.08)' : '#EAF2FF';
+                  e.currentTarget.style.borderColor = darkMode ? '#334155' : '#CBD5E1';
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                {mobileOpen ? <CloseOutlined style={{ fontSize: 16 }} /> : <MenuOutlined style={{ fontSize: 16 }} />}
+                <span style={{
+                  display: 'inline-flex',
+                  transition: 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  transform: themeSpin ? 'rotate(360deg) scale(1.25)' : 'rotate(0deg) scale(1)'
+                }}>
+                  {darkMode ? <SunOutlined style={{ fontSize: 15 }} /> : <MoonOutlined style={{ fontSize: 15 }} />}
+                </span>
               </button>
-            )}
+
+              {/* Mobile Hamburger Icon */}
+              {isMobile && (
+                <button
+                  onClick={() => setMobileOpen(o => !o)}
+                  aria-label="Toggle Mobile Menu"
+                  style={{
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer',
+                    width: 36, 
+                    height: 36, 
+                    borderRadius: 10,
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    color: 'var(--color-heading)', 
+                    flexShrink: 0
+                  }}
+                >
+                  {mobileOpen ? <CloseOutlined style={{ fontSize: 18 }} /> : <MenuOutlined style={{ fontSize: 18 }} />}
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
       </div>
 
-      {/* Mobile menu with dropdown support */}
+      {/* Mobile Drawer Menu */}
       {isMobile && mobileOpen && (
         <div style={{
-          position: 'fixed', 
-          top: 58, 
-          left: 0, 
-          right: 0, 
+          position: 'fixed',
+          top: 62,
+          left: 0,
+          right: 0,
           bottom: 0,
-          background: 'var(--color-surface)', 
-          zIndex: 9998, 
-          overflowY: 'auto', 
-          padding: '16px 20px 24px',
-          borderTop: '1px solid var(--color-border)'
+          background: darkMode ? '#0F172A' : '#FFFFFF',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          zIndex: 9998,
+          overflowY: 'auto',
+          padding: '20px 20px 32px',
+          borderTop: darkMode ? '1px solid #334155' : '1px solid #E2E8F0'
         }}>
-          {/* Close button at top */}
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'flex-end', 
-            marginBottom: 8 
-          }}>
-            <button
-              onClick={() => setMobileOpen(false)}
-              style={{
-                background: 'var(--color-primary-light)',
-                border: 'none',
-                borderRadius: '50%',
-                width: 36,
-                height: 36,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: 'var(--color-primary)',
-                fontSize: 16
-              }}
-            >
-              <CloseOutlined />
-            </button>
-          </div>
-
-          {/* Navigation items with dropdown */}
+          {/* Navigation Items */}
           {navItems.map(item => (
-            <MobileMenuItem 
-              key={item.key} 
-              item={item} 
+            <MobileMenuItem
+              key={item.key}
+              item={item}
               onClose={() => setMobileOpen(false)}
               isAuthenticated={isAuthenticated}
               setIsMobileOpen={setMobileOpen}
             />
           ))}
 
-          {/* User actions in mobile menu */}
+          {/* Action Buttons for Mobile */}
           {!isAuthenticated && (
-            <div style={{ 
-              display: 'flex', 
-              gap: 10, 
-              marginTop: 20, 
-              paddingTop: 16, 
-              borderTop: '1px solid var(--color-border)' 
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+              marginTop: 24,
+              paddingTop: 20,
+              borderTop: '1px solid var(--color-border)'
             }}>
-              <button 
-                onClick={() => { 
-                  window.open('/login', '_blank'); 
-                  setMobileOpen(false); 
-                }} 
+              <button
+                onClick={() => {
+                  navigate('/contact');
+                  setMobileOpen(false);
+                }}
                 style={{
-                  flex: 1, 
-                  padding: '12px', 
-                  borderRadius: 12, 
-                  border: '1.5px solid var(--color-primary)',
-                  background: 'transparent', 
-                  color: 'var(--color-primary)', 
-                  fontSize: 14, 
-                  fontWeight: 600, 
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: 20,
+                  border: '1.5px solid #0B1F4D',
+                  background: '#EAF2FF',
+                  color: '#0B1F4D',
+                  fontSize: 13.5,
+                  fontWeight: 700,
                   cursor: 'pointer'
                 }}
               >
-                Login
+                Contact Us
               </button>
-              <button 
-                onClick={() => { 
-                  navigate('/register'); 
-                  setMobileOpen(false); 
-                }} 
+
+              <button
+                onClick={() => {
+                  navigate('/login');
+                  setMobileOpen(false);
+                }}
                 style={{
-                  flex: 1, 
-                  padding: '12px', 
-                  borderRadius: 12, 
+                  width: '100%',
+                  padding: '10px',
+                  borderRadius: 20,
                   border: 'none',
-                  background: 'var(--color-accent)', 
-                  color: '#fff',
-                  fontSize: 14, 
-                  fontWeight: 600, 
+                  background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
+                  color: '#FFFFFF',
+                  fontSize: 13.5,
+                  fontWeight: 800,
                   cursor: 'pointer',
-                  boxShadow: '0 2px 10px rgba(247,148,29,.3)'
+                  boxShadow: '0 4px 16px rgba(247,148,29,.4)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
                 }}
               >
-                Register
+                Join Our Community <RightOutlined style={{ fontSize: 11 }} />
               </button>
             </div>
           )}
 
-          {/* User info when authenticated */}
+          {/* Authenticated User Banner */}
           {isAuthenticated && (
-            <div style={{ 
-              marginTop: 20, 
-              paddingTop: 16, 
+            <div style={{
+              marginTop: 24,
+              paddingTop: 18,
               borderTop: '1px solid var(--color-border)',
               display: 'flex',
               alignItems: 'center',
               gap: 12
             }}>
-              <Avatar 
-                size={40} 
-                icon={<UserOutlined />} 
-                style={{ background: 'var(--color-primary)' }} 
+              <Avatar
+                size={40}
+                icon={<UserOutlined />}
+                style={{ background: '#0B1F4D' }}
               />
               <div>
-                <div style={{ fontWeight: 600, color: 'var(--color-heading)' }}>
+                <div style={{ fontWeight: 700, color: 'var(--color-heading)' }}>
                   {user?.first_name} {user?.last_name}
                 </div>
-                <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
+                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>
                   {user?.email}
                 </div>
               </div>
             </div>
           )}
-
-          {/* Version info */}
-          <div style={{ 
-            marginTop: 24, 
-            textAlign: 'center', 
-            fontSize: 11, 
-            color: 'var(--color-muted)',
-            opacity: 0.6
-          }}>
-            v1.0.0
-          </div>
         </div>
       )}
     </>

@@ -156,309 +156,175 @@ const useCountUp = (target, visible, duration = 1400) => {
   return count;
 };
 
-// ── Single stat card ───────────────────────────────────────
-const StatCard = ({ s, i, visible, darkMode = false }) => {
+// ── Single Stat Item ──────────────────────────────────────────
+const StatCard = ({ s, i, visible, darkMode = false, isLast = false }) => {
   const num = useCountUp(Number(s.value) || 0, visible);
   return (
-    <div 
-      className="stat-card-modern"
+    <div
+      className="stat-simple-card"
       style={{
-        background: darkMode ? 'rgba(30, 41, 59, 0.75)' : 'rgba(255, 255, 255, 0.75)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        borderRadius: 'clamp(18px, 2vw, 24px)',
-        padding: 'clamp(20px, 2.5vw, 32px) clamp(16px, 2vw, 28px)',
-        border: darkMode ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(255, 255, 255, 0.7)',
-        boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05)' : '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+        padding: '24px 20px',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'flex-start',
-        transform: visible ? `translateY(${s.offset}px)` : 'translateY(40px)',
-        opacity: visible ? 1 : 0,
-        transition: `opacity 0.6s ease ${i * 100}ms, transform 0.6s cubic-bezier(0.25, 1, 0.5, 1) ${i * 100}ms, box-shadow 0.3s ease, border-color 0.3s ease`,
+        alignItems: 'center',
+        textAlign: 'center',
         position: 'relative',
-        overflow: 'hidden'
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(24px)',
+        transition: `opacity 0.6s ease ${i * 100}ms, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${i * 100}ms, background .25s ease`,
+        borderRadius: 16,
+        background: 'transparent'
       }}
       onMouseEnter={e => {
-        if (window.innerWidth > 768) {
-          e.currentTarget.style.transform = `translateY(${s.offset - 8}px) scale(1.02)`;
-          e.currentTarget.style.boxShadow = `0 20px 48px rgba(11, 31, 77, 0.12), 0 0 24px ${s.color}25, inset 0 1px 0 rgba(255, 255, 255, 0.95)`;
-          e.currentTarget.style.borderColor = `${s.color}50`;
-        }
+        e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.04)' : '#EAF2FF';
+        e.currentTarget.style.transform = 'translateY(-4px)';
       }}
       onMouseLeave={e => {
-        if (window.innerWidth > 768) {
-          e.currentTarget.style.transform = `translateY(${s.offset}px) scale(1)`;
-          e.currentTarget.style.boxShadow = '0 8px 32px rgba(11, 31, 77, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
-          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.7)';
-        }
+        e.currentTarget.style.background = 'transparent';
+        e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
-      {/* Gradient accent bar */}
+      {/* Icon Badge */}
       <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: 4,
-        background: s.gradient,
-        opacity: 0.8
-      }} />
-
-      {/* Icon with ring */}
-      <div className="stat-icon-ring" style={{
-        width: 'clamp(44px, 4.5vw, 56px)',
-        height: 'clamp(44px, 4.5vw, 56px)',
-        borderRadius: '50%',
-        background: `linear-gradient(135deg, ${s.color}15, ${s.color}05)`,
-        border: `2px solid ${s.color}25`,
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        background: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(10,174,239,0.08)',
+        border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(10,174,239,0.18)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 'clamp(20px, 2vw, 26px)',
+        fontSize: 20,
         color: s.color,
-        marginBottom: 'clamp(14px, 1.5vw, 20px)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-        position: 'relative'
+        marginBottom: 14,
+        transition: 'transform 0.3s ease'
       }}>
         {s.icon}
       </div>
 
-      {/* Number with label */}
-      <div style={{ width: '100%' }}>
-        <div className="stat-number-modern" style={{
-          fontSize: 'clamp(32px, 3.8vw, 52px)',
-          fontWeight: 800,
-          color: darkMode ? '#f1f5f9' : '#0b1f4d',
-          lineHeight: 1,
-          letterSpacing: '-2px',
-          marginBottom: 'clamp(6px, 0.8vw, 10px)',
-          fontFeatureSettings: "'ss02' on",
-          display: 'flex',
-          alignItems: 'baseline',
-          gap: 4,
-          flexWrap: 'wrap'
-        }}>
-          <span className="stat-number-value">
-            {num.toLocaleString()}
-          </span>
-          {i === 1 && (
-            <span style={{
-              fontSize: 'clamp(16px, 1.2vw, 22px)',
-              fontWeight: 700,
-              color: s.color,
-              marginLeft: 2
-            }}>+</span>
-          )}
-        </div>
-
-        <div style={{
-          fontWeight: 700,
-          fontSize: 'clamp(14px, 1.1vw, 17px)',
-          color: darkMode ? '#cbd5e1' : '#1e293b',
-          marginBottom: 'clamp(4px, 0.5vw, 8px)',
-          letterSpacing: '-0.3px'
-        }}>
-          {s.label}
-        </div>
-
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          fontSize: 'clamp(11px, 0.8vw, 13px)',
-          color: darkMode ? '#94a3b8' : '#64748b',
-          fontWeight: 500
-        }}>
-          <span style={{
-            display: 'inline-block',
-            width: 6,
-            height: 6,
-            borderRadius: '50%',
-            background: s.color,
-            boxShadow: `0 0 12px ${s.color}50`,
-            animation: 'pulse-dot 2s ease-in-out infinite'
-          }} />
-          {s.info}
-        </div>
+      {/* Number Counter */}
+      <div style={{
+        fontSize: 'clamp(32px, 3.2vw, 44px)',
+        fontWeight: 900,
+        color: darkMode ? '#F1F5F9' : '#0B1F4D',
+        letterSpacing: '-1.5px',
+        lineHeight: 1,
+        marginBottom: 6,
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: 2
+      }}>
+        <span>{num.toLocaleString()}</span>
+        {s.suffix && <span style={{ color: s.color, fontSize: '0.7em' }}>{s.suffix}</span>}
       </div>
 
-      {/* Decorative corner */}
+      {/* Label */}
       <div style={{
-        position: 'absolute',
-        bottom: -20,
-        right: -20,
-        width: 80,
-        height: 80,
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${s.color}08, transparent 70%)`,
-        pointerEvents: 'none'
-      }} />
+        fontSize: 13,
+        fontWeight: 700,
+        color: darkMode ? '#94A3B8' : '#475569',
+        letterSpacing: '-0.2px'
+      }}>
+        {s.label}
+      </div>
+
+      {/* Divider line for desktop */}
+      {!isLast && (
+        <div className="stat-divider" style={{
+          position: 'absolute',
+          right: 0,
+          top: '20%',
+          height: '60%',
+          width: 1,
+          background: darkMode ? 'rgba(255,255,255,0.1)' : 'var(--color-border)'
+        }} />
+      )}
     </div>
   );
 };
 
 const StatsBar = ({ stats, darkMode = false }) => {
   const [ref, visible] = useReveal();
- 
+
   const items = [
-    { label: 'Articles Published', value: stats.totalPublished, icon: <FileTextOutlined />, color: '#3b82f6', bgGlow: 'rgba(59, 130, 246, 0.15)', offset: 0, info: 'Updated Today' },
-    { label: 'Total Views', value: stats.totalViews, icon: <EyeOutlined />, color: '#10b981', bgGlow: 'rgba(16, 185, 129, 0.15)', offset: 12, info: 'Live Statistics' },
-    { label: 'Contributors', value: stats.totalAuthors, icon: <TeamOutlined />, color: '#f97316', bgGlow: 'rgba(249, 115, 22, 0.15)', offset: -8, info: 'Active writers' },
-    { label: 'Tech Categories', value: stats.totalCategories, icon: <FolderOpenOutlined />, color: '#8b5cf6', bgGlow: 'rgba(139, 92, 246, 0.15)', offset: 6, info: 'Live Catalog' },
+    { label: 'Articles Published', value: stats.totalPublished, icon: <FileTextOutlined />, color: '#0AAEEF', suffix: '+' },
+    { label: 'Total Reads & Views', value: stats.totalViews, icon: <EyeOutlined />, color: '#F7941D', suffix: '+' },
+    { label: 'Verified Contributors', value: stats.totalAuthors, icon: <TeamOutlined />, color: '#16A34A', suffix: '+' },
+    { label: 'Tech Categories', value: stats.totalCategories, icon: <FolderOpenOutlined />, color: '#8B5CF6' },
   ];
- 
+
   return (
-    <div ref={ref} style={{
-      margin: '64px -20px', padding: '80px 20px 96px',
-      background: darkMode ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 55%, #0f172a 100%)' : 'linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 55%, #EAF2FF 100%)',
-      borderRadius: 32, position: 'relative', overflow: 'hidden'
-    }}>
-      {/* Background ambient glowing blobs */}
-      <div style={{ position: 'absolute', top: '10%', left: '15%', width: 250, height: 250, background: 'rgba(59, 130, 246, 0.12)', filter: 'blur(80px)', borderRadius: '50%', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '15%', right: '10%', width: 300, height: 300, background: 'rgba(139, 92, 246, 0.1)', filter: 'blur(90px)', borderRadius: '50%', pointerEvents: 'none' }} />
- 
-      <div style={{ textAlign: 'center', marginBottom: 54, position: 'relative', zIndex: 1 }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase', letterSpacing: 3 }}>By The Numbers</span>
-        <h2 style={{ fontSize: 'clamp(28px, 3.2vw, 44px)', fontWeight: 850, color: darkMode ? '#f1f5f9' : '#0b1f4d', margin: '10px 0 12px', letterSpacing: '-1px', lineHeight: 1.15 }}>Trusted by Tech Professionals</h2>
-        <p style={{ color: darkMode ? '#94a3b8' : '#4a5568', fontSize: 16, margin: 0, fontWeight: 500 }}>Insights into our growing developer community.</p>
+    <div ref={ref} style={{ margin: '48px 0' }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <span style={{
+          fontSize: 11,
+          fontWeight: 800,
+          color: '#F7941D',
+          textTransform: 'uppercase',
+          letterSpacing: 2,
+          background: 'rgba(247,148,29,0.1)',
+          padding: '4px 12px',
+          borderRadius: 16,
+          display: 'inline-block',
+          marginBottom: 10
+        }}>
+          By The Numbers
+        </span>
+        <h2 style={{
+          fontSize: 'clamp(24px, 2.5vw, 36px)',
+          fontWeight: 900,
+          color: darkMode ? '#F1F5F9' : '#0B1F4D',
+          margin: '0 0 8px',
+          letterSpacing: '-0.5px'
+        }}>
+          Trusted by Tech Professionals
+        </h2>
+        <p style={{
+          color: darkMode ? '#94A3B8' : '#64748B',
+          fontSize: 'clamp(14px, 1vw, 15px)',
+          margin: 0,
+          fontWeight: 500
+        }}>
+          Insights into our growing developer community.
+        </p>
       </div>
- 
-      <div className="glass-stats-grid" style={{
-        maxWidth: 1100, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24, position: 'relative', zIndex: 1
+
+      {/* Modern Minimal Grid Container */}
+      <div style={{
+        background: darkMode ? '#0F172A' : '#FFFFFF',
+        borderRadius: 24,
+        border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+        boxShadow: darkMode ? '0 12px 32px rgba(0,0,0,0.4)' : '0 8px 30px rgba(11,31,77,0.06)',
+        padding: '12px 16px',
+        maxWidth: 1140,
+        margin: '0 auto'
       }}>
-        {items.map((s, i) => (
-          <StatCard key={i} s={s} i={i} visible={visible} darkMode={darkMode} />
-        ))}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          alignItems: 'center'
+        }} className="stats-simple-grid">
+          {items.map((s, i) => (
+            <StatCard key={i} s={s} i={i} visible={visible} darkMode={darkMode} isLast={i === items.length - 1} />
+          ))}
+        </div>
       </div>
 
       <style>{`
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.8); }
-        }
-
-        /* Mobile Styles for Stats */
         @media (max-width: 768px) {
-          .stats-bar-wrapper {
-            margin: 40px -12px !important;
-            padding: 32px 12px 40px !important;
-            border-radius: 20px !important;
-          }
-          
-          .stats-grid-modern {
+          .stats-simple-grid {
             grid-template-columns: repeat(2, 1fr) !important;
-            gap: 12px !important;
+            gap: 16px;
           }
-
-          .stat-card-modern {
-            padding: 18px 14px 16px !important;
-            transform: translateY(0) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-          }
-
-          .stat-card-modern:hover {
-            transform: translateY(-4px) !important;
-            box-shadow: 0 12px 32px rgba(11, 31, 77, 0.1) !important;
-          }
-
-          .stat-number-modern {
-            font-size: clamp(26px, 6vw, 34px) !important;
-            letter-spacing: -1px !important;
-          }
-
-          .stat-icon-ring {
-            width: 38px !important;
-            height: 38px !important;
-            font-size: 16px !important;
-            margin-bottom: 10px !important;
-            border-width: 1.5px !important;
-          }
-
-          .stats-blob-desktop {
+          .stat-divider {
             display: none !important;
           }
-
-          .stat-card-modern {
-            transform: translateY(0) !important;
-          }
-
-          @media (max-width: 420px) {
-            .stats-grid-modern {
-              grid-template-columns: 1fr 1fr !important;
-              gap: 10px !important;
-            }
-
-            .stat-card-modern {
-              padding: 14px 12px !important;
-            }
-
-            .stat-number-modern {
-              font-size: 22px !important;
-            }
-
-            .stat-icon-ring {
-              width: 32px !important;
-              height: 32px !important;
-              font-size: 14px !important;
-              margin-bottom: 8px !important;
-            }
-
-            .stat-card-modern > div:last-child > div:first-child {
-              font-size: 12px !important;
-            }
-
-            .stat-card-modern > div:last-child > div:last-child {
-              font-size: 10px !important;
-            }
-          }
         }
-
-        @media (max-width: 380px) {
-          .stats-grid-modern {
-            gap: 8px !important;
-          }
-
-          .stat-card-modern {
-            padding: 12px 10px !important;
-          }
-
-          .stat-number-modern {
-            font-size: 20px !important;
-            letter-spacing: -0.5px !important;
-          }
-
-          .stat-icon-ring {
-            width: 28px !important;
-            height: 28px !important;
-            font-size: 12px !important;
-            margin-bottom: 6px !important;
-          }
-        }
-
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .stats-grid-modern {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 18px !important;
-          }
-
-          .stat-card-modern {
-            padding: 24px 20px !important;
-          }
-
-          .stat-number-modern {
-            font-size: clamp(30px, 4vw, 38px) !important;
-          }
-        }
-
-        @media (min-width: 1025px) {
-          .stats-grid-modern {
-            grid-template-columns: repeat(4, 1fr) !important;
-          }
-
-          .stat-card-modern:hover {
-            transform: translateY(-6px) scale(1.02) !important;
+        @media (max-width: 480px) {
+          .stats-simple-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px;
           }
         }
       `}</style>
@@ -521,22 +387,22 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
         scrollbarColor: 'var(--color-primary) transparent',
         WebkitOverflowScrolling: 'touch'
       }}
-      css={{
-        '&::-webkit-scrollbar': {
-          height: '6px',
-        },
-        '&::-webkit-scrollbar-track': {
-          background: 'transparent',
-          borderRadius: '3px',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          background: 'var(--color-primary)',
-          borderRadius: '3px',
-        },
-        '&::-webkit-scrollbar-thumb:hover': {
-          background: 'var(--color-accent)',
-        }
-      }}>
+        css={{
+          '&::-webkit-scrollbar': {
+            height: '6px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'var(--color-primary)',
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: 'var(--color-accent)',
+          }
+        }}>
         {allTabs.map(c => {
           const isActive = activeTab === c.key;
           return (
@@ -605,8 +471,8 @@ const CategoryNav = ({ activeTab, setActiveTab, dynamicCategories = [] }) => {
             </button>
           );
         })}
+      </div>
     </div>
-  </div>
   );
 };
 
@@ -631,6 +497,14 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
   if (!loading && caseStudies.length === 0) return null;
 
   const openGate = (cs) => {
+    try {
+      if (localStorage.getItem(`cs_gated_${cs.slug}`) === 'true') {
+        navigate(`/case-study/${cs.slug}`);
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
     setSelectedCs(cs);
     setFormValues({ name: '', email: '', contact: '' });
     setFormErrors({});
@@ -655,6 +529,11 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
         slug: selectedCs.slug,
         ...formValues,
       });
+      try {
+        localStorage.setItem(`cs_gated_${selectedCs.slug}`, 'true');
+      } catch (e) {
+        console.error(e);
+      }
       setGateVisible(false);
       navigate(`/case-study/${selectedCs.slug}`);
     } catch (err) {
@@ -1053,27 +932,27 @@ const HERO_SLIDES = [
 
 // ── Hero quotes with shimmer words ─────────────────────────────────
 const HERO_QUOTES = [
-  { 
-    text: 'Your Gateway to', 
-    shimmerWord: 'Tech Insights', 
+  {
+    text: 'Your Gateway to',
+    shimmerWord: 'Tech Insights',
     afterText: ' & Innovation',
     fullText: 'Your Gateway to Tech Insights & Innovation'
   },
-  { 
-    text: 'Where', 
-    shimmerWord: 'Technology', 
+  {
+    text: 'Where',
+    shimmerWord: 'Technology',
     afterText: ' Meets Business Growth',
     fullText: 'Where Technology Meets Business Growth'
   },
-  { 
-    text: 'The', 
-    shimmerWord: 'Knowledge Hub', 
+  {
+    text: 'The',
+    shimmerWord: 'Knowledge Hub',
     afterText: ' for Modern Businesses',
     fullText: 'The Knowledge Hub for Modern Businesses'
   },
-  { 
-    text: 'Turning Industry Knowledge into', 
-    shimmerWord: 'Business Value', 
+  {
+    text: 'Turning Industry Knowledge into',
+    shimmerWord: 'Business Value',
     afterText: '',
     fullText: 'Turning Industry Knowledge into Business Value'
   },
@@ -1082,69 +961,118 @@ const HERO_QUOTES = [
 // ── Hero Section (ONLY HEIGHT REDUCED - CONTENT UNCHANGED) ──
 const HeroSection = () => {
   const [active, setActive] = useState(0);
+  const navigate = useNavigate();
   const timerRef = useRef(null);
   const startTimer = () => {
     clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setActive(prev => (prev + 1) % HERO_SLIDES.length), 3800);
+    timerRef.current = setInterval(() => setActive(prev => (prev + 1) % HERO_SLIDES.length), 4200);
   };
   useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, []);
   const goTo = i => { setActive(i); startTimer(); };
 
   return (
     <div className="hero-section" style={{
-      background: 'var(--color-primary)',
+      background: 'linear-gradient(135deg, #0B1F4D 0%, #0A1229 60%, #070D1E 100%)',
       position: 'relative',
       overflow: 'hidden',
-      minHeight: 'clamp(160px, 16vw, 220px)'
+      padding: '40px 0 48px'
     }}>
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)', backgroundSize: '40px 40px', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 20% 30%, rgba(247,148,29,0.15) 0%, transparent 40%), radial-gradient(circle at 80% 80%, rgba(59,130,246,0.12) 0%, transparent 40%)', pointerEvents: 'none' }} />
+      {/* Animated Floating Ambient Background Mesh Blobs */}
+      <div style={{
+        position: 'absolute',
+        top: '-20%',
+        left: '-10%',
+        width: 500,
+        height: 500,
+        background: 'radial-gradient(circle, rgba(247,148,29,0.18) 0%, rgba(247,148,29,0) 70%)',
+        filter: 'blur(80px)',
+        pointerEvents: 'none',
+        animation: 'heroBlobFloat 12s infinite alternate ease-in-out'
+      }} />
+
+      <div style={{
+        position: 'absolute',
+        bottom: '-20%',
+        right: '-10%',
+        width: 550,
+        height: 550,
+        background: 'radial-gradient(circle, rgba(10,174,239,0.2) 0%, rgba(10,174,239,0) 70%)',
+        filter: 'blur(90px)',
+        pointerEvents: 'none',
+        animation: 'heroBlobFloat 15s infinite alternate-reverse ease-in-out'
+      }} />
+
+      {/* Modern Tech Grid Pattern Overlay */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        opacity: 0.05,
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)',
+        backgroundSize: '36px 36px',
+        pointerEvents: 'none'
+      }} />
 
       <div className="hero-grid" style={{
-        maxWidth: 1200,
+        maxWidth: 1240,
         margin: '0 auto',
-        padding: 'clamp(8px, 1vw, 12px) clamp(16px, 2vw, 24px)',
+        padding: '0 24px',
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: 'clamp(28px, 3vw, 44px)',
+        gap: 'clamp(32px, 4vw, 56px)',
         alignItems: 'center',
-        minHeight: 'clamp(160px, 16vw, 220px)'
+        position: 'relative',
+        zIndex: 2
       }}>
-        {/* LEFT - Desktop: Left aligned, Mobile: Top */}
-        <div className="hero-left" style={{ 
-          padding: 'clamp(8px, 1vw, 12px) 0', 
-          position: 'relative', 
-          zIndex: 2,
+        {/* LEFT COLUMN - Messaging & CTAs */}
+        <div className="hero-left" style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
           textAlign: 'left'
         }}>
-          <div style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: 8, 
-            background: 'rgba(255,255,255,.1)', 
-            border: '1px solid rgba(255,255,255,.2)', 
-            borderRadius: 24, 
-            padding: '6px 18px', 
-            marginBottom: 'clamp(14px, 1.5vw, 20px)',
-            alignSelf: 'flex-start'
+          {/* Top Status Pill Badge */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 10,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            borderRadius: 30,
+            padding: '7px 18px',
+            marginBottom: 20,
+            backdropFilter: 'blur(12px)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
           }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--color-accent)', display: 'inline-block', boxShadow: '0 0 0 4px rgba(247,148,29,0.2)' }} />
-            <span style={{ fontSize: 'clamp(11px, 0.8vw, 13px)', color: 'rgba(255,255,255,.9)', fontWeight: 600, letterSpacing: 1.2, textTransform: 'uppercase' }}>Live Tech Intelligence</span>
+            <span style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#5BBD2B',
+              display: 'inline-block',
+              boxShadow: '0 0 10px #5BBD2B',
+              animation: 'pulseDot 2s infinite'
+            }} />
+            <span style={{
+              fontSize: 12,
+              color: '#FFFFFF',
+              fontWeight: 700,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase'
+            }}>
+              Live B2B Intelligence
+            </span>
           </div>
+
+          {/* Main Dynamic Headline */}
           <h1 style={{
-            color: '#fff',
+            color: '#FFFFFF',
             fontWeight: 900,
-            lineHeight: 1.1,
-            fontSize: 'clamp(28px, 3.8vw, 52px)',
-            margin: '0 0 clamp(14px, 1.5vw, 22px)',
-            letterSpacing: -0.8,
-            textAlign: 'left',
-            width: '100%',
+            lineHeight: 1.15,
+            fontSize: 'clamp(30px, 3.8vw, 52px)',
+            margin: '0 0 20px',
+            letterSpacing: '-1px',
             position: 'relative',
-            minHeight: 'clamp(56px, 7.6vw, 104px)'
+            minHeight: 'clamp(70px, 8vw, 110px)'
           }}>
             {HERO_QUOTES.map((quote, i) => (
               <div key={i} style={{
@@ -1152,106 +1080,276 @@ const HeroSection = () => {
                 left: 0,
                 top: 0,
                 opacity: active === i ? 1 : 0,
-                transform: active === i ? 'translateY(0)' : 'translateY(20px)',
-                transition: 'opacity 1.2s ease, transform 1.2s ease',
+                transform: active === i ? 'translateY(0)' : 'translateY(24px)',
+                transition: 'opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
                 width: '100%',
                 pointerEvents: active === i ? 'auto' : 'none'
               }}>
                 {quote.text}<br />
-                <span className="orange-shimmer-text">{quote.shimmerWord}</span>{quote.afterText && <>{quote.afterText}</>}
+                <span className="orange-shimmer-text" style={{
+                  background: 'linear-gradient(120deg, #F7941D 20%, #FFE0B2 50%, #0AAEEF 80%)',
+                  backgroundSize: '200% auto',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  animation: 'shimmerGrad 4s linear infinite'
+                }}>{quote.shimmerWord}</span>
+                {quote.afterText && <>{quote.afterText}</>}
               </div>
             ))}
           </h1>
+
+          {/* Subtitle */}
           <p style={{
-            color: 'rgba(255,255,255,.75)',
-            fontSize: 'clamp(15px, 1.2vw, 18px)',
-            lineHeight: 1.8,
-            margin: '0 0 clamp(16px, 1.5vw, 24px)',
-            maxWidth: 520,
-            textAlign: 'left',
-            width: '100%'
+            color: 'rgba(241, 245, 249, 0.82)',
+            fontSize: 'clamp(15px, 1.1vw, 17.5px)',
+            lineHeight: 1.7,
+            margin: '0 0 28px',
+            maxWidth: 540,
+            fontWeight: 400
           }}>
-            In-depth articles, expert interviews, breaking news and research across AI, Cloud, Cybersecurity, DevOps and more.
+            In-depth articles, expert CXO interviews, and whitepapers across AI, Cybersecurity, Cloud Computing, and DevOps — driving enterprise growth.
           </p>
-          <div className="hero-tag-pills" style={{
-            display: 'flex',
-            gap: 10,
-            marginTop: 'clamp(12px, 1.5vw, 20px)',
-            flexWrap: 'wrap',
-            justifyContent: 'flex-start'
-          }}>
-            {['AI & ML', 'Cybersecurity', 'Cloud', 'DevOps'].map(t => (
-              <span key={t} className="hero-tag" style={{
-                fontSize: 'clamp(12px, 0.8vw, 14px)',
-                color: 'rgba(255,255,255,.85)',
-                background: 'rgba(255,255,255,.12)',
-                border: '1px solid rgba(255,255,255,.18)',
-                borderRadius: 22,
-                padding: '6px 18px',
+
+          {/* Dual Action CTA Buttons */}
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 28 }}>
+            {/* Primary CTA: Explore Insights */}
+            <button
+              onClick={() => navigate('/articles')}
+              style={{
+                padding: '12px 28px',
+                borderRadius: 24,
+                border: 'none',
+                background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
+                color: '#FFFFFF',
+                fontSize: 14,
+                fontWeight: 800,
                 cursor: 'pointer',
-                transition: 'all .25s'
+                boxShadow: '0 6px 24px rgba(247, 148, 29, 0.45)',
+                transition: 'all .25s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
               }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,.18)'; }}
-              >{t}</span>
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
+                e.currentTarget.style.boxShadow = '0 10px 30px rgba(247, 148, 29, 0.6)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = '0 6px 24px rgba(247, 148, 29, 0.45)';
+              }}
+            >
+              Explore Insights <ArrowRightOutlined style={{ fontSize: 13 }} />
+            </button>
+
+            {/* Secondary CTA: Publish Content */}
+            <button
+              onClick={() => navigate('/register')}
+              style={{
+                padding: '12px 26px',
+                borderRadius: 24,
+                border: '1.5px solid rgba(255, 255, 255, 0.3)',
+                background: 'rgba(255, 255, 255, 0.06)',
+                color: '#FFFFFF',
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                backdropFilter: 'blur(10px)',
+                transition: 'all .25s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = '#0AAEEF';
+                e.currentTarget.style.background = 'rgba(10, 174, 239, 0.15)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              Publish Content
+            </button>
+          </div>
+
+          {/* Topic Pills Row */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 }}>Top Topics:</span>
+            {[
+              { label: 'AI & ML', slug: 'artificial-intelligence' },
+              { label: 'Cybersecurity', slug: 'cybersecurity' },
+              { label: 'Cloud', slug: 'cloud-computing' },
+              { label: 'DevOps', slug: 'devops' }
+            ].map(t => (
+              <span
+                key={t.label}
+                onClick={() => navigate(`/category/${t.slug}`)}
+                style={{
+                  fontSize: 12,
+                  color: 'rgba(255,255,255,0.85)',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 16,
+                  padding: '4px 14px',
+                  cursor: 'pointer',
+                  transition: 'all .2s ease'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(10, 174, 239, 0.2)';
+                  e.currentTarget.style.borderColor = '#0AAEEF';
+                  e.currentTarget.style.color = '#FFFFFF';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)';
+                  e.currentTarget.style.color = 'rgba(255,255,255,0.85)';
+                }}
+              >
+                {t.label}
+              </span>
             ))}
           </div>
         </div>
 
-        {/* RIGHT - Desktop: Right, Mobile: Bottom */}
-        <div className="hero-right" style={{ padding: 'clamp(8px, 1vw, 12px) 0', position: 'relative', zIndex: 2 }}>
-          <div style={{ position: 'relative', borderRadius: 24, overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,.55)', border: '1px solid rgba(255,255,255,.1)' }}>
+        {/* RIGHT COLUMN - 3D Glassmorphic Featured Slide Showcase */}
+        <div className="hero-right" style={{ position: 'relative' }}>
+          <div style={{
+            position: 'relative',
+            borderRadius: 24,
+            overflow: 'hidden',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.15)',
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(20px)'
+          }}>
             {HERO_SLIDES.map((slide, i) => (
               <div key={i} style={{
                 position: i === 0 ? 'relative' : 'absolute',
                 inset: 0,
                 opacity: active === i ? 1 : 0,
-                transform: active === i ? 'scale(1)' : 'scale(1.05)',
-                transition: 'opacity 1.5s ease, transform 1.5s ease',
+                transform: active === i ? 'scale(1)' : 'scale(1.04)',
+                transition: 'opacity 1.2s ease, transform 1.2s ease',
                 pointerEvents: active === i ? 'auto' : 'none'
               }}>
-                <img src={slide.img} alt={slide.tag} style={{ 
-                  width: '100%', 
-                  height: 'clamp(180px, 22vw, 280px)', 
-                  objectFit: 'cover', 
-                  display: 'block' 
+                <img src={slide.img} alt={slide.tag} style={{
+                  width: '100%',
+                  height: 'clamp(240px, 24vw, 340px)',
+                  objectFit: 'cover',
+                  display: 'block'
                 }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(11,31,77,.85) 0%, rgba(11,31,77,.2) 50%, transparent 100%)' }} />
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 'clamp(18px, 2vw, 28px) clamp(18px, 2vw, 28px)', background: 'linear-gradient(to top, rgba(11,31,77,.95), transparent)' }}>
-                  <span style={{ fontSize: 'clamp(11px, 0.8vw, 13px)', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: 1.2, background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.2)', borderRadius: 20, padding: '4px 14px', display: 'inline-block', marginBottom: 10 }}>{slide.tag}</span>
-                  <div style={{ color: '#fff', fontWeight: 700, fontSize: 'clamp(16px, 1.3vw, 20px)', lineHeight: 1.4 }}>{slide.title}</div>
+
+                {/* Overlay Vignette Gradient */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(to top, rgba(11,31,77,0.95) 0%, rgba(11,31,77,0.3) 60%, transparent 100%)'
+                }} />
+
+                {/* Article Info Content */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  padding: '24px 28px',
+                  background: 'linear-gradient(to top, rgba(11,31,77,0.98), transparent)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: '#F7941D',
+                      textTransform: 'uppercase',
+                      letterSpacing: 1.2,
+                      background: 'rgba(247, 148, 29, 0.15)',
+                      border: '1px solid rgba(247, 148, 29, 0.3)',
+                      borderRadius: 14,
+                      padding: '3px 12px'
+                    }}>
+                      {slide.tag}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
+                      ⚡ 5 min read
+                    </span>
+                  </div>
+
+                  <div style={{
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: 'clamp(16px, 1.4vw, 22px)',
+                    lineHeight: 1.35,
+                    letterSpacing: '-0.3px'
+                  }}>
+                    {slide.title}
+                  </div>
                 </div>
               </div>
             ))}
-            <div style={{ position: 'absolute', bottom: 18, right: 18, display: 'flex', gap: 8, zIndex: 10 }}>
+
+            {/* Slide Pagination Dots */}
+            <div style={{ position: 'absolute', bottom: 18, right: 20, display: 'flex', gap: 8, zIndex: 10 }}>
               {HERO_SLIDES.map((_, i) => (
-                <button key={i} onClick={() => goTo(i)} style={{ width: active === i ? 28 : 8, height: 8, borderRadius: 10, border: 'none', cursor: 'pointer', background: active === i ? 'var(--color-accent)' : 'rgba(255,255,255,.4)', transition: 'all .3s', padding: 0 }} />
+                <button
+                  key={i}
+                  onClick={() => goTo(i)}
+                  style={{
+                    width: active === i ? 26 : 8,
+                    height: 8,
+                    borderRadius: 10,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: active === i ? '#F7941D' : 'rgba(255,255,255,0.4)',
+                    transition: 'all .3s ease',
+                    padding: 0
+                  }}
+                />
               ))}
             </div>
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'rgba(255,255,255,.18)' }}>
-              <div style={{ height: '100%', background: 'var(--color-accent)', animation: 'heroProgress 3.8s linear infinite', boxShadow: '0 0 12px rgba(247,148,29,.4)' }} />
+
+            {/* Slide Progress Line */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'rgba(255,255,255,0.15)' }}>
+              <div style={{
+                height: '100%',
+                background: 'linear-gradient(90deg, #F7941D, #0AAEEF)',
+                animation: 'heroProgress 4.2s linear infinite',
+                boxShadow: '0 0 12px rgba(247,148,29,0.5)'
+              }} />
             </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 12, gap: 6 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', background: 'rgba(255,255,255,.1)', padding: '4px 10px', borderRadius: 8 }}>{String(active + 1).padStart(2, '0')}</span>
-            <span style={{ fontSize: 14, color: 'rgba(255,255,255,.5)', fontWeight: 600 }}>/ {String(HERO_SLIDES.length).padStart(2, '0')}</span>
+
+          {/* Slide counter indicator */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 10, gap: 6 }}>
+            <span style={{ fontSize: 13, fontWeight: 800, color: '#FFFFFF', background: 'rgba(255,255,255,0.1)', padding: '3px 10px', borderRadius: 8 }}>
+              {String(active + 1).padStart(2, '0')}
+            </span>
+            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+              / {String(HERO_SLIDES.length).padStart(2, '0')}
+            </span>
           </div>
         </div>
       </div>
 
       <style>{`
         @keyframes heroProgress { 0% { width: 0%; } 100% { width: 100%; } }
-        @keyframes orangeShimmerAnim {
+        @keyframes heroBlobFloat {
+          0% { transform: translate(0, 0) scale(1); }
+          100% { transform: translate(30px, -20px) scale(1.08); }
+        }
+        @keyframes pulseDot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        @keyframes shimmerGrad {
           0% { background-position: 200% center; }
           100% { background-position: -200% center; }
         }
         .orange-shimmer-text {
-          background: linear-gradient(120deg, #f79429 25%, #ffe3b3 50%, #f79429 75%);
-          background-size: 200% auto;
           color: transparent;
           -webkit-background-clip: text;
           background-clip: text;
-          animation: orangeShimmerAnim 3s linear infinite;
+          animation: shimmerGrad 4s linear infinite;
           display: inline-block;
         }
 
@@ -1531,7 +1629,7 @@ const getArticleRoute = (article) => {
     return { url: `/article/${article.slug}`, newTab: false };
   }
 };
- 
+
 // ── Helper to navigate or open new tab ──────────────────────────
 const navigateArticle = (article, navigate) => {
   const { url, newTab } = getArticleRoute(article);
@@ -1662,15 +1760,11 @@ const LatestArticlesSection = ({ articles, blogs, navigate }) => {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(11,31,77,0.16)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
             >
-                    <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(140px, 12vw, 160px)', background: '#f3f4f6' }}>
+              <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(140px, 12vw, 160px)', background: '#f3f4f6' }}>
                 {article.banner_image
                   ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
                   : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 36, color: 'var(--color-primary)', opacity: 0.5 }} /></div>
                 }
-                {article.content_type_name && <span style={{ position: 'absolute', top: 10, left: 10, background: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase' }}>{article.content_type_name}</span>}
-                {/* <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'linear-gradient(to top, rgba(11,31,77,0.72) 0%, transparent 100%)', padding: '24px 12px 8px' }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.88)', display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined />{moment(article.scheduled_publish_date || article.published_date || article.created_at).format('MMM D, YYYY')}</span>
-                </div> */}
               </div>
               <CardContent style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)' }}>
                 {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 10.5px)', fontWeight: 700, color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
@@ -1875,7 +1969,7 @@ const Home = () => {
       setTabLoading(false);
       return;
     }
-    
+
     const qs = tab.param === 'content_type' ? `content_type=${tab.key}` : `category=${tab.key}`;
     axios.get(`/api/public/content?status=published&${qs}&limit=3`)
       .then(r => setTabData(r.data?.data || []))

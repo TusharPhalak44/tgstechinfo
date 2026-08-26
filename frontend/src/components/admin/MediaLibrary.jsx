@@ -2,25 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { 
   Row, 
   Col, 
-  Card, 
   Typography, 
   Button, 
   Input, 
   Select, 
   Space, 
-  Image, 
   Tooltip,
   Dropdown,
-  Checkbox,
   Upload,
   App,
   Pagination,
   ConfigProvider,
   Modal,
+  Tag,
 } from 'antd';
 import {
   SearchOutlined,
-  UploadOutlined,
   FolderOutlined,
   PictureOutlined,
   FileOutlined,
@@ -31,23 +28,103 @@ import {
   PlusOutlined,
   CloudUploadOutlined,
   ReloadOutlined,
+  LinkOutlined,
+  EyeOutlined,
+  FolderAddOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 const { Dragger } = Upload;
 
+/* ─────────────────────────────────────────────
+   STYLING SYSTEM & ANIMATIONS (Dashboard Parity)
+───────────────────────────────────────────── */
+const mediaStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap');
+
+  .media-root {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', -apple-system, sans-serif;
+    animation: mediaFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes mediaFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .media-stagger-1 { animation: mediaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+  .media-stagger-2 { animation: mediaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.10s both; }
+  .media-stagger-3 { animation: mediaSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both; }
+
+  @keyframes mediaSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .media-beacon-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #06B6D4;
+    position: relative;
+    display: inline-block;
+  }
+  .media-beacon-dot::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 50%;
+    border: 2px solid #06B6D4;
+    animation: mediaPulse 2s ease-out infinite;
+  }
+  @keyframes mediaPulse {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    70% { transform: scale(2.2); opacity: 0; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  .media-kpi-card {
+    border-radius: 16px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .media-kpi-card:hover {
+    transform: translateY(-3px);
+  }
+
+  .media-item-card {
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+  }
+  .media-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -4px rgba(0,0,0,0.15);
+  }
+`;
+
 const MediaLibrary = () => {
   const { darkMode } = useTheme();
+  const D = darkMode;
   const { message } = App.useApp();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [media, setMedia] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [viewMode, setViewMode] = useState('grid');
   const [filters, setFilters] = useState({
     type: 'all',
     folder: 'all',
@@ -60,7 +137,21 @@ const MediaLibrary = () => {
   const [renameFolderIndex, setRenameFolderIndex] = useState(null);
   const [renameFolderName, setRenameFolderName] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [previewItem, setPreviewItem] = useState(null);
+  const [stats, setStats] = useState({
+    total: 0,
+    images: 0,
+    videos: 0,
+    documents: 0,
+  });
   const pageSize = 36;
+
+  const [folders, setFolders] = useState([
+    { name: 'All Media', count: 0, icon: <PictureOutlined /> },
+    { name: 'Images', count: 0, icon: <FolderOutlined /> },
+    { name: 'Videos', count: 0, icon: <FolderOutlined /> },
+    { name: 'Documents', count: 0, icon: <FolderOutlined /> },
+  ]);
 
   useEffect(() => {
     fetchMedia();
@@ -70,14 +161,11 @@ const MediaLibrary = () => {
     try {
       setLoading(true);
       setCurrentPage(1);
-      // Load uploaded files from database via media API
       const params = {};
       if (filters.type && filters.type !== 'all') params.file_type = filters.type;
       if (filters.folder && filters.folder !== 'all') params.folder = filters.folder;
       if (filters.search) params.search = filters.search;
       
-      // Use appropriate endpoint based on user role
-      // Admin sees all media, regular users see only their own
       const endpoint = user?.role === 'admin' 
         ? '/api/media/all' 
         : '/api/media/user/all';
@@ -87,9 +175,7 @@ const MediaLibrary = () => {
         headers: { 'Cache-Control': 'no-cache' }
       });
       let items = response.data.data || [];
-      console.log('Media fetched from database:', items.length);
       
-      // Fetch folder counts with appropriate endpoint
       const countsEndpoint = user?.role === 'admin'
         ? '/api/media/folder-counts'
         : '/api/media/user/folder-counts';
@@ -106,6 +192,17 @@ const MediaLibrary = () => {
         count: folderCounts[folder.name] || 0
       })));
       
+      const imageCount = items.filter(i => i.type === 'image').length;
+      const videoCount = items.filter(i => i.type === 'video').length;
+      const documentCount = items.filter(i => i.type === 'document').length;
+      
+      setStats({
+        total: items.length,
+        images: imageCount,
+        videos: videoCount,
+        documents: documentCount,
+      });
+      
       setMedia(items);
     } catch (error) {
       console.error('Error fetching media:', error);
@@ -114,8 +211,6 @@ const MediaLibrary = () => {
       setLoading(false);
     }
   };
-
-  const generateMockMedia = () => { return []; };
 
   const uploadProps = {
     name: 'file',
@@ -144,14 +239,6 @@ const MediaLibrary = () => {
         message.error(`${file.name} upload failed`);
       }
     },
-    onChange(info) {
-      const { status } = info.file;
-      if (status === 'done') {
-        // Success is handled in customRequest
-      } else if (status === 'error') {
-        // Error is handled in customRequest
-      }
-    },
   };
 
   const handleDelete = async (id) => {
@@ -162,6 +249,17 @@ const MediaLibrary = () => {
     } catch (error) {
       console.error('Delete error:', error);
       message.error('Failed to delete media');
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      await Promise.all(selectedItems.map(id => axios.delete(`/api/media/${id}`)));
+      setMedia(media.filter(item => !selectedItems.includes(item.id)));
+      setSelectedItems([]);
+      message.success(`${selectedItems.length} items deleted successfully`);
+    } catch (error) {
+      message.error('Failed to delete selected items');
     }
   };
 
@@ -184,13 +282,6 @@ const MediaLibrary = () => {
     });
   };
 
-  const handleShowMore = () => {};
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const handleSelect = (id) => {
     if (selectedItems.includes(id)) {
       setSelectedItems(selectedItems.filter(item => item !== id));
@@ -199,17 +290,11 @@ const MediaLibrary = () => {
     }
   };
 
-  const handleRefresh = () => {
-    setFilters({ ...filters, search: '' });
-    fetchMedia();
-  };
-
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) {
       message.error('Please enter a folder name');
       return;
     }
-    // Add new folder to the folders array
     const newFolder = { name: newFolderName, count: 0, icon: <FolderOutlined /> };
     setFolders([...folders, newFolder]);
     setNewFolderName('');
@@ -250,47 +335,93 @@ const MediaLibrary = () => {
   const getTypeIcon = (type) => {
     switch (type) {
       case 'image':
-        return <PictureOutlined />;
+        return <PictureOutlined style={{ fontSize: 24, color: '#06B6D4' }} />;
       case 'video':
-        return <VideoCameraOutlined />;
+        return <VideoCameraOutlined style={{ fontSize: 24, color: '#F59E0B' }} />;
       case 'document':
-        return <FileOutlined />;
+        return <FileOutlined style={{ fontSize: 24, color: '#10B981' }} />;
       default:
-        return <FileOutlined />;
+        return <FileOutlined style={{ fontSize: 24, color: '#64748B' }} />;
     }
   };
 
   const formatFileSize = (bytes) => {
+    if (!bytes) return '0 B';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  const [folders, setFolders] = useState([
-    { name: 'All Media', count: 0, icon: <PictureOutlined /> },
-    { name: 'Images', count: 0, icon: <FolderOutlined /> },
-    { name: 'Videos', count: 0, icon: <FolderOutlined /> },
-    { name: 'Documents', count: 0, icon: <FolderOutlined /> },
-  ]);
+  const StatCard = ({ title, value, icon, color = 'primary', accentColor, subtitle }) => {
+    const colorMap = {
+      primary: { bg: D ? 'rgba(6, 182, 212, 0.12)' : 'rgba(6, 182, 212, 0.08)', text: '#06B6D4', border: 'rgba(6, 182, 212, 0.3)' },
+      info: { bg: D ? 'rgba(59, 130, 246, 0.12)' : 'rgba(37, 99, 235, 0.08)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.3)' },
+      warning: { bg: D ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.3)' },
+      purple: { bg: D ? 'rgba(168, 85, 247, 0.12)' : 'rgba(168, 85, 247, 0.08)', text: '#A855F7', border: 'rgba(168, 85, 247, 0.3)' },
+    };
+    const c = colorMap[color] || colorMap.primary;
+
+    return (
+      <div
+        className="media-kpi-card"
+        style={{
+          background: D
+            ? 'linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.65) 100%)'
+            : 'linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)',
+          border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.9)'}`,
+          boxShadow: D
+            ? '0 10px 30px -5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+            : '0 10px 30px -5px rgba(11, 31, 77, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+        }}
+      >
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: accentColor || c.text }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: D ? '#94A3B8' : '#64748B' }}>
+            {title}
+          </span>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: c.bg, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, border: `1px solid ${c.border}` }}>
+            {icon}
+          </div>
+        </div>
+
+        <div style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: D ? '#F8FAFC' : '#0F172A', lineHeight: 1 }}>
+          {value}
+        </div>
+
+        {subtitle && (
+          <div style={{ marginTop: 8, fontSize: '0.75rem', fontWeight: 600, color: D ? '#64748B' : '#94A3B8' }}>
+            {subtitle}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const mediaItemMenu = (item) => ({
     items: [
       {
+        key: 'preview',
+        icon: <EyeOutlined />,
+        label: 'Preview Details',
+        onClick: () => setPreviewItem(item),
+      },
+      {
         key: 'download',
         icon: <DownloadOutlined />,
-        label: 'Download',
+        label: 'Download File',
         onClick: () => handleDownload(item),
       },
       {
         key: 'copy-url',
-        icon: <FileOutlined />,
-        label: 'Copy URL',
+        icon: <LinkOutlined />,
+        label: 'Copy Public Link',
         onClick: () => handleCopyUrl(item),
       },
       {
         key: 'delete',
         icon: <DeleteOutlined />,
-        label: 'Delete',
+        label: 'Delete Asset',
         danger: true,
         onClick: () => handleDelete(item.id),
       },
@@ -301,429 +432,460 @@ const MediaLibrary = () => {
     <ConfigProvider
       theme={{
         token: {
-          colorBgContainer: darkMode ? '#1e293b' : '#fff',
-          colorText: darkMode ? '#cbd5e1' : '#374151',
-          colorBorder: darkMode ? '#334155' : '#d9d9d9',
-          colorBgElevated: darkMode ? '#1e293b' : '#fff',
-          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+          colorBgContainer: D ? '#1E293B' : '#FFFFFF',
+          colorText: D ? '#CBD5E1' : '#334155',
+          colorBorder: D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)',
+          colorBgElevated: D ? '#1E293B' : '#FFFFFF',
+          fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
         },
       }}
     >
-      <div style={{ padding: window.innerWidth < 768 ? '16px' : '24px', background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
-      <div style={{ marginBottom: window.innerWidth < 768 ? 16 : 24 }}>
-        <Title level={2} style={{ fontSize: window.innerWidth < 768 ? 24 : 30, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 8 }}>
-          Media Library
-        </Title>
-        <Text style={{ fontSize: window.innerWidth < 768 ? 13 : 15, color: darkMode ? '#94a3b8' : '#6B7280' }}>
-          Manage all your images, videos, and documents
-        </Text>
-      </div>
+      <style>{mediaStyles}</style>
 
-      <Row gutter={[window.innerWidth < 768 ? 16 : 24, window.innerWidth < 768 ? 16 : 24]}>
-        {/* Sidebar */}
-        <Col xs={24} lg={4}>
-          <Card
-            style={{
-              borderRadius: 12,
-              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
-              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
-              background: darkMode ? '#1e293b' : '#fff',
-            }}
-            bodyStyle={{ padding: window.innerWidth < 768 ? '12px' : '16px' }}
-          >
-            <Button
-              type="primary"
-              icon={<CloudUploadOutlined />}
-              block
-              style={{ marginBottom: window.innerWidth < 768 ? 12 : 16, borderRadius: 8 }}
-              onClick={() => setUploadModalVisible(true)}
-              size={window.innerWidth < 768 ? 'middle' : 'default'}
-            >
-              Upload Media
-            </Button>
-            
-            <div style={{ marginBottom: window.innerWidth < 768 ? 12 : 16 }}>
-              <Text strong style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: darkMode ? '#94a3b8' : '#6B7280', display: 'block', marginBottom: window.innerWidth < 768 ? 8 : 12 }}>
-                Folders
-              </Text>
-              {folders.map((folder, index) => (
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: window.innerWidth < 768 ? '8px 10px' : '10px 12px',
-                    borderRadius: 8,
-                    cursor: 'pointer',
-                    marginBottom: 4,
-                    background: filters.folder === (index === 0 ? 'all' : folder.name.toLowerCase()) ? (darkMode ? '#334155' : '#F1F5F9') : 'transparent',
-                    transition: 'background 0.2s',
-                    minHeight: window.innerWidth < 768 ? 36 : 40,
-                  }}
-                  onClick={() => setFilters({ ...filters, folder: index === 0 ? 'all' : folder.name.toLowerCase() })}
-                  onMouseEnter={(e) => {
-                    if (filters.folder !== (index === 0 ? 'all' : folder.name.toLowerCase())) {
-                      e.currentTarget.style.background = darkMode ? '#1e293b' : '#F8FAFC';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (filters.folder !== (index === 0 ? 'all' : folder.name.toLowerCase())) {
-                      e.currentTarget.style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                      {folder.icon}
-                    </span>
-                    <Text 
-                      style={{ 
-                        fontSize: window.innerWidth < 768 ? 12 : 13, 
-                        color: darkMode ? '#cbd5e1' : '#111827',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        flex: 1
-                      }}
-                    >
-                      {folder.name}
-                    </Text>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    <Text style={{ fontSize: window.innerWidth < 768 ? 11 : 12, color: darkMode ? '#94a3b8' : '#6B7280', flexShrink: 0 }}>{folder.count}</Text>
-                    {index !== 0 && (
-                      <Dropdown
-                        menu={{
-                          items: [
-                            {
-                              key: 'rename',
-                              label: 'Rename',
-                              onClick: () => openRenameModal(index),
-                            },
-                            {
-                              key: 'delete',
-                              label: 'Delete',
-                              danger: true,
-                              onClick: () => handleDeleteFolder(index),
-                            },
-                          ],
-                        }}
-                        trigger={['click']}
-                      >
-                        <Button
-                          type="text"
-                          icon={<MoreOutlined />}
-                          size="small"
-                          style={{ padding: '2px 4px', color: darkMode ? '#94a3b8' : '#6B7280', minWidth: 'auto', height: 'auto' }}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </Dropdown>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div>
-              <Text strong style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: darkMode ? '#94a3b8' : '#6B7280', display: 'block', marginBottom: window.innerWidth < 768 ? 8 : 12 }}>
-                Filter by Type
-              </Text>
-              <Select
-                style={{ width: '100%', borderRadius: 8 }}
-                value={filters.type}
-                onChange={(value) => setFilters({ ...filters, type: value })}
-                size={window.innerWidth < 768 ? 'middle' : 'default'}
-              >
-                <Option value="all">All Types</Option>
-                <Option value="image">Images</Option>
-                <Option value="video">Videos</Option>
-                <Option value="document">Documents</Option>
-              </Select>
-            </div>
-          </Card>
-        </Col>
-
-        {/* Main Content */}
-        <Col xs={24} lg={20}>
-          {/* Search and Actions */}
-          <div style={{
-            marginBottom: 16,
-            padding: window.innerWidth < 768 ? '12px 16px' : '16px 20px',
-            background: darkMode ? '#1e293b' : '#FFFFFF',
-            borderRadius: 12,
-            border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
+      <div className="media-root" style={{ padding: '24px 28px', background: D ? '#0A1229' : '#F8FAFC', minHeight: '100vh' }}>
+        {/* ── COMMAND HEADER BANNER ── */}
+        <div
+          className="media-stagger-1"
+          style={{
+            borderRadius: 16,
+            padding: '20px 24px',
+            marginBottom: 24,
+            background: D
+              ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.75) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+            border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.9)'}`,
+            backdropFilter: 'blur(16px)',
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
+            justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: window.innerWidth < 768 ? 12 : 16,
-          }}>
-            <Space size={window.innerWidth < 768 ? 8 : 12} style={{ width: window.innerWidth < 768 ? '100%' : 'auto', flexDirection: window.innerWidth < 768 ? 'column' : 'row', alignItems: window.innerWidth < 768 ? 'stretch' : 'center' }}>
-              <Input
-                placeholder="Search media..."
-                prefix={<SearchOutlined style={{ color: darkMode ? '#64748b' : '#9CA3AF' }} />}
-                style={{ width: window.innerWidth < 768 ? '100%' : 280, borderRadius: 8 }}
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                size={window.innerWidth < 768 ? 'middle' : 'default'}
-                allowClear
-              />
-              <Text style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: darkMode ? '#94a3b8' : '#6B7280' }}>
-                {media.length} items
-              </Text>
-            </Space>
-            <Space size={window.innerWidth < 768 ? 8 : 12} style={{ width: window.innerWidth < 768 ? '100%' : 'auto', justifyContent: window.innerWidth < 768 ? 'flex-start' : 'flex-end' }}>
-              <Button icon={<ReloadOutlined />} size={window.innerWidth < 768 ? 'middle' : 'default'} onClick={handleRefresh}>
-                Refresh
-              </Button>
-              {selectedItems.length > 0 && (
-                <Button danger icon={<DeleteOutlined />} size={window.innerWidth < 768 ? 'middle' : 'default'}>
-                  Delete ({selectedItems.length})
-                </Button>
-              )}
-              <Button icon={<PlusOutlined />} size={window.innerWidth < 768 ? 'middle' : 'default'} onClick={() => setNewFolderModalVisible(true)}>
-                New Folder
-              </Button>
-            </Space>
+            gap: 16,
+            boxShadow: D ? '0 12px 32px -4px rgba(0, 0, 0, 0.4)' : '0 12px 32px -4px rgba(11, 31, 77, 0.05)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.4), transparent)' }} />
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span className="media-beacon-dot" />
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#06B6D4' }}>
+                Digital Asset Management (DAM)
+              </span>
+              <span style={{ fontSize: '0.72rem', color: D ? '#64748B' : '#94A3B8' }}>•</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B' }}>
+                {stats.total} Total Files Stored
+              </span>
+            </div>
+
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: D ? '#F8FAFC' : '#0F172A', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <PictureOutlined style={{ color: '#06B6D4' }} /> Media & Asset Library
+            </h1>
           </div>
 
-          {/* New Folder Modal */}
-          <Modal
-            title="Create New Folder"
-            open={newFolderModalVisible}
-            onOk={handleCreateFolder}
-            onCancel={() => {
-              setNewFolderModalVisible(false);
-              setNewFolderName('');
+          <Button
+            type="primary"
+            icon={<CloudUploadOutlined />}
+            onClick={() => setUploadModalVisible(true)}
+            style={{
+              background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
+              border: 'none',
+              borderRadius: 10,
+              fontWeight: 700,
+              height: 42,
+              padding: '0 20px',
+              fontSize: '0.85rem',
+              boxShadow: '0 4px 14px rgba(6, 182, 212, 0.3)',
+              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
-            okText="Create"
-            cancelText="Cancel"
           >
-            <Input
-              placeholder="Enter folder name"
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onPressEnter={handleCreateFolder}
-              autoFocus
-            />
-          </Modal>
+            Upload New Assets
+          </Button>
+        </div>
 
-          {/* Rename Folder Modal */}
-          <Modal
-            title="Rename Folder"
-            open={renameFolderModalVisible}
-            onOk={handleRenameFolder}
-            onCancel={() => {
-              setRenameFolderModalVisible(false);
-              setRenameFolderName('');
-              setRenameFolderIndex(null);
-            }}
-            okText="Rename"
-            cancelText="Cancel"
-          >
-            <Input
-              placeholder="Enter new folder name"
-              value={renameFolderName}
-              onChange={(e) => setRenameFolderName(e.target.value)}
-              onPressEnter={handleRenameFolder}
-              autoFocus
-            />
-          </Modal>
+        {/* ── EXECUTIVE KPI GRID ── */}
+        <div
+          className="media-stagger-2"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 16,
+            marginBottom: 24,
+          }}
+        >
+          <StatCard title="Total Stored Assets" value={stats.total} icon={<FileOutlined />} color="primary" accentColor="#06B6D4" subtitle="All Media Repositories" />
+          <StatCard title="Images & Graphics" value={stats.images} icon={<PictureOutlined />} color="info" accentColor="#3B82F6" subtitle="PNG, JPG, SVG, WebP" />
+          <StatCard title="Video & Motion" value={stats.videos} icon={<VideoCameraOutlined />} color="warning" accentColor="#F59E0B" subtitle="MP4, WebM, Streams" />
+          <StatCard title="Documents & PDFs" value={stats.documents} icon={<FileOutlined />} color="purple" accentColor="#A855F7" subtitle="PDF, DOCX, Spreadsheets" />
+        </div>
 
-          {/* Upload Area */}
-          {uploadModalVisible && (
-            <Card
+        <Row gutter={[20, 20]}>
+          {/* ── FOLDERS & FILTERS SIDEBAR ── */}
+          <Col xs={24} lg={5}>
+            <div
+              className="media-stagger-3"
               style={{
-                marginBottom: 16,
-                borderRadius: 12,
-                border: darkMode ? '2px dashed #475569' : '2px dashed #E5E7EB',
-                background: darkMode ? '#0f172a' : '#F8FAFC',
+                background: D ? 'rgba(15, 23, 42, 0.85)' : '#FFFFFF',
+                borderRadius: 16,
+                border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`,
+                padding: 18,
+                boxShadow: D ? '0 10px 30px -5px rgba(0, 0, 0, 0.3)' : '0 10px 30px -5px rgba(11, 31, 77, 0.05)',
               }}
-              bodyStyle={{ padding: window.innerWidth < 768 ? '20px' : '32px' }}
             >
-              <Dragger {...uploadProps} style={{ background: 'transparent' }}>
-                <p className="ant-upload-drag-icon">
-                  <CloudUploadOutlined style={{ fontSize: window.innerWidth < 768 ? 36 : 48, color: '#0AAEEF' }} />
-                </p>
-                <p style={{ fontSize: window.innerWidth < 768 ? 14 : 16, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 8 }}>
-                  Click or drag files to upload
-                </p>
-                <p style={{ fontSize: window.innerWidth < 768 ? 12 : 13, color: darkMode ? '#94a3b8' : '#6B7280' }}>
-                  Support for images, videos, and documents
-                </p>
-              </Dragger>
-              <div style={{ textAlign: 'center', marginTop: window.innerWidth < 768 ? 12 : 16 }}>
-                <Button onClick={() => setUploadModalVisible(false)} size={window.innerWidth < 768 ? 'middle' : 'default'}>
-                  Cancel
-                </Button>
-              </div>
-            </Card>
-          )}
-
-          {/* Media Grid */}
-          <div style={{
-            background: darkMode ? '#1e293b' : '#FFFFFF',
-            borderRadius: 12,
-            border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
-            padding: window.innerWidth < 768 ? '0 16px 16px 16px' : '20px',
-            paddingTop: window.innerWidth < 768 ? '16px' : '20px',
-            minHeight: 400,
-          }}>
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: window.innerWidth < 768 ? '40px 0' : '60px 0' }}>
-                <Text style={{ color: darkMode ? '#94a3b8' : '#6B7280', fontSize: window.innerWidth < 768 ? 12 : 14 }}>Loading media...</Text>
-              </div>
-            ) : media.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: window.innerWidth < 768 ? '40px 0' : '60px 0' }}>
-                <PictureOutlined style={{ fontSize: window.innerWidth < 768 ? 36 : 48, color: darkMode ? '#475569' : '#E5E7EB', marginBottom: window.innerWidth < 768 ? 12 : 16 }} />
-                <Title level={4} style={{ color: darkMode ? '#94a3b8' : '#6B7280', marginBottom: 8, fontSize: window.innerWidth < 768 ? 16 : 20 }}>
-                  No media found
-                </Title>
-                <Text style={{ color: darkMode ? '#64748b' : '#9CA3AF', fontSize: window.innerWidth < 768 ? 12 : 14 }}>
-                  Upload your first media file to get started
-                </Text>
-              </div>
-            ) : (
-              <>
-              <Row gutter={[window.innerWidth < 768 ? 0 : 24, window.innerWidth < 768 ? 0 : 24]}>
-                {media.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((item) => (
-                  <Col xs={12} sm={8} md={6} lg={4} xl={4} key={item.id}>
-                    <div style={{ padding: window.innerWidth < 768 ? '0 10px 16px 10px' : 0 }}>
-                      <Card
-                        hoverable
-                        style={{
-                          borderRadius: 8,
-                          border: selectedItems.includes(item.id) ? '2px solid #0AAEEF' : (darkMode ? '1px solid #334155' : '1px solid #E5E7EB'),
-                          overflow: 'hidden',
-                          cursor: 'pointer',
-                        }}
-                      bodyStyle={{ padding: 0 }}
-                      onClick={() => handleSelect(item.id)}
-                    >
-                      <div style={{ position: 'relative' }}>
-                        <div
-                          style={{
-                            width: '100%',
-                            height: window.innerWidth < 768 ? 100 : 120,
-                            background: darkMode ? '#0f172a' : '#F1F5F9',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          {item.type === 'image' ? (
-                            <img
-                              src={item.url}
-                              alt={item.name}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              onError={(e) => {
-                                console.error('Image load error for:', item.url);
-                                // Show placeholder when image fails to load
-                                e.target.style.display = 'none';
-                                e.target.parentElement.innerHTML = `
-                                  <div style="text-align: center; color: ${darkMode ? '#94a3b8' : '#6B7280'}">
-                                    <PictureOutlined style="font-size: 24px; margin-bottom: 4px;" />
-                                    <div style="font-size: 10px;">Image not found</div>
-                                  </div>
-                                `;
-                              }}
-                            />
-                          ) : (
-                            <div style={{ textAlign: 'center' }}>
-                              {getTypeIcon(item.type)}
-                              <div style={{ fontSize: window.innerWidth < 768 ? 10 : 11, color: darkMode ? '#94a3b8' : '#6B7280', marginTop: 4 }}>
-                                {item.type.toUpperCase()}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        {selectedItems.includes(item.id) && (
-                          <div
-                            style={{
-                              position: 'absolute',
-                              top: 8,
-                              right: 8,
-                              width: 20,
-                              height: 20,
-                              borderRadius: '50%',
-                              background: '#0AAEEF',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              color: '#fff',
-                              fontSize: 12,
-                            }}
-                          >
-                            ✓
-                          </div>
-                        )}
-                        <Dropdown menu={mediaItemMenu(item)} trigger={['click']}>
-                          <Button
-                            type="text"
-                            icon={<MoreOutlined />}
-                            style={{
-                              position: 'absolute',
-                              top: 6,
-                              right: 6,
-                              background: darkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255,255,255,0.9)',
-                              borderRadius: 4,
-                              opacity: selectedItems.includes(item.id) ? 0 : 1,
-                              padding: '2px 6px',
-                              minWidth: 'auto',
-                              height: 'auto',
-                              fontSize: 14,
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            size="small"
-                          />
-                        </Dropdown>
-                      </div>
-                      <div style={{ padding: window.innerWidth < 768 ? '10px' : '12px' }}>
-                        <Text
-                          strong
-                          style={{
-                            fontSize: window.innerWidth < 768 ? 12 : 13,
-                            color: darkMode ? '#f1f5f9' : '#111827',
-                            display: 'block',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {item.name}
-                        </Text>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                          <Text style={{ fontSize: window.innerWidth < 768 ? 10 : 11, color: darkMode ? '#94a3b8' : '#6B7280' }}>
-                            {formatFileSize(item.size)}
-                          </Text>
-                          <Text style={{ fontSize: window.innerWidth < 768 ? 10 : 11, color: darkMode ? '#94a3b8' : '#6B7280' }}>
-                            {item.usageCount} uses
-                          </Text>
-                        </div>
-                      </div>
-                    </Card>
-                    </div>
-                  </Col>
-                ))}
-              </Row>
-              <div style={{ padding: '16px 0', display: 'flex', justifyContent: 'center' }}>
-                <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={media.length}
-                  showSizeChanger={false}
-                  showTotal={(total, range) => `${range[0]}-${range[1]} of ${total} items`}
-                  onChange={handlePageChange}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: D ? '#94A3B8' : '#64748B' }}>
+                  Media Folders
+                </span>
+                <Button
+                  type="text"
+                  icon={<FolderAddOutlined />}
+                  size="small"
+                  onClick={() => setNewFolderModalVisible(true)}
+                  style={{ color: '#06B6D4', borderRadius: 6 }}
                 />
               </div>
-              </>
-            )}
-          </div>
-        </Col>
-      </Row>
-    </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+                {folders.map((folder, index) => {
+                  const isSelected = filters.folder === (index === 0 ? 'all' : folder.name.toLowerCase());
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => setFilters({ ...filters, folder: index === 0 ? 'all' : folder.name.toLowerCase() })}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        cursor: 'pointer',
+                        background: isSelected
+                          ? (D ? 'rgba(6, 182, 212, 0.15)' : 'rgba(6, 182, 212, 0.08)')
+                          : 'transparent',
+                        border: isSelected
+                          ? `1px solid ${D ? 'rgba(6, 182, 212, 0.3)' : 'rgba(6, 182, 212, 0.2)'}`
+                          : '1px solid transparent',
+                        color: isSelected ? '#06B6D4' : (D ? '#CBD5E1' : '#334155'),
+                        fontWeight: isSelected ? 700 : 500,
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {folder.icon}
+                        <span style={{ fontSize: '0.83rem' }}>{folder.name}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.72rem', background: D ? 'rgba(255,255,255,0.06)' : '#F1F5F9', padding: '2px 8px', borderRadius: 6 }}>
+                          {folder.count}
+                        </span>
+                        {index !== 0 && (
+                          <Dropdown
+                            menu={{
+                              items: [
+                                { key: 'rename', label: 'Rename', onClick: () => openRenameModal(index) },
+                                { key: 'delete', label: 'Delete', danger: true, onClick: () => handleDeleteFolder(index) },
+                              ],
+                            }}
+                            trigger={['click']}
+                          >
+                            <Button type="text" icon={<MoreOutlined />} size="small" style={{ padding: '0 4px', color: D ? '#64748B' : '#94A3B8' }} onClick={e => e.stopPropagation()} />
+                          </Dropdown>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ borderTop: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`, paddingTop: 16 }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: D ? '#94A3B8' : '#64748B', display: 'block', marginBottom: 8 }}>
+                  Filter File Type
+                </span>
+                <Select
+                  style={{ width: '100%', borderRadius: 10 }}
+                  value={filters.type}
+                  onChange={(value) => setFilters({ ...filters, type: value })}
+                >
+                  <Option value="all">📂 All File Formats</Option>
+                  <Option value="image">🖼️ Images Only</Option>
+                  <Option value="video">🎥 Videos Only</Option>
+                  <Option value="document">📄 Documents Only</Option>
+                </Select>
+              </div>
+            </div>
+          </Col>
+
+          {/* ── MAIN MEDIA ASSET GRID ── */}
+          <Col xs={24} lg={19}>
+            <div
+              className="media-stagger-3"
+              style={{
+                background: D ? 'rgba(15, 23, 42, 0.85)' : '#FFFFFF',
+                borderRadius: 16,
+                border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`,
+                padding: 20,
+                boxShadow: D ? '0 10px 30px -5px rgba(0, 0, 0, 0.3)' : '0 10px 30px -5px rgba(11, 31, 77, 0.05)',
+                minHeight: 500,
+              }}
+            >
+              {/* Search and Action Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 240 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: D ? '#1E293B' : '#F1F5F9',
+                      border: `1px solid ${D ? 'rgba(51, 65, 85, 0.8)' : 'rgba(203, 213, 225, 0.8)'}`,
+                      borderRadius: 10,
+                      padding: '6px 14px',
+                      flex: 1,
+                      maxWidth: 320,
+                    }}
+                  >
+                    <SearchOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 14 }} />
+                    <input
+                      type="text"
+                      placeholder="Search files by name..."
+                      value={filters.search}
+                      onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                      style={{
+                        border: 'none',
+                        outline: 'none',
+                        background: 'transparent',
+                        fontSize: '0.82rem',
+                        color: D ? '#F8FAFC' : '#0F172A',
+                        width: '100%',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  </div>
+
+                  <span style={{ fontSize: '0.78rem', color: D ? '#64748B' : '#94A3B8' }}>
+                    {media.length} Items Available
+                  </span>
+                </div>
+
+                <Space size={8}>
+                  <Tooltip title="Reload Library">
+                    <Button
+                      icon={<ReloadOutlined />}
+                      onClick={() => { setFilters({ ...filters, search: '' }); fetchMedia(); }}
+                      style={{ borderRadius: 10, background: D ? '#1E293B' : '#F1F5F9' }}
+                    />
+                  </Tooltip>
+
+                  {selectedItems.length > 0 && (
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={handleBulkDelete}
+                      style={{ borderRadius: 10, fontWeight: 700 }}
+                    >
+                      Delete Selected ({selectedItems.length})
+                    </Button>
+                  )}
+                </Space>
+              </div>
+
+              {/* Upload Drop Area Modal Trigger */}
+              {uploadModalVisible && (
+                <div
+                  style={{
+                    marginBottom: 20,
+                    padding: 20,
+                    borderRadius: 14,
+                    border: `2px dashed ${D ? '#38BDF8' : '#0284C7'}`,
+                    background: D ? 'rgba(15, 23, 42, 0.95)' : 'rgba(240, 249, 255, 0.95)',
+                    textAlign: 'center',
+                  }}
+                >
+                  <Dragger {...uploadProps} style={{ background: 'transparent', border: 'none' }}>
+                    <p style={{ margin: 0 }}>
+                      <CloudUploadOutlined style={{ fontSize: 42, color: '#06B6D4', marginBottom: 8 }} />
+                    </p>
+                    <p style={{ fontSize: '0.92rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0F172A', margin: '4px 0' }}>
+                      Click or Drag files to Upload to Library
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: D ? '#64748B' : '#94A3B8', margin: 0 }}>
+                      PNG, JPG, SVG, MP4, PDF, DOCX (Up to 10MB per file)
+                    </p>
+                  </Dragger>
+                  <Button onClick={() => setUploadModalVisible(false)} style={{ marginTop: 12, borderRadius: 8 }}>
+                    Close Upload Box
+                  </Button>
+                </div>
+              )}
+
+              {/* Media Cards Grid */}
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: D ? '#64748B' : '#94A3B8' }}>
+                  Loading media library assets...
+                </div>
+              ) : media.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0', color: D ? '#64748B' : '#94A3B8' }}>
+                  <PictureOutlined style={{ fontSize: 48, opacity: 0.4, marginBottom: 12 }} />
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0F172A' }}>No media assets found</div>
+                  <div style={{ fontSize: '0.8rem', marginTop: 4 }}>Upload image, video or document files to populate your repository.</div>
+                </div>
+              ) : (
+                <>
+                  <Row gutter={[16, 16]}>
+                    {media.slice((currentPage - 1) * pageSize, currentPage * pageSize).map((item) => {
+                      const isSelected = selectedItems.includes(item.id);
+                      return (
+                        <Col xs={12} sm={8} md={6} lg={6} xl={4} key={item.id}>
+                          <div
+                            className="media-item-card"
+                            onClick={() => handleSelect(item.id)}
+                            style={{
+                              background: D ? '#1E293B' : '#FFFFFF',
+                              border: `2px solid ${isSelected ? '#06B6D4' : (D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.9)')}`,
+                              boxShadow: isSelected ? '0 0 12px rgba(6, 182, 212, 0.3)' : 'none',
+                            }}
+                          >
+                            <div style={{ position: 'relative', height: 110, background: D ? '#0F172A' : '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                              {item.type === 'image' ? (
+                                <img
+                                  src={item.url}
+                                  alt={item.name}
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                getTypeIcon(item.type)
+                              )}
+
+                              {isSelected && (
+                                <div style={{ position: 'absolute', top: 6, left: 6, width: 20, height: 20, borderRadius: '50%', background: '#06B6D4', color: '#fff', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                                  ✓
+                                </div>
+                              )}
+
+                              <Dropdown menu={mediaItemMenu(item)} trigger={['click']}>
+                                <Button
+                                  type="text"
+                                  icon={<MoreOutlined />}
+                                  style={{
+                                    position: 'absolute',
+                                    top: 4,
+                                    right: 4,
+                                    background: D ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+                                    borderRadius: 6,
+                                    padding: '0 6px',
+                                    height: 26,
+                                  }}
+                                  onClick={e => e.stopPropagation()}
+                                />
+                              </Dropdown>
+                            </div>
+
+                            <div style={{ padding: '10px 12px' }}>
+                              <Text
+                                strong
+                                style={{
+                                  fontSize: '0.8rem',
+                                  color: D ? '#F8FAFC' : '#0F172A',
+                                  display: 'block',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {item.name}
+                              </Text>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                                <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8' }}>{formatFileSize(item.size)}</span>
+                                <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8' }}>{item.type}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </Col>
+                      );
+                    })}
+                  </Row>
+
+                  <div style={{ marginTop: 24, display: 'flex', justifyContent: 'center' }}>
+                    <Pagination
+                      current={currentPage}
+                      pageSize={pageSize}
+                      total={media.length}
+                      showSizeChanger={false}
+                      onChange={(p) => setCurrentPage(p)}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </Col>
+        </Row>
+
+        {/* Create Folder Modal */}
+        <Modal
+          title={<div style={{ fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A' }}>Create New Media Folder</div>}
+          open={newFolderModalVisible}
+          onOk={handleCreateFolder}
+          onCancel={() => setNewFolderModalVisible(false)}
+          okText="Create Folder"
+          okButtonProps={{ style: { background: '#06B6D4', border: 'none', borderRadius: 8 } }}
+        >
+          <Input
+            placeholder="Enter folder name..."
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            style={{ borderRadius: 8, marginTop: 12 }}
+          />
+        </Modal>
+
+        {/* Rename Folder Modal */}
+        <Modal
+          title={<div style={{ fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A' }}>Rename Folder</div>}
+          open={renameFolderModalVisible}
+          onOk={handleRenameFolder}
+          onCancel={() => setRenameFolderModalVisible(false)}
+          okText="Rename Folder"
+          okButtonProps={{ style: { background: '#06B6D4', border: 'none', borderRadius: 8 } }}
+        >
+          <Input
+            placeholder="Enter new folder name..."
+            value={renameFolderName}
+            onChange={(e) => setRenameFolderName(e.target.value)}
+            style={{ borderRadius: 8, marginTop: 12 }}
+          />
+        </Modal>
+
+        {/* Preview Details Modal */}
+        {previewItem && (
+          <Modal
+            title={<div style={{ fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A' }}>{previewItem.name}</div>}
+            open={!!previewItem}
+            onCancel={() => setPreviewItem(null)}
+            footer={[
+              <Button key="close" onClick={() => setPreviewItem(null)} style={{ borderRadius: 8 }}>Close</Button>,
+              <Button key="copy" icon={<LinkOutlined />} onClick={() => handleCopyUrl(previewItem)} style={{ borderRadius: 8 }}>Copy Link</Button>,
+              <Button key="dl" type="primary" icon={<DownloadOutlined />} onClick={() => handleDownload(previewItem)} style={{ background: '#06B6D4', border: 'none', borderRadius: 8 }}>Download</Button>,
+            ]}
+          >
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              {previewItem.type === 'image' ? (
+                <img src={previewItem.url} alt={previewItem.name} style={{ maxWidth: '100%', maxHeight: 280, borderRadius: 8, objectFit: 'contain' }} />
+              ) : (
+                getTypeIcon(previewItem.type)
+              )}
+            </div>
+            <div style={{ fontSize: '0.82rem', color: D ? '#CBD5E1' : '#334155', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div><strong>File Name:</strong> {previewItem.name}</div>
+              <div><strong>File Type:</strong> {previewItem.type}</div>
+              <div><strong>Size:</strong> {formatFileSize(previewItem.size)}</div>
+              <div><strong>URL:</strong> <code style={{ fontSize: '0.75rem' }}>{previewItem.url}</code></div>
+            </div>
+          </Modal>
+        )}
+      </div>
     </ConfigProvider>
   );
 };

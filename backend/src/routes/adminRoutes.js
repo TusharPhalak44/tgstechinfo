@@ -46,6 +46,14 @@ router.get('/stats', adminController.getDashboardStats);
 router.get('/recent-activity', adminController.getRecentActivity);
 router.get('/content-by-status', adminController.getContentByStatus);
 
+// Dashboard real-data analytics endpoints
+router.get('/dashboard/kpis', adminController.getDashboardKPIs);
+router.get('/dashboard/traffic', adminController.getTrafficAnalytics);
+router.get('/dashboard/categories', adminController.getCategoryAnalytics);
+router.get('/dashboard/leads', adminController.getLeadAnalytics);
+router.get('/dashboard/subscribers', adminController.getSubscriberAnalytics);
+router.get('/dashboard/portfolio', adminController.getContentPortfolio);
+
 // Landing page submissions
 router.get('/submissions', hasPermission('content.read'), adminController.getSubmissions);
 

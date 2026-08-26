@@ -1,405 +1,480 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
-import { User, Mail, Lock, Phone, ArrowRight, Eye, EyeOff, Newspaper, Mic, Mail as MailIcon, Trophy, Shield, CheckCircle, XCircle } from 'lucide-react';
-import axios from 'axios';
+import {
+  User, Mail, Lock, Phone, ArrowRight,
+  Eye, EyeOff, AlertCircle, Loader2,
+} from 'lucide-react';
+import SaaSLeadJourneyAnimation from '../components/auth/SaaSLeadJourneyAnimation';
 
-const PERKS = [
-  { icon: Newspaper, text: 'Access 500+ exclusive articles' },
-  { icon: Mic, text: 'Expert interviews & podcasts' },
-  { icon: MailIcon, text: 'Weekly tech digest newsletter' },
-  { icon: Trophy, text: 'Publish your own content' },
-];
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
+  /* ── Absolutely no scroll ── */
+  .rp-root {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* LEFT */
+  .rp-left {
+    width: 50%;
+    flex-shrink: 0;
+    display: none;
+    overflow: hidden;
+  }
+  @media (min-width: 1024px) { .rp-left { display: block; } }
+
+  /* RIGHT — clean white */
+  .rp-right {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  /* White card */
+  .rp-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 24px;
+    padding: 22px 28px 18px;
+    background: #ffffff;
+    border: 1px solid #E8EDF5;
+    border-radius: 22px;
+    box-shadow:
+      0 4px 24px rgba(11,31,77,0.08),
+      0 1px 4px rgba(11,31,77,0.06);
+    animation: rCardIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  @keyframes rCardIn {
+    from { opacity:0; transform:translateY(24px) scale(0.96); }
+    to   { opacity:1; transform:none; }
+  }
+
+  /* Standalone Animated Logo — Clean, Enlarged & Floating */
+  .rp-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .rp-logo-img {
+    height: 72px;
+    width: auto;
+    max-width: 250px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 16px rgba(11, 31, 77, 0.12));
+    animation: rpLogoLiveFloat 3.8s ease-in-out infinite alternate;
+    transition: transform 0.3s ease, filter 0.3s ease;
+    cursor: pointer;
+  }
+  .rp-logo-img:hover {
+    transform: translateY(-8px) scale(1.06);
+    filter: drop-shadow(0 12px 24px rgba(247, 148, 29, 0.28));
+  }
+  @keyframes rpLogoLiveFloat {
+    0% {
+      transform: translateY(0px) scale(1);
+      filter: drop-shadow(0 4px 10px rgba(11, 31, 77, 0.08));
+    }
+    50% {
+      transform: translateY(-8px) scale(1.03);
+      filter: drop-shadow(0 14px 22px rgba(247, 148, 29, 0.22));
+    }
+    100% {
+      transform: translateY(0px) scale(1);
+      filter: drop-shadow(0 4px 10px rgba(11, 31, 77, 0.08));
+    }
+  }
+  .rp-logo-fb {
+    width: 68px; height: 68px;
+    border-radius: 18px;
+    background: linear-gradient(135deg,#0B1F4D,#1a365d);
+    color:#fff; font-weight:800; font-size:1.3rem;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 10px 24px rgba(11,31,77,0.25);
+    animation: rpLogoLiveFloat 3.8s ease-in-out infinite alternate;
+  }
+
+  /* Heading / quote */
+  .rp-heading { text-align:center; margin-bottom:14px; }
+  .rp-heading h1 {
+    font-family:'Playfair Display',serif;
+    font-size:1.35rem; font-weight:700;
+    color:#0F172A; line-height:1.22;
+    margin-bottom:4px; letter-spacing:-0.02em;
+  }
+  .rp-heading h1 em { font-style:italic; color:#F7941D; }
+  .rp-heading p {
+    font-size:.75rem; color:#64748B;
+    line-height:1.45; font-weight:400;
+  }
+
+  /* Name grid */
+  .rp-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+
+  /* Field — super compact */
+  .rp-f { margin-bottom:8px; }
+  .rp-lbl {
+    display:block; font-size:.68rem; font-weight:600;
+    color:#475569; margin-bottom:4px; letter-spacing:.03em;
+  }
+  .rp-iw { position:relative; }
+  .rp-ii {
+    position:absolute; left:11px; top:50%; transform:translateY(-50%);
+    width:14px; height:14px; color:#94A3B8;
+    pointer-events:none; z-index:2; transition:color .2s;
+  }
+  .rp-iw:focus-within .rp-ii { color:#0B1F4D; }
+  .rp-input {
+    width:100%; height:38px;
+    padding:0 11px 0 34px;
+    border-radius:9px;
+    font-size:.82rem; font-family:'DM Sans',sans-serif;
+    outline:none; box-sizing:border-box;
+    transition:all .22s cubic-bezier(.22,1,.36,1);
+    background:#F8FAFC;
+    border:1.5px solid #E2E8F0;
+    color:#0F172A;
+  }
+  .rp-input::placeholder { color:#94A3B8; }
+  .rp-input:focus {
+    border-color:#0B1F4D;
+    background:#ffffff;
+    box-shadow:0 0 0 3px rgba(11,31,77,0.08);
+  }
+  .rp-input--e { border-color:#DC2626!important; }
+  .rp-eye {
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer;
+    color:#94A3B8; padding:3px; border-radius:5px;
+    transition:color .2s; z-index:2; line-height:0;
+  }
+  .rp-eye:hover { color:#475569; }
+  .rp-ferr {
+    font-size:.65rem; color:#DC2626; margin-top:2px;
+    display:flex; align-items:center; gap:3px;
+  }
+
+  /* Strength — minimal */
+  .rp-str { margin-top:4px; display:flex; align-items:center; gap:6px; }
+  .rp-str-track {
+    flex:1; height:2.5px; border-radius:2px;
+    background:#E2E8F0; overflow:hidden;
+  }
+  .rp-str-fill { height:100%; border-radius:2px; transition:width .4s, background .3s; }
+  .rp-str-lbl { font-size:.6rem; font-weight:600; min-width:34px; text-align:right; }
+  .rp-rules { display:flex; flex-wrap:wrap; gap:2px 9px; margin-top:3px; }
+  .rp-rule {
+    display:flex; align-items:center; gap:3px;
+    font-size:.6rem; color:#94A3B8;
+  }
+  .rp-rule--p { color:#16A34A; }
+  .rp-dot { width:4px; height:4px; border-radius:50%; background:#CBD5E1; flex-shrink:0; }
+  .rp-rule--p .rp-dot { background:#16A34A; }
+
+  /* Agreement */
+  .rp-agree { display:flex; align-items:flex-start; gap:7px; margin-bottom:10px; margin-top:2px; }
+  .rp-cb {
+    width:15px; height:15px; border-radius:4px;
+    border:1.5px solid #CBD5E1;
+    appearance:none; -webkit-appearance:none;
+    cursor:pointer; transition:all .2s; position:relative;
+    flex-shrink:0; margin-top:2px; background:#ffffff;
+  }
+  .rp-cb:checked { background:#0B1F4D; border-color:#0B1F4D; }
+  .rp-cb:checked::after {
+    content:'✓'; position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:8px; font-weight:800;
+  }
+  .rp-agree-txt {
+    font-size:.73rem; color:#64748B;
+    line-height:1.5; cursor:pointer;
+  }
+  .rp-agree-txt a { color:#0B1F4D; text-decoration:none; transition:color .2s; }
+  .rp-agree-txt a:hover { color:#F7941D; }
+
+  /* Button */
+  .rp-btn {
+    width:100%; height:44px; border:none; border-radius:11px;
+    font-family:'DM Sans',sans-serif; font-size:.88rem; font-weight:700;
+    color:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    position:relative; overflow:hidden;
+    transition:all .3s cubic-bezier(.22,1,.36,1);
+    background:linear-gradient(135deg,#F7941D 0%,#E67E00 100%);
+    box-shadow:0 4px 20px rgba(247,148,29,.38);
+    margin-bottom:12px;
+  }
+  .rp-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 28px rgba(247,148,29,.52); }
+  .rp-btn:active:not(:disabled) { transform:translateY(0); }
+  .rp-btn:disabled { opacity:.55; cursor:not-allowed; }
+  .rp-btn::after {
+    content:''; position:absolute; top:0; left:-100%;
+    width:100%; height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
+    transition:left .55s;
+  }
+  .rp-btn:hover:not(:disabled)::after { left:100%; }
+
+  /* Switch */
+  .rp-switch { text-align:center; font-size:.78rem; color:#64748B; }
+  .rp-switch a { font-weight:700; text-decoration:none; color:#0B1F4D; margin-left:4px; transition:color .2s; }
+  .rp-switch a:hover { color:#F7941D; }
+
+  @keyframes spin { to { transform:rotate(360deg); } }
+`;
 
 const Register = () => {
-  const { darkMode } = useTheme();
-  const { mainLogo } = useSiteSettings();
+  const { cmsLogo, mainLogo } = useSiteSettings();
+  const logoSrc               = cmsLogo || mainLogo;
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [agreement, setAgreement] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [errors, setErrors] = useState({});
-  const { register } = useAuth();
-  const navigate = useNavigate();
+  const [showPw, setShowPw]   = useState(false);
+  const [showCPw, setShowCPw] = useState(false);
+  const [agree, setAgree]     = useState(false);
+  const [fd, setFd]           = useState({ firstName:'', lastName:'', email:'', phone:'', password:'', confirmPassword:'' });
+  const [errors, setErrors]   = useState({});
+  const { register }          = useAuth();
+  const navigate              = useNavigate();
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 12) {
-      newErrors.password = 'At least 12 characters required';
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(formData.password)) {
-      newErrors.password = 'Must include uppercase, lowercase, number & special character';
-    }
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
-    if (!agreement) newErrors.agreement = 'Please agree to continue';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const validate = () => {
+    const e = {};
+    if (!fd.firstName.trim()) e.firstName = 'Required';
+    if (!fd.lastName.trim())  e.lastName  = 'Required';
+    if (!fd.email.trim())     e.email = 'Required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fd.email)) e.email = 'Invalid email';
+    if (!fd.password)         e.password = 'Required';
+    else if (fd.password.length < 12) e.password = 'Min 12 characters';
+    else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(fd.password))
+      e.password = 'Need uppercase, number & symbol';
+    if (!fd.confirmPassword)              e.confirmPassword = 'Required';
+    else if (fd.password !== fd.confirmPassword) e.confirmPassword = 'Passwords do not match';
+    if (!agree) e.agree = 'Please agree to continue';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
-  const getPasswordStrength = (password) => {
-    let strength = 0;
-    if (password.length >= 12) strength += 1;
-    if (password.length >= 16) strength += 1;
-    if (/[a-z]/.test(password)) strength += 1;
-    if (/[A-Z]/.test(password)) strength += 1;
-    if (/\d/.test(password)) strength += 1;
-    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength += 1;
-    return strength;
+  const pwStr = (pw) => {
+    let s = 0;
+    if (pw.length >= 12) s++;
+    if (pw.length >= 16) s++;
+    if (/[a-z]/.test(pw)) s++;
+    if (/[A-Z]/.test(pw)) s++;
+    if (/\d/.test(pw))    s++;
+    if (/[!@#$%^&*]/.test(pw)) s++;
+    return s;
   };
-
-  const getStrengthColor = (strength) => {
-    if (strength <= 2) return '#ef4444';
-    if (strength <= 4) return '#f59e0b';
-    return '#10b981';
-  };
-
-  const getStrengthLabel = (strength) => {
-    if (strength <= 2) return 'Weak';
-    if (strength <= 4) return 'Medium';
-    return 'Strong';
-  };
+  const strColor = (s) => s <= 2 ? '#ef4444' : s <= 4 ? '#f59e0b' : '#10b981';
+  const strLabel = (s) => s <= 2 ? 'Weak' : s <= 4 ? 'Medium' : 'Strong';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
+    if (!validate()) return;
     setLoading(true);
     try {
       const result = await register({
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email,
-        password: formData.password,
-        role: 'user'
+        first_name: fd.firstName, last_name: fd.lastName,
+        email: fd.email, password: fd.password, role: 'user',
       });
-      if (result.success) {
-        navigate('/');
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+      if (result.success) navigate('/');
+    } catch (err) { console.error(err); }
+    finally { setLoading(false); }
   };
 
-  const handleChange = (e) => {
+  const hc = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
+    setFd((p) => ({ ...p, [name]: value }));
+    if (errors[name]) setErrors((p) => ({ ...p, [name]: '' }));
   };
+
+  const s = pwStr(fd.password);
+  const rules = [
+    { label: '12+',       pass: fd.password.length >= 12 },
+    { label: 'Lower',     pass: /[a-z]/.test(fd.password) },
+    { label: 'Upper',     pass: /[A-Z]/.test(fd.password) },
+    { label: 'Number',    pass: /\d/.test(fd.password) },
+    { label: 'Symbol',    pass: /[!@#$%^&*]/.test(fd.password) },
+  ];
 
   return (
-    <div className="min-h-screen flex" style={{ background: darkMode ? '#0f172a' : 'var(--color-bg-alt)' }}>
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden bg-gradient-to-br from-[var(--color-accent)] via-[var(--color-accent-hover)] to-[var(--color-success)]">
-        {/* Background decorations */}
-        <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-white/8 pointer-events-none" />
-        <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
+    <>
+      <style>{styles}</style>
+      <div className="rp-root">
 
-        {/* Floating glass cards */}
-        <div className="absolute top-24 right-16 w-28 h-28 bg-white/5 rounded-2xl border border-white/10 pointer-events-none" />
-        <div className="absolute bottom-28 left-20 w-20 h-20 bg-white/4 rounded-xl border border-white/8 pointer-events-none" />
+        {/* LEFT — flowchart */}
+        <div className="rp-left"><SaaSLeadJourneyAnimation /></div>
 
-        {/* Logo */}
-        <div className="mb-12 self-start">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-2xl">
-            {mainLogo ? (
-              <img src={mainLogo} alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
-            ) : (
-              <div className="h-12 w-12 flex items-center justify-center text-white font-bold text-xl rounded-xl bg-white/20">
-                TGS
-              </div>
-            )}
-          </div>
-        </div>
+        {/* RIGHT — gradient + glass card */}
+        <div className="rp-right">
+          <div className="rp-card">
 
-        {/* Content */}
-        <div className="text-center w-full">
-          <div className="text-xs font-bold text-white uppercase tracking-[0.2em] mb-4">Join Free Today</div>
-          <h1 className="text-white font-black text-4xl leading-tight mb-4 tracking-tight">
-            Join 50,000+ <span className="bg-gradient-to-r from-white to-[var(--color-primary-light)] bg-clip-text text-transparent">Tech Professionals</span>
-          </h1>
-          <p className="text-white/60 text-base leading-relaxed max-w-[300px] mx-auto mb-10">
-            Get exclusive content, expert insights, and the latest tech news — completely free.
-          </p>
-        </div>
-
-        {/* Perks */}
-        <div className="flex flex-col gap-4 w-full mb-10">
-          {PERKS.map((perk, index) => (
-            <div key={index} className="flex items-center gap-4 group">
-              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-all duration-300">
-                <perk.icon className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-sm text-white/90 font-medium group-hover:text-white transition-colors duration-300">{perk.text}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Trust badges */}
-        <div className="flex gap-8 justify-center w-full">
-          {[
-            { icon: Shield, label: 'Secure' },
-            { icon: CheckCircle, label: 'Free Forever' },
-            { icon: XCircle, label: 'No Spam' },
-          ].map((badge) => (
-            <div key={badge.label} className="flex items-center gap-2 group">
-              <badge.icon className="w-4 h-4 text-white/80 group-hover:text-white transition-colors" />
-              <span className="text-xs text-white/80 font-semibold group-hover:text-white transition-colors">{badge.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
-        <div className="w-full max-w-[400px] md:max-w-md space-y-6">
-          <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-heading)]">Create Account</h1>
-            <p className="text-sm text-[var(--color-muted)]">Join the TGS Tech Info community today</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-[var(--color-body)]">First Name</label>
-                <div className="relative group">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                  <input
-                    name="firstName"
-                    placeholder="John"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
-                    required
-                  />
-                </div>
-                {errors.firstName && <p className="text-xs text-[var(--color-error)]">{errors.firstName}</p>}
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-[var(--color-body)]">Last Name</label>
-                <div className="relative group">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                  <input
-                    name="lastName"
-                    placeholder="Doe"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
-                    required
-                  />
-                </div>
-                {errors.lastName && <p className="text-xs text-[var(--color-error)]">{errors.lastName}</p>}
-              </div>
+            {/* Standalone Animated Logo */}
+            <div className="rp-logo">
+              {logoSrc
+                ? <img src={logoSrc} alt="TGS Tech Info" className="rp-logo-img" />
+                : <div className="rp-logo-fb">TGS</div>
+              }
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-[var(--color-body)]">Email Address</label>
-              <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                <input
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
-                  required
-                />
-              </div>
-              {errors.email && <p className="text-xs text-[var(--color-error)]">{errors.email}</p>}
+            {/* Quote heading */}
+            <div className="rp-heading">
+              <h1>Start your <em>publishing</em> journey.<br />Get the leads.</h1>
+              <p>Join thousands of publishers growing with TGS Tech Info.</p>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-[var(--color-body)]">Phone Number (Optional)</label>
-              <div className="relative group">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                <input
-                  name="phone"
-                  placeholder="+1 234 567 8900"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
-                />
-              </div>
-            </div>
+            {/* Form */}
+            <form onSubmit={handleSubmit} noValidate>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-[var(--color-body)]">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                <input
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Create a strong password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`pl-10 pr-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-body)] transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-              {formData.password && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                      <div
-                        className="h-full transition-all duration-300"
-                        style={{
-                          width: `${(getPasswordStrength(formData.password) / 6) * 100}%`,
-                          backgroundColor: getStrengthColor(getPasswordStrength(formData.password))
-                        }}
-                      />
-                    </div>
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: getStrengthColor(getPasswordStrength(formData.password)) }}
-                    >
-                      {getStrengthLabel(getPasswordStrength(formData.password))}
-                    </span>
+              {/* Name row */}
+              <div className="rp-grid">
+                <div className="rp-f">
+                  <label htmlFor="rg-fn" className="rp-lbl">First Name</label>
+                  <div className="rp-iw">
+                    <User className="rp-ii" />
+                    <input id="rg-fn" name="firstName" placeholder="John"
+                      value={fd.firstName} onChange={hc}
+                      className={`rp-input${errors.firstName?' rp-input--e':''}`}
+                      autoComplete="given-name" required />
                   </div>
-                  <div className="text-xs text-[var(--color-muted)] space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className={formData.password.length >= 12 ? 'text-green-500' : 'text-gray-400'}>
-                        {formData.password.length >= 12 ? '✓' : '○'}
-                      </span>
-                      <span>At least 12 characters</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={/[a-z]/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
-                        {/[a-z]/.test(formData.password) ? '✓' : '○'}
-                      </span>
-                      <span>Lowercase letter</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={/[A-Z]/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
-                        {/[A-Z]/.test(formData.password) ? '✓' : '○'}
-                      </span>
-                      <span>Uppercase letter</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={/\d/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
-                        {/\d/.test(formData.password) ? '✓' : '○'}
-                      </span>
-                      <span>Number</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-500' : 'text-gray-400'}>
-                        {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? '✓' : '○'}
-                      </span>
-                      <span>Special character</span>
-                    </div>
-                  </div>
+                  {errors.firstName && <div className="rp-ferr"><AlertCircle size={10}/>{errors.firstName}</div>}
                 </div>
-              )}
-              {errors.password && <p className="text-xs text-[var(--color-error)]">{errors.password}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-[var(--color-body)]">Confirm Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                <input
-                  name="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`pl-10 pr-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400 border-gray-600' : 'bg-white text-gray-900 placeholder-gray-500 border-gray-300'}`}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-body)] transition-colors"
-                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                <div className="rp-f">
+                  <label htmlFor="rg-ln" className="rp-lbl">Last Name</label>
+                  <div className="rp-iw">
+                    <User className="rp-ii" />
+                    <input id="rg-ln" name="lastName" placeholder="Doe"
+                      value={fd.lastName} onChange={hc}
+                      className={`rp-input${errors.lastName?' rp-input--e':''}`}
+                      autoComplete="family-name" required />
+                  </div>
+                  {errors.lastName && <div className="rp-ferr"><AlertCircle size={10}/>{errors.lastName}</div>}
+                </div>
               </div>
-              {errors.confirmPassword && <p className="text-xs text-[var(--color-error)]">{errors.confirmPassword}</p>}
+
+              {/* Email */}
+              <div className="rp-f">
+                <label htmlFor="rg-em" className="rp-lbl">Email Address</label>
+                <div className="rp-iw">
+                  <Mail className="rp-ii" />
+                  <input id="rg-em" name="email" type="email" placeholder="you@example.com"
+                    value={fd.email} onChange={hc}
+                    className={`rp-input${errors.email?' rp-input--e':''}`}
+                    autoComplete="email" required />
+                </div>
+                {errors.email && <div className="rp-ferr"><AlertCircle size={10}/>{errors.email}</div>}
+              </div>
+
+              {/* Phone */}
+              <div className="rp-f">
+                <label htmlFor="rg-ph" className="rp-lbl">
+                  Phone <span style={{ fontWeight:400, color:'rgba(255,255,255,.2)', fontSize:'.62rem' }}>(optional)</span>
+                </label>
+                <div className="rp-iw">
+                  <Phone className="rp-ii" />
+                  <input id="rg-ph" name="phone" type="tel" placeholder="+1 234 567 8900"
+                    value={fd.phone} onChange={hc}
+                    className="rp-input" autoComplete="tel" />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="rp-f">
+                <label htmlFor="rg-pw" className="rp-lbl">Password</label>
+                <div className="rp-iw">
+                  <Lock className="rp-ii" />
+                  <input id="rg-pw" name="password"
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="Create a strong password"
+                    value={fd.password} onChange={hc}
+                    className={`rp-input${errors.password?' rp-input--e':''}`}
+                    style={{ paddingRight:40 }}
+                    autoComplete="new-password" required />
+                  <button type="button" className="rp-eye"
+                    onClick={() => setShowPw(!showPw)} aria-label="Toggle">
+                    {showPw ? <EyeOff size={14}/> : <Eye size={14}/>}
+                  </button>
+                </div>
+                {fd.password && (
+                  <>
+                    <div className="rp-str">
+                      <div className="rp-str-track">
+                        <div className="rp-str-fill" style={{ width:`${(s/6)*100}%`, background:strColor(s) }} />
+                      </div>
+                      <span className="rp-str-lbl" style={{ color:strColor(s) }}>{strLabel(s)}</span>
+                    </div>
+                    <div className="rp-rules">
+                      {rules.map((r) => (
+                        <div key={r.label} className={`rp-rule${r.pass?' rp-rule--p':''}`}>
+                          <div className="rp-dot"/>{r.label}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {errors.password && <div className="rp-ferr"><AlertCircle size={10}/>{errors.password}</div>}
+              </div>
+
+              {/* Confirm password */}
+              <div className="rp-f">
+                <label htmlFor="rg-cpw" className="rp-lbl">Confirm Password</label>
+                <div className="rp-iw">
+                  <Lock className="rp-ii" />
+                  <input id="rg-cpw" name="confirmPassword"
+                    type={showCPw ? 'text' : 'password'}
+                    placeholder="Confirm your password"
+                    value={fd.confirmPassword} onChange={hc}
+                    className={`rp-input${errors.confirmPassword?' rp-input--e':''}`}
+                    style={{ paddingRight:40 }}
+                    autoComplete="new-password" required />
+                  <button type="button" className="rp-eye"
+                    onClick={() => setShowCPw(!showCPw)} aria-label="Toggle">
+                    {showCPw ? <EyeOff size={14}/> : <Eye size={14}/>}
+                  </button>
+                </div>
+                {errors.confirmPassword && <div className="rp-ferr"><AlertCircle size={10}/>{errors.confirmPassword}</div>}
+              </div>
+
+              {/* Agreement */}
+              <div className="rp-agree">
+                <input type="checkbox" id="rg-ag" checked={agree}
+                  onChange={(e) => setAgree(e.target.checked)} className="rp-cb" />
+                <label htmlFor="rg-ag" className="rp-agree-txt">
+                  I agree to the <Link to="/terms-of-use">Terms of Service</Link> and <Link to="/privacy-policy">Privacy Policy</Link>
+                </label>
+              </div>
+              {errors.agree && <div className="rp-ferr" style={{ marginTop:-6, marginBottom:8 }}><AlertCircle size={10}/>{errors.agree}</div>}
+
+              {/* Submit */}
+              <button id="register-submit" type="submit" disabled={loading} className="rp-btn">
+                {loading
+                  ? <><Loader2 size={15} style={{ animation:'spin 1s linear infinite' }}/><span>Creating account…</span></>
+                  : <><span>Create Free Account</span><ArrowRight size={15}/></>
+                }
+              </button>
+            </form>
+
+            {/* Switch */}
+            <div className="rp-switch">
+              Already have an account?<Link to="/login">Sign in →</Link>
             </div>
 
-            <div className="flex items-start space-x-2">
-              <input
-                type="checkbox"
-                id="agreement"
-                checked={agreement}
-                onChange={(e) => setAgreement(e.target.checked)}
-                className={`h-4 w-4 mt-0.5 rounded-sm focus:ring-2 focus:ring-blue-500/20 ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
-              />
-              <label htmlFor="agreement" className="text-sm text-[var(--color-body)] cursor-pointer leading-tight">
-                I agree to the{' '}
-                <Link to="/terms-of-use" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-primary-hover)] transition-colors">
-                  Terms of Service
-                </Link>
-                {' '}and{' '}
-                <Link to="/privacy-policy" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-primary-hover)] transition-colors">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-            {errors.agreement && <p className="text-xs text-[var(--color-error)]">{errors.agreement}</p>}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white shadow-lg shadow-[var(--color-accent)]/20 transition-all duration-200 hover:shadow-xl hover:shadow-[var(--color-accent)]/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Creating account...' : (
-                <>
-                  <span>Create Free Account</span>
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="flex flex-col space-y-4">
-            <div className="text-center text-sm">
-              <span className="text-[var(--color-muted)]">Already have an account? </span>
-              <Link to="/login" className="text-[var(--color-primary)] font-bold hover:text-[var(--color-primary-hover)] transition-colors">
-                Sign in →
-              </Link>
-            </div>
-          </div>
-        </div>
+          </div>{/* /card */}
+        </div>{/* /right */}
       </div>
-    </div>
+    </>
   );
 };
 

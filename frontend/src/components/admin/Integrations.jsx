@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Typography, Button, Switch, Tag, Space, Divider, Alert, List, Avatar, Grid, ConfigProvider } from 'antd';
 import {
   ApiOutlined,
@@ -80,7 +80,7 @@ const Integrations = () => {
   const categories = [...new Set(integrations.map(int => int.category))];
 
   return (
-    <div className="p-4 md:p-6 lg:p-8" style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
+    <div className="p-4 md:p-6 lg:p-8" style={{ background: darkMode ? '#0F172A' : '#f8fafc', minHeight: '100vh' }}>
       <div style={{ marginBottom: isMobile ? 16 : 32 }}>
         <Title level={isMobile ? 3 : 2} style={{ fontSize: isMobile ? 24 : 30, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827', marginBottom: 8 }}>
           <ApiOutlined /> Integrations

@@ -49,6 +49,8 @@ const TYPE_MAP = {
   events:         { type: 'event',        title: 'Events',        accent: '#fdcb6e', leftImg: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80' },
   ebooks:         { type: 'ebook',        title: 'eBooks',        accent: '#00cec9', leftImg: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80' },
   whitepapers:    { type: 'whitepaper',   title: 'Whitepapers',   accent: '#e84393', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
+  'case-studies': { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
+  'case-study':   { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
   'landing-pages': { type: 'landing-page', title: 'Landing Pages', accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&q=80' },
 };
 

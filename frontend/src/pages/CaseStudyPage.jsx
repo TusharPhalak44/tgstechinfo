@@ -22,6 +22,15 @@ const CaseStudyPage = () => {
   useEffect(() => {
     if (!slug) { setError('Invalid case study.'); setLoading(false); return; }
 
+    try {
+      if (localStorage.getItem(`cs_gated_${slug}`) === 'true') {
+        setGateVisible(false);
+        setGateSubmitted(true);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
     axios.get(`/api/public/case-study/${slug}`)
       .then(r => {
         setCaseStudy(r.data?.data || null);
@@ -51,6 +60,11 @@ const CaseStudyPage = () => {
         slug: slug,
         ...formValues,
       });
+      try {
+        localStorage.setItem(`cs_gated_${slug}`, 'true');
+      } catch (e) {
+        console.error(e);
+      }
       setGateVisible(false);
       setGateSubmitted(true);
     } catch (err) {

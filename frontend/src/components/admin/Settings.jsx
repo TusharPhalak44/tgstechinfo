@@ -1,28 +1,98 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Upload, Button, message, Typography, Space, Divider, Input, Switch, Tabs } from 'antd';
-import { UploadOutlined, DeleteOutlined, PictureOutlined, SaveOutlined } from '@ant-design/icons';
+import { Card, Form, Upload, Button, message, Input, Tabs, ConfigProvider, Row, Col, Space, Tooltip } from 'antd';
+import { UploadOutlined, DeleteOutlined, PictureOutlined, SaveOutlined, SettingOutlined, CheckCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
 import axios from 'axios';
 
-const { Title, Text } = Typography;
-
 const DEFAULT_LOGO_SIZES = {
-  main: { height: 60, width: 200 },
-  navbar: { height: 40, width: 120 },
-  footer: { height: 50, width: 150 }
+  website_main_logo: { width: 200, height: 60 },
+  website_navbar_logo: { width: 120, height: 40 },
+  website_footer_logo: { width: 150, height: 50 },
+  website_favicon: { width: 32, height: 32 },
+  cms_logo1: { width: 180, height: 50 },
+  cms_logo2: { width: 40, height: 40 },
+  cms_favicon: { width: 32, height: 32 }
 };
 
 const deepEqualLogoSizes = (a, b) => {
   if (!a || !b) return false;
-  return ['main', 'navbar', 'footer'].every(k =>
+  return Object.keys(DEFAULT_LOGO_SIZES).every(k =>
     a[k]?.height === b[k]?.height && a[k]?.width === b[k]?.width
   );
 };
 
+/* ─────────────────────────────────────────────
+   STYLING SYSTEM & ANIMATIONS (Dashboard Parity)
+───────────────────────────────────────────── */
+const settingsStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;700&display=swap');
+
+  .set-root {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', -apple-system, sans-serif;
+    animation: setFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @keyframes setFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .set-stagger-1 { animation: setSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
+  .set-stagger-2 { animation: setSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.10s both; }
+  .set-stagger-3 { animation: setSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both; }
+
+  @keyframes setSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .set-beacon-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #06B6D4;
+    position: relative;
+    display: inline-block;
+  }
+  .set-beacon-dot::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 50%;
+    border: 2px solid #06B6D4;
+    animation: setPulse 2s ease-out infinite;
+  }
+  @keyframes setPulse {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    70% { transform: scale(2.2); opacity: 0; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  .set-kpi-card {
+    border-radius: 16px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .set-kpi-card:hover {
+    transform: translateY(-3px);
+  }
+`;
+
 const Settings = () => {
   const { darkMode } = useTheme();
+  const D = darkMode;
   const { refreshSettings } = useSiteSettings();
+
   const [loading, setLoading] = useState(false);
   const [cmsLogo1Url, setCmsLogo1Url] = useState('');
   const [cmsLogo2Url, setCmsLogo2Url] = useState('');
@@ -59,11 +129,8 @@ const Settings = () => {
         setWebsiteMainLogoUrl(settings.website_main_logo || '');
         setWebsiteNavbarLogoUrl(settings.website_navbar_logo || '');
         setWebsiteFooterLogoUrl(settings.website_footer_logo || '');
-        let parsedLogoSizes = { 
-          main: { height: 60, width: 200 }, 
-          navbar: { height: 40, width: 120 }, 
-          footer: { height: 50, width: 150 } 
-        };
+        
+        let parsedLogoSizes = { ...DEFAULT_LOGO_SIZES };
         if (settings.logo_sizes) {
           try {
             const rawSizes = typeof settings.logo_sizes === 'string' 
@@ -71,23 +138,37 @@ const Settings = () => {
               : settings.logo_sizes;
             if (rawSizes) {
               parsedLogoSizes = {
-                main: { 
-                  height: (rawSizes.main && rawSizes.main.height) || 60, 
-                  width: (rawSizes.main && rawSizes.main.width) || 200 
+                website_main_logo: {
+                  width: rawSizes.website_main_logo?.width || rawSizes.main?.width || 200,
+                  height: rawSizes.website_main_logo?.height || rawSizes.main?.height || 60
                 },
-                navbar: { 
-                  height: (rawSizes.navbar && rawSizes.navbar.height) || 40, 
-                  width: (rawSizes.navbar && rawSizes.navbar.width) || 120 
+                website_navbar_logo: {
+                  width: rawSizes.website_navbar_logo?.width || rawSizes.navbar?.width || 120,
+                  height: rawSizes.website_navbar_logo?.height || rawSizes.navbar?.height || 40
                 },
-                footer: { 
-                  height: (rawSizes.footer && rawSizes.footer.height) || 50, 
-                  width: (rawSizes.footer && rawSizes.footer.width) || 150 
+                website_footer_logo: {
+                  width: rawSizes.website_footer_logo?.width || rawSizes.footer?.width || 150,
+                  height: rawSizes.website_footer_logo?.height || rawSizes.footer?.height || 50
+                },
+                website_favicon: {
+                  width: rawSizes.website_favicon?.width || 32,
+                  height: rawSizes.website_favicon?.height || 32
+                },
+                cms_logo1: {
+                  width: rawSizes.cms_logo1?.width || 180,
+                  height: rawSizes.cms_logo1?.height || 50
+                },
+                cms_logo2: {
+                  width: rawSizes.cms_logo2?.width || 40,
+                  height: rawSizes.cms_logo2?.height || 40
+                },
+                cms_favicon: {
+                  width: rawSizes.cms_favicon?.width || 32,
+                  height: rawSizes.cms_favicon?.height || 32
                 }
               };
             }
-          } catch (e) {
-            console.error('Error parsing logo sizes:', e);
-          }
+          } catch (e) {}
         }
         setLogoSizes(parsedLogoSizes);
         setOriginalLogoSizes(parsedLogoSizes);
@@ -96,15 +177,12 @@ const Settings = () => {
         setSiteKeywords(settings.site_keywords || '');
       }
     } catch (error) {
-      console.error('Fetch settings error:', error);
       message.error('Failed to load settings');
     } finally {
       setLoading(false);
     }
   };
 
-  // Compress image to max 400px wide at 75% quality before storing as base64.
-  // This keeps logo data well under MySQL's max_allowed_packet limit on hosted servers.
   const compressImageToBase64 = (file, maxWidth = 400, quality = 0.75) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -124,7 +202,6 @@ const Settings = () => {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          // Use image/png for images with transparency, else jpeg for smaller size
           const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
           resolve(canvas.toDataURL(mimeType, quality));
         };
@@ -138,9 +215,8 @@ const Settings = () => {
     try {
       const compressed = await compressImageToBase64(file);
       setPendingLogoUploads(prev => ({ ...prev, [type]: compressed }));
-      message.success('Image ready to save. Click "Save Changes" to apply.');
+      message.success('Image processed. Click "Save Branding Changes" to persist.');
     } catch (error) {
-      console.error('Upload error:', error);
       message.error('Failed to process image');
     }
   };
@@ -149,99 +225,47 @@ const Settings = () => {
     setLoading(true);
     try {
       const updates = {};
-      
       for (const [type, base64Url] of Object.entries(pendingLogoUploads)) {
         await axios.put(`/api/site-settings/logo/${type}`, { imageData: base64Url });
         updates[type] = base64Url;
       }
       
-      // Update local state after successful save
       if (updates.cms_logo1) setCmsLogo1Url(updates.cms_logo1);
       if (updates.cms_logo2) setCmsLogo2Url(updates.cms_logo2);
-      if (updates.cms_favicon) {
-        setCmsFaviconUrl(updates.cms_favicon);
-        updateFavicon(updates.cms_favicon);
-      }
+      if (updates.cms_favicon) setCmsFaviconUrl(updates.cms_favicon);
       if (updates.website_logo) setWebsiteLogoUrl(updates.website_logo);
       if (updates.website_favicon) setWebsiteFaviconUrl(updates.website_favicon);
       if (updates.website_main_logo) setWebsiteMainLogoUrl(updates.website_main_logo);
       if (updates.website_navbar_logo) setWebsiteNavbarLogoUrl(updates.website_navbar_logo);
       if (updates.website_footer_logo) setWebsiteFooterLogoUrl(updates.website_footer_logo);
       
-      // Save logo sizes (runs even when no uploads, so size-only changes persist)
       await axios.put('/api/site-settings', { logo_sizes: logoSizes });
       
       setPendingLogoUploads({});
-      // Reset dirty baseline so the Save button goes away after size-only saves
       setOriginalLogoSizes(logoSizes);
-      message.success('Logo changes saved successfully');
+      message.success('Logo & dimension changes saved successfully');
       await refreshSettings?.();
     } catch (error) {
-      console.error('Save error:', error);
-      message.error('Failed to save logo changes');
+      message.error('Failed to save branding changes');
     } finally {
       setLoading(false);
     }
-  };
-
-  const updateFavicon = (url) => {
-    let link = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = url;
-  };
-
-  const beforeUpload = (file) => {
-    const isImage = file.type.startsWith('image/');
-    if (!isImage) {
-      message.error('You can only upload image files!');
-      return false;
-    }
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error('Image must be smaller than 2MB!');
-      return false;
-    }
-    return true;
   };
 
   const handleRemoveImage = async (type) => {
     setLoading(true);
     try {
       await axios.put(`/api/site-settings/logo/${type}`, { imageData: '' });
-      
-      switch (type) {
-        case 'cms_logo1':
-          setCmsLogo1Url('');
-          break;
-        case 'cms_logo2':
-          setCmsLogo2Url('');
-          break;
-        case 'cms_favicon':
-          setCmsFaviconUrl('');
-          break;
-        case 'website_logo':
-          setWebsiteLogoUrl('');
-          break;
-        case 'website_favicon':
-          setWebsiteFaviconUrl('');
-          break;
-        case 'website_main_logo':
-          setWebsiteMainLogoUrl('');
-          break;
-        case 'website_navbar_logo':
-          setWebsiteNavbarLogoUrl('');
-          break;
-        case 'website_footer_logo':
-          setWebsiteFooterLogoUrl('');
-          break;
-      }
+      if (type === 'cms_logo1') setCmsLogo1Url('');
+      if (type === 'cms_logo2') setCmsLogo2Url('');
+      if (type === 'cms_favicon') setCmsFaviconUrl('');
+      if (type === 'website_logo') setWebsiteLogoUrl('');
+      if (type === 'website_favicon') setWebsiteFaviconUrl('');
+      if (type === 'website_main_logo') setWebsiteMainLogoUrl('');
+      if (type === 'website_navbar_logo') setWebsiteNavbarLogoUrl('');
+      if (type === 'website_footer_logo') setWebsiteFooterLogoUrl('');
       message.success('Image removed successfully');
     } catch (error) {
-      console.error('Remove error:', error);
       message.error('Failed to remove image');
     } finally {
       setLoading(false);
@@ -258,14 +282,11 @@ const Settings = () => {
         logo_sizes: logoSizes
       });
       message.success('Settings saved successfully');
-      // Reset dirty baseline so Save Logo Changes button also hides
       setOriginalLogoSizes(logoSizes);
-      // Refresh settings to get updated data
       await fetchSettings();
       await refreshSettings?.();
     } catch (error) {
-      console.error('Save settings error:', error);
-      message.error(error.response?.data?.message || 'Failed to save settings');
+      message.error('Failed to save settings');
     } finally {
       setLoading(false);
     }
@@ -276,7 +297,6 @@ const Settings = () => {
       handleImageUpload(file, type);
       setTimeout(() => onSuccess('ok'), 100);
     },
-    beforeUpload,
     showUploadList: false,
   });
 
@@ -294,500 +314,414 @@ const Settings = () => {
     );
   };
 
+  const StatCard = ({ title, value, icon, color = 'primary', accentColor, subtitle }) => {
+    const colorMap = {
+      primary: { bg: D ? 'rgba(6, 182, 212, 0.12)' : 'rgba(6, 182, 212, 0.08)', text: '#06B6D4', border: 'rgba(6, 182, 212, 0.3)' },
+      success: { bg: D ? 'rgba(16, 185, 129, 0.12)' : 'rgba(16, 185, 129, 0.08)', text: '#10B981', border: 'rgba(16, 185, 129, 0.3)' },
+      info: { bg: D ? 'rgba(59, 130, 246, 0.12)' : 'rgba(37, 99, 235, 0.08)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.3)' },
+    };
+    const c = colorMap[color] || colorMap.primary;
+
+    return (
+      <div
+        className="set-kpi-card"
+        style={{
+          background: D
+            ? 'linear-gradient(145deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.65) 100%)'
+            : 'linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)',
+          border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.9)'}`,
+          boxShadow: D
+            ? '0 10px 30px -5px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+            : '0 10px 30px -5px rgba(11, 31, 77, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+        }}
+      >
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: accentColor || c.text }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: D ? '#94A3B8' : '#64748B' }}>
+            {title}
+          </span>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: c.bg, color: c.text, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, border: `1px solid ${c.border}` }}>
+            {icon}
+          </div>
+        </div>
+
+        <div style={{ fontSize: '2rem', fontWeight: 800, letterSpacing: '-0.03em', color: D ? '#F8FAFC' : '#0F172A', lineHeight: 1 }}>
+          {value}
+        </div>
+
+        {subtitle && (
+          <div style={{ marginTop: 8, fontSize: '0.75rem', fontWeight: 600, color: D ? '#64748B' : '#94A3B8' }}>
+            {subtitle}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderLogoCard = (type, title, description) => {
+    const preview = getLogoPreview(type);
+    const sizeConfig = logoSizes[type] || DEFAULT_LOGO_SIZES[type] || { width: 100, height: 40 };
+
+    return (
+      <Card
+        style={{
+          borderRadius: 16,
+          background: D ? 'rgba(15, 23, 42, 0.8)' : '#FFFFFF',
+          border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`,
+          boxShadow: D ? '0 8px 24px rgba(0,0,0,0.3)' : '0 8px 24px rgba(11,31,77,0.05)',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+          <div>
+            <h4 style={{ margin: '0 0 4px', fontSize: '0.92rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A' }}>{title}</h4>
+            <p style={{ fontSize: '0.75rem', color: D ? '#64748B' : '#94A3B8', margin: '0 0 14px' }}>{description}</p>
+
+            {/* Preview Box */}
+            <div
+              style={{
+                height: 130,
+                borderRadius: 12,
+                background: D ? '#0F172A' : '#F1F5F9',
+                border: `2px dashed ${D ? 'rgba(51, 65, 85, 0.8)' : 'rgba(203, 213, 225, 0.8)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 12,
+                marginBottom: 14,
+              }}
+            >
+              {preview ? (
+                <img
+                  src={preview}
+                  alt={title}
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'contain',
+                  }}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', color: D ? '#64748B' : '#94A3B8' }}>
+                  <PictureOutlined style={{ fontSize: 28, display: 'block', marginBottom: 4 }} />
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>No Image Configured</span>
+                </div>
+              )}
+            </div>
+
+            {/* Individual Dimension Settings Control for this exact image */}
+            <div
+              style={{
+                background: D ? 'rgba(30, 41, 59, 0.6)' : '#F8FAFC',
+                padding: '10px 12px',
+                borderRadius: 10,
+                border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`,
+                marginBottom: 14,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: D ? '#94A3B8' : '#64748B' }}>
+                  Asset Dimensions
+                </span>
+                <span style={{ fontSize: '0.7rem', color: '#06B6D4', fontWeight: 700 }}>
+                  {sizeConfig.width} × {sizeConfig.height} px
+                </span>
+              </div>
+
+              <Row gutter={8}>
+                <Col span={12}>
+                  <Input
+                    addonBefore={<span style={{ fontSize: '0.68rem', fontWeight: 700 }}>W</span>}
+                    type="number"
+                    value={sizeConfig.width}
+                    onChange={(e) => setLogoSizes(prev => ({
+                      ...prev,
+                      [type]: { ...(prev[type] || { width: 100, height: 40 }), width: Number(e.target.value) }
+                    }))}
+                    style={{ borderRadius: 6, fontSize: '0.8rem' }}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Input
+                    addonBefore={<span style={{ fontSize: '0.68rem', fontWeight: 700 }}>H</span>}
+                    type="number"
+                    value={sizeConfig.height}
+                    onChange={(e) => setLogoSizes(prev => ({
+                      ...prev,
+                      [type]: { ...(prev[type] || { width: 100, height: 40 }), height: Number(e.target.value) }
+                    }))}
+                    style={{ borderRadius: 6, fontSize: '0.8rem' }}
+                  />
+                </Col>
+              </Row>
+            </div>
+          </div>
+
+          <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Upload {...createUploadProps(type)}>
+              <Button icon={<UploadOutlined />} style={{ borderRadius: 8, fontWeight: 700 }}>
+                Upload Image
+              </Button>
+            </Upload>
+            {preview && (
+              <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage(type)} style={{ borderRadius: 8 }} />
+            )}
+          </Space>
+        </div>
+      </Card>
+    );
+  };
+
+  const hasPendingChanges = Object.keys(pendingLogoUploads).length > 0 || logoSizesChanged;
+
   return (
-    <div style={{ padding: '24px', maxWidth: 1200 }}>
-      <Title level={3} style={{ marginBottom: 24 }}>
-        Site Settings
-      </Title>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorBgContainer: D ? '#1E293B' : '#FFFFFF',
+          colorText: D ? '#CBD5E1' : '#334155',
+          colorBorder: D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)',
+          colorBgElevated: D ? '#1E293B' : '#FFFFFF',
+          fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
+        },
+      }}
+    >
+      <style>{settingsStyles}</style>
 
-      <Tabs
-        defaultActiveKey="cms"
-        items={[
-          {
-            key: 'cms',
-            label: 'CMS Settings',
-            children: (
-              <Card
-                title="CMS Branding"
-                extra={<PictureOutlined />}
-                style={{ marginBottom: 24 }}
+      <div className="set-root" style={{ padding: '24px 28px', background: D ? '#0A1229' : '#F8FAFC', minHeight: '100vh' }}>
+        {/* ── COMMAND HEADER BANNER ── */}
+        <div
+          className="set-stagger-1"
+          style={{
+            borderRadius: 16,
+            padding: '20px 24px',
+            marginBottom: 24,
+            background: D
+              ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.75) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%)',
+            border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.9)'}`,
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 16,
+            boxShadow: D ? '0 12px 32px -4px rgba(0, 0, 0, 0.4)' : '0 12px 32px -4px rgba(11, 31, 77, 0.05)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 1, background: 'linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.4), transparent)' }} />
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span className="set-beacon-dot" />
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#06B6D4' }}>
+                Platform Settings & Identity
+              </span>
+              <span style={{ fontSize: '0.72rem', color: D ? '#64748B' : '#94A3B8' }}>•</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B' }}>
+                {siteName} CMS Brand Control
+              </span>
+            </div>
+
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: D ? '#F8FAFC' : '#0F172A', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <SettingOutlined style={{ color: '#06B6D4' }} /> Platform Branding & Individual Asset Dimensions
+            </h1>
+          </div>
+
+          <Space size={10}>
+            {hasPendingChanges && (
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                onClick={handleSaveLogoChanges}
+                loading={loading}
+                style={{
+                  background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontWeight: 700,
+                  height: 42,
+                  padding: '0 20px',
+                }}
               >
-                <div style={{ marginBottom: 32 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    CMS Logos
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    Upload logos for the CMS sidebar. Recommended size: 70x40px each, max 2MB.
-                  </Text>
+                Save Branding & Dimensions
+              </Button>
+            )}
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={fetchSettings}
+              style={{ borderRadius: 10, height: 42, background: D ? '#1E293B' : '#F1F5F9' }}
+            />
+          </Space>
+        </div>
 
-                  <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                    {(getLogoPreview('cms_logo1') || getLogoPreview('cms_logo2')) && (
-                      <div style={{
-                        padding: 16,
-                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                        borderRadius: 8,
-                        background: darkMode ? '#1E293B' : '#F8FAFC',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 16
-                      }}>
-                        {getLogoPreview('cms_logo1') && (
-                          <img
-                            src={getLogoPreview('cms_logo1')}
-                            alt="CMS Logo 1"
-                            style={{
-                              height: 40,
-                              maxWidth: 70,
-                              objectFit: 'contain'
-                            }}
-                          />
-                        )}
-                        {getLogoPreview('cms_logo2') && (
-                          <img
-                            src={getLogoPreview('cms_logo2')}
-                            alt="CMS Logo 2"
-                            style={{
-                              height: 60,
-                              maxWidth: 100,
-                              objectFit: 'contain'
-                            }}
-                          />
-                        )}
-                      </div>
-                    )}
+        {/* ── EXECUTIVE KPI GRID ── */}
+        <div
+          className="set-stagger-2"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 16,
+            marginBottom: 24,
+          }}
+        >
+          <StatCard title="Active Main Brand Logo" value={websiteMainLogoUrl ? `${logoSizes.website_main_logo?.width || 200}×${logoSizes.website_main_logo?.height || 60}px` : 'Default'} icon={<PictureOutlined />} color="primary" accentColor="#06B6D4" subtitle="Front-facing Website Header" />
+          <StatCard title="Navbar Logo Asset" value={websiteNavbarLogoUrl ? `${logoSizes.website_navbar_logo?.width || 120}×${logoSizes.website_navbar_logo?.height || 40}px` : 'Standard'} icon={<CheckCircleOutlined />} color="success" accentColor="#10B981" subtitle="Top Bar Dimensions" />
+          <StatCard title="Footer Identity Logo" value={websiteFooterLogoUrl ? `${logoSizes.website_footer_logo?.width || 150}×${logoSizes.website_footer_logo?.height || 50}px` : 'Standard'} icon={<SettingOutlined />} color="info" accentColor="#3B82F6" subtitle="Bottom Bar Variant" />
+        </div>
 
-                    <div>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                        Logo 1 (Left)
-                      </Text>
-                      <Space>
-                        <Upload {...createUploadProps('cms_logo1')}>
-                          <Button icon={<UploadOutlined />} loading={loading}>
-                            {cmsLogo1Url ? 'Change Logo 1' : 'Upload Logo 1'}
-                          </Button>
-                        </Upload>
-                        {cmsLogo1Url && (
-                          <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('cms_logo1')}>
-                            Remove
-                          </Button>
-                        )}
-                      </Space>
-                    </div>
+        {/* ── SETTINGS TABS ── */}
+        <div
+          className="set-stagger-3"
+          style={{
+            background: D ? 'rgba(15, 23, 42, 0.8)' : '#FFFFFF',
+            borderRadius: 16,
+            border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`,
+            padding: 24,
+            boxShadow: D ? '0 10px 30px -5px rgba(0, 0, 0, 0.3)' : '0 10px 30px -5px rgba(11, 31, 77, 0.05)',
+          }}
+        >
+          <Tabs
+            defaultActiveKey="logos"
+            items={[
+              {
+                key: 'logos',
+                label: <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>Website Logos & Assets</span>,
+                children: (
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={12} lg={6}>{renderLogoCard('website_main_logo', 'Main Header Logo', 'Primary high-res logo used in header hero banner')}</Col>
+                    <Col xs={24} md={12} lg={6}>{renderLogoCard('website_navbar_logo', 'Navbar Logo', 'Compact version tailored for top navigation bar')}</Col>
+                    <Col xs={24} md={12} lg={6}>{renderLogoCard('website_footer_logo', 'Footer Logo', 'Monochrome / light variant for website footer section')}</Col>
+                    <Col xs={24} md={12} lg={6}>{renderLogoCard('website_favicon', 'Website Favicon', 'Browser tab icon (.ico or .png)')}</Col>
+                  </Row>
+                ),
+              },
+              {
+                key: 'cms',
+                label: <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>CMS Admin Branding</span>,
+                children: (
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} md={8}>{renderLogoCard('cms_logo1', 'CMS Primary Logo', 'Sidebar brand logo for admin panel')}</Col>
+                    <Col xs={24} md={8}>{renderLogoCard('cms_logo2', 'CMS Compact Icon', 'Collapsed sidebar icon for dashboard')}</Col>
+                    <Col xs={24} md={8}>{renderLogoCard('cms_favicon', 'CMS Favicon', 'Browser tab favicon for admin workspace')}</Col>
+                  </Row>
+                ),
+              },
+              {
+                key: 'sizes',
+                label: <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>All Asset Dimensions Matrix</span>,
+                children: (
+                  <div style={{ maxWidth: 800 }}>
+                    <p style={{ fontSize: '0.82rem', color: D ? '#94A3B8' : '#64748B', marginBottom: 16 }}>
+                      Configure the exact width and height specifications for every image asset rendered across the platform.
+                    </p>
+                    <Form layout="vertical">
+                      <Row gutter={[16, 16]}>
+                        {[
+                          { key: 'website_main_logo', name: 'Website Main Header Logo' },
+                          { key: 'website_navbar_logo', name: 'Website Navbar Logo' },
+                          { key: 'website_footer_logo', name: 'Website Footer Logo' },
+                          { key: 'website_favicon', name: 'Website Favicon' },
+                          { key: 'cms_logo1', name: 'CMS Sidebar Primary Logo' },
+                          { key: 'cms_logo2', name: 'CMS Sidebar Icon' },
+                          { key: 'cms_favicon', name: 'CMS Favicon' },
+                        ].map(item => (
+                          <Col xs={24} sm={12} key={item.key}>
+                            <div style={{ background: D ? '#0F172A' : '#F8FAFC', padding: 14, borderRadius: 10, border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}` }}>
+                              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A', display: 'block', marginBottom: 8 }}>
+                                {item.name}
+                              </span>
+                              <Row gutter={8}>
+                                <Col span={12}>
+                                  <Form.Item label={<span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Width (px)</span>} style={{ marginBottom: 0 }}>
+                                    <Input
+                                      type="number"
+                                      value={logoSizes[item.key]?.width || DEFAULT_LOGO_SIZES[item.key]?.width}
+                                      onChange={(e) => setLogoSizes({
+                                        ...logoSizes,
+                                        [item.key]: { ...(logoSizes[item.key] || DEFAULT_LOGO_SIZES[item.key]), width: Number(e.target.value) }
+                                      })}
+                                      style={{ borderRadius: 8 }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                  <Form.Item label={<span style={{ fontSize: '0.75rem', fontWeight: 700 }}>Height (px)</span>} style={{ marginBottom: 0 }}>
+                                    <Input
+                                      type="number"
+                                      value={logoSizes[item.key]?.height || DEFAULT_LOGO_SIZES[item.key]?.height}
+                                      onChange={(e) => setLogoSizes({
+                                        ...logoSizes,
+                                        [item.key]: { ...(logoSizes[item.key] || DEFAULT_LOGO_SIZES[item.key]), height: Number(e.target.value) }
+                                      })}
+                                      style={{ borderRadius: 8 }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </div>
+                          </Col>
+                        ))}
+                      </Row>
 
-                    <div>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                        Logo 2 (Right)
-                      </Text>
-                      <Space>
-                        <Upload {...createUploadProps('cms_logo2')}>
-                          <Button icon={<UploadOutlined />} loading={loading}>
-                            {cmsLogo2Url ? 'Change Logo 2' : 'Upload Logo 2'}
-                          </Button>
-                        </Upload>
-                        {cmsLogo2Url && (
-                          <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('cms_logo2')}>
-                            Remove
-                          </Button>
-                        )}
-                      </Space>
-                    </div>
-                  </Space>
-                </div>
-
-                <Divider />
-
-                <div style={{ marginBottom: 32 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    CMS Favicon
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    Upload a favicon for the CMS browser tab. Recommended size: 32x32px, max 500KB.
-                  </Text>
-
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    {cmsFaviconUrl && (
-                      <div style={{
-                        padding: 16,
-                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                        borderRadius: 8,
-                        background: darkMode ? '#1E293B' : '#F8FAFC',
-                        display: 'inline-block'
-                      }}>
-                        <img
-                          src={cmsFaviconUrl}
-                          alt="CMS Favicon"
+                      <div style={{ marginTop: 20 }}>
+                        <Button
+                          type="primary"
+                          icon={<SaveOutlined />}
+                          onClick={handleSaveSettings}
+                          loading={loading}
                           style={{
-                            width: 32,
-                            height: 32,
-                            objectFit: 'contain'
+                            background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
+                            border: 'none',
+                            borderRadius: 8,
+                            fontWeight: 700,
+                            height: 40,
                           }}
-                        />
+                        >
+                          Save All Dimensions Matrix
+                        </Button>
                       </div>
-                    )}
-
-                    <Space>
-                      <Upload {...createUploadProps('cms_favicon')}>
-                        <Button icon={<UploadOutlined />} loading={loading}>
-                          {cmsFaviconUrl ? 'Change Favicon' : 'Upload Favicon'}
-                        </Button>
-                      </Upload>
-                      {cmsFaviconUrl && (
-                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('cms_favicon')}>
-                          Remove
-                        </Button>
-                      )}
-                    </Space>
-                  </Space>
-                </div>
-
-                {(Object.keys(pendingLogoUploads).length > 0 || logoSizesChanged) && (
-                  <>
-                    <Divider />
-                    <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveLogoChanges} loading={loading} style={{ marginTop: 16 }}>
-                      {logoSizesChanged && Object.keys(pendingLogoUploads).length === 0 ? 'Save Logo Size Changes' : 'Save Logo Changes'}
-                    </Button>
-                  </>
-                )}
-              </Card>
-            )
-          },
-          {
-            key: 'website',
-            label: 'Website Settings',
-            children: (
-              <Card
-                title="Website Branding"
-                extra={<PictureOutlined />}
-                style={{ marginBottom: 24 }}
-              >
-                <div style={{ marginBottom: 32 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Website Main Logo
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    Upload the main logo for your website. Recommended size: 200x60px, max 2MB.
-                  </Text>
-
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    {getLogoPreview('website_main_logo') && (
-                      <div style={{
-                        padding: 16,
-                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                        borderRadius: 8,
-                        background: darkMode ? '#1E293B' : '#F8FAFC',
-                        display: 'inline-block'
-                      }}>
-                        <img
-                          src={getLogoPreview('website_main_logo')}
-                          alt="Website Main Logo"
-                          style={{
-                            maxHeight: logoSizes.main.height,
-                            maxWidth: logoSizes.main.width,
-                            objectFit: 'contain'
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <Space>
-                      <Upload {...createUploadProps('website_main_logo')}>
-                        <Button icon={<UploadOutlined />} loading={loading}>
-                          {websiteMainLogoUrl ? 'Change Main Logo' : 'Upload Main Logo'}
-                        </Button>
-                      </Upload>
-                      {websiteMainLogoUrl && (
-                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_main_logo')}>
-                          Remove
-                        </Button>
-                      )}
-                    </Space>
-
-                    <div style={{ marginTop: 16 }}>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                        Logo Size
-                      </Text>
-                      <Space>
-                        <Input
-                          type="number"
-                          placeholder="Height"
-                          value={logoSizes.main.height}
-                          onChange={(e) => setLogoSizes(prev => ({ ...prev, main: { ...prev.main, height: parseInt(e.target.value) || 60 } }))}
-                          style={{ width: 100 }}
-                          addonAfter="px"
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Width"
-                          value={logoSizes.main.width}
-                          onChange={(e) => setLogoSizes(prev => ({ ...prev, main: { ...prev.main, width: parseInt(e.target.value) || 200 } }))}
-                          style={{ width: 100 }}
-                          addonAfter="px"
-                        />
-                      </Space>
-                    </div>
-                  </Space>
-                </div>
-
-                <Divider />
-
-                <div style={{ marginBottom: 32 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Website Navbar Logo
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    Upload the logo for your website navbar. Recommended size: 120x40px, max 2MB.
-                  </Text>
-
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    {getLogoPreview('website_navbar_logo') && (
-                      <div style={{
-                        padding: 16,
-                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                        borderRadius: 8,
-                        background: darkMode ? '#1E293B' : '#F8FAFC',
-                        display: 'inline-block'
-                      }}>
-                        <img
-                          src={getLogoPreview('website_navbar_logo')}
-                          alt="Website Navbar Logo"
-                          style={{
-                            maxHeight: logoSizes.navbar.height,
-                            maxWidth: logoSizes.navbar.width,
-                            objectFit: 'contain'
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <Space>
-                      <Upload {...createUploadProps('website_navbar_logo')}>
-                        <Button icon={<UploadOutlined />} loading={loading}>
-                          {websiteNavbarLogoUrl ? 'Change Navbar Logo' : 'Upload Navbar Logo'}
-                        </Button>
-                      </Upload>
-                      {websiteNavbarLogoUrl && (
-                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_navbar_logo')}>
-                          Remove
-                        </Button>
-                      )}
-                    </Space>
-
-                    <div style={{ marginTop: 16 }}>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                        Logo Size
-                      </Text>
-                      <Space>
-                        <Input
-                          type="number"
-                          placeholder="Height"
-                          value={logoSizes.navbar.height}
-                          onChange={(e) => setLogoSizes(prev => ({ ...prev, navbar: { ...prev.navbar, height: parseInt(e.target.value) || 40 } }))}
-                          style={{ width: 100 }}
-                          addonAfter="px"
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Width"
-                          value={logoSizes.navbar.width}
-                          onChange={(e) => setLogoSizes(prev => ({ ...prev, navbar: { ...prev.navbar, width: parseInt(e.target.value) || 120 } }))}
-                          style={{ width: 100 }}
-                          addonAfter="px"
-                        />
-                      </Space>
-                    </div>
-                  </Space>
-                </div>
-
-                <Divider />
-
-                <div style={{ marginBottom: 32 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Website Footer Logo
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    Upload the logo for your website footer. Recommended size: 150x50px, max 2MB.
-                  </Text>
-
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    {getLogoPreview('website_footer_logo') && (
-                      <div style={{
-                        padding: 16,
-                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                        borderRadius: 8,
-                        background: darkMode ? '#1E293B' : '#F8FAFC',
-                        display: 'inline-block'
-                      }}>
-                        <img
-                          src={getLogoPreview('website_footer_logo')}
-                          alt="Website Footer Logo"
-                          style={{
-                            maxHeight: logoSizes.footer.height,
-                            maxWidth: logoSizes.footer.width,
-                            objectFit: 'contain'
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <Space>
-                      <Upload {...createUploadProps('website_footer_logo')}>
-                        <Button icon={<UploadOutlined />} loading={loading}>
-                          {websiteFooterLogoUrl ? 'Change Footer Logo' : 'Upload Footer Logo'}
-                        </Button>
-                      </Upload>
-                      {websiteFooterLogoUrl && (
-                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_footer_logo')}>
-                          Remove
-                        </Button>
-                      )}
-                    </Space>
-
-                    <div style={{ marginTop: 16 }}>
-                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                        Logo Size
-                      </Text>
-                      <Space>
-                        <Input
-                          type="number"
-                          placeholder="Height"
-                          value={logoSizes.footer.height}
-                          onChange={(e) => setLogoSizes(prev => ({ ...prev, footer: { ...prev.footer, height: parseInt(e.target.value) || 50 } }))}
-                          style={{ width: 100 }}
-                          addonAfter="px"
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Width"
-                          value={logoSizes.footer.width}
-                          onChange={(e) => setLogoSizes(prev => ({ ...prev, footer: { ...prev.footer, width: parseInt(e.target.value) || 150 } }))}
-                          style={{ width: 100 }}
-                          addonAfter="px"
-                        />
-                      </Space>
-                    </div>
-                  </Space>
-                </div>
-
-                <Divider />
-
-                <div style={{ marginBottom: 32 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Website Favicon
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    Upload a favicon for the website browser tab. Recommended size: 32x32px, max 500KB.
-                  </Text>
-
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    {websiteFaviconUrl && (
-                      <div style={{
-                        padding: 16,
-                        border: `1px solid ${darkMode ? '#334155' : '#E5E7EB'}`,
-                        borderRadius: 8,
-                        background: darkMode ? '#1E293B' : '#F8FAFC',
-                        display: 'inline-block'
-                      }}>
-                        <img
-                          src={websiteFaviconUrl}
-                          alt="Website Favicon"
-                          style={{
-                            width: 32,
-                            height: 32,
-                            objectFit: 'contain'
-                          }}
-                        />
-                      </div>
-                    )}
-
-                    <Space>
-                      <Upload {...createUploadProps('website_favicon')}>
-                        <Button icon={<UploadOutlined />} loading={loading}>
-                          {websiteFaviconUrl ? 'Change Favicon' : 'Upload Favicon'}
-                        </Button>
-                      </Upload>
-                      {websiteFaviconUrl && (
-                        <Button danger icon={<DeleteOutlined />} onClick={() => handleRemoveImage('website_favicon')}>
-                          Remove
-                        </Button>
-                      )}
-                    </Space>
-                  </Space>
-                </div>
-
-                {(Object.keys(pendingLogoUploads).length > 0 || logoSizesChanged) && (
-                  <>
-                    <Divider />
-                    <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveLogoChanges} loading={loading} style={{ marginTop: 16 }}>
-                      {logoSizesChanged && Object.keys(pendingLogoUploads).length === 0 ? 'Save Logo Size Changes' : 'Save Logo Changes'}
-                    </Button>
-                  </>
-                )}
-              </Card>
-            )
-          },
-          {
-            key: 'general',
-            label: 'General Settings',
-            children: (
-              <Card
-                title="Site Information"
-                extra={<PictureOutlined />}
-              >
-                <div style={{ marginBottom: 24 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Site Name
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    The name of your site displayed throughout the application.
-                  </Text>
-                  <Input
-                    value={siteName}
-                    onChange={(e) => setSiteName(e.target.value)}
-                    placeholder="Enter site name"
-                    style={{ marginBottom: 16 }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Site Description
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    A brief description of your site for SEO and metadata.
-                  </Text>
-                  <Input.TextArea
-                    value={siteDescription}
-                    onChange={(e) => setSiteDescription(e.target.value)}
-                    placeholder="Enter site description"
-                    rows={4}
-                    style={{ marginBottom: 16 }}
-                  />
-                </div>
-
-                <div style={{ marginBottom: 24 }}>
-                  <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                    Site Keywords
-                  </Text>
-                  <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-                    Comma-separated keywords for SEO (e.g., tech, news, blog).
-                  </Text>
-                  <Input
-                    value={siteKeywords}
-                    onChange={(e) => setSiteKeywords(e.target.value)}
-                    placeholder="Enter keywords separated by commas"
-                    style={{ marginBottom: 16 }}
-                  />
-                </div>
-
-                <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveSettings} loading={loading}>
-                  Save Settings
-                </Button>
-              </Card>
-            )
-          }
-        ]}
-      />
-    </div>
+                    </Form>
+                  </div>
+                ),
+              },
+              {
+                key: 'general',
+                label: <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>General Information</span>,
+                children: (
+                  <div style={{ maxWidth: 640 }}>
+                    <Form layout="vertical">
+                      <Form.Item label={<span style={{ fontWeight: 700 }}>Website Name</span>}>
+                        <Input value={siteName} onChange={(e) => setSiteName(e.target.value)} style={{ borderRadius: 8, height: 40 }} />
+                      </Form.Item>
+                      <Form.Item label={<span style={{ fontWeight: 700 }}>Site Description</span>}>
+                        <Input.TextArea rows={3} value={siteDescription} onChange={(e) => setSiteDescription(e.target.value)} style={{ borderRadius: 8 }} />
+                      </Form.Item>
+                      <Button
+                        type="primary"
+                        icon={<SaveOutlined />}
+                        onClick={handleSaveSettings}
+                        loading={loading}
+                        style={{
+                          background: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)',
+                          border: 'none',
+                          borderRadius: 8,
+                          fontWeight: 700,
+                        }}
+                      >
+                        Save General Info
+                      </Button>
+                    </Form>
+                  </div>
+                ),
+              },
+            ]}
+          />
+        </div>
+      </div>
+    </ConfigProvider>
   );
 };
 

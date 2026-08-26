@@ -127,7 +127,7 @@ const Footer = ({ simplified = false }) => {
 
   // Full footer for public pages
   return (
-  <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, position: 'relative', zIndex: 1 }}>
+    <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, position: 'relative', zIndex: 1 }}>
       {/* ── Main footer ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 44px' }}>
         <style>{`

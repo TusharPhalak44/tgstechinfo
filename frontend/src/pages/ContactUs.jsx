@@ -1,123 +1,132 @@
-import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Phone, Sparkles, Globe } from 'lucide-react';
 
-// Custom components
+// Custom Publishing Contact Components
 import { ContactHero } from '../components/contact/ContactHero';
+import { PublishingDesks } from '../components/contact/PublishingDesks';
 import { ContactForm } from '../components/contact/ContactForm';
 import { OfficeMap } from '../components/contact/OfficeMap';
 import { FAQAccordion } from '../components/contact/FAQAccordion';
 import { ThemeToggle } from '../components/contact/ThemeToggle';
-import { SocialMediaIcons } from '../components/contact/SocialMediaIcons';
-import { ContactSideImage } from '../components/contact/ContactSideImage';
-
-const infoItems = [
-  {
-    icon: <Mail className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />,
-    title: 'General Inquiries',
-    lines: [
-      <a key="email" href="mailto:info@tgstechinfo.com" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>info@tgstechinfo.com</a>,
-      <span key="rt" style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>Response: 24–48 hrs</span>,
-    ],
-  },
-  {
-    icon: <Mail className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />,
-    title: 'Partnerships & Media',
-    lines: [
-      <a key="email" href="mailto:partnerships@tgstechinfo.com" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>partnerships@tgstechinfo.com</a>,
-      <span key="rt" style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>Guest posts, sponsorships, media</span>,
-    ],
-  },
-  {
-    icon: <MapPin className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />,
-    title: 'Office Address',
-    lines: [
-      <span key="name" style={{ color: 'var(--color-body)', fontWeight: 500 }}>The Space Business Complex Office No 512, 513, 514, Grant Rd, Kharadi, 411014</span>,
-      <span key="addr" style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>Pune, MH, India</span>,
-    ],
-  },
-  {
-    icon: <Phone className="w-5 h-5" style={{ color: 'var(--color-accent)' }} />,
-    title: 'Phone Support',
-    lines: [
-      <span key="num" style={{ color: 'var(--color-body)', fontWeight: 500 }}>+91 96655-99442</span>,
-      <span key="hrs" style={{ color: 'var(--color-muted)', fontSize: '0.8rem' }}>Mon–Fri, 9 AM–6 PM EST</span>,
-    ],
-  },
-];
 
 export const ContactUs = () => {
   const [agreed, setAgreed] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('general');
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  const handleSelectDesk = (categoryKey) => {
+    setSelectedCategory(categoryKey);
+    // Smooth scroll down to the contact form section
+    const formElem = document.getElementById('contact-form-section');
+    if (formElem) {
+      formElem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   return (
     <div
-      className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 relative"
+      className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden transition-colors duration-300"
       style={{ background: 'var(--color-bg)' }}
     >
-      {/* Theme switcher */}
+      {/* Theme switcher toggle */}
       <ThemeToggle />
 
-      {/* ── Hero ── */}
-      <ContactHero />
+      <div className="max-w-7xl mx-auto space-y-12 relative z-10">
+        {/* 1. Newsroom Background Image Hero Section (Text gradient retained) */}
+        <ContactHero />
 
+        {/* 2. Compact Professional Communication Desks */}
+        <PublishingDesks
+          onSelectDesk={handleSelectDesk}
+          activeCategory={selectedCategory}
+        />
 
+        {/* 3. Main Form & FAQ Side-by-Side Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Column: Form (7 cols on large screen) */}
+          <motion.div
+            className="lg:col-span-7"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <ContactForm
+              agreed={agreed}
+              setAgreed={setAgreed}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
+          </motion.div>
 
-      {/* ── Contact Form + Side Image ── */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 mt-12">
-        <div className="space-y-6">
-          <ContactForm agreed={agreed} setAgreed={setAgreed} />
-          {/* <SocialMediaIcons /> */}
+          {/* Right Column: FAQ Knowledge Base (5 cols on large screen) */}
+          <motion.div
+            className="lg:col-span-5 space-y-8"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-50px' }}
+            transition={{ duration: 0.8, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <FAQAccordion />
+
+            {/* Clean Professional Contact Hotline Card */}
+            <motion.div
+              whileHover={{ y: -4, scale: 1.01 }}
+              transition={{ duration: 0.3 }}
+              className="p-6 rounded-2xl border shadow-md relative overflow-hidden"
+              style={{
+                background: 'var(--color-surface)',
+                borderColor: 'var(--color-border)'
+              }}
+            >
+              <div className="relative z-10">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 mb-3">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Media & Editorial Hotlines
+                </span>
+                <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--color-heading)' }}>
+                  Need Immediate Press Assistance?
+                </h3>
+                <p className="text-xs leading-relaxed mb-4" style={{ color: 'var(--color-body)' }}>
+                  For time-sensitive technology press coverage, product launch exclusives, or executive interviews, call our global desks directly:
+                </p>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <motion.a
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    href="tel:+13464878307"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 dark:bg-slate-800 hover:bg-amber-500 dark:hover:bg-amber-500 transition-colors shadow-sm"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-amber-400" />
+                    <span>US: +1 346-487-8307</span>
+                  </motion.a>
+                  <motion.a
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.96 }}
+                    href="tel:+919665599442"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-slate-900 dark:bg-slate-800 hover:bg-amber-500 dark:hover:bg-amber-500 transition-colors shadow-sm"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-amber-400" />
+                    <span>IN: +91 96655-99442</span>
+                  </motion.a>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         </div>
-        <ContactSideImage />
-      </div>
 
-      {/* ── Info Cards — 4 in one row ── */}
-      <div className="max-w-7xl mx-auto mt-10 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {infoItems.map((item) => (
-          <div
-            key={item.title}
-            className="flex flex-col gap-1 p-4 rounded-xl border transition-all duration-200 hover:-translate-y-1"
-            style={{
-              background: 'var(--color-surface)',
-              borderColor: 'var(--color-border)',
-              boxShadow: '0 1px 4px rgba(11,31,77,0.07)',
-            }}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              {item.icon}
-              <span className="text-sm font-semibold" style={{ color: 'var(--color-heading)' }}>
-                {item.title}
-              </span>
-            </div>
-            {item.lines.map((line, i) => (
-              <div key={i} className="text-sm leading-snug">{line}</div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* ── Map (with business hours above) + FAQ side-by-side ── */}
-      <div className="max-w-7xl mx-auto mt-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        {/* Left — Business hours strip + Map
-        <div className="flex flex-col gap-3">
-          Business hours — single line strip
-          <div
-            className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium"
-            style={{
-              background: 'var(--color-primary-light)',
-              color: 'var(--color-primary)',
-              border: '1px solid var(--color-border)',
-            }}
-          >
-            <Clock className="w-4 h-4 shrink-0" style={{ color: 'var(--color-accent)' }} />
-            <span>
-              <strong>Business Hours:</strong>&nbsp;Mon–Fri 9:00 AM – 6:00 PM EST &nbsp;·&nbsp; Sat & Sun: Closed
-            </span>
-          </div>
+        {/* 4. Global HQ & Office Map */}
+        <motion.div
+          initial={{ opacity: 0, y: 35 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
           <OfficeMap />
-        </div> */}
-
-        {/* Right — FAQ */}
-        {/* <FAQAccordion /> */}
+        </motion.div>
       </div>
     </div>
   );

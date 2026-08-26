@@ -12,7 +12,7 @@ import {
   WarningOutlined,
   CopyOutlined,
   KeyOutlined,
-  ShieldCheckOutlined
+  SafetyCertificateOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 

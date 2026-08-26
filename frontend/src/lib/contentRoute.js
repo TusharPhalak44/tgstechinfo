@@ -8,6 +8,7 @@ const CONTENT_TYPE_ROUTE_MAP = {
   ebooks: 'ebook', ebook: 'ebook',
   interviews: 'interview', interview: 'interview',
   reports: 'report', report: 'report',
+  'case-study': 'case-study', 'case study': 'case-study', 'case-studies': 'case-study', casestudy: 'case-study',
   'landing-page': 'article', 'landing page': 'article'
 };
 

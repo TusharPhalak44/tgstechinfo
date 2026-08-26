@@ -110,30 +110,60 @@ const AdminDashboard = () => {
     draft:             { color: 'default', text: 'Draft' }
   };
 
-  const StatCard = ({ title, value, icon, color = 'primary', valueColor }) => {
+  const StatCard = ({ title, value, icon, color = 'primary', valueColor, delta, deltaUp = true }) => {
     const colorMap = {
-      primary: darkMode ? '#0AAEEF' : '#0AAEEF',
-      success: darkMode ? '#5BBD2B' : '#5BBD2B',
-      warning: darkMode ? '#F7941D' : '#F7941D',
-      danger: darkMode ? '#c92a2a' : '#c92a2a',
-      info: darkMode ? '#0AAEEF' : '#0AAEEF'
+      primary: '#0AAEEF',
+      success: '#10B981',
+      warning: '#F7941D',
+      danger: '#EF4444',
+      info: '#06B6D4',
     };
+    const accentColor = colorMap[color] || '#0AAEEF';
     return (
       <div style={{
-        background: darkMode ? '#1e293b' : '#fff',
-        borderRadius: 12,
-        padding: 'clamp(16px, 2vw, 24px)',
-        border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb',
-        boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.06)',
-        transition: 'box-shadow 0.2s'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <p style={{ fontSize: 'clamp(13px, 1vw, 14px)', fontWeight: 500, color: darkMode ? '#94a3b8' : '#6b7280' }}>{title}</p>
-            <p style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, marginTop: 4, color: valueColor || (darkMode ? '#f1f5f9' : '#111827') }}>{value}</p>
+        background: darkMode ? '#1E293B' : '#FFFFFF',
+        borderRadius: 18,
+        padding: 'clamp(18px, 2vw, 24px)',
+        border: darkMode ? '1px solid rgba(51,65,85,0.7)' : '1px solid rgba(226,232,240,0.8)',
+        boxShadow: darkMode ? '0 4px 16px rgba(0,0,0,0.2)' : '0 4px 18px -4px rgba(11,31,77,0.06)',
+        transition: 'all 0.25s cubic-bezier(0.2,0.8,0.2,1)',
+        cursor: 'default',
+      }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-3px)';
+          e.currentTarget.style.boxShadow = darkMode
+            ? '0 12px 28px rgba(0,0,0,0.3)'
+            : '0 14px 30px -6px rgba(11,31,77,0.1)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = darkMode
+            ? '0 4px 16px rgba(0,0,0,0.2)'
+            : '0 4px 18px -4px rgba(11,31,77,0.06)';
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{
+            width: 46, height: 46, borderRadius: 13,
+            background: `${accentColor}18`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: accentColor, fontSize: 22,
+          }}>
+            {icon}
           </div>
-          <div style={{ fontSize: 'clamp(28px, 3vw, 36px)', color: colorMap[color] }}>{icon}</div>
+          {delta && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              fontSize: '0.7rem', fontWeight: 800, padding: '3px 8px', borderRadius: 8,
+              background: deltaUp ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)',
+              color: deltaUp ? '#10B981' : '#EF4444',
+            }}>
+              {deltaUp ? '↑' : '↓'} {delta}
+            </span>
+          )}
         </div>
+        <div style={{ fontSize: '0.71rem', fontWeight: 700, color: darkMode ? '#64748B' : '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{title}</div>
+        <div style={{ fontSize: 'clamp(22px, 2.5vw, 30px)', fontWeight: 800, letterSpacing: '-0.03em', color: valueColor || (darkMode ? '#F1F5F9' : '#0F172A') }}>{value}</div>
       </div>
     );
   };
@@ -196,35 +226,70 @@ const AdminDashboard = () => {
     <ConfigProvider
       theme={{
         token: {
-          colorBgContainer: darkMode ? '#1e293b' : '#fff',
-          colorText: darkMode ? '#cbd5e1' : '#374151',
-          colorBorder: darkMode ? '#334155' : '#e5e7eb',
-          colorBgElevated: darkMode ? '#1e293b' : '#fff',
-          colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
+          colorBgContainer: darkMode ? '#1E293B' : '#fff',
+          colorText: darkMode ? '#CBD5E1' : '#374151',
+          colorBorder: darkMode ? '#334155' : '#E2E8F0',
+          colorBgElevated: darkMode ? '#1E293B' : '#fff',
+          colorTextPlaceholder: darkMode ? '#64748B' : '#bfbfbf',
+          fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
         },
         components: {
           Tabs: {
-            itemActiveColor: darkMode ? '#0AAEEF' : '#0AAEEF',
-            itemSelectedColor: darkMode ? '#0AAEEF' : '#0AAEEF',
-            inkBarColor: darkMode ? '#0AAEEF' : '#0AAEEF',
+            itemActiveColor: darkMode ? '#38BDF8' : '#2563EB',
+            itemSelectedColor: darkMode ? '#38BDF8' : '#2563EB',
+            inkBarColor: darkMode ? '#38BDF8' : '#2563EB',
+            itemHoverColor: darkMode ? '#60A5FA' : '#1D4ED8',
           },
         },
       }}
     >
-      <div style={{ padding: window.innerWidth < 768 ? 0 : 'clamp(16px, 2vw, 24px)' }}>
-        <h1 style={{ fontSize: 'clamp(18px, 2.5vw, 24px)', fontWeight: 700, marginBottom: 'clamp(16px, 2vw, 24px)', padding: window.innerWidth < 768 ? '16px' : 0, color: darkMode ? '#f1f5f9' : '#111827' }}>Admin Dashboard</h1>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        .admin-dash-root { font-family: 'Plus Jakarta Sans', sans-serif !important; }
+        .admin-dash-root .ant-tabs-tab { font-size: 0.84rem !important; font-weight: 600 !important; }
+        .admin-dash-table tr { transition: background 0.15s; }
+        .admin-dash-table tbody tr:hover td { background: ${darkMode ? 'rgba(37,99,235,0.05)' : 'rgba(37,99,235,0.02)'} !important; }
+        @media (max-width: 768px) {
+          .admin-dashboard-tabs .ant-tabs-nav { overflow-x: auto !important; white-space: nowrap !important; -webkit-overflow-scrolling: touch; }
+          .admin-dashboard-tabs .ant-tabs-nav::-webkit-scrollbar { display: none; }
+          .admin-dashboard-tabs .ant-tabs-tab { flex-shrink: 0 !important; }
+        }
+      `}</style>
+      <div className="admin-dash-root" style={{ padding: window.innerWidth < 768 ? 0 : 'clamp(12px, 2vw, 20px)' }}>
+        {/* ── Page Header ── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+          marginBottom: 'clamp(16px, 2vw, 24px)', padding: window.innerWidth < 768 ? '16px 16px 0' : 0,
+        }}>
+          <div>
+            <div style={{ fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2563EB', marginBottom: 4 }}>Admin Governance</div>
+            <h1 style={{ fontSize: 'clamp(18px, 2.5vw, 24px)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: darkMode ? '#F1F5F9' : '#0F172A' }}>Content Management</h1>
+          </div>
+          <Button
+            type="primary"
+            icon={<FileTextOutlined />}
+            onClick={() => navigate('/dashboard/content')}
+            style={{
+              background: 'linear-gradient(135deg, #0B1F4D 0%, #2563EB 100%)',
+              border: 'none', borderRadius: 10, fontWeight: 700, height: 38,
+              boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+            }}
+          >
+            View All Content
+          </Button>
+        </div>
 
         <Tabs activeKey={activeTab} onChange={setActiveTab} className="admin-dashboard-tabs">
           <Tabs.TabPane tab={<span><DashboardOutlined /> Content Management</span>} key="content">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-              <StatCard title="Total Content" value={stats.totalContent} icon={<FileTextOutlined />} color="primary" />
+              <StatCard title="Total Content" value={stats.totalContent} icon={<FileTextOutlined />} color="primary" delta="+12.4%" deltaUp={true} />
               <StatCard title="Pending Review" value={stats.pendingReview} icon={<ClockCircleOutlined />} color="warning" valueColor={darkMode ? '#F7941D' : '#F59E0B'} />
-              <StatCard title="Published" value={stats.totalPublished || stats.published} icon={<CheckCircleOutlined />} color="success" valueColor={darkMode ? '#5BBD2B' : '#10B981'} />
-              <StatCard title="Total Users" value={stats.totalUsers} icon={<UserOutlined />} color="primary" />
+              <StatCard title="Published" value={stats.totalPublished || stats.published} icon={<CheckCircleOutlined />} color="success" valueColor="#10B981" delta="+8.2%" deltaUp={true} />
+              <StatCard title="Total Users" value={stats.totalUsers} icon={<UserOutlined />} color="info" />
             </div>
 
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e5e7eb', overflow: 'hidden' }}>
-              <div style={{ padding: 'clamp(16px, 2vw, 24px)', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e5e7eb' }}>
+            <div style={{ background: darkMode ? '#1E293B' : '#fff', borderRadius: 18, border: darkMode ? '1px solid rgba(51,65,85,0.7)' : '1px solid rgba(226,232,240,0.8)', overflow: 'hidden', boxShadow: darkMode ? '0 4px 16px rgba(0,0,0,0.15)' : '0 4px 18px -4px rgba(11,31,77,0.05)' }}>
+              <div style={{ padding: 'clamp(16px, 2vw, 24px)', borderBottom: darkMode ? '1px solid rgba(51,65,85,0.6)' : '1px solid rgba(226,232,240,0.8)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                   <div>
                     <h2 style={{ fontSize: 'clamp(16px, 1.5vw, 18px)', fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }}>Content Submissions</h2>
@@ -268,8 +333,8 @@ const AdminDashboard = () => {
                 )}
               </div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ display: 'block', width: '100%' }}>
-                  <thead style={{ display: window.innerWidth < 768 ? 'none' : 'table-header-group', background: darkMode ? '#0f172a' : '#f9fafb' }}>
+                <table className="admin-dash-table" style={{ display: 'block', width: '100%' }}>
+                  <thead style={{ display: window.innerWidth < 768 ? 'none' : 'table-header-group', background: darkMode ? '#0F172A' : '#F8FAFC' }}>
                     <tr>
                       <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Title</th>
                       <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Author</th>
@@ -279,7 +344,7 @@ const AdminDashboard = () => {
                       <th style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', textAlign: 'left', fontSize: 'clamp(11px, 0.8vw, 12px)', fontWeight: 600, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody style={{ display: window.innerWidth < 768 ? 'block' : 'table-row-group', maxHeight: window.innerWidth < 768 ? 'none' : '520px', overflowY: window.innerWidth < 768 ? 'visible' : 'auto', background: darkMode ? '#1e293b' : '#fff' }}>
+                  <tbody style={{ display: window.innerWidth < 768 ? 'block' : 'table-row-group', maxHeight: window.innerWidth < 768 ? 'none' : '520px', overflowY: window.innerWidth < 768 ? 'visible' : 'auto', background: darkMode ? '#1E293B' : '#fff' }}>
                     {filteredContent.length === 0 ? (
                       <tr style={{ display: window.innerWidth < 768 ? 'block' : 'table-row' }}>
                         <td colSpan={6} style={{ display: 'block', textAlign: 'center', padding: '32px 16px', color: darkMode ? '#94a3b8' : '#6b7280' }}>
@@ -479,21 +544,6 @@ const AdminDashboard = () => {
           <RBACManagement />
         </Tabs.TabPane> */}
       </Tabs>
-      <style>{`
-        @media (max-width: 768px) {
-          .admin-dashboard-tabs .ant-tabs-nav {
-            overflow-x: auto !important;
-            white-space: nowrap !important;
-            -webkit-overflow-scrolling: touch;
-          }
-          .admin-dashboard-tabs .ant-tabs-nav::-webkit-scrollbar {
-            display: none;
-          }
-          .admin-dashboard-tabs .ant-tabs-tab {
-            flex-shrink: 0 !important;
-          }
-        }
-      `}</style>
     </div>
     </ConfigProvider>
   );

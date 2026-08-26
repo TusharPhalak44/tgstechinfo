@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Card, Row, Col, Typography, Button, Table, Tag, Space, Modal, Form, Input, Select, Popconfirm, message, Statistic, Grid, ConfigProvider } from 'antd';
 import {
   FormOutlined,
@@ -226,10 +226,11 @@ const Forms = () => {
     <ConfigProvider
       theme={{
         token: {
-          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorBgContainer: darkMode ? '#1E293B' : '#fff',
+          fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
           colorText: darkMode ? '#cbd5e1' : '#374151',
           colorBorder: darkMode ? '#334155' : '#e5e7eb',
-          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorBgElevated: darkMode ? '#1E293B' : '#fff',
           colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
         },
       }}
@@ -371,7 +372,7 @@ const Forms = () => {
             label="Form Name"
             rules={[{ required: true, message: 'Please enter form name' }]}
           >
-            <Input placeholder="Enter form name" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
+            <Input placeholder="Enter form name" style={{ background: darkMode ? '#0F172A' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }} />
           </Form.Item>
 
           <Form.Item
@@ -379,7 +380,7 @@ const Forms = () => {
             label="Form Type"
             rules={[{ required: true, message: 'Please select form type' }]}
           >
-            <Select placeholder="Select form type" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
+            <Select placeholder="Select form type" style={{ background: darkMode ? '#0F172A' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
               <Option value="Contact">Contact</Option>
               <Option value="Newsletter">Newsletter</Option>
               <Option value="Feedback">Feedback</Option>
@@ -394,7 +395,7 @@ const Forms = () => {
             label="Status"
             rules={[{ required: true, message: 'Please select status' }]}
           >
-            <Select placeholder="Select status" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
+            <Select placeholder="Select status" style={{ background: darkMode ? '#0F172A' : '#fff', color: darkMode ? '#cbd5e1' : '#111827', borderColor: darkMode ? '#334155' : '#e5e7eb' }}>
               <Option value="active">Active</Option>
               <Option value="inactive">Inactive</Option>
             </Select>

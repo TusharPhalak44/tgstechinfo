@@ -8,7 +8,7 @@ import {
   DeleteOutlined,
   GlobalOutlined,
   ClockCircleOutlined,
-  ShieldCheckOutlined,
+  SafetyCertificateOutlined,
   WarningOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
@@ -127,7 +127,7 @@ const SessionManagement = () => {
       return <Tag color="default">Inactive</Tag>;
     }
     if (session.is_current) {
-      return <Tag color="green" icon={<ShieldCheckOutlined />}>Current</Tag>;
+      return <Tag color="green" icon={<SafetyCertificateOutlined />}>Current</Tag>;
     }
     return <Tag color="blue">Active</Tag>;
   };
@@ -287,7 +287,7 @@ const SessionManagement = () => {
                         justifyContent: 'center',
                         color: log.login_status === 'success' ? '#52c41a' : '#ff4d4f'
                       }}>
-                        {log.login_status === 'success' ? <ShieldCheckOutlined /> : <WarningOutlined />}
+                        {log.login_status === 'success' ? <SafetyCertificateOutlined /> : <WarningOutlined />}
                       </div>
                     }
                     title={

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Input, Select, Button, DatePicker,
   Upload, Space, Divider, Typography, Tooltip, App, ConfigProvider, Checkbox
@@ -153,7 +153,7 @@ const AdminEditContent = () => {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: darkMode ? '#0f172a' : '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh', background: darkMode ? '#0F172A' : '#f5f5f5' }}>
 
       {/* Top Header */}
       <div style={{
@@ -230,10 +230,11 @@ const AdminEditContent = () => {
       <ConfigProvider
         theme={{
           token: {
-            colorBgContainer: darkMode ? '#1e293b' : '#fff',
+            colorBgContainer: darkMode ? '#1E293B' : '#fff',
+          fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
             colorText: darkMode ? '#cbd5e1' : '#374151',
             colorBorder: darkMode ? '#475569' : '#d9d9d9',
-            colorBgElevated: darkMode ? '#1e293b' : '#fff',
+            colorBgElevated: darkMode ? '#1E293B' : '#fff',
             colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
             colorPrimary: '#4a7cff',
           },
@@ -285,7 +286,7 @@ const AdminEditContent = () => {
                 rules={[{ required: true }]}
                 style={{ marginBottom: 0 }}
               >
-                <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, color: darkMode ? '#f1f5f9' : '#000', background: darkMode ? '#0f172a' : '#fff' }} showCount maxLength={300} />
+                <TextArea rows={3} placeholder="Write a compelling summary..." style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, color: darkMode ? '#f1f5f9' : '#000', background: darkMode ? '#0F172A' : '#fff' }} showCount maxLength={300} />
               </Form.Item>
             </div>
 
@@ -309,7 +310,7 @@ const AdminEditContent = () => {
                   <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: window.innerWidth < 768 ? 240 : 360, objectFit: 'contain', display: 'block' }} />
                 </div>
               ) : (
-                <div style={{ border: darkMode ? '2px dashed #475569' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                <div style={{ border: darkMode ? '2px dashed #475569' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0F172A' : '#fafafa' }}>
                   <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
                   <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner image</Text>
                 </div>

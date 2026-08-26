@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Card, Table, Typography, message, Grid, ConfigProvider, Tag } from 'antd';
 import { LockOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -67,10 +67,11 @@ const Permissions = () => {
     <ConfigProvider
       theme={{
         token: {
-          colorBgContainer: darkMode ? '#1e293b' : '#fff',
+          colorBgContainer: darkMode ? '#1E293B' : '#fff',
+          fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
           colorText: darkMode ? '#cbd5e1' : '#374151',
           colorBorder: darkMode ? '#334155' : '#e5e7eb',
-          colorBgElevated: darkMode ? '#1e293b' : '#fff',
+          colorBgElevated: darkMode ? '#1E293B' : '#fff',
           colorTextPlaceholder: darkMode ? '#64748b' : '#bfbfbf',
         },
       }}

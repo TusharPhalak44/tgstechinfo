@@ -287,7 +287,7 @@ exports.getSeoScore = async (req, res) => {
 exports.generateSitemap = async (req, res) => {
     try {
         const { rows: content } = await Content.findAll({ status: 'published' });
-        const { rows: categories } = await Category.findAll();
+        const categories = await Category.findAll();
         
         const baseUrl = process.env.BASE_URL || 'https://tgstechinfo.com';
         

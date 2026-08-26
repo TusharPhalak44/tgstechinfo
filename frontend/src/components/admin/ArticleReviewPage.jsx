@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Row, Col, Card, Button, Tag, Space, Typography, Avatar,
@@ -115,17 +115,18 @@ const ArticleReviewPage = () => {
     <ConfigProvider theme={{
       algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
       token: {
-        colorBgContainer: darkMode ? '#1e293b' : '#fff',
+        colorBgContainer: darkMode ? '#1E293B' : '#fff',
+          fontFamily: "'Plus Jakarta Sans', 'DM Sans', sans-serif",
         colorBorder: darkMode ? '#334155' : '#e5e7eb',
         colorText: darkMode ? '#cbd5e1' : '#1a1a2e',
         colorTextSecondary: darkMode ? '#94a3b8' : '#6b7280',
-        colorBgElevated: darkMode ? '#1e293b' : '#fff',
+        colorBgElevated: darkMode ? '#1E293B' : '#fff',
         colorFillAlter: darkMode ? '#0f172a' : '#fafafa',
         colorFillContent: darkMode ? '#0f172a' : '#fff',
         colorFillQuaternary: darkMode ? '#0f172a' : '#f5f5f5',
       }
     }}>
-      <div className={`max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 ${darkMode ? 'dark-mode' : ''}`} style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
+      <div className={`max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 ${darkMode ? 'dark-mode' : ''}`} style={{ background: darkMode ? '#0F172A' : '#f8fafc', minHeight: '100vh' }}>
         {/* Back Button */}
         <Button
           icon={<ArrowLeftOutlined />}
@@ -183,7 +184,7 @@ const ArticleReviewPage = () => {
               darkMode={darkMode}
               extraAfter={
                 (content.seo_meta_title || content.seo_meta_description || content.seo_meta_keywords) ? (
-                  <div style={{ marginTop: 24, padding: '16px', background: darkMode ? '#0f172a' : '#f6f8fa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                  <div style={{ marginTop: 24, padding: '16px', background: darkMode ? '#0F172A' : '#f6f8fa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
                     <Text strong style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 10 }}>SEO Settings</Text>
                     {content.seo_meta_title && <div style={{ marginBottom: 6 }}><Text type="secondary" style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#6b7280' }}>Meta Title</Text><div><Text style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{content.seo_meta_title}</Text></div></div>}
                     {content.seo_meta_description && <div style={{ marginBottom: 6 }}><Text type="secondary" style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#6b7280' }}>Meta Description</Text><div><Text style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{content.seo_meta_description}</Text></div></div>}
@@ -371,7 +372,7 @@ const ArticleReviewPage = () => {
           placeholder="Describe the changes needed..."
           autoFocus
           className="rounded-lg border-gray-300 focus:border-primary-500 focus:ring-primary-500"
-          style={{ background: darkMode ? '#0f172a' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}
+          style={{ background: darkMode ? '#0F172A' : '#fff', borderColor: darkMode ? '#334155' : '#e5e7eb', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}
         />
       </Modal>
 

@@ -3,43 +3,268 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
-import { Mail, Lock, ArrowRight, Eye, EyeOff, Sparkles, Shield, Zap, Globe, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Star } from 'lucide-react';
+import SaaSLeadJourneyAnimation from '../components/auth/SaaSLeadJourneyAnimation';
 
-const FEATURES = [
-  { icon: Sparkles, text: 'AI & Machine Learning insights' },
-  { icon: Shield, text: 'Cybersecurity news & analysis' },
-  { icon: Globe, text: 'Cloud computing resources' },
-  { icon: Zap, text: 'Data analytics deep-dives' },
-];
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,700;0,800;1,700&display=swap');
+
+  /* ── Page: no scrollbar ever ── */
+  .lp-root {
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* LEFT — flowchart */
+  .lp-left {
+    width: 50%;
+    flex-shrink: 0;
+    display: none;
+    position: relative;
+    overflow: hidden;
+  }
+  @media (min-width: 1024px) { .lp-left { display: block; } }
+
+  /* RIGHT — clean white */
+  .lp-right {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #ffffff;
+  }
+
+  /* White card */
+  .lp-card {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 28px;
+    padding: 32px 32px 24px;
+    background: #ffffff;
+    border: 1px solid #E8EDF5;
+    border-radius: 24px;
+    box-shadow:
+      0 4px 24px rgba(11,31,77,0.08),
+      0 1px 4px rgba(11,31,77,0.06);
+    animation: cardIn 0.6s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  @keyframes cardIn {
+    from { opacity:0; transform:translateY(28px) scale(0.96); }
+    to   { opacity:1; transform:translateY(0) scale(1); }
+  }
+
+  /* Standalone Animated Logo — Clean, Enlarged & Floating */
+  .lp-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .lp-logo-img {
+    height: 72px;
+    width: auto;
+    max-width: 250px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 16px rgba(11, 31, 77, 0.12));
+    animation: logoLiveFloat 3.8s ease-in-out infinite alternate;
+    transition: transform 0.3s ease, filter 0.3s ease;
+    cursor: pointer;
+  }
+  .lp-logo-img:hover {
+    transform: translateY(-8px) scale(1.06);
+    filter: drop-shadow(0 12px 24px rgba(247, 148, 29, 0.28));
+  }
+  @keyframes logoLiveFloat {
+    0% {
+      transform: translateY(0px) scale(1);
+      filter: drop-shadow(0 4px 10px rgba(11, 31, 77, 0.08));
+    }
+    50% {
+      transform: translateY(-8px) scale(1.03);
+      filter: drop-shadow(0 14px 22px rgba(247, 148, 29, 0.22));
+    }
+    100% {
+      transform: translateY(0px) scale(1);
+      filter: drop-shadow(0 4px 10px rgba(11, 31, 77, 0.08));
+    }
+  }
+  .lp-logo-fallback {
+    width: 68px; height: 68px;
+    border-radius: 18px;
+    background: linear-gradient(135deg,#0B1F4D,#1a365d);
+    color:#fff; font-weight:800; font-size:1.3rem;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 10px 24px rgba(11,31,77,0.25);
+    animation: logoLiveFloat 3.8s ease-in-out infinite alternate;
+  }
+
+  /* Heading */
+  .lp-heading { text-align: center; margin-bottom: 20px; }
+  .lp-heading h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.7rem; font-weight: 700;
+    color: #0F172A; line-height: 1.2;
+    margin-bottom: 6px; letter-spacing: -0.02em;
+  }
+  .lp-heading h1 em { font-style: italic; color: #F7941D; }
+  .lp-heading p {
+    font-size: 0.82rem;
+    color: #64748B;
+    line-height: 1.5; font-weight: 400;
+  }
+
+  /* Alert */
+  .lp-alert {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 13px; border-radius: 12px;
+    margin-bottom: 14px; font-size: 0.8rem; line-height: 1.5;
+    animation: alertIn 0.3s ease-out;
+  }
+  @keyframes alertIn { from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;} }
+  .lp-alert--err { background:rgba(220,38,38,.08); border:1px solid rgba(220,38,38,.2); color:#DC2626; }
+  .lp-alert--ok  { background:rgba(22,163,74,.08);  border:1px solid rgba(22,163,74,.2);  color:#16A34A; }
+  .lp-alert svg  { flex-shrink:0; margin-top:1px; }
+
+  /* Field */
+  .lp-field { margin-bottom: 12px; }
+  .lp-label {
+    display: block; font-size: 0.73rem; font-weight: 600;
+    color: #475569; margin-bottom: 5px; letter-spacing: 0.03em;
+  }
+  .lp-iw { position: relative; }
+  .lp-ii {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; color: #94A3B8;
+    pointer-events: none; z-index: 2; transition: color .2s;
+  }
+  .lp-iw:focus-within .lp-ii { color: #0B1F4D; }
+  .lp-input {
+    width: 100%; height: 44px;
+    padding: 0 12px 0 38px;
+    border-radius: 11px;
+    font-size: 0.86rem; font-family: 'DM Sans', sans-serif;
+    outline: none; box-sizing: border-box;
+    transition: all 0.25s cubic-bezier(0.22,1,0.36,1);
+    background: #F8FAFC;
+    border: 1.5px solid #E2E8F0;
+    color: #0F172A;
+  }
+  .lp-input::placeholder { color: #94A3B8; }
+  .lp-input:focus {
+    border-color: #0B1F4D;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(11,31,77,0.08);
+  }
+  .lp-input--err { border-color: #DC2626!important; }
+  .lp-eye {
+    position:absolute; right:11px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer;
+    color:#94A3B8; padding:4px; border-radius:5px;
+    transition:color .2s; z-index:2; line-height:0;
+  }
+  .lp-eye:hover { color:#475569; }
+
+  /* Remember / Forgot */
+  .lp-row {
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 16px;
+  }
+  .lp-ck-wrap { display:flex; align-items:center; gap:7px; cursor:pointer; }
+  .lp-ck {
+    width:16px; height:16px; border-radius:5px;
+    border:1.5px solid #CBD5E1;
+    appearance:none; -webkit-appearance:none;
+    cursor:pointer; transition:all .2s; position:relative;
+    flex-shrink:0; background:#ffffff;
+  }
+  .lp-ck:checked { background:#0B1F4D; border-color:#0B1F4D; }
+  .lp-ck:checked::after {
+    content:'✓'; position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:9px; font-weight:800;
+  }
+  .lp-ck-lbl { font-size:.77rem; font-weight:500; color:#64748B; cursor:pointer; }
+  .lp-forgot {
+    font-size:.77rem; font-weight:600;
+    color:#0B1F4D; text-decoration:none; transition:color .2s;
+  }
+  .lp-forgot:hover { color:#F7941D; }
+
+  /* Submit button */
+  .lp-btn {
+    width:100%; height:48px; border:none; border-radius:12px;
+    font-family:'DM Sans',sans-serif; font-size:.9rem; font-weight:700;
+    color:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    position:relative; overflow:hidden;
+    transition:all .3s cubic-bezier(0.22,1,0.36,1);
+    background:linear-gradient(135deg,#F7941D 0%,#E67E00 100%);
+    box-shadow:0 4px 22px rgba(247,148,29,0.4);
+    margin-bottom:16px;
+  }
+  .lp-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 30px rgba(247,148,29,0.55); }
+  .lp-btn:active:not(:disabled) { transform:translateY(0); }
+  .lp-btn:disabled { opacity:.55; cursor:not-allowed; }
+  .lp-btn::after {
+    content:''; position:absolute; top:0; left:-100%;
+    width:100%; height:100%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,0.18),transparent);
+    transition:left .55s;
+  }
+  .lp-btn:hover:not(:disabled)::after { left:100%; }
+
+  /* Switch */
+  .lp-switch { text-align:center; font-size:.82rem; color:#64748B; margin-bottom:14px; }
+  .lp-switch a { font-weight:700; text-decoration:none; color:#0B1F4D; margin-left:4px; transition:color .2s; }
+  .lp-switch a:hover { color:#F7941D; }
+
+  /* Demo box */
+  .lp-demo {
+    padding:11px 13px; border-radius:11px;
+    background:#FFF7ED;
+    border:1px solid #FED7AA;
+  }
+  .lp-demo-hd {
+    font-size:.6rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.14em;
+    color:#EA580C; margin-bottom:5px;
+    display:flex; align-items:center; gap:5px;
+  }
+  .lp-demo-row { font-size:.72rem; line-height:1.7; color:#78716C; }
+
+  @keyframes spin { to { transform:rotate(360deg); } }
+`;
 
 const Login = () => {
-  const { darkMode } = useTheme();
-  const { cmsLogo, mainLogo } = useSiteSettings();
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [remember, setRemember] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const { login, isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
+  const { darkMode }                      = useTheme();
+  const { cmsLogo, mainLogo }             = useSiteSettings();
+  const [loading, setLoading]             = useState(false);
+  const [showPassword, setShowPassword]   = useState(false);
+  const [remember, setRemember]           = useState(false);
+  const [email, setEmail]                 = useState('');
+  const [password, setPassword]           = useState('');
+  const [error, setError]                 = useState('');
+  const [success, setSuccess]             = useState(false);
+  const { login, isAuthenticated, user }  = useAuth();
+  const navigate                          = useNavigate();
 
   useEffect(() => {
-    const rememberedEmail = localStorage.getItem('rememberedEmail');
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-      setRemember(true);
-    }
+    const r = localStorage.getItem('rememberedEmail');
+    if (r) { setEmail(r); setRemember(true); }
   }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       setSuccess(true);
-      setTimeout(() => {
-        navigate(user?.role === 'admin' ? '/admin' : '/user-dashboard');
-      }, 500);
+      setTimeout(() => navigate(user?.role === 'admin' ? '/admin' : '/user-dashboard'), 500);
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -47,7 +272,6 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const result = await login(email, password);
       if (result.success) {
@@ -55,203 +279,140 @@ const Login = () => {
         else localStorage.removeItem('rememberedEmail');
         setSuccess(true);
       } else {
-        setError(result.message || 'Login failed. Please try again.');
+        setError(result.message || result.error || 'Login failed. Please try again.');
       }
-    } catch (error) {
-      setError(error.response?.data?.message || 'An error occurred. Please try again.');
-      console.error(error);
+    } catch (err) {
+      setError(err.response?.data?.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const logoSrc = cmsLogo || mainLogo;
+
   return (
-    <div className="min-h-screen flex" style={{ background: darkMode ? '#0f172a' : 'var(--color-bg-alt)' }}>
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 flex-col justify-center items-center p-12 relative overflow-hidden bg-gradient-to-br from-[var(--color-primary)] via-[var(--color-primary-hover)] to-[var(--color-accent)]">
-        {/* Background decorations */}
-        <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute bottom-[-80px] left-[-80px] w-[300px] h-[300px] rounded-full bg-white/8 pointer-events-none" />
-        <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(#fff_1px,transparent_1px),linear-gradient(90deg,#fff_1px,transparent_1px)] bg-[length:40px_40px] pointer-events-none" />
+    <>
+      <style>{styles}</style>
+      <div className="lp-root">
 
-        {/* Floating glass cards */}
-        <div className="absolute top-20 right-20 w-32 h-32 bg-white/5 rounded-2xl border border-white/10 pointer-events-none" />
-        <div className="absolute bottom-32 left-16 w-24 h-24 bg-white/4 rounded-xl border border-white/8 pointer-events-none" />
+        {/* LEFT — flowchart fills its full height */}
+        <div className="lp-left">
+          <SaaSLeadJourneyAnimation />
+        </div>
 
-        {/* Logo */}
-        <div className="mb-12 self-start">
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 border border-white/20 shadow-2xl">
-            {(cmsLogo || mainLogo) ? (
-              <img src={cmsLogo || mainLogo} alt="TGS Tech Info" className="h-12 w-auto rounded-xl" />
-            ) : (
-              <div className="h-12 w-12 flex items-center justify-center text-white font-bold text-xl rounded-xl bg-white/20">
-                TGS
+        {/* RIGHT — vivid gradient + glass card */}
+        <div className="lp-right">
+          <div className="lp-card">
+
+            {/* Standalone Animated Logo */}
+            <div className="lp-logo">
+              {logoSrc
+                ? <img src={logoSrc} alt="TGS Tech Info" className="lp-logo-img" />
+                : <div className="lp-logo-fallback">TGS</div>
+              }
+            </div>
+
+            {/* Heading */}
+            <div className="lp-heading">
+              <h1>Welcome back to <em>TGS Tech</em></h1>
+              <p>What's new today? Sign in and find out.</p>
+            </div>
+
+            {/* Alerts */}
+            {error && (
+              <div className="lp-alert lp-alert--err" role="alert">
+                <AlertCircle size={15} />
+                <div><strong style={{ display:'block', marginBottom:1 }}>Login failed</strong>{error}</div>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="text-center w-full">
-          <div className="text-xs font-bold text-[var(--color-accent)] uppercase tracking-[0.2em] mb-4">Welcome Back</div>
-          <h1 className="text-white font-black text-4xl leading-tight mb-4 tracking-tight">
-            Your Tech <span className="bg-gradient-to-r from-[var(--color-accent)] to-white bg-clip-text text-transparent">Intelligence</span> Awaits
-          </h1>
-          <p className="text-white/60 text-base leading-relaxed max-w-[320px] mx-auto mb-10">
-            Sign in to access exclusive articles, expert interviews, and the latest tech insights.
-          </p>
-        </div>
-
-        {/* Features */}
-        <div className="flex flex-col gap-4 w-full mb-10">
-          {FEATURES.map((feature, index) => (
-            <div key={index} className="flex items-center gap-4 group">
-              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-all duration-300">
-                <feature.icon className="w-5 h-5 text-[var(--color-accent)]" />
+            {success && (
+              <div className="lp-alert lp-alert--ok" role="status">
+                <CheckCircle size={15} /><strong>Success — redirecting…</strong>
               </div>
-              <span className="text-sm text-white/90 font-medium group-hover:text-white transition-colors duration-300">{feature.text}</span>
-            </div>
-          ))}
-        </div>
+            )}
 
-        {/* Testimonial card */}
-        <div className="p-5 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl w-full">
-          <div className="text-sm text-white/80 leading-relaxed">
-            "500+ tech experts. Weekly insights. Always free."
-          </div>
-        </div>
-      </div>
+            {/* Form */}
+            <form onSubmit={handleSubmit} noValidate>
 
-      {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 lg:p-12">
-        <div className="w-full max-w-[400px] md:max-w-md space-y-6">
-          <div className="space-y-2 text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-[var(--color-heading)]">Sign In</h1>
-            <p className="text-sm text-[var(--color-muted)]">Enter your credentials to access your account</p>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm text-red-800 font-medium">Login Failed</p>
-                <p className="text-sm text-red-600 mt-1">{error}</p>
+              {/* Email */}
+              <div className="lp-field">
+                <label htmlFor="login-email" className="lp-label">Email Address</label>
+                <div className="lp-iw">
+                  <Mail className="lp-ii" aria-hidden="true" />
+                  <input
+                    id="login-email" type="email" autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email} onChange={(e) => setEmail(e.target.value)}
+                    className={`lp-input${error ? ' lp-input--err' : ''}`}
+                    required disabled={loading || success}
+                  />
+                </div>
               </div>
-            </div>
-          )}
 
-          {success && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-              <p className="text-sm text-green-800 font-medium">Login successful! Redirecting...</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-[var(--color-body)]">Email Address</label>
-              <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                <input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={`pl-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500/20 focus:border-blue-500'} ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400' : 'bg-white text-gray-900 placeholder-gray-500'}`}
-                  required
-                  disabled={loading || success}
-                />
+              {/* Password */}
+              <div className="lp-field">
+                <label htmlFor="login-password" className="lp-label">Password</label>
+                <div className="lp-iw">
+                  <Lock className="lp-ii" aria-hidden="true" />
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
+                    value={password} onChange={(e) => setPassword(e.target.value)}
+                    className={`lp-input${error ? ' lp-input--err' : ''}`}
+                    style={{ paddingRight:44 }}
+                    required disabled={loading || success}
+                  />
+                  <button type="button" className="lp-eye"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide' : 'Show'}
+                    disabled={loading || success}>
+                    {showPassword ? <EyeOff size={15}/> : <Eye size={15}/>}
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-[var(--color-body)]">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)] transition-colors" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`pl-10 pr-10 h-11 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 transition-all duration-200 ${error ? 'border-red-300 focus:ring-red-200 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500/20 focus:border-blue-500'} ${darkMode ? 'bg-gray-800 text-white placeholder-gray-400' : 'bg-white text-gray-900 placeholder-gray-500'}`}
-                  required
-                  disabled={loading || success}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)] hover:text-[var(--color-body)] transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  disabled={loading || success}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className={`h-4 w-4 rounded-sm focus:ring-2 focus:ring-blue-500/20 ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'}`}
-                  disabled={loading || success}
-                />
-                <label htmlFor="remember" className="text-sm text-[var(--color-body)] cursor-pointer hover:text-[var(--color-primary)] transition-colors">
-                  Remember me
+              {/* Remember / Forgot */}
+              <div className="lp-row">
+                <label className="lp-ck-wrap">
+                  <input type="checkbox" checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                    className="lp-ck" disabled={loading || success} aria-label="Remember me" />
+                  <span className="lp-ck-lbl">Remember me</span>
                 </label>
+                <Link to="/forgot-password" className="lp-forgot">Forgot password?</Link>
               </div>
-              <Link to="/forgot-password" className="text-sm font-semibold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors">
-                Forgot password?
-              </Link>
+
+              {/* Submit */}
+              <button type="submit" id="login-submit" disabled={loading || success} className="lp-btn">
+                {loading
+                  ? <><Loader2 size={16} style={{ animation:'spin 1s linear infinite' }}/><span>Signing in…</span></>
+                  : success
+                  ? <><CheckCircle size={16}/><span>Success!</span></>
+                  : <><span>Sign In</span><ArrowRight size={16}/></>
+                }
+              </button>
+            </form>
+
+            {/* Switch */}
+            <div className="lp-switch">
+              Don't have an account?<Link to="/register">Create account →</Link>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading || success}
-              className="w-full h-11 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white shadow-lg shadow-[var(--color-primary)]/20 transition-all duration-200 hover:shadow-xl hover:shadow-[var(--color-primary)]/30 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:translate-y-0"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Signing in...</span>
-                </>
-              ) : success ? (
-                <>
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Success!</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="flex flex-col space-y-4">
-            <div className="text-center text-sm">
-              <span className="text-[var(--color-muted)]">Don't have an account? </span>
-              <Link to="/register" className="text-[var(--color-primary)] font-bold hover:text-[var(--color-primary-hover)] transition-colors">
-                Create Account →
-              </Link>
-            </div>
-
-            {/* Demo Credentials */}
-            <div className="bg-[var(--color-bg-alt)] border border-[var(--color-border)] rounded-xl p-4 text-left">
-              <div className="text-xs font-bold text-[var(--color-primary)] uppercase tracking-wider mb-2">Demo Credentials</div>
-              <div className="text-xs text-[var(--color-body)] leading-relaxed">
-                <div className="mb-1">👑 <strong>Admin:</strong> admin@tgstechinfo.com / Admin@123</div>
-                <div>👤 <strong>User:</strong> user@tgstechinfo.com / User@123</div>
+            {/* Demo credentials */}
+            <div className="lp-demo">
+              <div className="lp-demo-hd"><Star size={9}/>Demo Credentials</div>
+              <div className="lp-demo-row">
+                <div>👑 <strong style={{ color:'rgba(255,255,255,0.58)' }}>Admin:</strong> admin@tgstechinfo.com / Admin@123</div>
+                <div>👤 <strong style={{ color:'rgba(255,255,255,0.58)' }}>User:</strong> user@tgstechinfo.com / User@123</div>
               </div>
             </div>
-          </div>
-        </div>
+
+          </div>{/* /card */}
+        </div>{/* /right */}
       </div>
-    </div>
+    </>
   );
 };
 

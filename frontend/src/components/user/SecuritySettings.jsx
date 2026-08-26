@@ -7,7 +7,7 @@ import {
 import { 
   SafetyOutlined, 
   LockOutlined, 
-  ShieldCheckOutlined,
+  SafetyCertificateOutlined,
   KeyOutlined,
   MobileOutlined,
   MailOutlined,
@@ -56,7 +56,7 @@ const SecuritySettings = () => {
 
   const securityRecommendations = [
     {
-      icon: <ShieldCheckOutlined />,
+      icon: <SafetyCertificateOutlined />,
       title: 'Enable Two-Factor Authentication',
       description: 'Add an extra layer of security to your account',
       action: 'Enable',
@@ -120,7 +120,7 @@ const SecuritySettings = () => {
           <Card>
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: 48, color: '#52c41a', marginBottom: 8 }}>
-                <ShieldCheckOutlined />
+                <SafetyCertificateOutlined />
               </div>
               <Title level={4} style={{ margin: 0 }}>Security Score</Title>
               <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#52c41a' }}>85%</Text>

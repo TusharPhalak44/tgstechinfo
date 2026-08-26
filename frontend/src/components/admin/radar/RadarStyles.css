@@ -1,0 +1,617 @@
+/* ==========================================================================
+   GLOBAL WEBSITE INTELLIGENCE RADAR — LIGHT & DARK THEME STYLES
+   ========================================================================== */
+
+:root {
+  /* ── Radar Accent Colors ── */
+  --radar-cyan: #0AAEEF;
+  --radar-cyan-glow: rgba(10, 174, 239, 0.45);
+  --radar-green: #10B981;
+  --radar-yellow: #F59E0B;
+  --radar-red: #EF4444;
+  --radar-purple: #A855F7;
+
+  /* ── TGS Logo Brand Colors ── */
+  --logo-navy:   #0B1F4D;
+  --logo-navy2:  #1D3D8F;
+  --logo-blue:   #2563EB;
+  --logo-cyan:   #0AAEEF;
+  --logo-orange: #F7941D;
+  --logo-orange-glow: rgba(247, 148, 29, 0.4);
+  --logo-navy-glow:   rgba(11, 31, 77, 0.35);
+}
+
+/* ─── GLOBAL UNIFIED FONT ─── */
+.radar-dashboard-root,
+.radar-dashboard-root * {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* ─── DARK THEME ─── */
+.radar-dashboard-root.dark,
+[data-theme="dark"] .radar-dashboard-root,
+.radar-dashboard-root {
+  background: #0f172a !important;
+  color: #f8fafc;
+}
+
+.radar-dashboard-root.dark .radar-glass-panel,
+[data-theme="dark"] .radar-dashboard-root .radar-glass-panel,
+.radar-dashboard-root .radar-glass-panel {
+  background: rgba(30, 41, 59, 0.75) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.25), inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+}
+
+.radar-dashboard-root.dark .radar-glass-panel:hover,
+[data-theme="dark"] .radar-dashboard-root .radar-glass-panel:hover,
+.radar-dashboard-root .radar-glass-panel:hover {
+  border-color: rgba(14, 165, 233, 0.35) !important;
+  box-shadow: 0 8px 30px 0 rgba(0, 0, 0, 0.35) !important;
+}
+
+.radar-dashboard-root.dark .radar-tooltip,
+[data-theme="dark"] .radar-dashboard-root .radar-tooltip,
+.radar-dashboard-root .radar-tooltip {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  color: #f1f5f9;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+}
+
+/* ─── LIGHT THEME ─── */
+.radar-dashboard-root.light {
+  background: #f8fafc !important;
+  color: #0f172a;
+}
+
+.radar-dashboard-root.light .radar-glass-panel {
+  background: #ffffff !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  border-radius: 14px;
+}
+
+.radar-dashboard-root.light .radar-glass-panel:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.07);
+}
+
+.radar-dashboard-root.light .radar-tooltip {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Radar Scanlines Overlay */
+.radar-grid-bg {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+}
+
+/* Radar Pulse Animations */
+@keyframes radarBeaconPulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.pulse-beacon {
+  animation: radarBeaconPulse 2.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+
+@keyframes liveStatusBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
+}
+
+.live-indicator-dot {
+  animation: liveStatusBlink 1.8s ease-in-out infinite;
+}
+
+/* Custom Cyber Scrollbar */
+.cyber-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.cyber-scrollbar::-webkit-scrollbar-track {
+  background: rgba(8, 16, 31, 0.2);
+  border-radius: 4px;
+}
+
+.cyber-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(14, 165, 233, 0.3);
+  border-radius: 4px;
+}
+
+.cyber-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 165, 233, 0.6);
+}
+
+/* Glowing text utilities */
+.text-cyan-glow {
+  color: #0AAEEF;
+  text-shadow: 0 0 12px rgba(10, 174, 239, 0.6);
+}
+
+.text-green-glow {
+  color: #10B981;
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
+
+.text-yellow-glow {
+  color: #F59E0B;
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+.text-red-glow {
+  color: #EF4444;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+}
+
+.text-purple-glow {
+  color: #A855F7;
+  text-shadow: 0 0 12px rgba(168, 85, 247, 0.6);
+}
+
+/* Interactive Marker Tooltip */
+.radar-tooltip {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  z-index: 50;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  backdrop-filter: blur(8px);
+}
+
+/* ─── CYBER GRID & CARD UTILITIES ─── */
+@keyframes cyberCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cyber-card-animated {
+  animation: cyberCardFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.cyber-image-zoom {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.radar-card-hover {
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.radar-card-hover:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 0 12px 32px 0 rgba(10, 174, 239, 0.18) !important;
+  border-color: rgba(10, 174, 239, 0.4) !important;
+}
+
+.radar-card-hover:hover .cyber-image-zoom {
+  transform: scale(1.08) !important;
+}
+
+/* Cyber Badge / Chip */
+.radar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  background: rgba(14, 165, 233, 0.08);
+  color: #38bdf8;
+  backdrop-filter: blur(6px);
+}
+
+.radar-dashboard-root.light .radar-chip {
+  background: rgba(10, 174, 239, 0.1);
+  color: #0284c7;
+  border-color: rgba(10, 174, 239, 0.3);
+}
+
+/* Cyber Category Tab Pill */
+.cyber-tab-pill {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.cyber-tab-pill:hover {
+  background: rgba(14, 165, 233, 0.12);
+  color: #38bdf8;
+  border-color: rgba(14, 165, 233, 0.35);
+  transform: translateY(-1px);
+}
+.cyber-tab-pill.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(56, 189, 248, 0.1) 100%);
+  color: #38bdf8;
+  border-color: #0aaeef;
+  box-shadow: 0 0 15px rgba(10, 174, 239, 0.25);
+}
+
+.radar-dashboard-root.light .cyber-tab-pill {
+  background: rgba(255, 255, 255, 0.8);
+  color: #475569;
+  border-color: rgba(10, 174, 239, 0.25);
+}
+.radar-dashboard-root.light .cyber-tab-pill:hover {
+  background: rgba(10, 174, 239, 0.12);
+  color: #0284c7;
+}
+.radar-dashboard-root.light .cyber-tab-pill.active {
+  background: linear-gradient(135deg, rgba(10, 174, 239, 0.18) 0%, rgba(224, 242, 254, 0.8) 100%);
+  color: #0284c7;
+  border-color: #0aaeef;
+  box-shadow: 0 4px 12px rgba(10, 174, 239, 0.15);
+}
+
+/* Ant Design Table Overrides inside Cyber Radar */
+.radar-dashboard-root .ant-table {
+  background: transparent !important;
+  color: inherit !important;
+}
+.radar-dashboard-root .ant-table-thead > tr > th {
+  background: rgba(14, 165, 233, 0.08) !important;
+  color: #38bdf8 !important;
+  border-bottom: 1px solid rgba(14, 165, 233, 0.2) !important;
+  font-weight: 700 !important;
+  font-size: 0.78rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+.radar-dashboard-root.light .ant-table-thead > tr > th {
+  background: rgba(10, 174, 239, 0.08) !important;
+  color: #0369a1 !important;
+}
+.radar-dashboard-root .ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(14, 165, 233, 0.1) !important;
+}
+.radar-dashboard-root .ant-table-tbody > tr:hover > td {
+  background: rgba(14, 165, 233, 0.06) !important;
+}
+.radar-dashboard-root .ant-pagination .ant-pagination-item {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border-color: rgba(14, 165, 233, 0.25) !important;
+}
+.radar-dashboard-root .ant-pagination .ant-pagination-item-active {
+  border-color: #0aaeef !important;
+  background: rgba(10, 174, 239, 0.2) !important;
+}
+.radar-dashboard-root .ant-pagination .ant-pagination-item a {
+  color: inherit !important;
+}
+
+/* ==========================================================================
+   TGS BRAND UTILITIES — Logo Colors Applied Across All Admin Pages
+   Navy #0B1F4D · Blue #1D3D8F / #2563EB · Orange #F7941D · Cyan #0AAEEF
+   ========================================================================== */
+
+/* ── Logo Gradient Button ── */
+.logo-btn-primary {
+  background: linear-gradient(135deg, var(--logo-navy) 0%, var(--logo-navy2) 50%, var(--logo-blue) 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px var(--logo-navy-glow) !important;
+  font-weight: 700 !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.logo-btn-primary:hover {
+  background: linear-gradient(135deg, var(--logo-navy2) 0%, var(--logo-blue) 100%) !important;
+  box-shadow: 0 6px 20px var(--logo-navy-glow), 0 0 0 2px rgba(37,99,235,0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+.logo-btn-orange {
+  background: linear-gradient(135deg, var(--logo-orange) 0%, #e07b10 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 4px 14px var(--logo-orange-glow) !important;
+  font-weight: 700 !important;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.logo-btn-orange:hover {
+  box-shadow: 0 6px 20px var(--logo-orange-glow) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ── Orange Accent Badge ── */
+.logo-badge-orange {
+  background: rgba(247, 148, 29, 0.15);
+  color: var(--logo-orange);
+  border: 1px solid rgba(247, 148, 29, 0.35);
+  border-radius: 8px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* ── Navy Accent Badge ── */
+.logo-badge-navy {
+  background: rgba(11, 31, 77, 0.1);
+  color: var(--logo-navy2);
+  border: 1px solid rgba(11, 31, 77, 0.25);
+  border-radius: 8px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* ── Section Header with Brand Stripe ── */
+.logo-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--logo-navy);
+  border-left: 4px solid var(--logo-orange);
+  padding-left: 12px;
+  letter-spacing: -0.01em;
+}
+.radar-dashboard-root:not(.light) .logo-section-header {
+  color: #f1f5f9;
+  border-left-color: var(--logo-orange);
+}
+
+/* ── KPI Card with Logo Colors ── */
+.logo-kpi-card {
+  border-radius: 14px;
+  padding: 20px 22px;
+  border: 1px solid rgba(11, 31, 77, 0.12);
+  background: #ffffff;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.logo-kpi-card:hover {
+  box-shadow: 0 8px 24px var(--logo-navy-glow);
+  transform: translateY(-3px);
+}
+.radar-dashboard-root:not(.light) .logo-kpi-card {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(255,255,255,0.08);
+}
+.logo-kpi-card .kpi-value {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--logo-cyan) 0%, var(--logo-orange) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+}
+.logo-kpi-card .kpi-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ── Orange Divider ── */
+.logo-divider-orange {
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--logo-orange) 0%, var(--logo-cyan) 100%);
+  margin: 0;
+  border: none;
+}
+
+/* ── Sidebar Active State ── */
+.radar-dashboard-root .ant-menu-item-selected,
+.admin-dark-side .ant-menu-item-selected {
+  border-left-color: var(--logo-orange) !important;
+}
+
+/* ── Table Head Brand Color ── */
+.radar-dashboard-root .ant-table-thead > tr > th {
+  background: linear-gradient(90deg, rgba(11, 31, 77, 0.07) 0%, rgba(10, 174, 239, 0.07) 100%) !important;
+  color: var(--logo-navy2) !important;
+  border-bottom: 1.5px solid rgba(11, 31, 77, 0.12) !important;
+}
+.radar-dashboard-root:not(.light) .ant-table-thead > tr > th {
+  background: linear-gradient(90deg, rgba(11, 31, 77, 0.35) 0%, rgba(10, 174, 239, 0.12) 100%) !important;
+  color: #93c5fd !important;
+  border-bottom-color: rgba(147, 197, 253, 0.15) !important;
+}
+
+/* ── Branded Tabs ── */
+.logo-tab-active {
+  color: var(--logo-orange) !important;
+  border-bottom-color: var(--logo-orange) !important;
+  font-weight: 700;
+}
+
+/* ── Orange glow on card hover ── */
+.logo-card-hover {
+  transition: all 0.26s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+.logo-card-hover:hover {
+  box-shadow: 0 8px 28px var(--logo-navy-glow), 0 0 0 1.5px rgba(247,148,29,0.25) !important;
+  transform: translateY(-3px) !important;
+}
+
+/* ── Brand Avatar / Icon Circle ── */
+.logo-icon-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: linear-gradient(135deg, var(--logo-navy) 0%, var(--logo-navy2) 100%);
+  color: var(--logo-orange);
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px var(--logo-navy-glow);
+}
+
+/* ── Brand orange text highlight ── */
+.text-logo-orange { color: var(--logo-orange) !important; }
+.text-logo-navy   { color: var(--logo-navy)   !important; }
+.text-logo-cyan   { color: var(--logo-cyan)   !important; }
+
+/* ==========================================================================
+   ANALYTICS TABS — Section Entry Animations & Tab Bar
+   ========================================================================== */
+
+/* ── Section slide-in on tab switch ── */
+@keyframes analyticsSectionEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.analytics-section-enter {
+  animation: analyticsSectionEnter 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Regional Globe zoom button ── */
+.globe-zoom-btn {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: rgba(10, 174, 239, 0.12);
+  border: 1px solid rgba(10, 174, 239, 0.3);
+  color: #38BDF8;
+  font-size: 18px; font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.globe-zoom-btn:hover {
+  background: rgba(10, 174, 239, 0.26);
+  transform: scale(1.12);
+  box-shadow: 0 0 14px rgba(10, 174, 239, 0.3);
+}
+
+/* ── Regional traffic bubble pulse ── */
+@keyframes regionBubblePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(10, 174, 239, 0.4); }
+  50%       { box-shadow: 0 0 0 10px rgba(10, 174, 239, 0); }
+}
+
+/* ── Heatmap cell hover ── */
+.heatmap-cell {
+  transition: outline 0.12s, opacity 0.12s;
+  cursor: default;
+}
+.heatmap-cell:hover {
+  outline: 1.5px solid rgba(10, 174, 239, 0.7);
+  opacity: 0.85;
+}
+
+/* ── CWV Good/Warn/Poor status colors ── */
+.cwv-good  { color: #10B981 !important; }
+.cwv-warn  { color: #F59E0B !important; }
+.cwv-poor  { color: #EF4444 !important; }
+
+/* ── Funnel step animation ── */
+@keyframes funnelGrow {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+
+/* ── Donut chart entry ── */
+@keyframes donutSpin {
+  from { stroke-dasharray: 0 9999; }
+}
+.donut-arc-animated {
+  animation: donutSpin 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Tab bar scrollbar hidden ── */
+.analytics-tab-bar {
+  scrollbar-width: none;
+}
+.analytics-tab-bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Tooltip for heatmap/charts ── */
+.chart-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  color: #f1f5f9;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-family: monospace;
+  z-index: 60;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+/* Light theme overrides for chart tooltip */
+.radar-dashboard-root.light .chart-tooltip {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Sparkline line draw animation ── */
+@keyframes dashAnim {
+  from {
+    stroke-dashoffset: 200;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── Smooth Chart Bar Transition ── */
+.chart-bar-animated {
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1), height 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+
