@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="100%" height="100%">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#020617" stop-opacity="0.95"/>
+    </linearGradient>
+
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0AAEEF"/>
+      <stop offset="50%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#0AAEEF" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="dbTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+
+    <linearGradient id="dbSide" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+
+    <linearGradient id="accentGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#F7941D"/>
+    </linearGradient>
+
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0AAEEF" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Ambient Glow Background -->
+  <circle cx="300" cy="225" r="180" fill="url(#glowGrad)" opacity="0.18" filter="blur(30px)"/>
+  <circle cx="200" cy="260" r="120" fill="#0AAEEF" opacity="0.12" filter="blur(40px)"/>
+
+  <!-- Isometric Grid Platform Lines -->
+  <g stroke="#38BDF8" stroke-width="1" opacity="0.15" fill="none">
+    <path d="M100,280 L300,380 L500,280 L300,180 Z"/>
+    <path d="M140,280 L300,360 L460,280 L300,200 Z"/>
+    <path d="M180,280 L300,340 L420,280 L300,220 Z"/>
+    
+    <!-- Connection Rays -->
+    <path d="M300,180 L300,380" stroke-dasharray="4,4"/>
+    <path d="M100,280 L500,280" stroke-dasharray="4,4"/>
+  </g>
+
+  <!-- ── Left Database Server Node ── -->
+  <g transform="translate(130, 190)" filter="url(#softShadow)">
+    <!-- Base Ellipse / Side -->
+    <path d="M0,40 C0,55 50,55 50,40 L50,80 C50,95 0,95 0,80 Z" fill="url(#dbSide)" stroke="#38BDF8" stroke-width="1.5"/>
+    <ellipse cx="25" cy="40" rx="25" ry="12" fill="url(#dbTop)" stroke="#0AAEEF" stroke-width="1.5"/>
+    <ellipse cx="25" cy="60" rx="25" ry="12" fill="none" stroke="#38BDF8" stroke-width="1.2" opacity="0.6"/>
+    <ellipse cx="25" cy="80" rx="25" ry="12" fill="none" stroke="#10B981" stroke-width="1.5"/>
+    <!-- LED Indicators -->
+    <circle cx="15" cy="50" r="2.5" fill="#10B981" filter="url(#neonGlow)"/>
+    <circle cx="25" cy="50" r="2.5" fill="#10B981"/>
+    <circle cx="35" cy="50" r="2.5" fill="#0AAEEF"/>
+  </g>
+
+  <!-- ── Right Database Server Node ── -->
+  <g transform="translate(420, 190)" filter="url(#softShadow)">
+    <path d="M0,40 C0,55 50,55 50,40 L50,80 C50,95 0,95 0,80 Z" fill="url(#dbSide)" stroke="#38BDF8" stroke-width="1.5"/>
+    <ellipse cx="25" cy="40" rx="25" ry="12" fill="url(#dbTop)" stroke="#0AAEEF" stroke-width="1.5"/>
+    <ellipse cx="25" cy="60" rx="25" ry="12" fill="none" stroke="#38BDF8" stroke-width="1.2" opacity="0.6"/>
+    <ellipse cx="25" cy="80" rx="25" ry="12" fill="none" stroke="#10B981" stroke-width="1.5"/>
+    <circle cx="15" cy="50" r="2.5" fill="#10B981"/>
+    <circle cx="25" cy="50" r="2.5" fill="#F7941D" filter="url(#neonGlow)"/>
+    <circle cx="35" cy="50" r="2.5" fill="#10B981"/>
+  </g>
+
+  <!-- Connecting Data Stream Lines -->
+  <path d="M180,240 Q240,290 300,270" fill="none" stroke="#0AAEEF" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.8"/>
+  <path d="M420,240 Q360,290 300,270" fill="none" stroke="#10B981" stroke-width="2.5" stroke-dasharray="6,4" opacity="0.8"/>
+
+  <!-- ── Central 3D High-Tech Holographic Shield ── -->
+  <g transform="translate(225, 75)" filter="url(#softShadow)">
+    <!-- Back Glow Contour -->
+    <path d="M75,10 C120,10 145,25 145,70 C145,135 85,185 75,195 C65,185 5,135 5,70 C5,25 30,10 75,10 Z" 
+          fill="url(#shieldGrad)" opacity="0.25" filter="url(#neonGlow)"/>
+
+    <!-- Main Shield Outer Glass Body -->
+    <path d="M75,15 C115,15 138,28 138,68 C138,126 84,172 75,182 C66,172 12,126 12,68 C12,28 35,15 75,15 Z" 
+          fill="#0B172E" stroke="url(#shieldGrad)" stroke-width="3"/>
+
+    <!-- Inner Shimmer Glass Core -->
+    <path d="M75,28 C104,28 122,38 122,70 C122,116 82,154 75,162 C68,154 28,116 28,70 C28,38 46,28 75,28 Z" 
+          fill="url(#shieldGrad)" opacity="0.15" stroke="#38BDF8" stroke-width="1" stroke-dasharray="4,2"/>
+
+    <!-- Big Center Verified Checkmark -->
+    <path d="M52,90 L68,106 L102,68" fill="none" stroke="#10B981" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" filter="url(#neonGlow)"/>
+    <path d="M52,90 L68,106 L102,68" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- ── Floating Verified Badge 1 (Deliverability 99.4%) ── -->
+  <g transform="translate(75, 110)" filter="url(#softShadow)">
+    <rect width="130" height="46" rx="12" fill="#0B132B" stroke="#0AAEEF" stroke-width="1.5" opacity="0.95"/>
+    <circle cx="24" cy="23" r="10" fill="rgba(10,174,239,0.2)" stroke="#0AAEEF" stroke-width="1.5"/>
+    <path d="M19,23 L23,27 L29,19" fill="none" stroke="#0AAEEF" stroke-width="2" stroke-linecap="round"/>
+    <text x="42" y="20" fill="#94A3B8" font-size="9" font-family="system-ui, sans-serif" font-weight="700">DELIVERABILITY</text>
+    <text x="42" y="34" fill="#38BDF8" font-size="13" font-family="system-ui, sans-serif" font-weight="800">99.4% Verified</text>
+  </g>
+
+  <!-- ── Floating Verified Badge 2 (30-Day Freshness Cycle) ── -->
+  <g transform="translate(395, 110)" filter="url(#softShadow)">
+    <rect width="135" height="46" rx="12" fill="#0B132B" stroke="#F7941D" stroke-width="1.5" opacity="0.95"/>
+    <circle cx="24" cy="23" r="10" fill="rgba(247,148,29,0.2)" stroke="#F7941D" stroke-width="1.5"/>
+    <path d="M21,19 A5,5 0 1,1 19,25" fill="none" stroke="#F7941D" stroke-width="2" stroke-linecap="round"/>
+    <polyline points="21,16 21,20 17,20" fill="none" stroke="#F7941D" stroke-width="1.5"/>
+    <text x="42" y="20" fill="#94A3B8" font-size="9" font-family="system-ui, sans-serif" font-weight="700">FRESHNESS SYNC</text>
+    <text x="42" y="34" fill="#FBBF24" font-size="13" font-family="system-ui, sans-serif" font-weight="800">30-Day Cycle</text>
+  </g>
+
+  <!-- ── Floating Bottom Badge 3 (Zero PII Compliance) ── -->
+  <g transform="translate(205, 310)" filter="url(#softShadow)">
+    <rect width="190" height="42" rx="21" fill="#0B132B" stroke="#10B981" stroke-width="1.5" opacity="0.95"/>
+    <circle cx="22" cy="21" r="11" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5"/>
+    <!-- Lock Icon -->
+    <rect x="17" y="19" width="10" height="8" rx="1.5" fill="#10B981"/>
+    <path d="M19,19 L19,16 C19,14.5 25,14.5 25,16 L25,19" fill="none" stroke="#10B981" stroke-width="1.5"/>
+    <text x="40" y="25" fill="#F1F5F9" font-size="11" font-family="system-ui, sans-serif" font-weight="800">100% Zero PII Exposure</text>
+  </g>
+
+  <!-- Glowing Particles / Sparkles -->
+  <circle cx="180" cy="90" r="3" fill="#38BDF8" filter="url(#neonGlow)"/>
+  <circle cx="410" cy="85" r="2.5" fill="#10B981" filter="url(#neonGlow)"/>
+  <circle cx="160" cy="310" r="2" fill="#F7941D"/>
+  <circle cx="450" cy="300" r="3" fill="#0AAEEF" filter="url(#neonGlow)"/>
+</svg>

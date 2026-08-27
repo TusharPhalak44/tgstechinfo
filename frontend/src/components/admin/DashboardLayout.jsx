@@ -37,6 +37,7 @@ import {
   CrownOutlined,
   RocketOutlined,
   CompassOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -480,6 +481,12 @@ const DashboardLayout = () => {
         navItem('/admin/submissions', <SendOutlined style={{ color: D ? '#FB923C' : '#EA580C' }} />, 'Form Submissions', unreadLeads > 0 ? unreadLeads : null, '#EA580C'),
         navItem('/dashboard/forms', <FormOutlined style={{ color: D ? '#FBBF24' : '#D97706' }} />, 'Forms Builder'),
         navItem('/dashboard/email-templates', <MailOutlined style={{ color: D ? '#F59E0B' : '#B45309' }} />, 'Email Templates'),
+      ]),
+
+      /* ── 4.5. AUDIENCE INTELLIGENCE (Taraj Cyan & Deep Blue) ── */
+      navGroup('g-audience', '🎯 Audience Intelligence', [
+        navItem('/audience-intelligence', <CompassOutlined style={{ color: D ? '#38BDF8' : '#0284C7' }} />, 'Live Audience Sizing'),
+        navItem('/admin/audience', <DatabaseOutlined style={{ color: D ? '#0AAEEF' : '#0284C7' }} />, 'Data Demographics Hub'),
       ]),
 
       /* ── 5. SEO & DISTRIBUTION (Teal & Cyan) ── */

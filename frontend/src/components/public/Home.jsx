@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { Card, CardContent } from '@/components/ui/card';
+import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem } from '../../lib/contentRoute';
 
@@ -1112,35 +1113,20 @@ const HeroSection = () => {
 
           {/* Dual Action CTA Buttons */}
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 28 }}>
-            {/* Primary CTA: Explore Insights */}
-            <button
+            {/* Primary CTA: Explore Insights (Animated Shimmer Button) */}
+            <ShimmerButton
               onClick={() => navigate('/articles')}
-              style={{
-                padding: '12px 28px',
-                borderRadius: 24,
-                border: 'none',
-                background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
-                color: '#FFFFFF',
-                fontSize: 14,
-                fontWeight: 800,
-                cursor: 'pointer',
-                boxShadow: '0 6px 24px rgba(247, 148, 29, 0.45)',
-                transition: 'all .25s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
-                e.currentTarget.style.boxShadow = '0 10px 30px rgba(247, 148, 29, 0.6)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = '0 6px 24px rgba(247, 148, 29, 0.45)';
-              }}
+              shimmerColor="#FFFFFF"
+              shimmerSize="0.1em"
+              shimmerDuration="2.5s"
+              borderRadius="24px"
+              background="linear-gradient(135deg, #F7941D 0%, #E67E00 100%)"
+              className="px-7 py-3 text-sm font-extrabold shadow-[0_6px_24px_rgba(247,148,29,0.45)] hover:shadow-[0_10px_30px_rgba(247,148,29,0.65)] hover:-translate-y-0.5 hover:scale-[1.03] transition-all duration-300 gap-2 border-0"
             >
-              Explore Insights <ArrowRightOutlined style={{ fontSize: 13 }} />
-            </button>
+              <span className="flex items-center gap-2 text-white font-extrabold text-sm tracking-wide z-10">
+                Explore Insights <ArrowRightOutlined style={{ fontSize: 13 }} />
+              </span>
+            </ShimmerButton>
 
             {/* Secondary CTA: Publish Content */}
             <button

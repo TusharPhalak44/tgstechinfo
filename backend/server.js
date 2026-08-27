@@ -22,7 +22,7 @@ const app = express();
 
 
 
-const DEV_ORIGINS = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'];
+const DEV_ORIGINS = ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'http://127.0.0.1:5173'];
 
 const ENV_ORIGINS = (process.env.FRONTEND_URL || '').split(',').map(url => url.trim()).filter(Boolean);
 
@@ -43,6 +43,14 @@ const CSP_CONNECT_SRC = [
     'ws://localhost:5173',
 
     'ws://localhost:5174',
+
+    'wss://*.ngrok-free.app',
+
+    'https://*.ngrok-free.app',
+
+    'https://*.ngrok.app',
+
+    'https://*.ngrok.io',
 
     'wss://*.supabase.co',
 
@@ -110,7 +118,14 @@ app.use(cors({
 
     origin: function(origin, callback) {
 
-        if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+        if (
+            !origin ||
+            ALLOWED_ORIGINS.includes(origin) ||
+            origin.includes('ngrok-free.app') ||
+            origin.includes('ngrok.io') ||
+            origin.includes('ngrok.app') ||
+            /^http:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+):517[3-4]$/.test(origin)
+        ) {
 
             callback(null, true);
 
@@ -279,6 +294,10 @@ app.use('/api/email-templates', require('./src/routes/emailTemplateRoutes'));
 app.use('/api/site-settings', require('./src/routes/siteSettingsRoutes'));
 
 app.use('/api/audit-logs', require('./src/routes/auditLogRoutes'));
+
+app.use('/api/audience', require('./src/routes/audienceRoutes'));
+
+app.use('/api/admin/audience', require('./src/routes/adminAudienceRoutes'));
 
 
 
