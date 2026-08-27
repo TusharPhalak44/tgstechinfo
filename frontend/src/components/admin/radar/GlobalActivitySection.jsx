@@ -76,17 +76,17 @@ const GlobalActivitySection = ({
 
       {/* Table & Progress Bars */}
       <div className="overflow-x-auto cyber-scrollbar">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse global-activity-table">
           <thead>
             <tr className={`border-b text-[11px] font-mono uppercase tracking-wider ${
               darkMode ? 'border-slate-800 text-slate-400' : 'border-slate-200 text-slate-500'
             }`}>
               <th className="py-2.5 px-3 font-semibold">Rank & Region</th>
               <th className="py-2.5 px-3 font-semibold text-right">Active Live</th>
-              <th className="py-2.5 px-3 font-semibold text-right">Total Sessions</th>
+              <th className="py-2.5 px-3 font-semibold text-right">Sessions</th>
               <th className="py-2.5 px-3 font-semibold text-right">Page Views</th>
-              <th className="py-2.5 px-3 font-semibold text-right">Conversions</th>
-              <th className="py-2.5 px-3 font-semibold w-1/4">Traffic Volume</th>
+              <th className="py-2.5 px-3 font-semibold text-right">Conv.</th>
+              <th className="py-2.5 px-3 font-semibold w-1/4">Volume</th>
             </tr>
           </thead>
           <tbody className={`divide-y text-xs font-mono ${

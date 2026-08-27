@@ -626,6 +626,23 @@ exports.getContentTypes = async (req, res) => {
     }
 };
 
+exports.getContentTypeCounts = async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `SELECT ct.slug, COUNT(c.id) as count
+             FROM content_types ct
+             LEFT JOIN contents c ON c.content_type_id = ct.id AND c.status = 'published' AND c.is_visible_on_site = 1
+             GROUP BY ct.id, ct.slug`
+        );
+        const counts = {};
+        rows.forEach(r => { counts[r.slug] = parseInt(r.count, 10); });
+        res.json(counts);
+    } catch (error) {
+        console.error('Get content type counts error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 exports.getCategoriesWithCount = async (req, res) => {
     try {
         const { content_type } = req.query;

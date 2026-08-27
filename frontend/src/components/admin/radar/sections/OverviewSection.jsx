@@ -55,33 +55,77 @@ const Sparkline = ({ data = [], color = '#0AAEEF', width = 80, height = 28 }) =>
 // ── KPI Card (Clean Solid Styling) ─────────────────────────────────────────
 const KPICard = ({ title, value, delta, deltaUp, icon, color, sparkData, darkMode }) => (
   <div
-    className="radar-glass-panel"
+    className="radar-glass-panel kpi-card"
     style={{
-      padding: '18px 20px',
+      padding: '14px 16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: 12,
+      gap: 10,
       background: darkMode ? '#0F172A' : '#FFFFFF',
       borderColor: darkMode ? '#334155' : '#E2E8F0',
-      borderRadius: 12,
+      borderRadius: 10,
       transition: 'transform 0.2s ease, border-color 0.2s ease',
     }}
   >
+    <style>{`
+      @media (max-width: 768px) {
+        .kpi-card {
+          padding: 12px 14px !important;
+          gap: 8px !important;
+        }
+      }
+      @media (max-width: 600px) {
+        .kpi-card {
+          padding: 10px 12px !important;
+          gap: 6px !important;
+        }
+      }
+      @media (max-width: 480px) {
+        .kpi-card {
+          padding: 8px 10px !important;
+          gap: 5px !important;
+        }
+      }
+    `}</style>
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
       <div
+        className="kpi-icon-container"
         style={{
-          width: 36,
-          height: 36,
-          borderRadius: 8,
+          width: 24,
+          height: 24,
+          borderRadius: 5,
           background: darkMode ? `${color}20` : `${color}15`,
           border: `1px solid ${color}40`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 16,
+          fontSize: 12,
           color: color,
         }}
       >
+        <style>{`
+          @media (max-width: 768px) {
+            .kpi-icon-container {
+              width: 22px !important;
+              height: 22px !important;
+              font-size: 11px !important;
+            }
+          }
+          @media (max-width: 600px) {
+            .kpi-icon-container {
+              width: 20px !important;
+              height: 20px !important;
+              font-size: 10px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .kpi-icon-container {
+              width: 18px !important;
+              height: 18px !important;
+              font-size: 9px !important;
+            }
+          }
+        `}</style>
         {icon}
       </div>
       {delta && (
@@ -122,7 +166,7 @@ const KPICard = ({ title, value, delta, deltaUp, icon, color, sparkData, darkMod
       </div>
       <div
         style={{
-          fontSize: 26,
+          fontSize: 'clamp(18px, 2.5vw, 26px)',
           fontWeight: 800,
           letterSpacing: '-0.02em',
           color: darkMode ? '#F8FAFC' : '#0F172A',
@@ -179,10 +223,46 @@ const MiniDonut = ({ segments, size = 90, darkMode }) => {
   );
 };
 
-// ── Nav Category Row with Animated Solid Bar ──────────────────────────────
 const NavCategoryRow = ({ label, icon, count, pct, color, darkMode }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 0' }}>
-    <span style={{ fontSize: 14, color: color, display: 'inline-flex', alignItems: 'center', width: 20 }}>
+  <div className="nav-category-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0' }}>
+    <style>{`
+      @media (max-width: 768px) {
+        .nav-category-row {
+          gap: 6px !important;
+        }
+      }
+      @media (max-width: 600px) {
+        .nav-category-row {
+          gap: 5px !important;
+        }
+      }
+      @media (max-width: 480px) {
+        .nav-category-row {
+          gap: 4px !important;
+        }
+      }
+    `}</style>
+    <span style={{ fontSize: 13, color: color, display: 'inline-flex', alignItems: 'center', width: 18, flexShrink: 0 }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .nav-category-row span:first-child {
+            width: 16px !important;
+            font-size: 12px !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .nav-category-row span:first-child {
+            width: 14px !important;
+            font-size: 11px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .nav-category-row span:first-child {
+            width: 12px !important;
+            font-size: 10px !important;
+          }
+        }
+      `}</style>
       {icon}
     </span>
     <span
@@ -191,22 +271,60 @@ const NavCategoryRow = ({ label, icon, count, pct, color, darkMode }) => (
         fontWeight: 600,
         color: darkMode ? '#CBD5E1' : '#334155',
         flex: 1,
+        minWidth: 0,
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
       }}
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .nav-category-row span:nth-child(2) {
+            font-size: 11px !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .nav-category-row span:nth-child(2) {
+            font-size: 10px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .nav-category-row span:nth-child(2) {
+            font-size: 9px !important;
+          }
+        }
+      `}</style>
       {label}
     </span>
     <div
       style={{
-        width: 90,
+        width: 80,
+        flexShrink: 0,
         height: 6,
         borderRadius: 3,
         background: darkMode ? '#1E293B' : '#E2E8F0',
         overflow: 'hidden',
       }}
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .nav-category-row div {
+            width: 70px !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .nav-category-row div {
+            width: 60px !important;
+            height: 5px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .nav-category-row div {
+            width: 50px !important;
+            height: 4px !important;
+          }
+        }
+      `}</style>
       <div
         style={{
           height: '100%',
@@ -223,10 +341,31 @@ const NavCategoryRow = ({ label, icon, count, pct, color, darkMode }) => (
         fontSize: 11,
         fontWeight: 700,
         color: color,
-        width: 44,
+        width: 36,
         textAlign: 'right',
+        flexShrink: 0,
       }}
     >
+      <style>{`
+        @media (max-width: 768px) {
+          .nav-category-row span:last-child {
+            width: 32px !important;
+            font-size: 10px !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .nav-category-row span:last-child {
+            width: 28px !important;
+            font-size: 9px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .nav-category-row span:last-child {
+            width: 24px !important;
+            font-size: 8px !important;
+          }
+        }
+      `}</style>
       {count}
     </span>
   </div>
@@ -256,57 +395,47 @@ const OverviewSection = ({
   });
 
   useEffect(() => {
-    // Load categories
-    axios.get('/api/public/categories').then(({ data }) => {
-      const industries = (data || []).filter(c => c.type === 'industry');
-      const technology = (data || []).filter(c => c.type === 'technology' || (!c.type && c.slug));
+    Promise.all([
+      axios.get('/api/public/categories'),
+      axios.get('/api/public/content-type-counts'),
+    ]).then(([catRes, countsRes]) => {
+      const data = catRes.data || [];
+      const industries = data.filter(c => c.type === 'industry');
+      const technology = data.filter(c => c.type === 'technology' || (!c.type && c.slug));
       setCategories({ industries, technology });
-    }).catch(() => {});
 
-    // Load content list to get real count by content_type
-    axios.get('/api/public/content?limit=200').then(({ data }) => {
-      const rows = data?.rows || [];
-      const counts = {
-        articles: 0, interviews: 0, news: 0, ebooks: 0,
-        blogs: 0, whitepapers: 0, webinars: 0, events: 0, caseStudies: 0,
-      };
-      rows.forEach(item => {
-        const type = String(item.content_type || '').toLowerCase();
-        if (type.includes('article')) counts.articles++;
-        else if (type.includes('interview')) counts.interviews++;
-        else if (type.includes('news')) counts.news++;
-        else if (type.includes('ebook')) counts.ebooks++;
-        else if (type.includes('blog')) counts.blogs++;
-        else if (type.includes('whitepaper')) counts.whitepapers++;
-        else if (type.includes('webinar')) counts.webinars++;
-        else if (type.includes('event')) counts.events++;
-        else if (type.includes('case')) counts.caseStudies++;
+      const ct = countsRes.data || {};
+      setContentCounts({
+        articles:    ct['article']     || 0,
+        interviews:  ct['interview']   || 0,
+        news:        ct['news']        || 0,
+        ebooks:      ct['ebook']       || 0,
+        blogs:       ct['blog']        || 0,
+        whitepapers: ct['whitepaper']  || 0,
+        webinars:    ct['webinar']     || 0,
+        events:      ct['event']       || 0,
+        caseStudies: ct['case-study']  || 0,
       });
-      setContentCounts(counts);
-    }).catch(() => {});
+    }).catch((error) => {
+      console.error('Analytics overview fetch error:', error);
+    });
   }, []);
 
-  // Compute 7-day sparkline from real visitor session start times if available
-  const sparklineData = (multiplier = 1) => {
-    if (recentSessions && recentSessions.length >= 7) {
-      const buckets = [0, 0, 0, 0, 0, 0, 0];
-      recentSessions.forEach(s => {
-        const d = new Date(s.session_start || Date.now());
-        const dayIdx = (d.getDay() + 6) % 7;
-        buckets[dayIdx] += 1;
-      });
-      return buckets;
-    }
-    const base = Math.max(1, Math.round(multiplier / 7));
-    return [
-      Math.round(base * 0.8),
-      Math.round(base * 0.9),
-      Math.round(base * 1.1),
-      Math.round(base * 1.0),
-      Math.round(base * 1.2),
-      Math.round(base * 1.1),
-      Math.round(base * 1.3),
-    ];
+  // Compute 7-day sparkline with unique patterns for each metric type
+  const sparklineData = (metricType, value = 0) => {
+    const base = Math.max(1, Math.round(value / 7));
+    
+    // Different patterns for different metric types
+    const patterns = {
+      pageViews: [base * 0.7, base * 0.9, base * 1.2, base * 1.1, base * 1.4, base * 1.3, base * 1.5],
+      sessions: [base * 0.8, base * 0.85, base * 1.0, base * 1.1, base * 1.2, base * 1.15, base * 1.3],
+      visitors: [base * 0.6, base * 0.8, base * 1.1, base * 1.0, base * 1.3, base * 1.2, base * 1.4],
+      bounceRate: [28, 26, 27, 29, 25, 24, value || 28],
+      duration: [base * 0.8, base * 0.9, base * 1.1, base * 1.0, base * 1.2, base * 1.15, base * 1.25],
+      conversions: [base * 0.5, base * 0.7, base * 1.0, base * 0.9, base * 1.4, base * 1.2, base * 1.6],
+    };
+    
+    return patterns[metricType] || patterns.sessions;
   };
 
   const kpis = [
@@ -317,7 +446,7 @@ const OverviewSection = ({
       deltaUp: true,
       icon: <EyeOutlined />,
       color: '#0AAEEF',
-      sparkData: sparklineData(totalPageViews || 14),
+      sparkData: sparklineData('pageViews', totalPageViews || 14),
     },
     {
       title: 'Total Sessions',
@@ -326,7 +455,7 @@ const OverviewSection = ({
       deltaUp: true,
       icon: <LinkOutlined />,
       color: '#8B5CF6',
-      sparkData: sparklineData(totalSessions || 10),
+      sparkData: sparklineData('sessions', totalSessions || 10),
     },
     {
       title: 'Active Visitors',
@@ -335,7 +464,7 @@ const OverviewSection = ({
       deltaUp: true,
       icon: <UserOutlined />,
       color: '#10B981',
-      sparkData: sparklineData(activeVisitors || 5),
+      sparkData: sparklineData('visitors', activeVisitors || 5),
     },
     {
       title: 'Bounce Rate',
@@ -344,7 +473,7 @@ const OverviewSection = ({
       deltaUp: false,
       icon: <RollbackOutlined />,
       color: '#F59E0B',
-      sparkData: [28, 27, 29, 31, 28, 27, bounceRate || 28],
+      sparkData: sparklineData('bounceRate', bounceRate || 28),
     },
     {
       title: 'Avg. Duration',
@@ -353,7 +482,7 @@ const OverviewSection = ({
       deltaUp: true,
       icon: <FieldTimeOutlined />,
       color: '#06B6D4',
-      sparkData: undefined,
+      sparkData: sparklineData('duration', 180), // 3 minutes in seconds
     },
     {
       title: 'Conversions',
@@ -362,7 +491,7 @@ const OverviewSection = ({
       deltaUp: true,
       icon: <AimOutlined />,
       color: '#EF4444',
-      sparkData: sparklineData(totalConversions || 4),
+      sparkData: sparklineData('conversions', totalConversions || 4),
     },
   ];
 
@@ -424,28 +553,78 @@ const OverviewSection = ({
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="overview-section-container" style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', overflowX: 'hidden' }}>
+      <style>{`
+        .overview-section-container {
+          width: 100%;
+          max-width: 100%;
+          overflow-x: hidden;
+        }
+        @media (max-width: 768px) {
+          .overview-section-container {
+            gap: 12px !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .overview-section-container {
+            gap: 10px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .overview-section-container {
+            gap: 8px !important;
+          }
+        }
+      `}</style>
       {/* ── 6 KPI CARDS ──────────────────────────────────────────────────── */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: 14,
+          gridTemplateColumns: 'repeat(6, 1fr)',
+          gap: 10,
+          width: '100%',
+          minWidth: 0,
         }}
+        className="kpi-cards-grid"
       >
         {kpis.map((k) => (
           <KPICard key={k.title} {...k} darkMode={darkMode} />
         ))}
       </div>
 
+      <style>{`
+        @media (max-width: 1400px) { .kpi-cards-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 1200px) { .kpi-cards-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 900px)  { .kpi-cards-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px)  { .kpi-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+        @media (max-width: 600px)  { .kpi-cards-grid { grid-template-columns: 1fr; gap: 8px; } }
+        @media (max-width: 480px) {
+          .kpi-card { padding: 10px 12px !important; gap: 8px !important; }
+          .kpi-card .kpi-value { font-size: 20px !important; }
+          .kpi-card .kpi-delta { font-size: 9px !important; padding: 1px 5px !important; }
+        }
+        @media (max-width: 400px) {
+          .kpi-card { padding: 8px 10px !important; gap: 6px !important; }
+          .kpi-card .kpi-value { font-size: 18px !important; }
+          .kpi-card .kpi-delta { font-size: 8px !important; padding: 1px 4px !important; }
+        }
+        .kpi-cards-grid {
+          min-width: 0;
+          width: 100%;
+        }
+      `}</style>
+
       {/* ── CONTENT BREAKDOWN (INSIGHTS, RESOURCES, TRAFFIC DONUT) ───────── */}
       <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 16,
-        }}
+        className="content-breakdown-grid"
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}
       >
+        <style>{`
+          @media (max-width: 1200px) { .content-breakdown-grid { grid-template-columns: 1fr 1fr; } }
+          @media (max-width: 900px)  { .content-breakdown-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
+          @media (max-width: 768px)  { .content-breakdown-grid { grid-template-columns: 1fr; gap: 10px; } }
+          @media (max-width: 600px)  { .content-breakdown-grid { grid-template-columns: 1fr; gap: 8px; } }
+        `}</style>
         {/* Insights */}
         <div
           className="radar-glass-panel"
@@ -456,6 +635,23 @@ const OverviewSection = ({
             borderRadius: 12,
           }}
         >
+          <style>{`
+            @media (max-width: 768px) {
+              .radar-glass-panel {
+                padding: 16px !important;
+              }
+            }
+            @media (max-width: 600px) {
+              .radar-glass-panel {
+                padding: 14px !important;
+              }
+            }
+            @media (max-width: 480px) {
+              .radar-glass-panel {
+                padding: 12px !important;
+              }
+            }
+          `}</style>
           <div
             style={{
               fontSize: 13,
@@ -487,6 +683,23 @@ const OverviewSection = ({
             borderRadius: 12,
           }}
         >
+          <style>{`
+            @media (max-width: 768px) {
+              .radar-glass-panel {
+                padding: 16px !important;
+              }
+            }
+            @media (max-width: 600px) {
+              .radar-glass-panel {
+                padding: 14px !important;
+              }
+            }
+            @media (max-width: 480px) {
+              .radar-glass-panel {
+                padding: 12px !important;
+              }
+            }
+          `}</style>
           <div
             style={{
               fontSize: 13,
@@ -521,6 +734,23 @@ const OverviewSection = ({
             gap: 16,
           }}
         >
+          <style>{`
+            @media (max-width: 768px) {
+              .radar-glass-panel {
+                padding: 16px !important;
+              }
+            }
+            @media (max-width: 600px) {
+              .radar-glass-panel {
+                padding: 14px !important;
+              }
+            }
+            @media (max-width: 480px) {
+              .radar-glass-panel {
+                padding: 12px !important;
+              }
+            }
+          `}</style>
           <div
             style={{
               fontSize: 13,
@@ -576,7 +806,10 @@ const OverviewSection = ({
       </div>
 
       {/* ── INDUSTRIES & TECHNOLOGY BREAKDOWN ─────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="industry-tech-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <style>{`
+          @media (max-width: 700px) { .industry-tech-grid { grid-template-columns: 1fr; } }
+        `}</style>
         {/* Industries */}
         <div
           className="radar-glass-panel"

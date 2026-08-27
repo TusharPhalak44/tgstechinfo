@@ -9,6 +9,38 @@ const NewsletterEvent = require('../models/NewsletterEvent');
 const UserJourney = require('../models/UserJourney');
 const CookieConsent = require('../models/CookieConsent');
 const { validationResult } = require('express-validator');
+const axios = require('axios');
+
+// Cache public IP location to avoid repeated API calls
+let _cachedLocation = null;
+const _isPrivateIp = (ip) => {
+    if (!ip) return true;
+    if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') return true;
+    if (/^10\./.test(ip)) return true;
+    if (/^192\.168\./.test(ip)) return true;
+    if (/^172\.(1[6-9]|2[0-9]|3[01])\./.test(ip)) return true;
+    return false;
+};
+
+const getCountryFromIp = async (ip) => {
+    try {
+        if (_isPrivateIp(ip)) {
+            // Local/private IP — fetch machine's real public location
+            if (_cachedLocation) return _cachedLocation;
+            const res = await axios.get('http://ip-api.com/json/?fields=country', { timeout: 3000 });
+            if (res.data && res.data.country) {
+                _cachedLocation = res.data.country;
+                return _cachedLocation;
+            }
+            return null;
+        }
+        // Real public IP
+        const res = await axios.get(`http://ip-api.com/json/${ip}?fields=country`, { timeout: 3000 });
+        return res.data?.country || null;
+    } catch {
+        return null;
+    }
+};
 
 // Helper function to get client IP address (reused from cookieConsentController)
 const getClientIp = (req) => {
@@ -163,9 +195,9 @@ exports.startSession = async (req, res) => {
         const timezone = req.body.timezone || null;
 
         const sessionData = {
-            consent_uuid: consent_uuid || null, // Allow null for compatibility
+            consent_uuid: consent_uuid || null,
             user_id,
-            country: req.body.country || null,
+            country: req.body.country || await getCountryFromIp(ip_address),
             ...deviceInfo,
             screen_resolution,
             language,

@@ -176,7 +176,7 @@ const EngagementSection = ({
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="engagement-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Gauge Row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
         {metrics.map(m => (
@@ -184,7 +184,7 @@ const EngagementSection = ({
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="engagement-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Session Duration Distribution */}
         <div
           className="radar-glass-panel"
@@ -209,10 +209,11 @@ const EngagementSection = ({
             <ClockCircleOutlined style={{ color: '#0AAEEF' }} />
             <span>Session Duration Breakdown</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div className="duration-buckets" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {computedDurationBuckets.map(b => (
               <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span
+                  className="bucket-label"
                   style={{
                     fontSize: 12,
                     fontWeight: 600,
@@ -243,6 +244,7 @@ const EngagementSection = ({
                   />
                 </div>
                 <span
+                  className="bucket-pct"
                   style={{
                     fontFamily: 'monospace',
                     fontSize: 11,
@@ -283,7 +285,7 @@ const EngagementSection = ({
             <CalendarOutlined style={{ color: '#8B5CF6' }} />
             <span>Activity Heatmap</span>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="heatmap-container" style={{ overflowX: 'auto' }}>
             <table style={{ borderCollapse: 'separate', borderSpacing: '4px', width: '100%' }}>
               <thead>
                 <tr>

@@ -592,12 +592,12 @@ exports.getDashboardKPIs = async (req, res) => {
             vsParams      = [days];
         }
 
-        const [[{ published }]]        = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published'`);
-        const [[{ pending }]]          = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending'`);
-        const [[{ drafts }]]           = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft'`);
-        const [[{ scheduled }]]        = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled'`);
-        const [[{ totalViews }]]       = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents`);
-        const [[{ totalUsers }]]       = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1`);
+        const [[{ published }]]        = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published' AND ${dateCondition}`, dateParams);
+        const [[{ pending }]]          = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending' AND ${dateCondition}`, dateParams);
+        const [[{ drafts }]]           = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' AND ${dateCondition}`, dateParams);
+        const [[{ scheduled }]]        = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
+        const [[{ totalViews }]]       = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents WHERE ${dateCondition}`, dateParams);
+        const [[{ totalUsers }]]       = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
         const [[{ totalSubs }]]        = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1`).catch(()=>[[{totalSubs:0}]]);
         
         const [[{ periodViews }]]      = await pool.query(`SELECT COALESCE(SUM(view_count),0) as periodViews FROM contents WHERE ${dateCondition}`, dateParams);
@@ -668,19 +668,6 @@ exports.getTrafficAnalytics = async (req, res) => {
             ORDER BY date ASC
         `, pvParams).catch(()=>[[]]);
 
-        // Regional breakdown from visitor_sessions
-        const [regional] = await pool.query(`
-            SELECT 
-                COALESCE(NULLIF(TRIM(country),''), 'Unknown') as region,
-                COUNT(*) as sessions,
-                ROUND(COUNT(*)*100.0/GREATEST((SELECT COUNT(*) FROM visitor_sessions WHERE ${vsCondition}), 1), 1) as pct
-            FROM visitor_sessions
-            WHERE ${vsCondition}
-            GROUP BY region
-            ORDER BY sessions DESC
-            LIMIT 8
-        `, [...vsParams, ...vsParams]).catch(()=>[[]]);
-
         // Summary stats
         const [[summary]] = await pool.query(`
             SELECT 
@@ -695,7 +682,7 @@ exports.getTrafficAnalytics = async (req, res) => {
         const totalSessions = summary.totalSessions || 1;
         const bounceRate = Math.round((summary.bounceCount / totalSessions) * 100);
 
-        res.json({ dailySessions, dailyPageViews, regional, summary: { ...summary, bounceRate } });
+        res.json({ dailySessions, dailyPageViews, summary: { ...summary, bounceRate } });
     } catch (error) {
         console.error('Get traffic analytics error:', error);
         res.status(500).json({ message: 'Server error' });

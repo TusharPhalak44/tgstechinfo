@@ -27,6 +27,192 @@
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
+/* ─── ANALYTICS CONTROLS HORIZONTAL LAYOUT ─── */
+.radar-dashboard-root .radar-glass-panel {
+  overflow: visible;
+}
+
+@media (min-width: 768px) {
+  .radar-dashboard-root .radar-glass-panel {
+    flex-wrap: nowrap !important;
+  }
+}
+
+/* ─── GLOBAL RESPONSIVE UTILITIES ─── */
+@media (max-width: 1024px) {
+  .radar-dashboard-root { padding: 12px !important; }
+}
+@media (max-width: 768px) {
+  .radar-dashboard-root { padding: 8px !important; }
+  .radar-dashboard-root .radar-glass-panel { border-radius: 10px !important; }
+}
+@media (max-width: 480px) {
+  .radar-dashboard-root { padding: 6px !important; }
+  .radar-dashboard-root .radar-glass-panel { border-radius: 8px !important; }
+}
+
+/* ─── KPI CARDS GRID ─── */
+.kpi-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 14px;
+}
+@media (max-width: 1200px) { .kpi-cards-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 768px)  { .kpi-cards-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+@media (max-width: 480px)  { .kpi-cards-grid { grid-template-columns: 1fr 1fr; gap: 8px; } }
+
+/* ─── CONTENT BREAKDOWN GRID (Insights / Resources / Traffic) ─── */
+.content-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+@media (max-width: 768px)  { .content-breakdown-grid { grid-template-columns: 1fr; gap: 12px; } }
+
+/* ─── INDUSTRIES / TECHNOLOGY GRID ─── */
+.industry-tech-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 768px)  { .industry-tech-grid { grid-template-columns: 1fr; gap: 12px; } }
+
+/* ─── REALTIME: Globe + Signals ─── */
+.realtime-hero-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px)  { .realtime-hero-grid { grid-template-columns: 1fr; } }
+
+/* ─── NAV CATEGORY ROW bar width on small screens ─── */
+@media (max-width: 480px) {
+  .nav-cat-bar { width: 70px !important; }
+  .nav-cat-count { width: 32px !important; font-size: 10px !important; }
+  .nav-cat-label { font-size: 11px !important; }
+}
+
+/* ─── GLOBAL ACTIVITY TABLE — Mobile Responsive ─── */
+@media (max-width: 768px) {
+  .global-activity-table th:nth-child(4),
+  .global-activity-table td:nth-child(4),
+  .global-activity-table th:nth-child(5),
+  .global-activity-table td:nth-child(5) {
+    display: none;
+  }
+}
+@media (max-width: 480px) {
+  .global-activity-table th:nth-child(3),
+  .global-activity-table td:nth-child(3) {
+    display: none;
+  }
+  .global-activity-table th,
+  .global-activity-table td {
+    padding: 8px 6px !important;
+    font-size: 10px !important;
+  }
+}
+
+/* ─── REGIONAL GLOBE — Responsive Height ─── */
+.regional-globe-panel {
+  height: 520px;
+}
+@media (max-width: 768px)  { .regional-globe-panel { height: 380px !important; } }
+@media (max-width: 480px)  { .regional-globe-panel { height: 300px !important; } }
+
+/* ─── PERFORMANCE OVERVIEW GRID ─── */
+.performance-overview-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) { .performance-overview-grid { grid-template-columns: 1fr; } }
+
+/* ─── ANALYTICS HEADER CONTROLS — Mobile ─── */
+@media (max-width: 480px) {
+  .analytics-header-controls {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+  .analytics-header-controls .analytics-select {
+    width: 100% !important;
+  }
+  .analytics-header-controls .analytics-select .ant-select-selector {
+    width: 100% !important;
+  }
+  .analytics-header-controls .sync-btn {
+    grid-column: 1 / -1;
+    width: 100% !important;
+  }
+}
+
+/* ─── ARTICLE ENGAGEMENT ROW — Mobile ─── */
+@media (max-width: 480px) {
+  .article-engagement-row {
+    grid-template-columns: 40px 1fr !important;
+    gap: 10px !important;
+  }
+  .article-engagement-row .read-rate-col {
+    display: none;
+  }
+}
+
+/* ─── TRAFFIC SOURCES BREAKDOWN ─── */
+.traffic-sources-breakdown-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) { .traffic-sources-breakdown-grid { grid-template-columns: 1fr; } }
+
+/* ─── AREA CHARTS GRID ─── */
+.area-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) { .area-charts-grid { grid-template-columns: 1fr; } }
+
+/* ─── INDUSTRY TECH TRAFFIC GRID ─── */
+.industry-tech-traffic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) { .industry-tech-traffic-grid { grid-template-columns: 1fr; } }
+
+/* ─── ENGAGEMENT GRID ─── */
+.engagement-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) { .engagement-grid { grid-template-columns: 1fr; } }
+
+/* ─── GLOBAL RESPONSIVE UTILITIES ─── */
+@media (max-width: 1024px) {
+  .radar-dashboard-root {
+    padding: 12px !important;
+  }
+}
+@media (max-width: 768px) {
+  .radar-dashboard-root {
+    padding: 8px !important;
+  }
+  .radar-dashboard-root .radar-glass-panel {
+    border-radius: 10px !important;
+  }
+}
+@media (max-width: 480px) {
+  .radar-dashboard-root {
+    padding: 6px !important;
+  }
+  .radar-dashboard-root .radar-glass-panel {
+    border-radius: 8px !important;
+  }
+}
+
 /* ─── DARK THEME ─── */
 .radar-dashboard-root.dark,
 [data-theme="dark"] .radar-dashboard-root,

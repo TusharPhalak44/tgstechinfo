@@ -9,9 +9,10 @@ import {
 const COLORS = ['#0AAEEF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#64748B'];
 
 const FunnelStep = ({ label, value, pct, color, darkMode, isLast }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', width: '100%', maxWidth: 540 }}>
+  <div className="funnel-step" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', width: '100%', maxWidth: 540 }}>
     {/* Clean Solid Funnel Step */}
     <div
+      className="funnel-box"
       style={{
         width: `${Math.max(35, Math.min(100, pct))}%`,
         minWidth: 140,
@@ -29,10 +30,10 @@ const FunnelStep = ({ label, value, pct, color, darkMode, isLast }) => (
         zIndex: 1,
       }}
     >
-      <span style={{ fontSize: 16, fontWeight: 800, color: darkMode ? '#F8FAFC' : '#0F172A', fontFamily: 'monospace' }}>
+      <span className="funnel-value" style={{ fontSize: 16, fontWeight: 800, color: darkMode ? '#F8FAFC' : '#0F172A', fontFamily: 'monospace' }}>
         {(value || 0).toLocaleString()}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 700, color: color, fontFamily: 'monospace', textTransform: 'uppercase' }}>
+      <span className="funnel-pct" style={{ fontSize: 10, fontWeight: 700, color: color, fontFamily: 'monospace', textTransform: 'uppercase' }}>
         {pct}%
       </span>
     </div>
@@ -41,7 +42,7 @@ const FunnelStep = ({ label, value, pct, color, darkMode, isLast }) => (
         <ArrowDownOutlined style={{ fontSize: 12 }} />
       </div>
     )}
-    <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94A3B8' : '#64748B', textAlign: 'center', marginTop: isLast ? 6 : 0, marginBottom: isLast ? 0 : 4 }}>
+    <div className="funnel-label" style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#94A3B8' : '#64748B', textAlign: 'center', marginTop: isLast ? 6 : 0, marginBottom: isLast ? 0 : 4 }}>
       {label}
     </div>
   </div>
@@ -75,7 +76,7 @@ const ConversionsSection = ({
   const maxClicks = Math.max(...ctaData.map(c => c.click_count || c.clicks || 0), 1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="conversions-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Funnel */}
       <div
         className="radar-glass-panel"
@@ -139,7 +140,7 @@ const ConversionsSection = ({
           <ThunderboltOutlined style={{ color: '#8B5CF6' }} />
           <span>CTA Performance &amp; Actions</span>
         </div>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="cta-table-container" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: darkMode ? '#1E293B' : '#F8FAFC' }}>

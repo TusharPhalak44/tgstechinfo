@@ -20,27 +20,25 @@ const RealTimeSection = ({
   bounceRate = 28,
   refreshInterval = 10,
 }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+  <div className="realtime-section-container" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
     {/* Main hero row: globe + signals */}
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-        <GlobeRadarCanvas
-          activeVisitorsCount={activeVisitors}
-          recentSessions={recentSessions}
-          countryAnalytics={countryAnalytics}
-          lastUpdatedText={lastUpdatedText}
-          isLoading={isLoading}
-          darkMode={darkMode}
-        />
-        <LiveSignalsFeed
-          recentSessions={recentSessions}
-          ctaClicks={ctaClicks}
-          popularPages={popularPages}
-          chatbotActivity={[]}
-          isLive={refreshInterval > 0}
-          darkMode={darkMode}
-        />
-      </div>
+    <div className="realtime-hero-grid" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <GlobeRadarCanvas
+        activeVisitorsCount={activeVisitors}
+        recentSessions={recentSessions}
+        countryAnalytics={countryAnalytics}
+        lastUpdatedText={lastUpdatedText}
+        isLoading={isLoading}
+        darkMode={darkMode}
+      />
+      <LiveSignalsFeed
+        recentSessions={recentSessions}
+        ctaClicks={ctaClicks}
+        popularPages={popularPages}
+        chatbotActivity={[]}
+        isLive={refreshInterval > 0}
+        darkMode={darkMode}
+      />
     </div>
 
     {/* Pulse bar */}

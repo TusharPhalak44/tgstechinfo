@@ -660,6 +660,20 @@ const GlobeRadarCanvas = ({
       ref={containerRef}
       className="radar-glass-panel relative w-full h-[540px] md:h-[620px] lg:h-[680px] flex flex-col items-center justify-between p-4 overflow-hidden"
     >
+      <style>{`
+        @media (max-width: 600px) {
+          .radar-glass-panel {
+            height: 400px !important;
+            padding: 12px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .radar-glass-panel {
+            height: 350px !important;
+            padding: 10px !important;
+          }
+        }
+      `}</style>
       {/* Top Overlay HUD Bar */}
       <div className={`w-full flex justify-between items-center z-10 px-2 py-1 border-b ${darkMode ? 'border-sky-500/10' : 'border-sky-500/20'}`}>
         <div className="flex items-center gap-2">
@@ -755,22 +769,48 @@ const GlobeRadarCanvas = ({
       </div>
 
       {/* Center Live Metric Overlay */}
-      <div className={`z-10 backdrop-blur-md px-6 py-2.5 rounded-full shadow-2xl flex items-center gap-5 -mt-8 mb-2 border ${
+      <div className={`globe-metric-overlay z-10 backdrop-blur-md px-4 sm:px-6 py-2 sm:py-2.5 rounded-full shadow-2xl flex items-center gap-3 sm:gap-5 -mt-8 mb-2 border ${
         darkMode 
           ? 'bg-slate-950/85 border-cyan-500/25' 
           : 'bg-white/95 border-cyan-500/35 shadow-cyan-500/10'
       }`}>
-        <div className="flex items-center gap-3">
-          <span className={`text-3xl md:text-4xl font-extrabold font-mono tracking-tight ${
+        <style>{`
+          @media (max-width: 600px) {
+            .globe-metric-overlay {
+              padding: 8px 12px !important;
+              gap: 8px !important;
+            }
+            .globe-metric-overlay .visitor-count {
+              font-size: 24px !important;
+            }
+            .globe-metric-overlay .visitor-label {
+              font-size: 9px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .globe-metric-overlay {
+              padding: 6px 10px !important;
+              gap: 6px !important;
+            }
+            .globe-metric-overlay .visitor-count {
+              font-size: 20px !important;
+            }
+            .globe-metric-overlay .visitor-label {
+              font-size: 8px !important;
+            }
+          }
+        `}</style>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className={`visitor-count text-2xl sm:text-3xl md:text-4xl font-extrabold font-mono tracking-tight ${
             darkMode ? 'text-cyan-400 drop-shadow-[0_0_12px_rgba(10,174,239,0.5)]' : 'text-cyan-600'
           }`}>
             {isLoading ? '...' : (activeVisitorsCount || stateRef.current.markers.length || 0)}
           </span>
           <div className="text-left leading-tight">
-            <div className={`text-[11px] font-bold tracking-widest uppercase ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
+            <div className={`visitor-label text-[10px] sm:text-[11px] font-bold tracking-widest uppercase ${darkMode ? 'text-slate-200' : 'text-slate-800'}`}>
               ACTIVE VISITORS
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-500 font-semibold">
+            <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-emerald-500 font-semibold">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               LIVE NOW
             </div>
@@ -779,8 +819,8 @@ const GlobeRadarCanvas = ({
 
         <div className={`h-7 w-[1px] hidden sm:block ${darkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
 
-        <div className="text-[11px] font-mono hidden sm:block">
-          <div className={`text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>SYNC FREQUENCY</div>
+        <div className="text-[10px] sm:text-[11px] font-mono hidden sm:block">
+          <div className={`text-[9px] sm:text-[10px] ${darkMode ? 'text-slate-500' : 'text-slate-400'}`}>SYNC FREQUENCY</div>
           <div className={`font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>{lastUpdatedText}</div>
         </div>
       </div>

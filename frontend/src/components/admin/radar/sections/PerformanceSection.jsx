@@ -151,9 +151,9 @@ const PerformanceSection = ({ darkMode }) => {
   const scoreColor = perfScore >= 90 ? '#10B981' : perfScore >= 50 ? '#F59E0B' : '#EF4444';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="performance-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Overall score + summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16 }}>
+      <div className="performance-overview-grid" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: 16 }}>
         {/* Score Ring */}
         <div
           className="radar-glass-panel"
@@ -168,7 +168,7 @@ const PerformanceSection = ({ darkMode }) => {
             borderRadius: 12,
           }}
         >
-          <svg width={130} height={130}>
+            <svg width={130} height={130}>
             <circle
               cx="65"
               cy="65"
@@ -294,7 +294,7 @@ const PerformanceSection = ({ darkMode }) => {
           <DashboardOutlined style={{ color: '#0AAEEF' }} />
           <span>Core Web Vitals Telemetry</span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+        <div className="cwv-metrics-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
           {cwvMetrics.map(m => (
             <CWVGauge key={m.label} {...m} darkMode={darkMode} />
           ))}
@@ -325,10 +325,11 @@ const PerformanceSection = ({ darkMode }) => {
           <CheckCircleOutlined style={{ color: '#10B981' }} />
           <span>Page Load Times (Desktop vs Mobile)</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="page-load-list" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {pageLoadData.map((p, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span
+                className="page-name"
                 style={{
                   fontFamily: 'monospace',
                   fontSize: 12,
@@ -345,7 +346,7 @@ const PerformanceSection = ({ darkMode }) => {
               </span>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#0AAEEF', width: 44 }}>
+                  <span className="platform-label" style={{ fontSize: 10, fontFamily: 'monospace', color: '#0AAEEF', width: 44 }}>
                     DESKTOP
                   </span>
                   <div
@@ -367,12 +368,12 @@ const PerformanceSection = ({ darkMode }) => {
                       }}
                     />
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: statusColor(p.desktop, 2, 3.5), width: 36, textAlign: 'right' }}>
+                  <span className="load-time" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: statusColor(p.desktop, 2, 3.5), width: 36, textAlign: 'right' }}>
                     {p.desktop}s
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#8B5CF6', width: 44 }}>
+                  <span className="platform-label" style={{ fontSize: 10, fontFamily: 'monospace', color: '#8B5CF6', width: 44 }}>
                     MOBILE
                   </span>
                   <div
@@ -394,7 +395,7 @@ const PerformanceSection = ({ darkMode }) => {
                       }}
                     />
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: statusColor(p.mobile, 2.5, 4), width: 36, textAlign: 'right' }}>
+                  <span className="load-time" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: statusColor(p.mobile, 2.5, 4), width: 36, textAlign: 'right' }}>
                     {p.mobile}s
                   </span>
                 </div>

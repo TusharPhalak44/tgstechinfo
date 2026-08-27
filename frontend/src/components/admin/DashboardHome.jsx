@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { DatePicker, Tooltip } from "antd";
+import { DatePicker, Tooltip, Select } from "antd";
 import {
   EyeOutlined,
   CheckCircleOutlined,
@@ -27,7 +27,6 @@ import {
   DashboardOutlined,
   ApartmentOutlined,
   BulbOutlined,
-  GlobalOutlined,
   VideoCameraOutlined,
   BookOutlined,
 } from "@ant-design/icons";
@@ -58,9 +57,9 @@ const modernStyles = `
   .med-stagger-1 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both; }
   .med-stagger-2 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.10s both; }
   .med-stagger-3 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both; }
-  .med-stagger-4 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both; }
-  .med-stagger-5 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
-  .med-stagger-6 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.30s both; }
+  .med-stagger-5 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both; }
+  .med-stagger-6 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
+  .med-stagger-7 { animation: medSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.30s both; }
 
   @keyframes medSlideUp {
     from { opacity: 0; transform: translateY(14px); }
@@ -254,6 +253,103 @@ const modernStyles = `
   .med-dim-chip:hover {
     transform: translateY(-2px);
   }
+
+  /* ── Responsive Design ── */
+  @media (max-width: 1200px) {
+    .med-root {
+      padding: 16px;
+    }
+    .med-header {
+      padding: 14px 16px !important;
+    }
+  }
+
+  @media (max-width: 992px) {
+    .med-root {
+      padding: 12px;
+    }
+    .med-header {
+      padding: 12px 14px !important;
+      flex-direction: column;
+      align-items: flex-start !important;
+    }
+    .med-kpi-card {
+      padding: 14px 16px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .med-root {
+      padding: 10px;
+    }
+    .med-header {
+      padding: 10px 12px !important;
+    }
+    .med-preset-btn {
+      padding: 5px 10px;
+      font-size: 0.72rem;
+    }
+    .med-kpi-card {
+      padding: 12px 14px;
+    }
+    .med-panel {
+      padding: 16px 18px;
+    }
+    .med-news-item {
+      padding: 10px 12px;
+    }
+    .med-news-item:hover {
+      transform: translateX(2px);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .med-root {
+      padding: 8px;
+    }
+    .med-header {
+      padding: 8px 10px !important;
+    }
+    .med-preset-btn {
+      padding: 4px 8px;
+      font-size: 0.68rem;
+    }
+    .med-kpi-card {
+      padding: 10px 12px;
+    }
+    .med-panel {
+      padding: 14px 16px;
+    }
+    .med-news-item {
+      padding: 8px 10px;
+    }
+  }
+
+  /* ── Period Dropdown ── */
+  .med-period-dropdown-dark .ant-select-item {
+    color: #94A3B8;
+    background: #0A1229;
+    font-size: 0.78rem;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+  .med-period-dropdown-dark .ant-select-item-option-selected,
+  .med-period-dropdown-dark .ant-select-item-option-active {
+    background: rgba(37, 99, 235, 0.25) !important;
+    color: #93C5FD !important;
+  }
+  .med-period-dropdown-dark .ant-select-dropdown {
+    background: #0A1229;
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    border-radius: 10px;
+  }
+  .med-period-dropdown-light .ant-select-item {
+    font-size: 0.78rem;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+  .med-period-dropdown-light .ant-select-item-option-selected {
+    background: #EEF2FF !important;
+    color: #2563EB !important;
+  }
 `;
 
 function useCountUp(target, duration = 1000) {
@@ -280,11 +376,26 @@ const DashboardHome = () => {
   const navigate = useNavigate();
   const { darkMode: D } = useTheme();
 
-  const [period, setPeriod] = useState("30d");
+  const [period, setPeriod] = useState("all");
   const [customRange, setCustomRange] = useState(null);
   const [trafficMetric, setTrafficMetric] = useState("sessions");
   const [activeDimension, setActiveDimension] = useState("technology");
   const [refreshing, setRefreshing] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
+
+  // Responsive detection
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 768 && width < 1200);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   const [kpis, setKpis] = useState({
     totalPublished: 0,
@@ -302,7 +413,6 @@ const DashboardHome = () => {
   const [trafficData, setTrafficData] = useState({
     dailySessions: [],
     dailyPageViews: [],
-    regional: [],
     summary: {},
   });
 
@@ -396,10 +506,10 @@ const DashboardHome = () => {
   const leadCount = useCountUp(leadsData.totalSubmissions);
 
   const sessionDates = (trafficData.dailySessions || []).map((d) =>
-    dayjs(d.date).isValid() ? dayjs(d.date).format("MMM DD") : String(d.date || "")
+    dayjs(d.date).isValid() ? dayjs(d.date).format("MM/DD") : String(d.date || "")
   );
   const pvDates = (trafficData.dailyPageViews || []).map((d) =>
-    dayjs(d.date).isValid() ? dayjs(d.date).format("MMM DD") : String(d.date || "")
+    dayjs(d.date).isValid() ? dayjs(d.date).format("MM/DD") : String(d.date || "")
   );
 
   const trafficSeriesMap = {
@@ -427,7 +537,18 @@ const DashboardHome = () => {
         gradientToColors: [brandPrimary],
       },
     },
-    xaxis: { categories: activeTraffic.dates, labels: { style: { colors: textMuted, fontSize: "11px" } } },
+    xaxis: { 
+      categories: activeTraffic.dates, 
+      labels: { 
+        style: { colors: textMuted, fontSize: "11px" },
+        rotate: -45,
+        trim: true,
+        hideOverlappingLabels: true,
+        maxHeight: 120
+      },
+      tickPlacement: 'between',
+      tooltip: { enabled: true }
+    },
     yaxis: { labels: { style: { colors: textMuted, fontSize: "11px" }, formatter: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v)) } },
     grid: { borderColor: D ? "rgba(255,255,255,0.06)" : "#F1F5F9", strokeDashArray: 3 },
     dataLabels: { enabled: false },
@@ -518,7 +639,17 @@ const DashboardHome = () => {
     plotOptions: { bar: { horizontal: false, columnWidth: "52%", borderRadius: 5 } },
     dataLabels: { enabled: false },
     stroke: { show: true, width: 2, colors: ["transparent"] },
-    xaxis: { categories: currentDimensionData.slice(0, 7).map((d) => d.label), labels: { style: { colors: textMuted, fontSize: "11px" }, rotate: -20 } },
+    xaxis: { 
+      categories: currentDimensionData.slice(0, 7).map((d) => d.label), 
+      labels: { 
+        style: { colors: textMuted, fontSize: "11px" }, 
+        rotate: -20,
+        trim: true,
+        hideOverlappingLabels: true,
+        maxHeight: 100
+      },
+      tickPlacement: 'between'
+    },
     yaxis: [
       { title: { text: "Views", style: { color: textMuted, fontSize: "11px" } }, labels: { style: { colors: textMuted, fontSize: "11px" }, formatter: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v) } },
       { opposite: true, title: { text: "Count", style: { color: textMuted, fontSize: "11px" } }, labels: { style: { colors: textMuted, fontSize: "11px" }, formatter: (v) => Math.round(v) } },
@@ -631,7 +762,7 @@ const DashboardHome = () => {
   ];
 
   return (
-    <div className={`radar-dashboard-root ${D ? 'dark' : 'light'} radar-grid-bg med-root`} style={{ minHeight: '100vh', padding: '24px' }}>
+    <div className={`radar-dashboard-root ${D ? 'dark' : 'light'} radar-grid-bg med-root`} style={{ minHeight: '100vh', padding: isMobile ? '12px' : isTablet ? '16px' : '24px' }}>
       <style>{modernStyles}</style>
 
       {/* ── 1. Top Command Header ── */}
@@ -643,87 +774,77 @@ const DashboardHome = () => {
         }}
       >
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(59, 130, 246, 0.1) 100%)", border: `1px solid ${borderColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: brandLightBlue }}>
-              <ApartmentOutlined style={{ fontSize: 17 }} />
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 10 }}>
+            <div style={{ width: isMobile ? 30 : 34, height: isMobile ? 30 : 34, borderRadius: 10, background: "linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(59, 130, 246, 0.1) 100%)", border: `1px solid ${borderColor}`, display: "flex", alignItems: "center", justifyContent: "center", color: brandLightBlue }}>
+              <ApartmentOutlined style={{ fontSize: isMobile ? 15 : 17 }} />
             </div>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8, flexWrap: "wrap" }}>
+                <h2 style={{ fontSize: isMobile ? "0.95rem" : "1.05rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
                   Publishing & Operations Intelligence
                 </h2>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.68rem", fontWeight: 500, color: brandEmerald, background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.25)", padding: "2px 8px", borderRadius: 100 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: isMobile ? "0.62rem" : "0.68rem", fontWeight: 500, color: brandEmerald, background: "rgba(16, 185, 129, 0.12)", border: "1px solid rgba(16, 185, 129, 0.25)", padding: "2px 8px", borderRadius: 100 }}>
                   <div className="med-beacon-dot" /> Live DB Sync
                 </div>
               </div>
-              <p style={{ fontSize: "0.76rem", color: textMuted, margin: "2px 0 0 0" }}>
+              <p style={{ fontSize: isMobile ? "0.7rem" : "0.76rem", color: textMuted, margin: "2px 0 0 0" }}>
                 Multi-dimensional database analytics for technology categories, industry verticals, navbar resources, insights, and user telemetry.
               </p>
             </div>
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 4 }}>
-            {[
-              { key: "today", label: "Today" },
-              { key: "7d", label: "7D" },
-              { key: "30d", label: "30D" },
-              { key: "90d", label: "90D" },
-              { key: "ytd", label: "YTD" },
-              { key: "all", label: "All" },
-            ].map((p) => {
-              const active = !customRange && period === p.key;
-              return (
-                <button
-                  key={p.key}
-                  className="med-preset-btn"
-                  onClick={() => {
-                    setCustomRange(null);
-                    setPeriod(p.key);
-                  }}
-                  style={{
-                    background: active ? (D ? "linear-gradient(135deg, rgba(37, 99, 235, 0.35) 0%, rgba(59, 130, 246, 0.15) 100%)" : "#EEF2FF") : "transparent",
-                    color: active ? (D ? "#93C5FD" : brandPrimary) : textSecondary,
-                    borderColor: active ? (D ? brandLightBlue : "#C7D2FE") : borderColor,
-                  }}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8, flexWrap: "wrap" }}>
+          <Select
+            value={customRange ? "custom" : period}
+            onChange={(val) => { setCustomRange(null); setPeriod(val); }}
+            style={{ width: isMobile ? 110 : 130, height: isMobile ? 28 : 32 }}
+            popupClassName={D ? "med-period-dropdown-dark" : "med-period-dropdown-light"}
+            options={[
+              { value: "today", label: "Today" },
+              { value: "7d", label: "Last 7 Days" },
+              { value: "30d", label: "Last 30 Days" },
+              { value: "90d", label: "Last 90 Days" },
+              { value: "ytd", label: "Year to Date" },
+              { value: "all", label: "All Time" },
+            ]}
+          />
 
-          <RangePicker value={customRange} onChange={(dates) => setCustomRange(dates)} style={{ borderRadius: 8, background: bgCardSecondary, borderColor, fontSize: "0.76rem", height: 32 }} />
+          <RangePicker value={customRange} onChange={(dates) => setCustomRange(dates)} style={{ borderRadius: 8, background: bgCardSecondary, borderColor, fontSize: isMobile ? "0.7rem" : "0.76rem", height: isMobile ? 28 : 32 }} />
           <Tooltip title="Refresh Telemetry">
-            <button onClick={fetchAllTelemetry} style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${borderColor}`, background: bgCardSecondary, color: textSecondary, cursor: "pointer", transition: "all 0.2s ease" }}>
+            <button onClick={fetchAllTelemetry} style={{ width: isMobile ? 28 : 32, height: isMobile ? 28 : 32, borderRadius: 8, border: `1px solid ${borderColor}`, background: bgCardSecondary, color: textSecondary, cursor: "pointer", transition: "all 0.2s ease" }}>
               <ReloadOutlined spin={refreshing} style={{ color: refreshing ? brandLightBlue : "inherit" }} />
             </button>
           </Tooltip>
-          <button onClick={() => navigate("/dashboard/content?action=create")} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)", borderRadius: 8, padding: "6px 14px", color: "#FFFFFF", fontWeight: 500, fontSize: "0.78rem", cursor: "pointer", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)" }}>
+          <button onClick={() => navigate("/dashboard/create-post")} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)", borderRadius: 8, padding: isMobile ? "5px 12px" : "6px 14px", color: "#FFFFFF", fontWeight: 500, fontSize: isMobile ? "0.72rem" : "0.78rem", cursor: "pointer", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)" }}>
             <PlusOutlined /> New Article
           </button>
         </div>
       </div>
 
       {/* ── 2. Enhanced Executive KPI Cards (8-Tile Grid) ── */}
-      <div className="med-stagger-2" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 22 }}>
+      <div className="med-stagger-2" style={{ 
+        display: "grid", 
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(4, 1fr)", 
+        gap: isMobile ? 10 : 14, 
+        marginBottom: 22 
+      }}>
         {/* KPI 1: Published Articles */}
         <div className="med-kpi-card" style={{ background: bgCard, borderColor, "--card-accent": brandEmerald, "--card-glow": brandEmerald }}>
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: textMuted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 4 : 6 }}>
+              <span style={{ fontSize: isMobile ? "0.66rem" : "0.72rem", fontWeight: 600, color: textMuted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 Published Content
               </span>
-              <span style={{ fontSize: "0.66rem", fontWeight: 600, color: brandEmerald, background: "rgba(16, 185, 129, 0.15)", padding: "2px 7px", borderRadius: 100, border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+              <span style={{ fontSize: isMobile ? "0.6rem" : "0.66rem", fontWeight: 600, color: brandEmerald, background: "rgba(16, 185, 129, 0.15)", padding: "2px 7px", borderRadius: 100, border: "1px solid rgba(16, 185, 129, 0.3)" }}>
                 Live
               </span>
             </div>
-            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: textPrimary, letterSpacing: "-0.02em" }}>
+            <div style={{ fontSize: isMobile ? "1.4rem" : "1.75rem", fontWeight: 700, color: textPrimary, letterSpacing: "-0.02em" }}>
               {pubCount}
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${borderColor}`, fontSize: "0.7rem", color: textMuted }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: isMobile ? 6 : 8, paddingTop: isMobile ? 6 : 8, borderTop: `1px solid ${borderColor}`, fontSize: isMobile ? "0.64rem" : "0.7rem", color: textMuted }}>
             <span>Resources & Insights</span>
             <span style={{ color: brandEmerald, fontWeight: 500 }}>Active Hub</span>
           </div>
@@ -877,20 +998,20 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* ── 3. Readership & Traffic Dual Hub (65% / 35%) ── */}
-      <div className="med-stagger-3" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr", gap: 16, marginBottom: 22 }}>
+      {/* ── 3. Readership & Traffic Trends (Full Width) ── */}
+      <div className="med-stagger-3" style={{ marginBottom: 22 }}>
         <div className="med-panel" style={{ background: bgCard, borderColor }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
             <div>
-              <h3 style={{ fontSize: "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
+              <h3 style={{ fontSize: isMobile ? "0.85rem" : "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
                 Readership & Traffic Trends
               </h3>
-              <span style={{ fontSize: "0.74rem", color: textMuted }}>
+              <span style={{ fontSize: isMobile ? "0.68rem" : "0.74rem", color: textMuted }}>
                 Visitor sessions and page impressions over the selected horizon
               </span>
             </div>
 
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: isMobile ? 4 : 6, flexWrap: "wrap" }}>
               {[
                 { key: "sessions", label: "Sessions" },
                 { key: "pageViews", label: "Page Views" },
@@ -907,6 +1028,8 @@ const DashboardHome = () => {
                       background: active ? (D ? "linear-gradient(135deg, rgba(37, 99, 235, 0.4) 0%, rgba(59, 130, 246, 0.15) 100%)" : "#EEF2FF") : "transparent",
                       color: active ? (D ? "#93C5FD" : brandPrimary) : textSecondary,
                       borderColor: active ? (D ? brandLightBlue : "#C7D2FE") : borderColor,
+                      fontSize: isMobile ? "0.7rem" : "0.76rem",
+                      padding: isMobile ? "4px 10px" : "5px 12px",
                     }}
                   >
                     {m.label}
@@ -916,9 +1039,9 @@ const DashboardHome = () => {
             </div>
           </div>
 
-          <ReactApexChart options={areaOptions} series={[{ name: activeTraffic.name, data: activeTraffic.data }]} type="area" height={280} />
+          <ReactApexChart options={areaOptions} series={[{ name: activeTraffic.name, data: activeTraffic.data }]} type="area" height={isMobile ? 200 : 320} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${borderColor}` }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 8 : 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${borderColor}`, textAlign: "center" }}>
             <div>
               <div style={{ fontSize: "0.7rem", color: textMuted }}>Total Sessions</div>
               <div style={{ fontSize: "1.05rem", fontWeight: 600, color: textPrimary, marginTop: 2 }}>
@@ -939,71 +1062,10 @@ const DashboardHome = () => {
             </div>
           </div>
         </div>
-
-        <div className="med-panel" style={{ background: bgCard, borderColor, display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <div>
-              <h3 style={{ fontSize: "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
-                Newsroom Dispatch
-              </h3>
-              <span style={{ fontSize: "0.74rem", color: textMuted }}>
-                Live content workflow actions
-              </span>
-            </div>
-            <button
-              onClick={() => navigate("/dashboard/pending-review")}
-              style={{ fontSize: "0.74rem", fontWeight: 500, color: brandLightBlue, background: "transparent", border: "none", cursor: "pointer" }}
-            >
-              Review Queue ({penCount}) →
-            </button>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, overflowY: "auto", maxHeight: 340 }}>
-            {(portfolioData.recentActivity || []).length === 0 ? (
-              <div style={{ textAlign: "center", padding: "30px 0", color: textMuted, fontSize: "0.8rem" }}>
-                No recent editorial activity logged
-              </div>
-            ) : (
-              (portfolioData.recentActivity || []).slice(0, 6).map((item, i) => {
-                const isPub = item.status === "published";
-                const isPen = item.status === "pending";
-                return (
-                  <div key={i} className="med-news-item" style={{ background: bgCardSecondary, borderColor }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: "0.8rem", fontWeight: 500, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {item.title}
-                        </div>
-                        <div style={{ fontSize: "0.7rem", color: textMuted, marginTop: 2 }}>
-                          {item.first_name ? `by ${item.first_name} ${item.last_name || ""}` : "Editorial Team"} • {item.category || "General"}
-                        </div>
-                      </div>
-                      <span
-                        style={{
-                          fontSize: "0.66rem",
-                          fontWeight: 500,
-                          padding: "2px 7px",
-                          borderRadius: 4,
-                          background: isPub ? "rgba(16, 185, 129, 0.15)" : isPen ? "rgba(247, 148, 29, 0.15)" : "rgba(100, 116, 139, 0.15)",
-                          color: isPub ? brandEmerald : isPen ? brandAccent : textMuted,
-                          border: `1px solid ${isPub ? "rgba(16, 185, 129, 0.3)" : isPen ? "rgba(247, 148, 29, 0.3)" : "rgba(100, 116, 139, 0.3)"}`,
-                          textTransform: "capitalize",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {item.status}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
       </div>
 
       {/* ── 4. 4-Way Multi-Dimensional Matrix (Technology, Industry, Navbar Resources, Navbar Insights) ── */}
-      <div className="med-panel med-stagger-4" style={{ background: bgCard, borderColor, marginBottom: 22 }}>
+      <div className="med-panel med-stagger-5" style={{ background: bgCard, borderColor, marginBottom: 22 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 14 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1048,8 +1110,8 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.6fr", gap: 20, alignItems: "center" }}>
-          {/* Dynamic ApexChart */}
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.5fr 1fr", gap: isMobile ? 12 : 20, alignItems: "start" }}>
+          {/* Dynamic ApexChart - 60% Width */}
           <div style={{ background: bgCardSecondary, borderRadius: 12, padding: "16px 12px", border: `1px solid ${borderColor}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 10px 8px 10px" }}>
               <span style={{ fontSize: "0.76rem", fontWeight: 600, color: textSecondary }}>
@@ -1068,15 +1130,16 @@ const DashboardHome = () => {
             )}
           </div>
 
-          {/* High-Density Breakdown List with Animated Progress Bars */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 340, overflowY: "auto", paddingRight: 4 }}>
+          {/* High-Density Breakdown List with Animated Progress Bars - 40% Width */}
+          <div style={{ background: bgCardSecondary, borderRadius: 12, padding: "16px 12px", border: `1px solid ${borderColor}`, display: "flex", flexDirection: "column", gap: 8, maxHeight: 340, overflowY: "auto", paddingRight: 4, minHeight: 290 }}>
             {currentDimensionData.length === 0 ? (
               <div style={{ textAlign: "center", padding: "40px 0", color: textMuted, fontSize: "0.8rem" }}>
                 No items available
               </div>
             ) : (
               currentDimensionData.map((item, idx) => {
-                const viewSharePct = maxDimViews > 0 ? ((item.views / maxDimViews) * 100).toFixed(1) : "0.0";
+                const targetViews = maxDimViews * 1.2; // Scale so max item shows ~83%
+                const viewSharePct = targetViews > 0 ? ((item.views / targetViews) * 100).toFixed(1) : "0.0";
                 return (
                   <div key={idx} className="med-leader-row" style={{ background: bgCardSecondary, borderColor }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -1156,8 +1219,75 @@ const DashboardHome = () => {
         </div>
       </div>
 
+      {/* ── 4.5. Newsroom Dispatch (Editorial Activity) ── */}
+      <div className="med-panel med-stagger-4" style={{ background: bgCard, borderColor, marginBottom: 22 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", marginBottom: isMobile ? 12 : 14, flexWrap: "wrap", gap: 8 }}>
+          <div>
+            <h3 style={{ fontSize: isMobile ? "0.85rem" : "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
+              Newsroom Dispatch
+            </h3>
+            <span style={{ fontSize: isMobile ? "0.68rem" : "0.74rem", color: textMuted }}>
+              Live content workflow actions
+            </span>
+          </div>
+          <button
+            onClick={() => navigate("/dashboard/pending-review")}
+            style={{ fontSize: isMobile ? "0.68rem" : "0.74rem", fontWeight: 500, color: brandLightBlue, background: "transparent", border: "none", cursor: "pointer" }}
+          >
+            Review Queue ({penCount}) →
+          </button>
+        </div>
+
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(280px, 1fr))", 
+          gap: isMobile ? 10 : 12 
+        }}>
+          {(portfolioData.recentActivity || []).length === 0 ? (
+            <div style={{ textAlign: "center", padding: isMobile ? "20px 0" : "30px 0", color: textMuted, fontSize: isMobile ? "0.72rem" : "0.8rem", gridColumn: "1 / -1" }}>
+              No recent editorial activity logged
+            </div>
+          ) : (
+            (portfolioData.recentActivity || []).slice(0, 6).map((item, i) => {
+              const isPub = item.status === "published";
+              const isPen = item.status === "pending";
+              return (
+                <div key={i} className="med-news-item" style={{ background: bgCardSecondary, borderColor, padding: isMobile ? "10px 12px" : "11px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 6 : 8, flexDirection: isMobile ? "column" : "row" }}>
+                    <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
+                      <div style={{ fontSize: isMobile ? "0.72rem" : "0.8rem", fontWeight: 500, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: isMobile ? "normal" : "nowrap", display: isMobile ? "-webkit-box" : "block", WebkitLineClamp: isMobile ? 2 : "unset", WebkitBoxOrient: isMobile ? "vertical" : "unset" }}>
+                        {item.title}
+                      </div>
+                      <div style={{ fontSize: isMobile ? "0.64rem" : "0.7rem", color: textMuted, marginTop: isMobile ? 4 : 2 }}>
+                        {item.first_name ? `by ${item.first_name} ${item.last_name || ""}` : "Editorial Team"} • {item.category || "General"}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: isMobile ? "0.6rem" : "0.66rem",
+                        fontWeight: 500,
+                        padding: isMobile ? "2px 6px" : "2px 7px",
+                        borderRadius: 4,
+                        background: isPub ? "rgba(16, 185, 129, 0.15)" : isPen ? "rgba(247, 148, 29, 0.15)" : "rgba(100, 116, 139, 0.15)",
+                        color: isPub ? brandEmerald : isPen ? brandAccent : textMuted,
+                        border: `1px solid ${isPub ? "rgba(16, 185, 129, 0.3)" : isPen ? "rgba(247, 148, 29, 0.3)" : "rgba(100, 116, 139, 0.3)"}`,
+                        textTransform: "capitalize",
+                        flexShrink: 0,
+                        marginTop: isMobile ? 4 : 0,
+                      }}
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
       {/* ── 5. User & Author Analytics Matrix with Multi-Ring Radial Bar + Gauge ── */}
-      <div className="med-stagger-5" style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 0.9fr", gap: 16, marginBottom: 22 }}>
+      <div className="med-stagger-6" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1.4fr 1fr 0.9fr", gap: isMobile ? 12 : 16, marginBottom: 22 }}>
         {/* Card 1: Top Authors & Contributors Leaderboard */}
         <div className="med-panel" style={{ background: bgCard, borderColor }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -1242,29 +1372,31 @@ const DashboardHome = () => {
         </div>
 
         {/* Card 3: Editorial Velocity & Turnaround Gauge */}
-        <div className="med-panel" style={{ background: bgCard, borderColor, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-          <div>
+        <div className="med-panel" style={{ background: bgCard, borderColor, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "24px" }}>
+          <div style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <DashboardOutlined style={{ color: brandEmerald, fontSize: 16 }} />
               <h3 style={{ fontSize: "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
                 Publishing Velocity
               </h3>
             </div>
-            <span style={{ fontSize: "0.74rem", color: textMuted }}>
+            <span style={{ fontSize: "0.74rem", color: textMuted, display: "block", marginTop: 4 }}>
               Approval-to-publish throughput
             </span>
           </div>
 
-          <ReactApexChart options={editorialGaugeOptions} series={[editorialVelocity]} type="radialBar" height={190} />
+          <div style={{ display: "flex", justifyContent: "center", margin: "12px 0" }}>
+            <ReactApexChart options={editorialGaugeOptions} series={[editorialVelocity]} type="radialBar" height={220} />
+          </div>
 
-          <div style={{ textAlign: "center", fontSize: "0.72rem", color: textMuted }}>
+          <div style={{ textAlign: "center", fontSize: "0.72rem", color: textMuted, marginTop: 8 }}>
             {pubCount} published / {pubCount + penCount} submissions
           </div>
         </div>
       </div>
 
       {/* ── 6. Inbound Conversion & Reader Geography Grid ── */}
-      <div className="med-stagger-6" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      <div className="med-stagger-7" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 12 : 16 }}>
         {/* Left: Lead Generation Pipeline */}
         <div className="med-panel" style={{ background: bgCard, borderColor }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
@@ -1300,7 +1432,7 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* Right: Reader Geography */}
+        {/* Right: Reader Geography - Empty Placeholder */}
         <div className="med-panel" style={{ background: bgCard, borderColor }}>
           <div style={{ marginBottom: 16 }}>
             <h3 style={{ fontSize: "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
@@ -1311,25 +1443,9 @@ const DashboardHome = () => {
             </span>
           </div>
 
-          {(trafficData.regional || []).length === 0 ? (
-            <div style={{ textAlign: "center", padding: "30px 0", color: textMuted, fontSize: "0.8rem" }}>No geographic data logged</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {(trafficData.regional || []).slice(0, 5).map((r, i) => (
-                <div key={i}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: "0.78rem" }}>
-                    <span style={{ fontWeight: 500, color: textSecondary }}>{r.region}</span>
-                    <span style={{ fontWeight: 600, color: textPrimary }}>
-                      {Number(r.sessions).toLocaleString()} <span style={{ fontWeight: 400, color: textMuted }}>({r.pct}%)</span>
-                    </span>
-                  </div>
-                  <div style={{ height: 5, borderRadius: 3, background: D ? "rgba(255,255,255,0.06)" : "#F1F5F9", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${Math.min(Number(r.pct) || 0, 100)}%`, borderRadius: 3, background: brandLightBlue }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <div style={{ textAlign: "center", padding: "50px 20px", color: textMuted }}>
+            <div style={{ fontSize: "0.78rem", color: textMuted }}>Feature coming soon</div>
+          </div>
         </div>
       </div>
     </div>

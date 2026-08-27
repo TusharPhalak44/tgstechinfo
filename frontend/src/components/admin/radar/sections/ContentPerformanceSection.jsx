@@ -251,7 +251,7 @@ const LollipopChart = ({ items, darkMode, height = 30 }) => {
   const max = Math.max(...items.map(d => d.views || 0), 1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <div className="lollipop-chart" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {items.map((item, i) => {
         const pct = ((item.views || 0) / max) * 100;
         const isHov = hovered === i;
@@ -263,6 +263,7 @@ const LollipopChart = ({ items, darkMode, height = 30 }) => {
             onMouseLeave={() => setHovered(null)}
           >
             <div
+              className="label"
               style={{
                 width: 140,
                 fontSize: 11,
@@ -306,6 +307,7 @@ const LollipopChart = ({ items, darkMode, height = 30 }) => {
               />
             </div>
             <div
+              className="value"
               style={{
                 fontFamily: 'monospace',
                 fontSize: 11,
@@ -513,9 +515,9 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="content-performance-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* ── ROW 1: Area charts (Insights & Resources weekly trends) ────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="area-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div
           className="radar-glass-panel"
           style={{
@@ -642,7 +644,7 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
 
         {/* Dynamic Display based on activeGroup */}
         {activeGroup === 'insights' && (
-          <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 20 }}>
+          <div className="insights-rings-container" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 20 }}>
             {contentStats.insightsItems.map((item) => (
               <RadialRing
                 key={item.label}
@@ -678,7 +680,7 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
       </div>
 
       {/* ── ROW 3: Side-by-Side Industries vs Technology ──────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div className="industry-tech-traffic-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div
           className="radar-glass-panel"
           style={{
@@ -789,13 +791,14 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
           <EditOutlined style={{ color: '#10B981' }} />
           <span>Top Articles by Engagement</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="article-list-container" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {articleList.map((b, i) => {
             const color = COLORS[i % COLORS.length];
             const readRate = b.readRate || Math.round(((b.reads || 0) / Math.max(1, b.views || 1)) * 100) || 72;
             return (
               <div
                 key={i}
+                className="article-engagement-row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '48px 1fr auto',
@@ -823,7 +826,7 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
                   >
                     {b.title}
                   </div>
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, fontFamily: 'monospace', color: darkMode ? '#94A3B8' : '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <EyeOutlined /> {(b.views || 0).toLocaleString()} views
                     </span>
@@ -832,11 +835,12 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
                     </span>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color, fontFamily: 'monospace' }}>
+                <div className="read-rate-col" style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div className="rate-value" style={{ fontSize: 18, fontWeight: 800, color, fontFamily: 'monospace' }}>
                     {readRate}%
                   </div>
                   <div
+                    className="rate-label"
                     style={{
                       fontSize: 9,
                       color: darkMode ? '#94A3B8' : '#64748B',

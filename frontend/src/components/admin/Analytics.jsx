@@ -33,9 +33,26 @@ const Analytics = () => {
   const [loading, setLoading]     = useState(true);
   const [timeRange, setTimeRange] = useState('7d');
   const [refreshInterval, setRefreshInterval] = useState(10);
+  const [lastRefreshInterval, setLastRefreshInterval] = useState(10);
   const [lastUpdated, setLastUpdated]         = useState(new Date());
   const [currentTime, setCurrentTime]         = useState(new Date());
   const [isRefreshing, setIsRefreshing]       = useState(false);
+
+  // Handle refresh interval toggle logic
+  const handleRefreshIntervalChange = (value) => {
+    if (value === 'PAUSED') {
+      // Toggle pause/start
+      if (refreshInterval === 0) {
+        setRefreshInterval(lastRefreshInterval);
+      } else {
+        setLastRefreshInterval(refreshInterval);
+        setRefreshInterval(0);
+      }
+    } else {
+      setRefreshInterval(value);
+      setLastRefreshInterval(value);
+    }
+  };
 
   // ── Analytics Data ────────────────────────────────────────────────────────
   const [overviewData, setOverviewData] = useState({
@@ -235,33 +252,39 @@ const Analytics = () => {
         },
       }}
     >
-      <div className={`radar-dashboard-root ${darkMode ? 'dark' : 'light'} min-h-screen p-4 md:p-6 lg:p-8`} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div className={`radar-dashboard-root ${darkMode ? 'dark' : 'light'} min-h-screen p-6`} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         {/* ─── COMMAND CENTER HEADER ─── */}
-        <div className="radar-glass-panel p-4 md:p-6 w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div className="radar-glass-panel p-6 w-full flex flex-col gap-4 overflow-hidden">
           {/* Title */}
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="flex h-3 w-3 relative">
-                <span className="pulse-beacon absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
-              </span>
-              <h1 className={`text-xl md:text-2xl font-black font-mono tracking-wider uppercase m-0 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="flex h-3 w-3 relative flex-shrink-0">
+              <span className="pulse-beacon absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+            </span>
+            <div className="min-w-0 flex-1">
+              <h1 className={`text-2xl font-black font-mono tracking-wider uppercase m-0 ${darkMode ? 'text-slate-100' : 'text-slate-900'} truncate`}>
                 LIVE WEBSITE INTELLIGENCE
               </h1>
-              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded border ${darkMode ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-cyan-100 text-cyan-800 border-cyan-300'}`}>
-                RADAR ACTIVE
-              </span>
+              <p className={`text-sm font-mono m-0 ${darkMode ? 'text-slate-400' : 'text-slate-600'} truncate`}>
+                Real-time global activity, telemetry &amp; conversion radar across TgsTechInfo
+              </p>
             </div>
-            <p className={`text-xs md:text-sm font-mono m-0 ${darkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              Real-time global activity, telemetry &amp; conversion radar across TgsTechInfo
-            </p>
           </div>
 
           {/* Controls */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full lg:w-auto justify-start lg:justify-end">
+          <div className="analytics-controls analytics-header-controls flex flex-wrap items-center gap-3 w-full">
+            {/* Radar Active Button */}
+            <div className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-mono font-bold border flex-shrink-0 ${darkMode ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-cyan-100 text-cyan-800 border-cyan-300'}`} style={{ minWidth: '80px', justifyContent: 'center' }}>
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+              <span>RADAR ACTIVE</span>
+            </div>
+
             {/* Live status */}
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono border ${darkMode ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/90 border-slate-300 shadow-sm'}`}>
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-mono border flex-shrink-0 ${darkMode ? 'bg-slate-900/80 border-slate-700/60' : 'bg-white/90 border-slate-300 shadow-sm'}`} style={{ minWidth: '90px' }}>
               <span className="flex h-2 w-2 relative">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -272,29 +295,37 @@ const Analytics = () => {
             </div>
 
             {/* Clock */}
-            <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono border ${darkMode ? 'bg-slate-900/80 border-slate-700/60 text-slate-300' : 'bg-white/90 border-slate-300 text-slate-700 shadow-sm'}`}>
-              <ClockCircleOutlined className="text-cyan-500" />
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-mono border flex-shrink-0 ${darkMode ? 'bg-slate-900/80 border-slate-700/60 text-slate-300' : 'bg-white/90 border-slate-300 text-slate-700 shadow-sm'}`} style={{ minWidth: '75px' }}>
+              <ClockCircleOutlined className="text-cyan-500 text-sm" />
               <span>{currentTime.toLocaleTimeString()}</span>
             </div>
 
-            <Select value={timeRange} onChange={setTimeRange} style={{ width: 130 }} size="middle">
+            <Select value={timeRange} onChange={setTimeRange} style={{ width: 90, minWidth: 90 }} size="small" className="flex-shrink-0 text-xs analytics-select">
               <Option value="7d">Last 7 Days</Option>
               <Option value="30d">Last 30 Days</Option>
               <Option value="90d">Last 90 Days</Option>
             </Select>
 
-            <Select value={refreshInterval} onChange={setRefreshInterval} style={{ width: 140 }} size="middle">
+            <Select 
+              value={refreshInterval === 0 ? 'PAUSED' : refreshInterval} 
+              onChange={handleRefreshIntervalChange} 
+              style={{ width: 90, minWidth: 90 }} 
+              size="small" 
+              className="flex-shrink-0 text-xs analytics-select"
+            >
               <Option value={5}>Auto 5s</Option>
               <Option value={10}>Auto 10s</Option>
               <Option value={30}>Auto 30s</Option>
-              <Option value={0}>Pause Refresh</Option>
+              <Option value="PAUSED">{refreshInterval === 0 ? 'Start Refresh' : 'Pause Refresh'}</Option>
             </Select>
 
             <Button
               type="primary"
               icon={<ReloadOutlined spin={isRefreshing || loading} />}
               onClick={() => fetchAllAnalytics(true)}
-              className="bg-cyan-600 hover:bg-cyan-500 border-cyan-400 font-mono text-xs font-bold"
+              className="bg-cyan-600 hover:bg-cyan-500 border-cyan-400 font-mono text-xs font-bold flex-shrink-0 sync-btn"
+              size="small"
+              style={{ minWidth: '60px' }}
             >
               SYNC
             </Button>

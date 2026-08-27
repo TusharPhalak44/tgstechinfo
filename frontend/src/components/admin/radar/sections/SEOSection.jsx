@@ -70,7 +70,7 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
   const maxClicks = Math.max(...pages.map(p => p.clicks), 1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="seo-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* 4 KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
         {seoKpis.map(m => (
@@ -164,7 +164,7 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
             ))}
           </div>
         </div>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="seo-queries-table" style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ background: darkMode ? '#1E293B' : '#F8FAFC' }}>
@@ -291,7 +291,7 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
           <FileTextOutlined style={{ color: '#8B5CF6' }} />
           <span>Top Organic Destination Pages</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="organic-pages-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {pages.map((p, i) => {
             const color = COLORS[i % COLORS.length];
             return (
@@ -300,6 +300,7 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
                   {i + 1}
                 </span>
                 <span
+                  className="page-url"
                   style={{
                     fontSize: 12,
                     fontWeight: 600,
@@ -313,6 +314,7 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
                   {p.url}
                 </span>
                 <div
+                  className="page-bar"
                   style={{
                     width: 80,
                     height: 6,
@@ -332,10 +334,10 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
                     }}
                   />
                 </div>
-                <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color, width: 44, textAlign: 'right' }}>
+                <span className="page-clicks" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color, width: 44, textAlign: 'right' }}>
                   {p.clicks.toLocaleString()}
                 </span>
-                <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#10B981', width: 38, textAlign: 'right' }}>
+                <span className="page-ctr" style={{ fontFamily: 'monospace', fontSize: 11, color: '#10B981', width: 38, textAlign: 'right' }}>
                   {p.ctr}
                 </span>
               </div>

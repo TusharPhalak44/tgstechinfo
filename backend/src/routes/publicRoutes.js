@@ -29,6 +29,7 @@ router.get('/categories', publicController.getCategories);
 router.get('/categories-with-count', publicController.getCategoriesWithCount);
 router.get('/top-categories', publicController.getTopCategoriesByViews);
 router.get('/content-types', publicController.getContentTypes);
+router.get('/content-type-counts', publicController.getContentTypeCounts);
 
 // Public stats
 router.get('/stats', publicController.getPublicStats);

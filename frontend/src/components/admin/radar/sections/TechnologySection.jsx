@@ -179,7 +179,7 @@ const TechnologySection = ({ darkMode, recentSessions = [] }) => {
   }, [recentSessions]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="technology-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* 4 Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
         {[
@@ -219,7 +219,7 @@ const TechnologySection = ({ darkMode, recentSessions = [] }) => {
       </div>
 
       {/* 3 Donut Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+      <div className="tech-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
         <TechCard title="Browsers" segments={browsers} darkMode={darkMode} icon={<GlobalOutlined />} />
         <TechCard title="Operating Systems" segments={os} darkMode={darkMode} icon={<LaptopOutlined />} />
         <TechCard title="Device Types" segments={devices} darkMode={darkMode} icon={<MobileOutlined />} />
@@ -249,10 +249,11 @@ const TechnologySection = ({ darkMode, recentSessions = [] }) => {
           <DesktopOutlined style={{ color: '#0AAEEF' }} />
           <span>Screen Resolutions</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="screen-res-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {screenRes.map((s, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <span
+                className="res-label"
                 style={{
                   fontFamily: 'monospace',
                   fontSize: 12,
@@ -284,6 +285,7 @@ const TechnologySection = ({ darkMode, recentSessions = [] }) => {
                 />
               </div>
               <span
+                className="res-pct"
                 style={{
                   fontFamily: 'monospace',
                   fontSize: 11,

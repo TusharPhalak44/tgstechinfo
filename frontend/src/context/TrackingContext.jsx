@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useCookieConsent } from './CookieContext';
-import { trackingApi, generateSessionUuid, parseUtmParams, getDeviceInfo, getPageType, extractContentId, debounce, throttle, getScrollPercentage } from '../lib/trackingUtils';
+import { trackingApi, generateSessionUuid, parseUtmParams, getDeviceInfo, getUserCountry, getPageType, extractContentId, debounce, throttle, getScrollPercentage } from '../lib/trackingUtils';
 
 const TrackingContext = createContext(null);
 
@@ -51,13 +51,15 @@ export const TrackingProvider = ({ children }) => {
     try {
       const deviceInfo = getDeviceInfo();
       const utmParams = parseUtmParams();
+      const country = getUserCountry();
       
       const sessionData = {
         consent_uuid: consent.uuid,
         landing_page: window.location.href,
         referrer: document.referrer,
         ...deviceInfo,
-        ...utmParams
+        ...utmParams,
+        country
       };
 
       const response = await trackingApi.startSession(sessionData);

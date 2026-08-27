@@ -80,11 +80,12 @@ const DonutChart = ({ segments, size = 160, darkMode }) => {
 
 // ── Horizontal Bar (Solid Color) ───────────────────────────────────────────
 const HBar = ({ label, value, pct, color, darkMode, icon }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+  <div className="h-bar-row" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
     <span style={{ fontSize: 14, color, width: 20, display: 'flex', alignItems: 'center' }}>
       {icon}
     </span>
     <span
+      className="label"
       style={{
         width: 120,
         fontSize: 12,
@@ -117,6 +118,7 @@ const HBar = ({ label, value, pct, color, darkMode, icon }) => (
       />
     </div>
     <span
+      className="value"
       style={{
         fontFamily: 'monospace',
         fontSize: 11,
@@ -129,6 +131,7 @@ const HBar = ({ label, value, pct, color, darkMode, icon }) => (
       {value.toLocaleString()}
     </span>
     <span
+      className="pct"
       style={{
         fontFamily: 'monospace',
         fontSize: 10,
@@ -203,7 +206,7 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
   }));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="traffic-sources-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Header stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
         {computedSources.map((s) => (
@@ -244,7 +247,7 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
       </div>
 
       {/* Main Breakdown Panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
+      <div className="traffic-sources-breakdown-grid" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
         {/* Donut Chart */}
         <div
           className="radar-glass-panel"
@@ -319,7 +322,7 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
           {/* Medium Summary */}
           <div
             style={{
-              marginTop: 10,
+              marginTop: 16,
               paddingTop: 16,
               borderTop: `1px solid ${darkMode ? '#334155' : '#E2E8F0'}`,
             }}

@@ -9,7 +9,7 @@ const GlobalTrafficSection = ({
   totalSessions = 0,
   isLoading = false,
 }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+  <div className="global-traffic-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
     {/* Regional Traffic Globe — interactive 3D globe */}
     <RegionalTrafficGlobe
       countryData={countryData}

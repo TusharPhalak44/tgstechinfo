@@ -390,9 +390,27 @@ const RegionalTrafficGlobe = ({ countryData = [], darkMode = true }) => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       {/* Globe panel */}
       <div
-        className="radar-glass-panel"
-        style={{ position: 'relative', width: '100%', height: 520, overflow: 'hidden' }}
+        className="radar-glass-panel regional-globe-panel"
+        style={{ position: 'relative', width: '100%', overflow: 'hidden' }}
       >
+        <style>{`
+          @media (max-width: 600px) {
+            .regional-globe-panel {
+              min-height: 350px !important;
+            }
+            .regional-globe-panel .globe-canvas {
+              min-height: 300px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .regional-globe-panel {
+              min-height: 300px !important;
+            }
+            .regional-globe-panel .globe-canvas {
+              min-height: 250px !important;
+            }
+          }
+        `}</style>
         {/* Header */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
@@ -430,6 +448,7 @@ const RegionalTrafficGlobe = ({ countryData = [], darkMode = true }) => {
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onWheel={handleWheel}
+          className="globe-canvas"
           style={{ width: '100%', height: '100%', touchAction: 'none', cursor: isDragging ? 'grabbing' : 'grab', display: 'block' }}
         />
 
@@ -496,7 +515,29 @@ const RegionalTrafficGlobe = ({ countryData = [], darkMode = true }) => {
           <div style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: darkMode ? '#38BDF8' : '#0284C7', marginBottom: 14 }}>
             TOP COUNTRIES BY SESSIONS
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="country-breakdown-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <style>{`
+              @media (max-width: 600px) {
+                .country-breakdown-list .country-name {
+                  width: 80px !important;
+                  font-size: 10px !important;
+                }
+                .country-breakdown-list .country-sessions {
+                  width: 36px !important;
+                  font-size: 9px !important;
+                }
+              }
+              @media (max-width: 480px) {
+                .country-breakdown-list .country-name {
+                  width: 60px !important;
+                  font-size: 9px !important;
+                }
+                .country-breakdown-list .country-sessions {
+                  width: 32px !important;
+                  font-size: 8px !important;
+                }
+              }
+            `}</style>
             {topCountries.map((c, i) => {
               const pct = Math.round(((c.session_count || 1) / maxSessions) * 100);
               const colors = ['#0AAEEF','#A855F7','#10B981','#F59E0B','#EF4444','#06B6D4','#F97316','#8B5CF6'];
@@ -505,7 +546,7 @@ const RegionalTrafficGlobe = ({ countryData = [], darkMode = true }) => {
                   <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 600, color: darkMode ? '#94A3B8' : '#64748B', width: 24, textAlign: 'right' }}>
                     {i + 1}
                   </span>
-                  <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: darkMode ? '#E2E8F0' : '#1E293B', width: 110, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span className="country-name" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color: darkMode ? '#E2E8F0' : '#1E293B', width: 110, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {c.country || 'Unknown'}
                   </span>
                   <div style={{ flex: 1, height: 6, borderRadius: 3, background: darkMode ? '#1E293B' : '#E2E8F0', overflow: 'hidden' }}>
@@ -515,7 +556,7 @@ const RegionalTrafficGlobe = ({ countryData = [], darkMode = true }) => {
                       transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
                     }} />
                   </div>
-                  <span style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: colors[i % colors.length], width: 48, textAlign: 'right' }}>
+                  <span className="country-sessions" style={{ fontFamily: 'monospace', fontSize: 10, fontWeight: 700, color: colors[i % colors.length], width: 48, textAlign: 'right' }}>
                     {(c.session_count || 0).toLocaleString()}
                   </span>
                 </div>

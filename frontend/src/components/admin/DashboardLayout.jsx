@@ -171,7 +171,8 @@ const layoutStyles = `
     align-items: center !important;
     justify-content: space-between !important;
     padding: 0 28px !important;
-    z-index: 50;
+    z-index: 1000;
+    overflow: visible !important;
     backdrop-filter: blur(16px) !important;
     -webkit-backdrop-filter: blur(16px) !important;
     transition: left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
@@ -846,7 +847,13 @@ const DashboardLayout = () => {
               </Popover>
 
               {/* User Dropdown */}
-              <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" arrow trigger={['click']}>
+              <Dropdown 
+                menu={{ items: userMenuItems }} 
+                placement="bottomRight" 
+                arrow 
+                trigger={['click']}
+                getPopupContainer={(triggerNode) => document.body}
+              >
                 <div
                   className="admin-user-chip"
                   style={{ border: `1px solid ${borderColor}` }}

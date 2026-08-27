@@ -73,7 +73,15 @@ const WebsitePulseBar = ({
   ];
 
   return (
-    <div className="w-full grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 my-6">
+    <div className="website-pulse-bar w-full grid gap-3 md:gap-4 my-4 sm:my-6">
+      <style>{`
+        .website-pulse-bar {
+          grid-template-columns: repeat(5, 1fr);
+        }
+        @media (max-width: 1024px) { .website-pulse-bar { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 640px)  { .website-pulse-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+        @media (max-width: 360px)  { .website-pulse-bar { grid-template-columns: 1fr; } }
+      `}</style>
       {pulseCards.map((card) => (
         <div
           key={card.id}

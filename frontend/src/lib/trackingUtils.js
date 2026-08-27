@@ -37,6 +37,79 @@ export const getDeviceInfo = () => {
   };
 };
 
+// Get user's country using timezone and locale
+export const getUserCountry = () => {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const locale = navigator.language || navigator.userLanguage;
+  
+  // Map common timezones to countries
+  const timezoneCountryMap = {
+    'Asia/Kolkata': 'India',
+    'Asia/Calcutta': 'India',
+    'Asia/Delhi': 'India',
+    'Asia/Mumbai': 'India',
+    'Asia/Bangalore': 'India',
+    'Asia/Karachi': 'Pakistan',
+    'Asia/Dhaka': 'Bangladesh',
+    'Asia/Colombo': 'Sri Lanka',
+    'Asia/Kathmandu': 'Nepal',
+    'Asia/Rangoon': 'Myanmar',
+    'Asia/Bangkok': 'Thailand',
+    'Asia/Singapore': 'Singapore',
+    'Asia/Kuala_Lumpur': 'Malaysia',
+    'Asia/Jakarta': 'Indonesia',
+    'Asia/Manila': 'Philippines',
+    'Asia/Ho_Chi_Minh': 'Vietnam',
+    'Asia/Tokyo': 'Japan',
+    'Asia/Seoul': 'South Korea',
+    'Asia/Shanghai': 'China',
+    'Asia/Hong_Kong': 'Hong Kong',
+    'Asia/Taipei': 'Taiwan',
+    'America/New_York': 'United States',
+    'America/Chicago': 'United States',
+    'America/Los_Angeles': 'United States',
+    'America/Denver': 'United States',
+    'America/Phoenix': 'United States',
+    'Europe/London': 'United Kingdom',
+    'Europe/Paris': 'France',
+    'Europe/Berlin': 'Germany',
+    'Europe/Rome': 'Italy',
+    'Europe/Madrid': 'Spain',
+    'Europe/Amsterdam': 'Netherlands',
+    'Europe/Zurich': 'Switzerland',
+    'Europe/Dublin': 'Ireland',
+    'Australia/Sydney': 'Australia',
+    'Australia/Melbourne': 'Australia',
+    'Pacific/Auckland': 'New Zealand',
+  };
+  
+  // Try to get country from timezone
+  if (timezone && timezoneCountryMap[timezone]) {
+    return timezoneCountryMap[timezone];
+  }
+  
+  // Fallback to locale
+  if (locale) {
+    const localeCountry = locale.split('-')[1];
+    if (localeCountry) {
+      const countryMap = {
+        'IN': 'India',
+        'US': 'United States',
+        'GB': 'United Kingdom',
+        'DE': 'Germany',
+        'FR': 'France',
+        'JP': 'Japan',
+        'CN': 'China',
+        'AU': 'Australia',
+        'CA': 'Canada',
+      };
+      return countryMap[localeCountry] || localeCountry;
+    }
+  }
+  
+  return null; // Will be detected by backend IP geolocation
+};
+
 // Get page type from URL
 export const getPageType = (pathname) => {
   if (pathname === '/') return 'home';
