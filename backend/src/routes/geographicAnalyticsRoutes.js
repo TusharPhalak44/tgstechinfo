@@ -13,6 +13,14 @@ const { hasPermission } = require('../middleware/permissions');
 router.use(authenticate);
 
 /**
+ * Global Summary Analytics
+ * GET /api/analytics/global
+ */
+router.get('/global',
+  geographicAnalyticsController.getGlobalAnalytics
+);
+
+/**
  * Geographic Traffic Data
  * GET /api/analytics/geographic-traffic
  * Query params: limit, start_date, end_date

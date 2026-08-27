@@ -7,11 +7,14 @@ import {
   CheckOutlined, DownOutlined, RightOutlined, SunOutlined, MoonOutlined,
   FileTextOutlined, TeamOutlined, FireOutlined, ReadOutlined,
   GlobalOutlined, FolderOpenOutlined, LineChartOutlined, CalendarOutlined,
-  AppstoreOutlined, BuildOutlined
+  AppstoreOutlined, BuildOutlined, CompassOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
+import { Button as EnhancedButton } from '@/components/ui/button';
+import { ButtonWithIcon } from '@/components/ui/button-witn-icon';
+import { PhoneCall } from 'lucide-react';
 import axios from 'axios';
 
 const { Text } = Typography;
@@ -23,6 +26,7 @@ const NOTIF_COLOR = {
 
 const STATIC_NAV = [
   { key: 'home', label: 'Home', to: '/' },
+  { key: 'audience', label: 'Audience', to: '/audience', icon: <GlobalOutlined /> },
   {
     key: 'insights', label: 'Insights',
     children: [
@@ -173,16 +177,16 @@ const NavLink = ({ item, active, darkMode }) => {
   if (!item.children) {
     return (
       <Link to={item.to} style={{
-        fontSize: 14,
+        fontSize: 13.5,
         fontWeight: active ? 700 : 600,
-        color: active 
-          ? (darkMode ? '#3B82F6' : '#0B1F4D') 
+        color: active
+          ? (darkMode ? '#3B82F6' : '#0B1F4D')
           : (darkMode ? '#CBD5E1' : '#0F172A'),
         textDecoration: 'none',
-        padding: '6px 14px',
+        padding: '5px 10px',
         borderRadius: 20,
-        background: active 
-          ? (darkMode ? 'rgba(59, 130, 246, 0.15)' : '#EAF2FF') 
+        background: active
+          ? (darkMode ? 'rgba(59, 130, 246, 0.15)' : '#EAF2FF')
           : 'transparent',
         transition: 'all .2s ease',
         whiteSpace: 'nowrap',
@@ -227,20 +231,20 @@ const NavLink = ({ item, active, darkMode }) => {
     >
       <button
         style={{
-          background: open 
-            ? (darkMode ? 'rgba(59, 130, 246, 0.15)' : '#EAF2FF') 
+          background: open
+            ? (darkMode ? 'rgba(59, 130, 246, 0.15)' : '#EAF2FF')
             : 'transparent',
           border: 'none',
           cursor: 'pointer',
-          fontSize: 14,
+          fontSize: 13.5,
           fontWeight: open ? 700 : 600,
-          color: open 
-            ? (darkMode ? '#3B82F6' : '#0B1F4D') 
+          color: open
+            ? (darkMode ? '#3B82F6' : '#0B1F4D')
             : (darkMode ? '#CBD5E1' : '#0F172A'),
           display: 'flex',
           alignItems: 'center',
-          gap: 5,
-          padding: '6px 14px',
+          gap: 4,
+          padding: '5px 10px',
           borderRadius: 20,
           transition: 'all .2s ease',
           whiteSpace: 'nowrap'
@@ -259,12 +263,7 @@ const NavLink = ({ item, active, darkMode }) => {
         }}
       >
         {item.label}
-        <DownOutlined style={{
-          fontSize: 9,
-          color: open ? '#F7941D' : 'var(--color-muted)',
-          transition: 'transform .22s ease',
-          transform: open ? 'rotate(180deg)' : 'none'
-        }} />
+        <DownOutlined style={{ fontSize: 10, transition: 'transform .2s ease', transform: open ? 'rotate(180deg)' : 'rotate(0)' }} />
       </button>
 
       {open && (
@@ -548,39 +547,40 @@ const Navbar = () => {
 
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000 }}>
         <header style={{
-          background: scrolled 
-            ? (darkMode ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.96)') 
+          background: scrolled
+            ? (darkMode ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.96)')
             : (darkMode ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)'),
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
-          boxShadow: scrolled 
-            ? (darkMode ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(11,31,77,0.08)') 
+          boxShadow: scrolled
+            ? (darkMode ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(11,31,77,0.08)')
             : 'none',
           transition: 'all .3s ease',
         }}>
           <div style={{
-            maxWidth: 1280,
+            maxWidth: 1440,
             margin: '0 auto',
-            padding: isMobile ? '0 14px' : isLaptop ? '0 18px' : '0 24px',
+            padding: isMobile ? '0 12px' : '0 20px',
             height: 62,
             display: 'flex',
             alignItems: 'center',
-            gap: isMobile ? 12 : isLaptop ? 16 : 24
+            justifyContent: 'space-between',
+            gap: isMobile ? 8 : 14
           }}>
 
             {/* Brand Logo */}
             <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
               {navbarLogo ? (
                 <img src={navbarLogo} alt="TGS TechInfo" style={{
-                  height: isMobile ? 46 : isLaptop ? 50 : (logoSizes.navbar.height || 58),
+                  height: isMobile ? 42 : isLaptop ? 46 : (logoSizes.navbar.height || 52),
                   width: 'auto',
                   display: 'block'
                 }} />
               ) : (
-                <span style={{ 
-                  fontSize: 22, 
-                  fontWeight: 900, 
+                <span style={{
+                  fontSize: 21,
+                  fontWeight: 900,
                   color: '#0B1F4D',
                   letterSpacing: '-0.5px'
                 }}>
@@ -592,19 +592,19 @@ const Navbar = () => {
             {/* Desktop Navigation Links */}
             {!isMobile && (
               <nav style={{
-                flex: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: isLaptop ? 4 : 8,
+                gap: 4,
+                flexShrink: 1,
                 minWidth: 0
               }}>
                 {navItems.map(item => (
-                  <NavLink 
-                    key={item.key} 
-                    item={item} 
+                  <NavLink
+                    key={item.key}
+                    item={item}
                     active={location.pathname === item.to}
-                    darkMode={darkMode} 
+                    darkMode={darkMode}
                   />
                 ))}
               </nav>
@@ -614,41 +614,40 @@ const Navbar = () => {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: isMobile ? 6 : isLaptop ? 8 : 10,
-              flexShrink: 0,
-              marginLeft: 'auto'
+              gap: 8,
+              flexShrink: 0
             }}>
 
               {/* Compact Expanding Search Bar */}
               <div ref={searchRef} style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{
-                  display: 'flex', 
+                  display: 'flex',
                   alignItems: 'center',
                   background: darkMode ? 'rgba(255,255,255,0.06)' : '#EAF2FF',
                   borderRadius: 24,
-                  padding: isMobile ? '0 8px' : '0 12px',
+                  padding: '0 10px',
                   border: darkMode ? '1px solid #334155' : '1.5px solid #CBD5E1',
                   transition: 'all .25s ease'
                 }}>
                   <SearchOutlined style={{
                     color: '#0B1F4D',
-                    fontSize: 14,
+                    fontSize: 13,
                     flexShrink: 0,
                     cursor: 'pointer'
                   }} onClick={() => { if (isMobile) setSearchVisible(!searchVisible); }} />
-                  
+
                   <input
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                    placeholder="Search articles..."
+                    placeholder="Search..."
                     style={{
-                      border: 'none', 
-                      background: 'transparent', 
+                      border: 'none',
+                      background: 'transparent',
                       outline: 'none',
-                      fontSize: 13,
-                      padding: '7px 8px',
-                      width: isMobile ? (searchVisible ? 130 : 0) : (searchVisible ? 160 : 100),
+                      fontSize: 12.5,
+                      padding: '6px 6px',
+                      width: isMobile ? (searchVisible ? 110 : 0) : (searchVisible ? 140 : 70),
                       overflow: 'hidden',
                       color: darkMode ? '#F1F5F9' : '#0F172A',
                       transition: 'width .25s ease',
@@ -656,7 +655,7 @@ const Navbar = () => {
                     onFocus={() => setSearchVisible(true)}
                     onBlur={() => { if (!searchQuery) setSearchVisible(false); }}
                   />
-                  
+
                   {searchQuery && (
                     <CloseOutlined
                       style={{
@@ -702,8 +701,8 @@ const Navbar = () => {
               {isAuthenticated ? (
                 <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
                   <div style={{
-                    display: 'flex', 
-                    alignItems: 'center', 
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 8,
                     cursor: 'pointer',
                     padding: '4px 12px 4px 4px',
@@ -727,68 +726,39 @@ const Navbar = () => {
                 </Dropdown>
               ) : !isMobile ? (
                 <div style={{ display: 'flex', gap: isLaptop ? 6 : 10, alignItems: 'center' }}>
-                  {/* Contact Us Button - Brand Navy Outlined + Scale Micro-Animation */}
+                  {/* Contact Us Button - Brand Navy #0B1F4D with Balanced Icon Circle */}
                   <button
                     onClick={() => navigate('/contact')}
-                    style={{
-                      padding: isLaptop ? '5px 12px' : '6px 16px',
-                      borderRadius: 20,
-                      border: darkMode ? '1.5px solid #3B82F6' : '1.5px solid #0B1F4D',
-                      background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#EAF2FF',
-                      color: darkMode ? '#3B82F6' : '#0B1F4D',
-                      fontSize: isLaptop ? 11.5 : 12.5,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'all .25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.background = darkMode ? '#3B82F6' : '#0B1F4D';
-                      e.currentTarget.style.color = '#FFFFFF';
-                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
-                      e.currentTarget.style.boxShadow = darkMode ? '0 6px 16px rgba(59, 130, 246, 0.35)' : '0 6px 16px rgba(11, 31, 77, 0.25)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.background = darkMode ? 'rgba(59, 130, 246, 0.1)' : '#EAF2FF';
-                      e.currentTarget.style.color = darkMode ? '#3B82F6' : '#0B1F4D';
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                      e.currentTarget.style.boxShadow = 'none';
-                    }}
+                    className={`group relative rounded-full font-bold transition-all duration-300 inline-flex items-center cursor-pointer select-none ${
+                      isLaptop ? 'h-9 pl-1.5 pr-4 text-xs gap-2' : 'h-10 pl-1.5 pr-5 text-[13px] gap-2.5'
+                    } ${
+                      darkMode
+                        ? 'bg-[rgba(59,130,246,0.1)] border-[1.5px] border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6] hover:text-white hover:shadow-[0_6px_18px_rgba(59,130,246,0.35)]'
+                        : 'bg-[#EAF2FF] border-[1.5px] border-[#0B1F4D] text-[#0B1F4D] hover:bg-[#0B1F4D] hover:text-white hover:shadow-[0_6px_18px_rgba(11,31,77,0.25)]'
+                    } hover:-translate-y-0.5 active:translate-y-0 shadow-sm`}
                   >
-                    Contact Us
+                    <div
+                      className={`rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${
+                        isLaptop ? 'w-6 h-6' : 'w-7 h-7'
+                      } ${
+                        darkMode
+                          ? 'bg-blue-500/20 text-[#38BDF8] group-hover:bg-white group-hover:text-[#3B82F6]'
+                          : 'bg-white text-[#0B1F4D] shadow-xs group-hover:bg-white group-hover:text-[#0B1F4D]'
+                      }`}
+                    >
+                      <PhoneCall className={`${isLaptop ? 'w-3 h-3' : 'w-3.5 h-3.5'} transition-transform duration-300 group-hover:scale-110 shrink-0`} />
+                    </div>
+                    <span className="tracking-wide font-extrabold whitespace-nowrap">Contact Us</span>
                   </button>
 
-                  {/* Join Our Community Button - Brand Orange CTA (#F7941D) - Compact & Animated */}
-                  <button
+                  {/* Join Our Community Button - button-witn-icon design */}
+                  <ButtonWithIcon
                     onClick={() => navigate('/login')}
-                    style={{
-                      padding: isLaptop ? '5px 12px' : '6px 16px',
-                      borderRadius: 20,
-                      border: 'none',
-                      background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
-                      color: '#FFFFFF',
-                      fontSize: isLaptop ? 11.5 : 12.5,
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      boxShadow: '0 3px 12px rgba(247, 148, 29, 0.35)',
-                      animation: 'communityPulseGlow 3s infinite alternate',
-                      transition: 'all .25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                      whiteSpace: 'nowrap',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.boxShadow = '0 8px 22px rgba(247, 148, 29, 0.6)';
-                      e.currentTarget.style.transform = 'translateY(-2px) scale(1.04)';
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(247, 148, 29, 0.35)';
-                      e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                    }}
+                    size={isLaptop ? 'sm' : 'default'}
+                    className={isLaptop ? 'h-9 text-xs' : 'h-10 text-[13px]'}
                   >
-                    Join Our Community <RightOutlined style={{ fontSize: 10 }} />
-                  </button>
+                    Join Our Community
+                  </ButtonWithIcon>
                 </div>
               ) : null}
 
@@ -800,9 +770,9 @@ const Navbar = () => {
                   background: darkMode ? 'rgba(255,255,255,0.08)' : '#EAF2FF',
                   border: darkMode ? '1px solid #334155' : '1px solid #CBD5E1',
                   cursor: 'pointer',
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
+                  width: isLaptop ? 36 : 38,
+                  height: isLaptop ? 36 : 38,
+                  borderRadius: 12,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -814,8 +784,8 @@ const Navbar = () => {
                 onMouseEnter={e => {
                   e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.16)' : '#D0E3FF';
                   e.currentTarget.style.borderColor = darkMode ? '#FBBF24' : '#0B1F4D';
-                  e.currentTarget.style.boxShadow = darkMode 
-                    ? '0 0 12px rgba(251, 191, 36, 0.35)' 
+                  e.currentTarget.style.boxShadow = darkMode
+                    ? '0 0 12px rgba(251, 191, 36, 0.35)'
                     : '0 0 12px rgba(11, 31, 77, 0.2)';
                   e.currentTarget.style.transform = 'translateY(-1px)';
                 }}
@@ -841,16 +811,16 @@ const Navbar = () => {
                   onClick={() => setMobileOpen(o => !o)}
                   aria-label="Toggle Mobile Menu"
                   style={{
-                    background: 'none', 
-                    border: 'none', 
+                    background: 'none',
+                    border: 'none',
                     cursor: 'pointer',
-                    width: 36, 
-                    height: 36, 
+                    width: 36,
+                    height: 36,
                     borderRadius: 10,
-                    display: 'flex', 
-                    alignItems: 'center', 
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--color-heading)', 
+                    color: 'var(--color-heading)',
                     flexShrink: 0
                   }}
                 >
@@ -904,45 +874,28 @@ const Navbar = () => {
                   navigate('/contact');
                   setMobileOpen(false);
                 }}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: 20,
-                  border: '1.5px solid #0B1F4D',
-                  background: '#EAF2FF',
-                  color: '#0B1F4D',
-                  fontSize: 13.5,
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
+                className={`w-full rounded-full py-2.5 px-4 font-bold text-sm inline-flex items-center justify-center gap-2.5 transition-all duration-300 ${
+                  darkMode
+                    ? 'bg-slate-900/90 border border-slate-700 text-slate-200 hover:border-[#0AAEEF] hover:text-white shadow-sm'
+                    : 'bg-white border border-slate-200 text-slate-800 hover:border-[#0AAEEF] hover:text-[#0AAEEF] shadow-sm'
+                }`}
               >
-                Contact Us
+                <div className="w-7 h-7 rounded-full bg-sky-500/10 text-[#0AAEEF] flex items-center justify-center shrink-0">
+                  <PhoneCall className="w-3.5 h-3.5" />
+                </div>
+                <span className="font-extrabold whitespace-nowrap">Contact Us</span>
               </button>
 
-              <button
+              <ButtonWithIcon
                 onClick={() => {
                   navigate('/login');
                   setMobileOpen(false);
                 }}
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: 20,
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #F7941D 0%, #E67E00 100%)',
-                  color: '#FFFFFF',
-                  fontSize: 13.5,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 16px rgba(247,148,29,.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6
-                }}
+                size="default"
+                className="w-full py-2.5 text-sm"
               >
-                Join Our Community <RightOutlined style={{ fontSize: 11 }} />
-              </button>
+                Join Our Community
+              </ButtonWithIcon>
             </div>
           )}
 

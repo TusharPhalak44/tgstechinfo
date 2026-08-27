@@ -53,6 +53,10 @@ import ArticleDetail from './components/public/ArticleDetail';
 import UserAccountPolicy from './pages/UserAccountPolicy';
 
 import About from './pages/About';
+import Audience from './pages/Audience';
+import AudienceIntelligence from './pages/AudienceIntelligence';
+import SharedAudienceView from './pages/SharedAudienceView';
+import AdminAudienceDashboard from './components/admin/audience/AdminAudienceDashboard';
 
  
 
@@ -304,7 +308,16 @@ function AppContent() {
 
   // All URL prefixes that render as a full-screen standalone landing page (no Navbar/Footer)
 
-  const STANDALONE_PREFIXES = ['/content/', '/lp/', '/landing-page/'];
+  // All URL prefixes that render as a full-screen standalone landing page (no Navbar/Footer)
+
+  const STANDALONE_PREFIXES = [
+    '/content/',
+    '/lp/',
+    '/landing-page/',
+    '/audience-intelligence',
+    '/audience/view/',
+    '/audience-intelligence/view/'
+  ];
 
   const dashboardRoutes = ['/dashboard', '/admin', '/user-dashboard'];
 
@@ -408,7 +421,7 @@ function AppContent() {
 
 
 
-      {/* Standalone landing page — no Navbar/Footer — served at /content/:slug, /lp/:slug, or /landing-page/:slug */}
+      {/* Standalone pages — no Navbar/Footer — served at /content/:slug, /lp/:slug, /landing-page/:slug, /audience-intelligence, or shared audience links */}
 
       {isStandaloneRoute ? (
 
@@ -419,6 +432,12 @@ function AppContent() {
           <Route path="/lp/:slug" element={<StandaloneLandingPage />} />
 
           <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
+
+          <Route path="/audience-intelligence" element={<AudienceIntelligence />} />
+
+          <Route path="/audience/view/:token" element={<SharedAudienceView />} />
+
+          <Route path="/audience-intelligence/view/:token" element={<SharedAudienceView />} />
 
         </Routes>
 
@@ -543,6 +562,12 @@ function AppContent() {
               <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
 
               <Route path="/reset-password" element={<ResetPassword />} />
+
+              <Route path="/audience" element={<Audience />} />
+
+              <Route path="/audience-intelligence" element={<AudienceIntelligence />} />
+
+              <Route path="/audience/view/:token" element={<SharedAudienceView />} />
 
 
 
@@ -717,6 +742,8 @@ function AppContent() {
                 <Route path="review/:id" element={<ArticleReviewPage />} />
 
                 <Route path="edit/:id" element={<AdminEditContent />} />
+
+                <Route path="audience" element={<AdminAudienceDashboard />} />
 
               </Route>
 

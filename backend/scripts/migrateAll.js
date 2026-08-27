@@ -148,6 +148,11 @@ const migrateAll = async () => {
         await executeSqlFile(path.join(__dirname, '../database/landing_page_content_type.sql'));
         console.log('✅ Landing Page content type seeded');
 
+        // Audience Intelligence
+        console.log('📋 Running audience_intelligence_schema.sql...');
+        await executeSqlFile(path.join(__dirname, '../database/audience_intelligence_schema.sql'));
+        console.log('✅ Audience Intelligence schema applied');
+
         console.log('🎉 All migrations completed successfully');
         process.exit(0);
     } catch (err) {
