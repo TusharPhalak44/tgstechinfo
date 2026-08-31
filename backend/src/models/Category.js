@@ -2,13 +2,20 @@ const { pool } = require('../config/database');
 
 class Category {
     static async findAll(filters = {}) {
-        let query = 'SELECT id, name, slug, type, parent_id FROM categories WHERE 1=1';
+        let query = `
+            SELECT c.id, c.name, c.slug, c.type, c.parent_id, 
+                   COUNT(DISTINCT content.id) as content_count
+            FROM categories c
+            LEFT JOIN contents content ON c.id = content.category_id 
+                AND content.status = 'published' AND content.is_visible_on_site = 1
+            WHERE 1=1
+        `;
         const values = [];
 
-        if (filters.type) { query += ' AND type = ?'; values.push(filters.type); }
-        if (filters.parent_id) { query += ' AND parent_id = ?'; values.push(filters.parent_id); }
+        if (filters.type) { query += ' AND c.type = ?'; values.push(filters.type); }
+        if (filters.parent_id) { query += ' AND c.parent_id = ?'; values.push(filters.parent_id); }
 
-        query += ' ORDER BY name';
+        query += ' GROUP BY c.id, c.name, c.slug, c.type, c.parent_id ORDER BY c.name';
         const [rows] = await pool.query(query, values);
         return rows;
     }

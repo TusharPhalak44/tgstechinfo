@@ -67,6 +67,36 @@ const AnalyticsTabs = ({ activeTab, onChange, darkMode }) => {
         .analytics-section-enter {
           animation: tabSlideIn 0.3s ease-out both;
         }
+        @media (max-width: 768px) {
+          .analytics-tabs-container {
+            padding: 3px 4px !important;
+          }
+          .analytics-tab-button {
+            padding: 5px 8px !important;
+            font-size: 10px !important;
+            gap: 4px !important;
+          }
+          .analytics-tab-button span:first-child {
+            font-size: 12px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .analytics-tabs-container {
+            padding: 2px 3px !important;
+          }
+          .analytics-tab-button {
+            padding: 4px 6px !important;
+            font-size: 9px !important;
+            gap: 3px !important;
+          }
+          .analytics-tab-button span:first-child {
+            font-size: 11px !important;
+          }
+          .active-indicator-dot {
+            width: 4px !important;
+            height: 4px !important;
+          }
+        }
       `}</style>
       <div
         className="analytics-tab-bar"

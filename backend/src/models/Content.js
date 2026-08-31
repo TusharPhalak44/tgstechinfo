@@ -388,6 +388,16 @@ class Content {
             values.push(filters.is_visible_on_site); 
         }
 
+        // Add date filtering support
+        if (filters.start_date) { 
+            baseWhere += ' AND c.created_at >= ?'; 
+            values.push(filters.start_date); 
+        }
+        if (filters.end_date) { 
+            baseWhere += ' AND c.created_at <= ?'; 
+            values.push(filters.end_date); 
+        }
+
         // total count
         const countQuery = `SELECT COUNT(*) as total FROM contents c LEFT JOIN content_types ct ON c.content_type_id = ct.id LEFT JOIN categories cat ON c.category_id = cat.id${baseWhere}`;
         const [countRows] = await pool.query(countQuery, values);

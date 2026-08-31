@@ -11,6 +11,9 @@
     "concurrently": "^8.2.2"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "react-simple-maps": "^3.0.0",
+    "three": "^0.185.1",
     "ua-parser-js": "^2.0.10"
   }
 }

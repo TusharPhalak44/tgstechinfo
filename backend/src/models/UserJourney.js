@@ -76,7 +76,19 @@ class UserJourney {
         return rows;
     }
 
-    static async getConversionFunnel() {
+    static async getConversionFunnel(filters = {}) {
+        let baseWhere = ' WHERE 1=1';
+        const values = [];
+
+        if (filters.start_date) {
+            baseWhere += ' AND timestamp >= ?';
+            values.push(filters.start_date);
+        }
+        if (filters.end_date) {
+            baseWhere += ' AND timestamp <= ?';
+            values.push(filters.end_date);
+        }
+
         const query = `
             SELECT 
                 action_type,
@@ -84,11 +96,12 @@ class UserJourney {
                 COUNT(DISTINCT session_uuid) as unique_sessions,
                 ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER (), 2) as percentage
             FROM user_journey
+            ${baseWhere}
             GROUP BY action_type
             ORDER BY count DESC
         `;
 
-        const [rows] = await pool.query(query);
+        const [rows] = await pool.query(query, values);
         return rows;
     }
 }

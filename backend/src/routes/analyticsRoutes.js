@@ -13,6 +13,9 @@ router.get('/overview', analyticsController.getOverview);
 // Content Analytics
 router.get('/content/:content_id', analyticsController.getContentAnalytics);
 
+// Top Content by Engagement
+router.get('/top-content-engagement', analyticsController.getTopContentByEngagement);
+
 // Session Analytics
 router.get('/sessions', analyticsController.getSessionAnalytics);
 
@@ -24,6 +27,11 @@ router.get('/popular-downloads', analyticsController.getPopularDownloads);
 
 // Search Analytics
 router.get('/search', analyticsController.getSearchAnalytics);
+
+// Core Web Vitals Analytics
+router.get('/core-web-vitals', analyticsController.getCoreWebVitalsAnalytics);
+router.post('/core-web-vitals', analyticsController.recordCoreWebVitals);
+router.post('/core-web-vitals/create-table', analyticsController.createCoreWebVitalsTable);
 
 // User Journey Analytics
 router.get('/journey', analyticsController.getJourneyAnalytics);

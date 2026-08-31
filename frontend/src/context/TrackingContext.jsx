@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { useLocation } from 'react-router-dom';
 import { useCookieConsent } from './CookieContext';
 import { trackingApi, generateSessionUuid, parseUtmParams, getDeviceInfo, getUserCountry, getPageType, extractContentId, debounce, throttle, getScrollPercentage } from '../lib/trackingUtils';
+import performanceTracker from '../utils/performanceTracking';
 
 const TrackingContext = createContext(null);
 
@@ -68,6 +69,9 @@ export const TrackingProvider = ({ children }) => {
       
       // Store session UUID in localStorage for persistence
       localStorage.setItem('tracking_session_uuid', response.session.session_uuid);
+      
+      // Initialize performance tracking
+      performanceTracker.initialize(response.session.session_uuid, consent.uuid);
       
       console.log('Tracking session initialized:', response.session.session_uuid);
     } catch (error) {

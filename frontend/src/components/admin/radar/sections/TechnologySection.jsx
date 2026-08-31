@@ -1,10 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   GlobalOutlined,
   DesktopOutlined,
   MobileOutlined,
   LaptopOutlined,
   TabletOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 
 const COLORS = ['#0AAEEF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#64748B'];
@@ -96,92 +98,179 @@ const TechCard = ({ title, segments, darkMode, icon }) => (
   </div>
 );
 
-const TechnologySection = ({ darkMode, recentSessions = [] }) => {
-  // Aggregate real technology metrics from recentSessions dynamically
+const TechnologySection = ({ darkMode, recentSessions = [], timeRange = '7d' }) => {
+  const [filteredSessions, setFilteredSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Calculate date range based on timeRange
+    let dateParams = '';
+    
+    if (timeRange !== 'all') {
+      const endDate = new Date();
+      const startDate = new Date();
+      if (timeRange === '7d') startDate.setDate(startDate.getDate() - 7);
+      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
+      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
+
+      const s = startDate.toISOString().split('T')[0];
+      const e = endDate.toISOString().split('T')[0];
+      dateParams = `?start_date=${s}&end_date=${e}`;
+    }
+
+    console.log('TechnologySection - Fetching sessions with timeRange:', timeRange, 'dateParams:', dateParams);
+    console.log('TechnologySection - Full API URL:', `/api/analytics/sessions${dateParams}`);
+
+    // Fetch session data with date filtering
+    axios.get(`/api/analytics/sessions${dateParams}`)
+      .then(res => {
+        console.log('TechnologySection - API response:', res.data);
+        const sessions = Array.isArray(res.data.recentSessions) ? res.data.recentSessions : Array.isArray(res.data.sessions) ? res.data.sessions : Array.isArray(res.data) ? res.data : [];
+        console.log('TechnologySection - Sessions fetched:', sessions.length);
+        console.log('TechnologySection - Sample session data:', sessions.length > 0 ? sessions[0] : 'No sessions');
+        if (sessions.length > 0) {
+          console.log('TechnologySection - Session data structure:', JSON.stringify(sessions.slice(0, 2), null, 2));
+        }
+        setFilteredSessions(sessions);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('TechnologySection - Error fetching sessions:', err);
+        setFilteredSessions([]);
+        setLoading(false);
+      });
+  }, [timeRange]);
+
+  // Aggregate real technology metrics from filteredSessions dynamically
   const { browsers, os, devices, screenRes, counts } = useMemo(() => {
     const browserMap = {};
     const osMap = {};
     const deviceMap = {};
     const resMap = {};
 
-    if (recentSessions && recentSessions.length > 0) {
-      recentSessions.forEach(s => {
-        const b = s.browser || 'Chrome';
-        const o = s.operating_system || 'Windows';
-        const d = s.device_type || 'Desktop';
-        const r = s.screen_resolution || '1920x1080';
+    console.log('TechnologySection - Processing sessions:', filteredSessions.length);
+
+    if (filteredSessions && filteredSessions.length > 0) {
+      filteredSessions.forEach(s => {
+        const b = s.browser || 'Unknown';
+        const o = s.operating_system || 'Unknown';
+        const d = s.device_type || 'Unknown';
+        const r = s.screen_resolution || 'Unknown';
 
         browserMap[b] = (browserMap[b] || 0) + 1;
         osMap[o] = (osMap[o] || 0) + 1;
         deviceMap[d] = (deviceMap[d] || 0) + 1;
         resMap[r] = (resMap[r] || 0) + 1;
       });
+
+      console.log('TechnologySection - Browser map:', browserMap);
+      console.log('TechnologySection - OS map:', osMap);
+      console.log('TechnologySection - Device map:', deviceMap);
+      console.log('TechnologySection - Resolution map:', resMap);
     }
 
-    const total = Math.max(1, recentSessions.length || 100);
+    const total = Math.max(1, filteredSessions.length);
 
-    const toSortedArray = (map, fallback) => {
+    const toSortedArray = (map) => {
       const keys = Object.keys(map);
-      if (keys.length === 0) return fallback;
+      if (keys.length === 0) return [];
       return keys
         .sort((a, b) => map[b] - map[a])
         .slice(0, 5)
         .map((k, i) => ({
           label: k,
-          pct: Math.round((map[k] / total) * 100) || 10,
+          pct: Math.round((map[k] / total) * 100),
           color: COLORS[i % COLORS.length],
         }));
     };
 
-    const bList = toSortedArray(browserMap, [
-      { label: 'Chrome', pct: 52, color: '#0AAEEF' },
-      { label: 'Safari', pct: 22, color: '#8B5CF6' },
-      { label: 'Edge', pct: 14, color: '#10B981' },
-      { label: 'Firefox', pct: 8, color: '#F59E0B' },
-      { label: 'Other', pct: 4, color: '#EF4444' },
-    ]);
+    const bList = toSortedArray(browserMap);
+    const oList = toSortedArray(osMap);
+    const dList = toSortedArray(deviceMap);
+    const rList = toSortedArray(resMap);
 
-    const oList = toSortedArray(osMap, [
-      { label: 'Windows', pct: 44, color: '#0AAEEF' },
-      { label: 'macOS', pct: 26, color: '#8B5CF6' },
-      { label: 'Android', pct: 18, color: '#10B981' },
-      { label: 'iOS', pct: 10, color: '#F59E0B' },
-      { label: 'Linux', pct: 2, color: '#EF4444' },
-    ]);
+    const counts = {
+      browsers: Object.keys(browserMap).length,
+      os: Object.keys(osMap).length,
+      devices: Object.keys(deviceMap).length,
+      screens: Object.keys(resMap).length,
+    };
 
-    const dList = toSortedArray(deviceMap, [
-      { label: 'Desktop', pct: 58, color: '#0AAEEF' },
-      { label: 'Mobile', pct: 34, color: '#8B5CF6' },
-      { label: 'Tablet', pct: 8, color: '#10B981' },
-    ]);
-
-    const rList = toSortedArray(resMap, [
-      { label: '1920×1080', pct: 36, color: '#0AAEEF' },
-      { label: '1366×768', pct: 20, color: '#8B5CF6' },
-      { label: '390×844', pct: 16, color: '#10B981' },
-      { label: '360×800', pct: 14, color: '#F59E0B' },
-      { label: '1440×900', pct: 10, color: '#EF4444' },
-      { label: 'Other', pct: 4, color: '#06B6D4' },
-    ]);
+    console.log('TechnologySection - Final data:', { browsers: bList, os: oList, devices: dList, screenRes: rList, counts });
 
     return {
       browsers: bList,
       os: oList,
       devices: dList,
       screenRes: rList,
-      counts: {
-        browsers: Object.keys(browserMap).length || 5,
-        os: Object.keys(osMap).length || 5,
-        devices: Object.keys(deviceMap).length || 3,
-        screens: Object.keys(resMap).length || 6,
-      },
+      counts,
     };
-  }, [recentSessions]);
+  }, [filteredSessions]);
+
+  // Empty state component
+  const EmptyState = ({ message }) => (
+    <div style={{
+      padding: '40px 20px',
+      textAlign: 'center',
+      color: darkMode ? '#64748B' : '#94A3B8',
+      fontSize: 14,
+    }}>
+      <CheckCircleOutlined style={{ fontSize: 32, marginBottom: 12, color: darkMode ? '#334155' : '#CBD5E1' }} />
+      <div>{message}</div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: darkMode ? '#64748B' : '#94A3B8' }}>
+        Loading technology data...
+      </div>
+    );
+  }
+
+  const hasData = browsers.length > 0 || os.length > 0 || devices.length > 0 || screenRes.length > 0;
 
   return (
     <div className="technology-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`
+        @media (max-width: 1024px) {
+          .technology-section {
+            gap: 16px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .technology-section {
+            gap: 14px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .technology-section {
+            gap: 12px !important;
+          }
+        }
+      `}</style>
       {/* 4 Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+      <div className="tech-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .tech-summary-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 12px !important;
+            }
+          }
+          @media (max-width: 768px) {
+            .tech-summary-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 10px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .tech-summary-grid {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+          }
+        `}</style>
         {[
           { label: 'Browsers Detected', value: counts.browsers, color: '#0AAEEF', icon: <GlobalOutlined /> },
           { label: 'OS Platforms', value: counts.os, color: '#8B5CF6', icon: <LaptopOutlined /> },
@@ -220,9 +309,33 @@ const TechnologySection = ({ darkMode, recentSessions = [] }) => {
 
       {/* 3 Donut Cards */}
       <div className="tech-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-        <TechCard title="Browsers" segments={browsers} darkMode={darkMode} icon={<GlobalOutlined />} />
-        <TechCard title="Operating Systems" segments={os} darkMode={darkMode} icon={<LaptopOutlined />} />
-        <TechCard title="Device Types" segments={devices} darkMode={darkMode} icon={<MobileOutlined />} />
+        <style>{`
+          @media (max-width: 1024px) {
+            .tech-cards-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+            }
+          }
+          @media (max-width: 768px) {
+            .tech-cards-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
+        {browsers.length > 0 ? (
+          <TechCard title="Browsers" segments={browsers} darkMode={darkMode} icon={<GlobalOutlined />} />
+        ) : (
+          <EmptyState message="No browser data available" />
+        )}
+        {os.length > 0 ? (
+          <TechCard title="Operating Systems" segments={os} darkMode={darkMode} icon={<LaptopOutlined />} />
+        ) : (
+          <EmptyState message="No OS data available" />
+        )}
+        {devices.length > 0 ? (
+          <TechCard title="Device Types" segments={devices} darkMode={darkMode} icon={<MobileOutlined />} />
+        ) : (
+          <EmptyState message="No device data available" />
+        )}
       </div>
 
       {/* Screen Resolutions Table */}
@@ -249,57 +362,61 @@ const TechnologySection = ({ darkMode, recentSessions = [] }) => {
           <DesktopOutlined style={{ color: '#0AAEEF' }} />
           <span>Screen Resolutions</span>
         </div>
-        <div className="screen-res-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {screenRes.map((s, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span
-                className="res-label"
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: darkMode ? '#CBD5E1' : '#334155',
-                  width: 160,
-                  flexShrink: 0,
-                }}
-              >
-                {s.label}
-              </span>
-              <div
-                style={{
-                  flex: 1,
-                  height: 6,
-                  borderRadius: 3,
-                  background: darkMode ? '#1E293B' : '#E2E8F0',
-                  overflow: 'hidden',
-                }}
-              >
+        {screenRes.length > 0 ? (
+          <div className="screen-res-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {screenRes.map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span
+                  className="res-label"
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: darkMode ? '#CBD5E1' : '#334155',
+                    width: 160,
+                    flexShrink: 0,
+                  }}
+                >
+                  {s.label}
+                </span>
                 <div
                   style={{
-                    height: '100%',
-                    width: `${Math.min(100, Math.max(0, s.pct * 2.5))}%`,
+                    flex: 1,
+                    height: 6,
                     borderRadius: 3,
-                    background: s.color || COLORS[i % COLORS.length],
-                    transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                    background: darkMode ? '#1E293B' : '#E2E8F0',
+                    overflow: 'hidden',
                   }}
-                />
+                >
+                  <div
+                    style={{
+                      height: '100%',
+                      width: `${Math.min(100, Math.max(0, s.pct * 2.5))}%`,
+                      borderRadius: 3,
+                      background: s.color || COLORS[i % COLORS.length],
+                      transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  />
+                </div>
+                <span
+                  className="res-pct"
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: s.color || COLORS[i % COLORS.length],
+                    width: 36,
+                    textAlign: 'right',
+                  }}
+                >
+                  {s.pct}%
+                </span>
               </div>
-              <span
-                className="res-pct"
-                style={{
-                  fontFamily: 'monospace',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: s.color || COLORS[i % COLORS.length],
-                  width: 36,
-                  textAlign: 'right',
-                }}
-              >
-                {s.pct}%
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState message="No screen resolution data available" />
+        )}
       </div>
     </div>
   );

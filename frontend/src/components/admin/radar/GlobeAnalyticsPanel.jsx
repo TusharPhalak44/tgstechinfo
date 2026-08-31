@@ -74,8 +74,45 @@ const GlobeAnalyticsPanel = ({
     <div className={`p-6 space-y-6 ${
       darkMode ? 'bg-slate-950' : 'bg-white'
     }`}>
+      <style>{`
+        @media (max-width: 1024px) {
+          .globe-analytics-panel {
+            padding: 20px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .globe-analytics-panel {
+            padding: 16px !important;
+            gap: 16px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .globe-analytics-panel {
+            padding: 12px !important;
+            gap: 12px !important;
+          }
+        }
+      `}</style>
       {/* Header */}
       <div>
+        <style>{`
+          @media (max-width: 768px) {
+            .globe-analytics-panel h2 {
+              font-size: 1.25rem !important;
+            }
+            .globe-analytics-panel p {
+              font-size: 0.875rem !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .globe-analytics-panel h2 {
+              font-size: 1.125rem !important;
+            }
+            .globe-analytics-panel p {
+              font-size: 0.75rem !important;
+            }
+          }
+        `}</style>
         <h2 className={`text-2xl font-bold mb-1 flex items-center gap-2 ${
           darkMode ? 'text-cyan-400' : 'text-cyan-700'
         }`}>
@@ -88,7 +125,26 @@ const GlobeAnalyticsPanel = ({
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4 globe-metrics-grid">
+        <style>{`
+          @media (max-width: 1024px) {
+            .globe-metrics-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+            }
+          }
+          @media (max-width: 768px) {
+            .globe-metrics-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 12px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .globe-metrics-grid {
+              grid-template-columns: 1fr !important;
+              gap: 10px !important;
+            }
+          }
+        `}</style>
         {/* Active Visitors */}
         <div className={`p-4 rounded-lg border ${
           darkMode
@@ -196,11 +252,23 @@ const GlobeAnalyticsPanel = ({
       </div>
 
       {/* Traffic Sources */}
-      <div className={`p-4 rounded-lg border ${
+      <div className={`p-4 rounded-lg border globe-traffic-section ${
         darkMode
           ? 'bg-slate-900/50 border-slate-800'
           : 'bg-slate-50/50 border-slate-200'
       }`}>
+        <style>{`
+          @media (max-width: 768px) {
+            .globe-traffic-section {
+              padding: 12px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .globe-traffic-section {
+              padding: 10px !important;
+            }
+          }
+        `}</style>
         <h3 className={`text-sm font-mono font-semibold tracking-wider mb-4 ${
           darkMode ? 'text-slate-400' : 'text-slate-500'
         }`}>
@@ -234,11 +302,23 @@ const GlobeAnalyticsPanel = ({
       </div>
 
       {/* Top Pages */}
-      <div className={`p-4 rounded-lg border ${
+      <div className={`p-4 rounded-lg border globe-top-pages ${
         darkMode
           ? 'bg-slate-900/50 border-slate-800'
           : 'bg-slate-50/50 border-slate-200'
       }`}>
+        <style>{`
+          @media (max-width: 768px) {
+            .globe-top-pages {
+              padding: 12px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .globe-top-pages {
+              padding: 10px !important;
+            }
+          }
+        `}</style>
         <h3 className={`text-sm font-mono font-semibold tracking-wider mb-4 ${
           darkMode ? 'text-slate-400' : 'text-slate-500'
         }`}>

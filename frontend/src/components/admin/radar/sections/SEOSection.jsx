@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
 import {
   SearchOutlined,
   LineChartOutlined,
@@ -7,6 +8,7 @@ import {
   RiseOutlined,
   FallOutlined,
   FileTextOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 
 const COLORS = ['#0AAEEF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#64748B'];
@@ -30,49 +32,190 @@ const TrendBadge = ({ val, up, darkMode }) => (
   </span>
 );
 
-const SEOSection = ({ darkMode, searchData = {} }) => {
+const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [seoData, setSeoData] = useState({
+    popularSearches: [],
+    searchAnalytics: [],
+    topPages: []
+  });
+  const [loading, setLoading] = useState(true);
 
-  const popularSearches = searchData.popularSearches || [];
-  const queries = popularSearches.length > 0
-    ? popularSearches.map((q, i) => ({
-        query: q.query_text || q.query || q,
-        impressions: q.search_count ? q.search_count * 12 : Math.max(10, 800 - i * 60),
-        clicks: q.search_count || Math.max(1, 200 - i * 15),
-        ctr: `${(Math.random() * 4 + 6).toFixed(1)}%`,
-        position: (i + 1.2).toFixed(1),
-      }))
-    : [
-        { query: 'cloud computing solutions', impressions: 12800, clicks: 1024, ctr: '8.0%', position: '2.4' },
-        { query: 'enterprise data analytics', impressions: 9400, clicks: 658, ctr: '7.0%', position: '3.1' },
-        { query: 'digital transformation consulting', impressions: 7200, clicks: 504, ctr: '7.0%', position: '4.2' },
-        { query: 'tgs tech info', impressions: 6100, clicks: 488, ctr: '8.0%', position: '1.1' },
-        { query: 'ai trends 2026', impressions: 5800, clicks: 406, ctr: '7.0%', position: '3.8' },
-        { query: 'cybersecurity best practices', impressions: 4200, clicks: 294, ctr: '7.0%', position: '5.2' },
-      ];
+  useEffect(() => {
+    // Calculate date range based on timeRange
+    let dateParams = '';
+    
+    if (timeRange !== 'all') {
+      const endDate = new Date();
+      const startDate = new Date();
+      if (timeRange === '7d') startDate.setDate(startDate.getDate() - 7);
+      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
+      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
 
-  const maxImpressions = Math.max(...queries.map(q => q.impressions), 1);
+      const s = startDate.toISOString().split('T')[0];
+      const e = endDate.toISOString().split('T')[0];
+      dateParams = `?start_date=${s}&end_date=${e}&limit=100`;
+    } else {
+      dateParams = `?limit=100`;
+    }
+
+    console.log('SEOSection - Fetching search data with timeRange:', timeRange, 'dateParams:', dateParams);
+    console.log('SEOSection - Full API URL:', `/api/analytics/search${dateParams}`);
+
+    // Fetch search analytics data
+    axios.get(`/api/analytics/search${dateParams}`)
+      .then(res => {
+        console.log('SEOSection - API response:', res.data);
+        const popularSearches = res.data.popularSearches || [];
+        const searchAnalytics = res.data.searchAnalytics || [];
+        
+        console.log('SEOSection - Popular searches fetched:', popularSearches.length);
+        console.log('SEOSection - Search analytics fetched:', searchAnalytics.length);
+        if (popularSearches.length > 0) {
+          console.log('SEOSection - Sample search data:', popularSearches[0]);
+        }
+
+        // Transform search data to frontend format
+        const queries = popularSearches.map((q, i) => ({
+          query: q.search_keyword || q.query_text || q.query || 'Unknown',
+          impressions: q.search_count || 0,
+          clicks: q.click_count || 0,
+          ctr: q.search_count > 0 ? ((q.click_count || 0) / q.search_count * 100).toFixed(1) + '%' : '0.0%',
+          position: (i + 1).toFixed(1),
+          search_type: q.search_type || 'keyword'
+        }));
+
+        // Calculate KPIs from real data
+        const totalImpressions = queries.reduce((a, q) => a + q.impressions, 0);
+        const totalClicks = queries.reduce((a, q) => a + q.clicks, 0);
+        const avgCtr = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.ctr), 0) / queries.length).toFixed(1) + '%' : '0.0%';
+        const avgPosition = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.position), 0) / queries.length).toFixed(1) : '0.0';
+
+        // Get top pages from page view data
+        const topPages = []; // Will need to fetch from page views API
+
+        setSeoData({
+          popularSearches: queries,
+          searchAnalytics,
+          topPages,
+          kpis: {
+            totalImpressions,
+            totalClicks,
+            avgCtr,
+            avgPosition
+          }
+        });
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('SEOSection - Error fetching search data:', err);
+        setSeoData({
+          popularSearches: [],
+          searchAnalytics: [],
+          topPages: [],
+          kpis: {
+            totalImpressions: 0,
+            totalClicks: 0,
+            avgCtr: '0.0%',
+            avgPosition: '0.0'
+          }
+        });
+        setLoading(false);
+      });
+  }, [timeRange]);
+
+  // Filter queries based on active filter
+  const filteredQueries = useMemo(() => {
+    if (activeFilter === 'all') return seoData.popularSearches;
+    if (activeFilter === 'branded') {
+      return seoData.popularSearches.filter(q => 
+        q.query.toLowerCase().includes('tgs') || 
+        q.query.toLowerCase().includes('tech info')
+      );
+    }
+    if (activeFilter === 'non-branded') {
+      return seoData.popularSearches.filter(q => 
+        !q.query.toLowerCase().includes('tgs') && 
+        !q.query.toLowerCase().includes('tech info')
+      );
+    }
+    return seoData.popularSearches;
+  }, [seoData.popularSearches, activeFilter]);
+
+  const maxImpressions = Math.max(...filteredQueries.map(q => q.impressions), 1);
 
   const seoKpis = [
-    { label: 'Total Impressions', value: queries.reduce((a, q) => a + q.impressions, 0).toLocaleString(), color: '#0AAEEF', icon: <LineChartOutlined />, delta: '+18.4%', up: true },
-    { label: 'Organic Clicks',    value: queries.reduce((a, q) => a + q.clicks, 0).toLocaleString(),      color: '#10B981', icon: <AimOutlined />,       delta: '+12.1%', up: true },
-    { label: 'Avg CTR',           value: `${(queries.reduce((a, q) => a + parseFloat(q.ctr), 0) / queries.length).toFixed(1)}%`, color: '#8B5CF6', icon: <BulbOutlined />, delta: '+0.4%', up: true },
-    { label: 'Avg Position',      value: (queries.reduce((a, q) => a + parseFloat(q.position), 0) / queries.length).toFixed(1), color: '#F59E0B', icon: <RiseOutlined />, delta: '-0.6', up: true },
+    { label: 'Total Impressions', value: seoData.kpis?.totalImpressions?.toLocaleString() || '0', color: '#0AAEEF', icon: <LineChartOutlined />, delta: null, up: true },
+    { label: 'Organic Clicks',    value: seoData.kpis?.totalClicks?.toLocaleString() || '0',      color: '#10B981', icon: <AimOutlined />,       delta: null, up: true },
+    { label: 'Avg CTR',           value: seoData.kpis?.avgCtr || '0.0%', color: '#8B5CF6', icon: <BulbOutlined />, delta: null, up: true },
+    { label: 'Avg Position',      value: seoData.kpis?.avgPosition || '0.0', color: '#F59E0B', icon: <RiseOutlined />, delta: null, up: true },
   ];
 
-  const pages = [
-    { url: '/services/cloud-solutions', clicks: 1842, impressions: 18200, ctr: '10.1%' },
-    { url: '/blog/ai-trends-2026', clicks: 1230, impressions: 14800, ctr: '8.3%' },
-    { url: '/case-studies/fintech', clicks: 890, impressions: 10200, ctr: '8.7%' },
-    { url: '/about-us', clicks: 640, impressions: 8800, ctr: '7.3%' },
-    { url: '/contact', clicks: 420, impressions: 6400, ctr: '6.6%' },
-  ];
-  const maxClicks = Math.max(...pages.map(p => p.clicks), 1);
+  const pages = seoData.topPages.length > 0 ? seoData.topPages : [];
+  const maxClicks = Math.max(...pages.map(p => p.clicks || 0), 1);
+
+  // Empty state component
+  const EmptyState = ({ message }) => (
+    <div style={{
+      padding: '40px 20px',
+      textAlign: 'center',
+      color: darkMode ? '#64748B' : '#94A3B8',
+      fontSize: 14,
+    }}>
+      <CheckCircleOutlined style={{ fontSize: 32, marginBottom: 12, color: darkMode ? '#334155' : '#CBD5E1' }} />
+      <div>{message}</div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: darkMode ? '#64748B' : '#94A3B8' }}>
+        Loading SEO data...
+      </div>
+    );
+  }
 
   return (
     <div className="seo-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`
+        @media (max-width: 1024px) {
+          .seo-section {
+            gap: 16px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .seo-section {
+            gap: 14px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .seo-section {
+            gap: 12px !important;
+          }
+        }
+      `}</style>
       {/* 4 KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
+      <div className="seo-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 14 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .seo-kpi-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 12px !important;
+            }
+          }
+          @media (max-width: 768px) {
+            .seo-kpi-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 10px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .seo-kpi-grid {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+          }
+        `}</style>
         {seoKpis.map(m => (
           <div
             key={m.label}
@@ -165,105 +308,109 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
           </div>
         </div>
         <div className="seo-queries-table" style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: darkMode ? '#1E293B' : '#F8FAFC' }}>
-                {['#', 'Query', 'Impressions', 'Clicks', 'CTR', 'Avg Position'].map(h => (
-                  <th
-                    key={h}
-                    style={{
-                      padding: '10px 14px',
-                      textAlign: 'left',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
-                      color: darkMode ? '#94A3B8' : '#64748B',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {queries.map((q, i) => {
-                const color = COLORS[i % COLORS.length];
-                const pct = Math.round((q.impressions / maxImpressions) * 100);
-                return (
-                  <tr
-                    key={i}
-                    style={{
-                      borderBottom: `1px solid ${darkMode ? '#1E293B' : '#E2E8F0'}`,
-                      transition: 'background 0.15s',
-                    }}
-                  >
-                    <td style={{ padding: '11px 14px', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color }}>
-                      {i + 1}
-                    </td>
-                    <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 600, color: darkMode ? '#F8FAFC' : '#0F172A' }}>
-                      {q.query}
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div
-                          style={{
-                            width: 55,
-                            height: 5,
-                            borderRadius: 3,
-                            background: darkMode ? '#1E293B' : '#E2E8F0',
-                            overflow: 'hidden',
-                          }}
-                        >
-                          <div
-                            style={{
-                              height: '100%',
-                              width: `${pct}%`,
-                              borderRadius: 3,
-                              background: color,
-                              transition: 'width 0.8s ease',
-                            }}
-                          />
-                        </div>
-                        <span style={{ fontFamily: 'monospace', fontSize: 11, color }}>
-                          {q.impressions.toLocaleString()}
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ padding: '11px 14px', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#10B981' }}>
-                      {q.clicks.toLocaleString()}
-                    </td>
-                    <td style={{ padding: '11px 14px' }}>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 700,
-                          padding: '2px 6px',
-                          borderRadius: 4,
-                          background: darkMode ? 'rgba(10,174,239,0.15)' : '#E0F2FE',
-                          color: '#0AAEEF',
-                        }}
-                      >
-                        {q.ctr}
-                      </span>
-                    </td>
-                    <td
+          {filteredQueries.length > 0 ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: darkMode ? '#1E293B' : '#F8FAFC' }}>
+                  {['#', 'Query', 'Impressions', 'Clicks', 'CTR', 'Avg Position'].map(h => (
+                    <th
+                      key={h}
                       style={{
-                        padding: '11px 14px',
-                        fontFamily: 'monospace',
-                        fontSize: 12,
+                        padding: '10px 14px',
+                        textAlign: 'left',
+                        fontSize: 10,
                         fontWeight: 700,
-                        color: parseFloat(q.position) <= 3 ? '#10B981' : parseFloat(q.position) <= 6 ? '#F59E0B' : '#EF4444',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.06em',
+                        color: darkMode ? '#94A3B8' : '#64748B',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      #{q.position}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredQueries.map((q, i) => {
+                  const color = COLORS[i % COLORS.length];
+                  const pct = Math.round((q.impressions / maxImpressions) * 100);
+                  return (
+                    <tr
+                      key={i}
+                      style={{
+                        borderBottom: `1px solid ${darkMode ? '#1E293B' : '#E2E8F0'}`,
+                        transition: 'background 0.15s',
+                      }}
+                    >
+                      <td style={{ padding: '11px 14px', fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color }}>
+                        {i + 1}
+                      </td>
+                      <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 600, color: darkMode ? '#F8FAFC' : '#0F172A' }}>
+                        {q.query}
+                      </td>
+                      <td style={{ padding: '11px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div
+                            style={{
+                              width: 55,
+                              height: 5,
+                              borderRadius: 3,
+                              background: darkMode ? '#1E293B' : '#E2E8F0',
+                              overflow: 'hidden',
+                            }}
+                          >
+                            <div
+                              style={{
+                                height: '100%',
+                                width: `${pct}%`,
+                                borderRadius: 3,
+                                background: color,
+                                transition: 'width 0.8s ease',
+                              }}
+                            />
+                          </div>
+                          <span style={{ fontFamily: 'monospace', fontSize: 11, color }}>
+                            {q.impressions.toLocaleString()}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '11px 14px', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#10B981' }}>
+                        {q.clicks.toLocaleString()}
+                      </td>
+                      <td style={{ padding: '11px 14px' }}>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            padding: '2px 6px',
+                            borderRadius: 4,
+                            background: darkMode ? 'rgba(10,174,239,0.15)' : '#E0F2FE',
+                            color: '#0AAEEF',
+                          }}
+                        >
+                          {q.ctr}
+                        </span>
+                      </td>
+                      <td
+                        style={{
+                          padding: '11px 14px',
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: parseFloat(q.position) <= 3 ? '#10B981' : parseFloat(q.position) <= 6 ? '#F59E0B' : '#EF4444',
+                        }}
+                      >
+                        #{q.position}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <EmptyState message="No search query data available for this time range" />
+          )}
         </div>
       </div>
 
@@ -292,57 +439,61 @@ const SEOSection = ({ darkMode, searchData = {} }) => {
           <span>Top Organic Destination Pages</span>
         </div>
         <div className="organic-pages-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {pages.map((p, i) => {
-            const color = COLORS[i % COLORS.length];
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color, width: 20 }}>
-                  {i + 1}
-                </span>
-                <span
-                  className="page-url"
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: darkMode ? '#CBD5E1' : '#334155',
-                    flex: 1,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {p.url}
-                </span>
-                <div
-                  className="page-bar"
-                  style={{
-                    width: 80,
-                    height: 6,
-                    borderRadius: 3,
-                    background: darkMode ? '#1E293B' : '#E2E8F0',
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                  }}
-                >
-                  <div
+          {pages.length > 0 ? (
+            pages.map((p, i) => {
+              const color = COLORS[i % COLORS.length];
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color, width: 20 }}>
+                    {i + 1}
+                  </span>
+                  <span
+                    className="page-url"
                     style={{
-                      height: '100%',
-                      width: `${Math.round((p.clicks / maxClicks) * 100)}%`,
-                      borderRadius: 3,
-                      background: color,
-                      transition: 'width 0.8s ease',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: darkMode ? '#CBD5E1' : '#334155',
+                      flex: 1,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}
-                  />
+                  >
+                    {p.url}
+                  </span>
+                  <div
+                    className="page-bar"
+                    style={{
+                      width: 80,
+                      height: 6,
+                      borderRadius: 3,
+                      background: darkMode ? '#1E293B' : '#E2E8F0',
+                      overflow: 'hidden',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${Math.round((p.clicks / maxClicks) * 100)}%`,
+                        borderRadius: 3,
+                        background: color,
+                        transition: 'width 0.8s ease',
+                      }}
+                    />
+                  </div>
+                  <span className="page-clicks" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color, width: 44, textAlign: 'right' }}>
+                    {p.clicks.toLocaleString()}
+                  </span>
+                  <span className="page-ctr" style={{ fontFamily: 'monospace', fontSize: 11, color: '#10B981', width: 38, textAlign: 'right' }}>
+                    {p.ctr}
+                  </span>
                 </div>
-                <span className="page-clicks" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color, width: 44, textAlign: 'right' }}>
-                  {p.clicks.toLocaleString()}
-                </span>
-                <span className="page-ctr" style={{ fontFamily: 'monospace', fontSize: 11, color: '#10B981', width: 38, textAlign: 'right' }}>
-                  {p.ctr}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          ) : (
+            <EmptyState message="No organic page data available for this time range" />
+          )}
         </div>
       </div>
     </div>

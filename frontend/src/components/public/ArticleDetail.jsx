@@ -13,6 +13,7 @@ import moment from 'moment';
 import '../../prose-content.css';
 import ContentRenderer from '../common/ContentRenderer';
 import { useTheme } from '../../context/ThemeContext';
+import useEngagementTracking from '../../hooks/useEngagementTracking';
 
 const { Title, Text } = Typography;
 
@@ -148,6 +149,14 @@ const ArticleDetail = () => {
   const [submittedData, setSubmittedData] = useState(null); // stores {name, email} after form submit
   const [pdfFile, setPdfFile] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Engagement tracking hook
+  const { isTracking, trackEngagement } = useEngagementTracking({
+    contentId: content?.id,
+    contentType: content?.content_type_slug || content?.content_type,
+    pageTitle: content?.title,
+    enabled: !!content?.id
+  });
 
   useEffect(() => {
     let cancelled = false;

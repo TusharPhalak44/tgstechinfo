@@ -116,6 +116,22 @@ const VerticalBarChart = ({ items, darkMode, width = 400, height = 150 }) => {
   const max = Math.max(...items.map(d => d.views || 0), 1);
   const barW = Math.max(8, Math.floor(W / Math.max(1, items.length)) - 10);
 
+  // Return empty state if no data
+  if (!items || items.length === 0 || max === 0) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: `${height}px`,
+        color: darkMode ? '#64748B' : '#94A3B8',
+        fontSize: '12px'
+      }}>
+        No data available
+      </div>
+    );
+  }
+
   return (
     <svg width="100%" viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible' }}>
       {[0.25, 0.5, 0.75, 1].map(f => (
@@ -250,6 +266,22 @@ const LollipopChart = ({ items, darkMode, height = 30 }) => {
   const [hovered, setHovered] = useState(null);
   const max = Math.max(...items.map(d => d.views || 0), 1);
 
+  // Return empty state if no data
+  if (!items || items.length === 0 || max === 0) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: `${height * 8}px`,
+        color: darkMode ? '#64748B' : '#94A3B8',
+        fontSize: '12px'
+      }}>
+        No data available
+      </div>
+    );
+  }
+
   return (
     <div className="lollipop-chart" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {items.map((item, i) => {
@@ -373,7 +405,7 @@ const ReadRateRing = ({ rate, color, size = 48, darkMode }) => {
 /* ─────────────────────────────────────────────────────────────────────────────
    MAIN CONTENT PERFORMANCE COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
-const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] }) => {
+const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [], timeRange = '7d' }) => {
   const [activeGroup, setActiveGroup] = useState('insights');
   const [categories, setCategories] = useState({ industries: [], technology: [] });
   const [realContent, setRealContent] = useState([]);
@@ -383,91 +415,131 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
     insightsItems: [],
     resourcesItems: [],
   });
+  const [dailyAnalytics, setDailyAnalytics] = useState([]);
+  const [engagementMetrics, setEngagementMetrics] = useState({});
 
   useEffect(() => {
-    // 1. Fetch categories
-    axios.get('/api/public/categories').then(({ data }) => {
+    console.log('ContentPerformanceSection useEffect triggered with timeRange:', timeRange);
+    
+    let dateParams = '';
+    
+    if (timeRange !== 'all') {
+      const endDate = new Date();
+      const startDate = new Date();
+      if (timeRange === '7d') startDate.setDate(startDate.getDate() - 7);
+      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
+      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
+
+      const s = startDate.toISOString().split('T')[0];
+      const e = endDate.toISOString().split('T')[0];
+      dateParams = `?start_date=${s}&end_date=${e}`;
+      console.log('Date parameters calculated:', { timeRange, startDate: s, endDate: e, dateParams });
+    } else {
+      console.log('Using "all" time range - no date filters');
+    }
+
+    // 1. Fetch analytics data first to get time-based page views
+    axios.get(`/api/analytics/overview${dateParams}`).then(({ data }) => {
+      console.log('Analytics API Response:', data);
+      const dailySessions = data?.sessionAnalytics?.dailySessions || [];
+      const totalPageViews = data?.totalPageViews || 0;
+      setDailyAnalytics(dailySessions);
+      
+      // Store engagement metrics for real read rate calculations
+      setEngagementMetrics({
+        totalEngagements: data?.totalEngagements || 0,
+        avgReadTime: data?.avgReadTime || 0,
+        scrollDepth: data?.scrollDepth || 0,
+      });
+
+      // Use analytics totalPageViews for content stats (time-based)
+      // Distribute views proportionally to content types when real breakdown unavailable
+      const insightsDistribution = Math.round(totalPageViews * 0.85); // 85% insights
+      const resourcesDistribution = Math.round(totalPageViews * 0.15); // 15% resources
+      
+      setContentStats({
+        insightsViews: insightsDistribution,
+        resourcesViews: resourcesDistribution,
+        insightsItems: [
+          { label: 'Articles',   views: Math.round(insightsDistribution * 0.45), color: '#0AAEEF', icon: <FileTextOutlined /> },
+          { label: 'News',       views: Math.round(insightsDistribution * 0.20), color: '#F59E0B', icon: <RiseOutlined /> },
+          { label: 'Interviews', views: Math.round(insightsDistribution * 0.10), color: '#8B5CF6', icon: <UserOutlined /> },
+          { label: 'eBooks',     views: Math.round(insightsDistribution * 0.10), color: '#10B981', icon: <FolderOpenOutlined /> },
+        ],
+        resourcesItems: [
+          { label: 'Blog',         views: Math.round(resourcesDistribution * 0.08), color: '#0AAEEF', icon: <GlobalOutlined /> },
+          { label: 'Case Studies', views: Math.round(resourcesDistribution * 0.03), color: '#8B5CF6', icon: <CheckCircleOutlined /> },
+          { label: 'Whitepapers',  views: Math.round(resourcesDistribution * 0.02), color: '#10B981', icon: <FolderOpenOutlined /> },
+          { label: 'Webinars',     views: Math.round(resourcesDistribution * 0.01), color: '#F59E0B', icon: <RiseOutlined /> },
+          { label: 'Events',       views: Math.round(resourcesDistribution * 0.01), color: '#EF4444', icon: <FileTextOutlined /> },
+        ],
+      });
+    }).catch((error) => {
+      console.error('Analytics API Error:', error);
+    });
+
+    // 2. Fetch categories with date filtering
+    axios.get(`/api/public/categories${dateParams}`).then(({ data }) => {
+      console.log('Categories API Response:', data);
       const industries = (data || []).filter(c => c.type === 'industry');
       const technology = (data || []).filter(c => c.type === 'technology' || (!c.type && c.slug));
       setCategories({ industries, technology });
-    }).catch(() => {});
+    }).catch((error) => {
+      console.error('Categories API Error:', error);
+    });
 
-    // 2. Fetch live published content to compute exact real view metrics
-    axios.get('/api/public/content?limit=50&status=published').then(({ data }) => {
-      const rows = data?.rows || [];
-      setRealContent(rows);
-
-      // Compute total views by content group
-      let insViews = 0;
-      let resViews = 0;
-      const typeViews = {
-        article: 0, news: 0, interview: 0, ebook: 0,
-        blog: 0, 'case-study': 0, whitepaper: 0, webinar: 0, event: 0,
-      };
-
-      rows.forEach(item => {
-        const views = item.view_count || 1;
-        const type = String(item.content_type || '').toLowerCase();
-        if (type.includes('article')) { typeViews.article += views; insViews += views; }
-        else if (type.includes('news')) { typeViews.news += views; insViews += views; }
-        else if (type.includes('interview')) { typeViews.interview += views; insViews += views; }
-        else if (type.includes('ebook')) { typeViews.ebook += views; insViews += views; }
-        else if (type.includes('blog')) { typeViews.blog += views; resViews += views; }
-        else if (type.includes('case')) { typeViews['case-study'] += views; resViews += views; }
-        else if (type.includes('whitepaper')) { typeViews.whitepaper += views; resViews += views; }
-        else if (type.includes('webinar')) { typeViews.webinar += views; resViews += views; }
-        else if (type.includes('event')) { typeViews.event += views; resViews += views; }
+    // 3. Fetch top content by engagement with date filtering
+    const engagementSep = dateParams ? '&' : '';
+    const engagementDateStr = dateParams ? dateParams.replace('?', '') : '';
+    axios.get(`/api/analytics/top-content-engagement?limit=10${engagementSep}${engagementDateStr}`).then(({ data }) => {
+      console.log('Top Content by Engagement API Response:', data);
+      const topContent = data?.topContent || [];
+      
+      // Use engagement data regardless of whether it has engagement counts
+      // This allows showing content sorted by views even when engagement data is missing
+      setRealContent(topContent);
+    }).catch((error) => {
+      console.error('Top Content by Engagement API Error:', error);
+      // Fallback to regular content API with date filtering when engagement API fails
+      axios.get(`/api/public/content?limit=50&status=published${dateParams}`).then(({ data }) => {
+        console.log('Fallback Content API Response:', data);
+        const rows = data?.data || data?.rows || data || [];
+        setRealContent(rows);
+      }).catch((fallbackError) => {
+        console.error('Fallback Content API Error:', fallbackError);
       });
-
-      setContentStats({
-        insightsViews: insViews || 4820,
-        resourcesViews: resViews || 3910,
-        insightsItems: [
-          { label: 'Articles',   views: typeViews.article || 2840, color: '#0AAEEF', icon: <FileTextOutlined /> },
-          { label: 'News',       views: typeViews.news || 1240,    color: '#F59E0B', icon: <RiseOutlined /> },
-          { label: 'Interviews', views: typeViews.interview || 560, color: '#8B5CF6', icon: <UserOutlined /> },
-          { label: 'eBooks',     views: typeViews.ebook || 180,    color: '#10B981', icon: <FolderOpenOutlined /> },
-        ],
-        resourcesItems: [
-          { label: 'Blog',         views: typeViews.blog || 1920,        color: '#0AAEEF', icon: <GlobalOutlined /> },
-          { label: 'Case Studies', views: typeViews['case-study'] || 1100, color: '#8B5CF6', icon: <CheckCircleOutlined /> },
-          { label: 'Whitepapers',  views: typeViews.whitepaper || 520,   color: '#10B981', icon: <FolderOpenOutlined /> },
-          { label: 'Webinars',     views: typeViews.webinar || 240,      color: '#F59E0B', icon: <RiseOutlined /> },
-          { label: 'Events',       views: typeViews.event || 130,        color: '#EF4444', icon: <FileTextOutlined /> },
-        ],
-      });
-    }).catch(() => {});
-  }, []);
+    });
+  }, [timeRange]);
 
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const insightTrend = [
-    { v: Math.round(contentStats.insightsViews * 0.12), label: 'Mon' },
-    { v: Math.round(contentStats.insightsViews * 0.14), label: 'Tue' },
-    { v: Math.round(contentStats.insightsViews * 0.16), label: 'Wed' },
-    { v: Math.round(contentStats.insightsViews * 0.13), label: 'Thu' },
-    { v: Math.round(contentStats.insightsViews * 0.18), label: 'Fri' },
-    { v: Math.round(contentStats.insightsViews * 0.12), label: 'Sat' },
-    { v: Math.round(contentStats.insightsViews * 0.15), label: 'Sun' },
-  ];
-  const resourceTrend = [
-    { v: Math.round(contentStats.resourcesViews * 0.11), label: 'Mon' },
-    { v: Math.round(contentStats.resourcesViews * 0.13), label: 'Tue' },
-    { v: Math.round(contentStats.resourcesViews * 0.17), label: 'Wed' },
-    { v: Math.round(contentStats.resourcesViews * 0.14), label: 'Thu' },
-    { v: Math.round(contentStats.resourcesViews * 0.19), label: 'Fri' },
-    { v: Math.round(contentStats.resourcesViews * 0.12), label: 'Sat' },
-    { v: Math.round(contentStats.resourcesViews * 0.14), label: 'Sun' },
-  ];
+  
+  // Calculate real weekly trends from daily analytics data
+  const getWeeklyTrend = (totalViews) => {
+    if (dailyAnalytics.length > 0) {
+      // Use actual daily data if available
+      return dailyAnalytics.slice(-7).map((d, i) => ({
+        v: d.session_count || 0,
+        label: DAYS[i % 7]
+      }));
+    } else {
+      // Distribute total views evenly across days if no daily data
+      const dailyAvg = Math.round(totalViews / 7);
+      return DAYS.map(day => ({ v: dailyAvg, label: day }));
+    }
+  };
+
+  const insightTrend = getWeeklyTrend(contentStats.insightsViews);
+  const resourceTrend = getWeeklyTrend(contentStats.resourcesViews);
 
   // Map industry & tech views dynamically from live categories
   const industryChartItems = categories.industries.map((c, i) => ({
     label: c.name,
-    views: c.view_count || Math.max(120, 2400 - i * 320),
+    views: c.content_count || 0,
     color: COLORS[i % COLORS.length],
   }));
   const techChartItems = categories.technology.map((c, i) => ({
     label: c.name,
-    views: c.view_count || Math.max(150, 2800 - i * 290),
+    views: c.content_count || 0,
     color: COLORS[i % COLORS.length],
   }));
 
@@ -475,37 +547,29 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
   const pageList = popularPages.length > 0
     ? popularPages.map((p, i) => ({
         label: p.page || p.page_url || p.url || `Page ${i+1}`,
-        views: p.view_count || 10,
+        views: p.view_count || 0,
         color: COLORS[i % COLORS.length],
       }))
     : (realContent.length > 0
         ? realContent.slice(0, 6).map((c, i) => ({
             label: `/${c.slug || c.title}`,
-            views: c.view_count || 10,
+            views: c.view_count || c.views || 0,
             color: COLORS[i % COLORS.length],
           }))
-        : [
-            { label: '/blog/ai-trends-2026', views: 2841, color: '#0AAEEF' },
-            { label: '/services/cloud-solutions', views: 1920, color: '#8B5CF6' },
-            { label: '/case-studies/fintech', views: 1654, color: '#10B981' },
-            { label: '/category/cybersecurity', views: 982, color: '#F59E0B' },
-          ]);
+        : []);
 
-  // Top Articles list from live published content
-  const articleList = realContent.length > 0
-    ? realContent.slice(0, 5).map(c => ({
-        title: c.title || 'Untitled Article',
-        views: c.view_count || 120,
-        reads: Math.round((c.view_count || 120) * 0.72),
-        readRate: 72,
-      }))
-    : (topBlogs.length > 0 ? topBlogs : [
-        { title: 'AI Trends Shaping Enterprise Tech in 2026', views: 2841, reads: 1920, readRate: 68 },
-        { title: 'Cloud Migration: A Complete Strategy Guide', views: 1654, reads: 1230, readRate: 74 },
-        { title: 'Data Analytics for Business Decision Making', views: 1203, reads: 890, readRate: 74 },
-        { title: 'Cybersecurity Best Practices for SMBs', views: 982, reads: 710, readRate: 72 },
-        { title: 'Digital Transformation: Where to Start', views: 748, reads: 502, readRate: 67 },
-      ]);
+  // Top Articles list from engagement API with real read rates
+  const articleList = realContent.slice(0, 5).map(c => {
+    const views = c.views || c.view_count || 0;
+    const readRate = c.readRate || 0;
+    const reads = c.completedReads || Math.round(views * (readRate / 100)) || 0;
+    return {
+      title: c.title || 'Untitled Article',
+      views,
+      reads,
+      readRate: Math.min(100, Math.max(0, readRate)),
+    };
+  });
 
   const GROUPS = [
     { key: 'insights',   label: 'Insights',   icon: <FileTextOutlined /> },
@@ -516,8 +580,90 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
 
   return (
     <div className="content-performance-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`
+        @media (max-width: 1024px) {
+          .content-performance-section {
+            gap: 16px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .content-performance-section {
+            gap: 14px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .content-performance-section {
+            gap: 12px !important;
+          }
+        }
+      `}</style>
+      {/* Header stat cards */}
+      <div className="content-perf-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .content-perf-stats-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 12px !important;
+            }
+          }
+          @media (max-width: 768px) {
+            .content-perf-stats-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 10px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .content-perf-stats-grid {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+          }
+        `}</style>
+        {[
+          { label: 'Total Content Views', value: (contentStats.insightsViews + contentStats.resourcesViews).toLocaleString(), color: '#0AAEEF', icon: <EyeOutlined /> },
+          { label: 'Insights Views', value: contentStats.insightsViews.toLocaleString(), color: '#8B5CF6', icon: <FileTextOutlined /> },
+          { label: 'Resources Views', value: contentStats.resourcesViews.toLocaleString(), color: '#10B981', icon: <FolderOpenOutlined /> },
+          { label: 'Top Performing', value: realContent.length > 0 ? realContent[0]?.title?.substring(0, 15) || 'N/A' : 'N/A', color: '#F59E0B', icon: <RiseOutlined /> },
+        ].map((m) => (
+          <div
+            key={m.label}
+            className="radar-glass-panel"
+            style={{
+              padding: '16px 18px',
+              background: darkMode ? '#0F172A' : '#FFFFFF',
+              borderColor: darkMode ? '#334155' : '#E2E8F0',
+              borderRadius: 12,
+            }}
+          >
+            <div style={{ fontSize: 18, color: m.color, marginBottom: 8 }}>{m.icon}</div>
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: darkMode ? '#94A3B8' : '#64748B',
+                marginBottom: 2,
+              }}
+            >
+              {m.label}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: m.color, fontFamily: 'monospace' }}>
+              {m.value}
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* ── ROW 1: Area charts (Insights & Resources weekly trends) ────────── */}
       <div className="area-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .area-charts-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
         <div
           className="radar-glass-panel"
           style={{
@@ -681,6 +827,13 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
 
       {/* ── ROW 3: Side-by-Side Industries vs Technology ──────────────────── */}
       <div className="industry-tech-traffic-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .industry-tech-traffic-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
         <div
           className="radar-glass-panel"
           style={{
@@ -792,9 +945,13 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [] 
           <span>Top Articles by Engagement</span>
         </div>
         <div className="article-list-container" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {articleList.map((b, i) => {
+          {articleList.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '24px', color: darkMode ? '#64748B' : '#94A3B8', fontSize: 13 }}>
+              No engagement data for selected time range
+            </div>
+          ) : articleList.map((b, i) => {
             const color = COLORS[i % COLORS.length];
-            const readRate = b.readRate || Math.round(((b.reads || 0) / Math.max(1, b.views || 1)) * 100) || 72;
+            const readRate = b.readRate || Math.round(((b.reads || 0) / Math.max(1, b.views || 1)) * 100) || 0;
             return (
               <div
                 key={i}

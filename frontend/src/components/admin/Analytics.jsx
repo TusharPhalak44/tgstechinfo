@@ -81,23 +81,30 @@ const Analytics = () => {
       if (!isBackground) setLoading(true);
       else setIsRefreshing(true);
 
-      const endDate   = new Date();
-      const startDate = new Date();
-      if (timeRange === '7d')  startDate.setDate(startDate.getDate() - 7);
-      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
-      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
+      let dateParams = '';
+      let separator = '?';
+      
+      if (timeRange !== 'all') {
+        const endDate   = new Date();
+        const startDate = new Date();
+        if (timeRange === '7d')  startDate.setDate(startDate.getDate() - 7);
+        if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
+        if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
 
-      const s = startDate.toISOString().split('T')[0];
-      const e = endDate.toISOString().split('T')[0];
+        const s = startDate.toISOString().split('T')[0];
+        const e = endDate.toISOString().split('T')[0];
+        dateParams = `?start_date=${s}&end_date=${e}`;
+        separator = '&';
+      }
 
       const [overviewRes, sessionsRes, popularPagesRes, journeyRes, searchRes, blogsRes] =
         await Promise.allSettled([
-          axios.get(`/api/analytics/overview?start_date=${s}&end_date=${e}`),
-          axios.get(`/api/analytics/sessions?start_date=${s}&end_date=${e}&limit=50`),
-          axios.get(`/api/analytics/popular-pages?start_date=${s}&end_date=${e}&limit=8`),
+          axios.get(`/api/analytics/overview${dateParams}`),
+          axios.get(`/api/analytics/sessions${dateParams}${separator}limit=50`),
+          axios.get(`/api/analytics/popular-pages${dateParams}${separator}limit=8`),
           axios.get(`/api/analytics/journey?limit=10`),
-          axios.get(`/api/analytics/search?start_date=${s}&end_date=${e}&limit=8`),
-          axios.get(`/api/public/content?status=published&limit=5`),
+          axios.get(`/api/analytics/search${dateParams}${separator}limit=8`),
+          axios.get(`/api/public/content?status=published&limit=5${dateParams ? dateParams.replace('?', '&') : ''}`),
         ]);
 
       if (overviewRes.status === 'fulfilled' && overviewRes.value?.data)
@@ -171,6 +178,7 @@ const Analytics = () => {
         avgDuration={sessionAnalytics.avgSessionDuration ? `${Math.floor(sessionAnalytics.avgSessionDuration / 60)}:${String(sessionAnalytics.avgSessionDuration % 60).padStart(2, '0')}` : '03:42'}
         totalConversions={totalConversionsCalculated}
         recentSessions={recentSessions}
+        timeRange={timeRange}
       />
     ),
     realtime: (
@@ -204,6 +212,7 @@ const Analytics = () => {
         {...commonProps}
         totalSessions={totalSessionsCalculated}
         recentSessions={recentSessions}
+        timeRange={timeRange}
       />
     ),
     content: (
@@ -211,14 +220,13 @@ const Analytics = () => {
         {...commonProps}
         popularPages={popularPages}
         topBlogs={topBlogs}
+        timeRange={timeRange}
       />
     ),
     engagement: (
       <EngagementSection
-        {...commonProps}
-        bounceRate={sessionAnalytics.bounceRate || 28}
-        totalSessions={totalSessionsCalculated}
-        recentSessions={recentSessions}
+        darkMode={darkMode}
+        timeRange={timeRange}
       />
     ),
     conversions: (
@@ -228,16 +236,18 @@ const Analytics = () => {
         journeyFunnel={journeyData}
         totalSessions={totalSessionsCalculated}
         totalConversions={totalConversionsCalculated}
+        timeRange={timeRange}
       />
     ),
     technology: (
       <TechnologySection
         {...commonProps}
         recentSessions={recentSessions}
+        timeRange={timeRange}
       />
     ),
-    seo: <SEOSection {...commonProps} searchData={searchData} />,
-    performance: <PerformanceSection {...commonProps} />,
+    seo: <SEOSection {...commonProps} searchData={searchData} timeRange={timeRange} />,
+    performance: <PerformanceSection {...commonProps} timeRange={timeRange} />,
   };
 
   return (
@@ -253,11 +263,57 @@ const Analytics = () => {
       }}
     >
       <div className={`radar-dashboard-root ${darkMode ? 'dark' : 'light'} min-h-screen p-6`} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <style>{`
+          @media (max-width: 768px) {
+            .radar-dashboard-root {
+              padding: 12px !important;
+              gap: 12px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .radar-dashboard-root {
+              padding: 10px !important;
+              gap: 10px !important;
+            }
+          }
+        `}</style>
 
         {/* ─── COMMAND CENTER HEADER ─── */}
         <div className="radar-glass-panel p-6 w-full flex flex-col gap-4 overflow-hidden">
+          <style>{`
+            @media (max-width: 768px) {
+              .radar-glass-panel {
+                padding: 16px !important;
+                gap: 12px !important;
+              }
+            }
+            @media (max-width: 480px) {
+              .radar-glass-panel {
+                padding: 12px !important;
+                gap: 10px !important;
+              }
+            }
+          `}</style>
           {/* Title */}
           <div className="flex items-center gap-3 min-w-0">
+            <style>{`
+              @media (max-width: 768px) {
+                .radar-glass-panel h1 {
+                  font-size: 1.25rem !important;
+                }
+                .radar-glass-panel p {
+                  font-size: 0.75rem !important;
+                }
+              }
+              @media (max-width: 480px) {
+                .radar-glass-panel h1 {
+                  font-size: 1rem !important;
+                }
+                .radar-glass-panel p {
+                  font-size: 0.7rem !important;
+                }
+              }
+            `}</style>
             <span className="flex h-3 w-3 relative flex-shrink-0">
               <span className="pulse-beacon absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
@@ -274,6 +330,27 @@ const Analytics = () => {
 
           {/* Controls */}
           <div className="analytics-controls analytics-header-controls flex flex-wrap items-center gap-3 w-full">
+            <style>{`
+              @media (max-width: 768px) {
+                .analytics-header-controls {
+                  gap: 8px !important;
+                }
+                .analytics-header-controls button,
+                .analytics-header-controls .ant-select {
+                  min-width: auto !important;
+                }
+              }
+              @media (max-width: 480px) {
+                .analytics-header-controls {
+                  gap: 6px !important;
+                }
+                .analytics-header-controls button,
+                .analytics-header-controls .ant-select {
+                  font-size: 10px !important;
+                  padding: 4px 8px !important;
+                }
+              }
+            `}</style>
             {/* Radar Active Button */}
             <div className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-mono font-bold border flex-shrink-0 ${darkMode ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' : 'bg-cyan-100 text-cyan-800 border-cyan-300'}`} style={{ minWidth: '80px', justifyContent: 'center' }}>
               <span className="flex h-2 w-2 relative">
@@ -301,6 +378,7 @@ const Analytics = () => {
             </div>
 
             <Select value={timeRange} onChange={setTimeRange} style={{ width: 90, minWidth: 90 }} size="small" className="flex-shrink-0 text-xs analytics-select">
+              <Option value="all">All</Option>
               <Option value="7d">Last 7 Days</Option>
               <Option value="30d">Last 30 Days</Option>
               <Option value="90d">Last 90 Days</Option>

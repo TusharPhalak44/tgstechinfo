@@ -115,7 +115,7 @@ const normalizeContentTypeSlug = (value) => {
 
 exports.getPublishedContent = async (req, res) => {
     try {
-        const { category, content_type, limit = 10, offset = 0 } = req.query;
+        const { category, content_type, limit = 10, offset = 0, start_date, end_date } = req.query;
         const filters = { status: 'published', is_visible_on_site: true };
 
         if (category) {
@@ -144,6 +144,10 @@ exports.getPublishedContent = async (req, res) => {
                 }
             }
         }
+
+        // Add date filtering support
+        if (start_date) filters.start_date = start_date;
+        if (end_date) filters.end_date = end_date;
 
         if (limit) filters.limit = parseInt(limit, 10);
         if (offset) filters.offset = parseInt(offset, 10);
@@ -601,15 +605,57 @@ exports.unsubscribeNewsletter = async (req, res) => {
 
 exports.getCategories = async (req, res) => {
     try {
-        const { slug } = req.query;
+        const { slug, start_date, end_date } = req.query;
 
         if (slug) {
             const category = await Category.findBySlug(slug);
             return res.json(category ? [category] : []);
         }
 
-        const categories = await Category.findAll();
-        res.json(categories);
+        // If date range is provided, we need to get filtered counts
+        if (start_date || end_date) {
+            const { pool } = require('../config/database');
+            const categories = await Category.findAll();
+            const categoryIds = categories.map(c => c.id);
+            
+            let dateFilter = '';
+            const values = [...categoryIds];
+            
+            if (start_date) {
+                dateFilter += ' AND c.created_at >= ?';
+                values.push(start_date);
+            }
+            if (end_date) {
+                dateFilter += ' AND c.created_at <= ?';
+                values.push(end_date);
+            }
+            
+            // Get content counts for each category within date range
+            const countQuery = `
+                SELECT category_id, COUNT(*) as count
+                FROM contents c
+                WHERE category_id IN (${categoryIds.map(() => '?').join(',')})
+                AND status = 'published' AND is_visible_on_site = 1
+                ${dateFilter}
+                GROUP BY category_id
+            `;
+            
+            const [counts] = await pool.query(countQuery, values);
+            const countMap = {};
+            counts.forEach(r => { countMap[r.category_id] = parseInt(r.count, 10); });
+            
+            // Update categories with filtered counts
+            const categoriesWithCounts = categories.map(cat => ({
+                ...cat,
+                content_count: countMap[cat.id] || 0
+            }));
+            
+            res.json(categoriesWithCounts);
+        } else {
+            // Without date filter, use the Category.findAll which already includes content_count
+            const categories = await Category.findAll();
+            res.json(categories);
+        }
     } catch (error) {
         console.error('Get categories error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -628,11 +674,28 @@ exports.getContentTypes = async (req, res) => {
 
 exports.getContentTypeCounts = async (req, res) => {
     try {
+        const { start_date, end_date } = req.query;
+        const { pool } = require('../config/database');
+        
+        let dateFilter = '';
+        const values = [];
+        
+        if (start_date) {
+            dateFilter += ' AND c.created_at >= ?';
+            values.push(start_date);
+        }
+        if (end_date) {
+            dateFilter += ' AND c.created_at <= ?';
+            values.push(end_date);
+        }
+        
         const [rows] = await pool.query(
             `SELECT ct.slug, COUNT(c.id) as count
              FROM content_types ct
              LEFT JOIN contents c ON c.content_type_id = ct.id AND c.status = 'published' AND c.is_visible_on_site = 1
-             GROUP BY ct.id, ct.slug`
+             ${dateFilter}
+             GROUP BY ct.id, ct.slug`,
+            values
         );
         const counts = {};
         rows.forEach(r => { counts[r.slug] = parseInt(r.count, 10); });

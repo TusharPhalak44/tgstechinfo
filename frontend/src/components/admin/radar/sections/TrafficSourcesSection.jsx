@@ -1,20 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import {
   SearchOutlined,
   LinkOutlined,
   ShareAltOutlined,
-  MobileOutlined,
   MailOutlined,
   DollarOutlined,
   GlobalOutlined,
 } from '@ant-design/icons';
 
 // ── Simple Clean Solid SVG Donut Chart ──────────────────────────────────────
-const DonutChart = ({ segments, size = 160, darkMode }) => {
+const DonutChart = ({ segments, total, size = 160, darkMode }) => {
   const cx = size / 2, cy = size / 2, r = size * 0.36, stroke = size * 0.18;
   const circumference = 2 * Math.PI * r;
   let cumulativeOffset = 0;
-  const total = segments.reduce((a, s) => a + (s.value || 0), 0);
 
   return (
     <svg width={size} height={size} style={{ overflow: 'visible' }}>
@@ -128,7 +127,7 @@ const HBar = ({ label, value, pct, color, darkMode, icon }) => (
         textAlign: 'right',
       }}
     >
-      {value.toLocaleString()}
+      {value > 0 ? value.toLocaleString() : '0'}
     </span>
     <span
       className="pct"
@@ -140,13 +139,51 @@ const HBar = ({ label, value, pct, color, darkMode, icon }) => (
         textAlign: 'right',
       }}
     >
-      {pct}%
+      {pct > 0 ? `${pct}%` : '0%'}
     </span>
   </div>
 );
 
-const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [] }) => {
+const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [], timeRange = '7d' }) => {
   const [activeSource, setActiveSource] = useState(null);
+  const [filteredSessions, setFilteredSessions] = useState([]);
+
+  // Fetch time-filtered session data
+  useEffect(() => {
+    let url = '/api/analytics/sessions';
+    const params = new URLSearchParams();
+    
+    if (timeRange !== 'all') {
+      const endDate = new Date();
+      const startDate = new Date();
+      if (timeRange === '7d') startDate.setDate(startDate.getDate() - 7);
+      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
+      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
+
+      const s = startDate.toISOString().split('T')[0];
+      const e = endDate.toISOString().split('T')[0];
+      params.append('start_date', s);
+      params.append('end_date', e);
+    }
+    
+    params.append('limit', '1000');
+    
+    if (params.toString()) {
+      url += `?${params.toString()}`;
+    }
+
+    axios.get(url)
+      .then(res => {
+        setFilteredSessions(res.data.recentSessions || []);
+      })
+      .catch(err => {
+        console.error('Error fetching filtered sessions:', err);
+        setFilteredSessions([]);
+      });
+  }, [timeRange]);
+
+  // Use filtered sessions if available, otherwise use recentSessions prop
+  const sessionsToUse = filteredSessions.length > 0 ? filteredSessions : recentSessions;
 
   // Compute live sources breakdown dynamically from real visitor sessions
   const computedSources = useMemo(() => {
@@ -157,8 +194,8 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
     let email = 0;
     let paid = 0;
 
-    if (recentSessions && recentSessions.length > 0) {
-      recentSessions.forEach(s => {
+    if (sessionsToUse && sessionsToUse.length > 0) {
+      sessionsToUse.forEach(s => {
         const ref = String(s.referrer || '').toLowerCase();
         if (!ref || ref === 'null' || ref === 'direct' || ref.includes('localhost') || ref.includes('127.0.0.1')) {
           direct++;
@@ -176,28 +213,26 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
       });
     }
 
-    const sessionCount = recentSessions.length || totalSessions || 100;
-    const effectiveTotal = Math.max(sessionCount, 1);
+    const effectiveTotal = organic + direct + referral + social + email + paid;
+    const sessionCount = Math.max(effectiveTotal, 1);
 
-    // If real session list is populated, calculate proportions; otherwise reasonable live base
-    const orgPct = Math.round((organic / effectiveTotal) * 100) || 44;
-    const dirPct = Math.round((direct / effectiveTotal) * 100) || 28;
-    const refPct = Math.round((referral / effectiveTotal) * 100) || 14;
-    const socPct = Math.round((social / effectiveTotal) * 100) || 8;
-    const emlPct = Math.round((email / effectiveTotal) * 100) || 4;
-    const padPct = Math.round((paid / effectiveTotal) * 100) || 2;
-
-    const baseTotal = totalSessions || sessionCount;
+    // Calculate actual proportions from real data
+    const orgPct = effectiveTotal > 0 ? Math.round((organic / sessionCount) * 100) : 0;
+    const dirPct = effectiveTotal > 0 ? Math.round((direct / sessionCount) * 100) : 0;
+    const refPct = effectiveTotal > 0 ? Math.round((referral / sessionCount) * 100) : 0;
+    const socPct = effectiveTotal > 0 ? Math.round((social / sessionCount) * 100) : 0;
+    const emlPct = effectiveTotal > 0 ? Math.round((email / sessionCount) * 100) : 0;
+    const padPct = effectiveTotal > 0 ? Math.round((paid / sessionCount) * 100) : 0;
 
     return [
-      { label: 'Organic Search', key: 'organic', pct: orgPct, value: Math.round(baseTotal * orgPct / 100), color: '#0AAEEF', icon: <SearchOutlined /> },
-      { label: 'Direct Traffic', key: 'direct',  pct: dirPct, value: Math.round(baseTotal * dirPct / 100), color: '#10B981', icon: <LinkOutlined /> },
-      { label: 'Referral',       key: 'referral',pct: refPct, value: Math.round(baseTotal * refPct / 100), color: '#8B5CF6', icon: <GlobalOutlined /> },
-      { label: 'Social Media',   key: 'social',  pct: socPct, value: Math.round(baseTotal * socPct / 100), color: '#F59E0B', icon: <ShareAltOutlined /> },
-      { label: 'Email Campaign', key: 'email',   pct: emlPct, value: Math.round(baseTotal * emlPct / 100), color: '#EF4444', icon: <MailOutlined /> },
-      { label: 'Paid Search',    key: 'paid',    pct: padPct, value: Math.round(baseTotal * padPct / 100), color: '#06B6D4', icon: <DollarOutlined /> },
+      { label: 'Organic Search', key: 'organic', pct: orgPct, value: organic, color: '#0AAEEF', icon: <SearchOutlined /> },
+      { label: 'Direct Traffic', key: 'direct',  pct: dirPct, value: direct, color: '#10B981', icon: <LinkOutlined /> },
+      { label: 'Referral',       key: 'referral',pct: refPct, value: referral, color: '#8B5CF6', icon: <GlobalOutlined /> },
+      { label: 'Social Media',   key: 'social',  pct: socPct, value: social, color: '#F59E0B', icon: <ShareAltOutlined /> },
+      { label: 'Email Campaign', key: 'email',   pct: emlPct, value: email, color: '#EF4444', icon: <MailOutlined /> },
+      { label: 'Paid Search',    key: 'paid',    pct: padPct, value: paid, color: '#06B6D4', icon: <DollarOutlined /> },
     ];
-  }, [recentSessions, totalSessions]);
+  }, [sessionsToUse]);
 
   const donutSegments = computedSources.map(s => ({
     pct: s.pct,
@@ -205,10 +240,49 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
     value: s.value,
   }));
 
+  const calculatedTotalSessions = computedSources.reduce((sum, s) => sum + s.value, 0);
+
   return (
     <div className="traffic-sources-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`
+        @media (max-width: 1024px) {
+          .traffic-sources-section {
+            gap: 16px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .traffic-sources-section {
+            gap: 14px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .traffic-sources-section {
+            gap: 12px !important;
+          }
+        }
+      `}</style>
       {/* Header stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+      <div className="traffic-sources-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .traffic-sources-stats-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 12px !important;
+            }
+          }
+          @media (max-width: 768px) {
+            .traffic-sources-stats-grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 10px !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .traffic-sources-stats-grid {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+          }
+        `}</style>
         {computedSources.map((s) => (
           <div
             key={s.key}
@@ -237,10 +311,10 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
               {s.label}
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: s.color, fontFamily: 'monospace' }}>
-              {s.pct}%
+              {s.pct > 0 ? `${s.pct}%` : '0%'}
             </div>
             <div style={{ fontSize: 11, fontFamily: 'monospace', color: darkMode ? '#64748B' : '#94A3B8' }}>
-              {s.value.toLocaleString()} sessions
+              {s.value > 0 ? `${s.value.toLocaleString()} sessions` : '0 sessions'}
             </div>
           </div>
         ))}
@@ -248,6 +322,13 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
 
       {/* Main Breakdown Panel */}
       <div className="traffic-sources-breakdown-grid" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .traffic-sources-breakdown-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
         {/* Donut Chart */}
         <div
           className="radar-glass-panel"
@@ -265,7 +346,7 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
           <div style={{ fontSize: 13, fontWeight: 700, color: darkMode ? '#F8FAFC' : '#0F172A' }}>
             Sources Share
           </div>
-          <DonutChart segments={donutSegments} darkMode={darkMode} size={160} />
+          <DonutChart segments={donutSegments} total={calculatedTotalSessions} darkMode={darkMode} size={160} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
             {computedSources.map(s => (
               <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -282,7 +363,7 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
                   {s.label}
                 </span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: s.color, fontFamily: 'monospace' }}>
-                  {s.pct}%
+                  {s.pct > 0 ? `${s.pct}%` : '0%'}
                 </span>
               </div>
             ))}
@@ -341,13 +422,13 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {[
-                { label: 'Referral Domains', value: Math.max(1, Math.round((recentSessions.length || 20) * 0.4)), unit: 'domains', color: '#8B5CF6' },
-                { label: 'Social Referrals', value: Math.max(1, Math.round((recentSessions.length || 20) * 0.2)), unit: 'networks', color: '#F59E0B' },
-                { label: 'Direct Entrances', value: Math.max(1, Math.round((recentSessions.length || 20) * 0.35)), unit: 'landings', color: '#10B981' },
+                { label: 'Referral Domains', value: computedSources.find(s => s.key === 'referral')?.value || 0, unit: 'sessions', color: '#8B5CF6' },
+                { label: 'Social Referrals', value: computedSources.find(s => s.key === 'social')?.value || 0, unit: 'sessions', color: '#F59E0B' },
+                { label: 'Direct Entrances', value: computedSources.find(s => s.key === 'direct')?.value || 0, unit: 'sessions', color: '#10B981' },
               ].map(m => (
                 <div key={m.label} style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 800, color: m.color, fontFamily: 'monospace' }}>
-                    {m.value}
+                    {m.value.toLocaleString()}
                   </div>
                   <div
                     style={{

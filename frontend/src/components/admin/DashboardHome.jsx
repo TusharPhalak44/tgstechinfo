@@ -521,6 +521,49 @@ const DashboardHome = () => {
 
   const activeTraffic = trafficSeriesMap[trafficMetric] || trafficSeriesMap.sessions;
 
+  // Calculate summary values based on selected metric
+  const getMetricSummary = () => {
+    const totalSessions = (trafficData.dailySessions || []).reduce((sum, d) => sum + Number(d.sessions || 0), 0);
+    const totalPageViews = (trafficData.dailyPageViews || []).reduce((sum, d) => sum + Number(d.page_views || 0), 0);
+    const totalUniqueUsers = (trafficData.dailySessions || []).reduce((sum, d) => sum + Number(d.unique_users || 0), 0);
+    const totalBounces = (trafficData.dailySessions || []).reduce((sum, d) => sum + Number(d.bounces || 0), 0);
+
+    switch (trafficMetric) {
+      case 'sessions':
+        return {
+          total: totalSessions,
+          avgDuration: trafficData.summary?.avgDuration || 0,
+          bounceRate: trafficData.summary?.bounceRate || 0
+        };
+      case 'pageViews':
+        return {
+          total: totalPageViews,
+          avgDuration: trafficData.summary?.avgDuration || 0,
+          bounceRate: trafficData.summary?.bounceRate || 0
+        };
+      case 'uniqueUsers':
+        return {
+          total: totalUniqueUsers,
+          avgDuration: trafficData.summary?.avgDuration || 0,
+          bounceRate: trafficData.summary?.bounceRate || 0
+        };
+      case 'bounces':
+        return {
+          total: totalBounces,
+          avgDuration: trafficData.summary?.avgDuration || 0,
+          bounceRate: totalSessions > 0 ? ((totalBounces / totalSessions) * 100).toFixed(1) : 0
+        };
+      default:
+        return {
+          total: totalSessions,
+          avgDuration: trafficData.summary?.avgDuration || 0,
+          bounceRate: trafficData.summary?.bounceRate || 0
+        };
+    }
+  };
+
+  const metricSummary = getMetricSummary();
+
   // Modern Spline Glow Area Chart with Gradient
   const areaOptions = {
     chart: { type: "area", toolbar: { show: false }, background: "transparent", animations: { enabled: true, speed: 700 } },
@@ -694,35 +737,48 @@ const DashboardHome = () => {
         offsetY: 0,
         startAngle: 0,
         endAngle: 270,
-        hollow: { margin: 5, size: "30%", background: "transparent" },
+        hollow: { margin: 5, size: "45%", background: "transparent" },
         dataLabels: {
-          name: { show: true, fontSize: "11px", color: textMuted },
-          value: { show: true, fontSize: "13px", fontWeight: 600, color: textPrimary, formatter: (v) => `${Math.round(v)}%` },
+          enabledOnSeries: undefined,
+          name: { 
+            show: false
+          },
+          value: { 
+            show: false
+          },
           total: {
-            show: true,
-            label: "Total Users",
-            color: textSecondary,
-            fontSize: "11px",
-            formatter: () => userCount.toString(),
+            show: false
           },
         },
       },
     },
     colors: [brandLightBlue, brandAccent, brandPurple, brandEmerald],
-    labels: rolesList.map((r) => r.role.charAt(0).toUpperCase() + r.role.slice(1)),
+    labels: rolesList.map((r) => {
+      const roleName = r.role || r.name || 'Unknown';
+      return roleName.charAt(0).toUpperCase() + roleName.slice(1);
+    }),
     legend: {
       show: true,
       floating: true,
-      fontSize: "11px",
+      fontSize: "12px",
       position: "left",
       offsetX: -10,
       offsetY: 10,
       labels: { colors: textSecondary },
-      itemMargin: { vertical: 2 },
+      itemMargin: { vertical: 3 },
+      formatter: function(seriesName, opts) {
+        const roleData = rolesList[opts.seriesIndex];
+        const count = roleData ? roleData.count || 0 : 0;
+        return `${seriesName}: ${count}`;
+      },
     },
   };
 
-  const roleRadialSeries = rolesList.map((r) => Math.min(Math.round((Number(r.count) / totalRoleUsers) * 100), 100));
+  const roleRadialSeries = rolesList.map((r) => {
+    const count = Number(r.count || 0);
+    const percentage = totalRoleUsers > 0 ? (count / totalRoleUsers) * 100 : 0;
+    return Math.min(Math.round(percentage), 100);
+  });
 
   // ── Semi-Circle Gauge for Editorial Health & Velocity ──
   const editorialGaugeOptions = {
@@ -734,7 +790,7 @@ const DashboardHome = () => {
         track: { background: D ? "rgba(255,255,255,0.06)" : "#E2E8F0", strokeWidth: "97%" },
         dataLabels: {
           name: { show: true, label: "Editorial Velocity", color: textMuted, fontSize: "11px", offsetY: -20 },
-          value: { offsetY: -6, fontSize: "18px", fontWeight: 600, color: brandEmerald, formatter: (v) => `${v}%` },
+          value: { offsetY: -6, fontSize: "18px", fontWeight: 600, color: brandEmerald, formatter: (v) => `${Math.round(v)}%` },
         },
       },
     },
@@ -746,7 +802,7 @@ const DashboardHome = () => {
     labels: ["Editorial Velocity"],
   };
 
-  const editorialVelocity = Math.min(Math.round((pubCount / Math.max(pubCount + penCount, 1)) * 100), 100);
+  const editorialVelocity = (Number(kpis.totalPublished || 0) / Math.max(Number(kpis.totalPublished || 0) + Number(kpis.totalPending || 0), 1)) * 100;
 
   const totalVisitors = leadsData.totalVisitors || (trafficData.summary?.uniqueVisitors || 0);
   const formViews = leadsData.formPageViews || Math.round(totalVisitors * 0.38);
@@ -795,30 +851,34 @@ const DashboardHome = () => {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8, flexWrap: "wrap" }}>
-          <Select
-            value={customRange ? "custom" : period}
-            onChange={(val) => { setCustomRange(null); setPeriod(val); }}
-            style={{ width: isMobile ? 110 : 130, height: isMobile ? 28 : 32 }}
-            popupClassName={D ? "med-period-dropdown-dark" : "med-period-dropdown-light"}
-            options={[
-              { value: "today", label: "Today" },
-              { value: "7d", label: "Last 7 Days" },
-              { value: "30d", label: "Last 30 Days" },
-              { value: "90d", label: "Last 90 Days" },
-              { value: "ytd", label: "Year to Date" },
-              { value: "all", label: "All Time" },
-            ]}
-          />
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 8, marginLeft: isMobile ? 0 : 20 }}>
+            <Select
+              value={customRange ? "custom" : period}
+              onChange={(val) => { setCustomRange(null); setPeriod(val); }}
+              style={{ width: isMobile ? 110 : 130, height: isMobile ? 28 : 32 }}
+              popupClassName={D ? "med-period-dropdown-dark" : "med-period-dropdown-light"}
+              options={[
+                { value: "today", label: "Today" },
+                { value: "7d", label: "Last 7 Days" },
+                { value: "30d", label: "Last 30 Days" },
+                { value: "90d", label: "Last 90 Days" },
+                { value: "ytd", label: "Year to Date" },
+                { value: "all", label: "All Time" },
+              ]}
+            />
 
-          <RangePicker value={customRange} onChange={(dates) => setCustomRange(dates)} style={{ borderRadius: 8, background: bgCardSecondary, borderColor, fontSize: isMobile ? "0.7rem" : "0.76rem", height: isMobile ? 28 : 32 }} />
-          <Tooltip title="Refresh Telemetry">
-            <button onClick={fetchAllTelemetry} style={{ width: isMobile ? 28 : 32, height: isMobile ? 28 : 32, borderRadius: 8, border: `1px solid ${borderColor}`, background: bgCardSecondary, color: textSecondary, cursor: "pointer", transition: "all 0.2s ease" }}>
-              <ReloadOutlined spin={refreshing} style={{ color: refreshing ? brandLightBlue : "inherit" }} />
+            <RangePicker value={customRange} onChange={(dates) => setCustomRange(dates)} style={{ borderRadius: 8, background: bgCardSecondary, borderColor, fontSize: isMobile ? "0.7rem" : "0.76rem", height: isMobile ? 28 : 32 }} />
+            <Tooltip title="Refresh Telemetry">
+              <button onClick={fetchAllTelemetry} style={{ width: isMobile ? 28 : 32, height: isMobile ? 28 : 32, borderRadius: 8, border: `1px solid ${borderColor}`, background: bgCardSecondary, color: textSecondary, cursor: "pointer", transition: "all 0.2s ease" }}>
+                <ReloadOutlined spin={refreshing} style={{ color: refreshing ? brandLightBlue : "inherit" }} />
+              </button>
+            </Tooltip>
+          </div>
+          <div style={{ marginLeft: "auto" }}>
+            <button onClick={() => navigate("/dashboard/create-post")} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)", borderRadius: 8, padding: isMobile ? "5px 12px" : "6px 14px", color: "#FFFFFF", fontWeight: 500, fontSize: isMobile ? "0.72rem" : "0.78rem", cursor: "pointer", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)" }}>
+              <PlusOutlined /> New Article
             </button>
-          </Tooltip>
-          <button onClick={() => navigate("/dashboard/create-post")} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)", borderRadius: 8, padding: isMobile ? "5px 12px" : "6px 14px", color: "#FFFFFF", fontWeight: 500, fontSize: isMobile ? "0.72rem" : "0.78rem", cursor: "pointer", border: "1px solid rgba(255,255,255,0.15)", boxShadow: "0 4px 14px rgba(37, 99, 235, 0.35)" }}>
-            <PlusOutlined /> New Article
-          </button>
+          </div>
         </div>
       </div>
 
@@ -1043,21 +1103,21 @@ const DashboardHome = () => {
 
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 8 : 12, marginTop: 14, paddingTop: 14, borderTop: `1px solid ${borderColor}`, textAlign: "center" }}>
             <div>
-              <div style={{ fontSize: "0.7rem", color: textMuted }}>Total Sessions</div>
+              <div style={{ fontSize: "0.7rem", color: textMuted }}>Total {activeTraffic.name}</div>
               <div style={{ fontSize: "1.05rem", fontWeight: 600, color: textPrimary, marginTop: 2 }}>
-                {Number(trafficData.summary?.totalSessions || 0).toLocaleString()}
+                {Number(metricSummary.total || 0).toLocaleString()}
               </div>
             </div>
             <div>
               <div style={{ fontSize: "0.7rem", color: textMuted }}>Avg. Session Duration</div>
               <div style={{ fontSize: "1.05rem", fontWeight: 600, color: textPrimary, marginTop: 2 }}>
-                {Math.round(Number(trafficData.summary?.avgDuration || 0))} seconds
+                {Math.round(Number(metricSummary.avgDuration || 0))} seconds
               </div>
             </div>
             <div>
               <div style={{ fontSize: "0.7rem", color: textMuted }}>Single-Page Exit Rate</div>
               <div style={{ fontSize: "1.05rem", fontWeight: 600, color: textPrimary, marginTop: 2 }}>
-                {trafficData.summary?.bounceRate || 0}%
+                {metricSummary.bounceRate || 0}%
               </div>
             </div>
           </div>
@@ -1220,7 +1280,7 @@ const DashboardHome = () => {
       </div>
 
       {/* ── 4.5. Newsroom Dispatch (Editorial Activity) ── */}
-      <div className="med-panel med-stagger-4" style={{ background: bgCard, borderColor, marginBottom: 22 }}>
+      <div className="med-panel med-stagger-4" style={{ background: bgCard, borderColor, marginBottom: 22, overflowX: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", marginBottom: isMobile ? 12 : 14, flexWrap: "wrap", gap: 8 }}>
           <div>
             <h3 style={{ fontSize: isMobile ? "0.85rem" : "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
@@ -1238,10 +1298,10 @@ const DashboardHome = () => {
           </button>
         </div>
 
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(auto-fill, minmax(280px, 1fr))", 
-          gap: isMobile ? 10 : 12 
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: isMobile ? 10 : 12
         }}>
           {(portfolioData.recentActivity || []).length === 0 ? (
             <div style={{ textAlign: "center", padding: isMobile ? "20px 0" : "30px 0", color: textMuted, fontSize: isMobile ? "0.72rem" : "0.8rem", gridColumn: "1 / -1" }}>
@@ -1252,28 +1312,28 @@ const DashboardHome = () => {
               const isPub = item.status === "published";
               const isPen = item.status === "pending";
               return (
-                <div key={i} className="med-news-item" style={{ background: bgCardSecondary, borderColor, padding: isMobile ? "10px 12px" : "11px 14px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : "center", gap: isMobile ? 6 : 8, flexDirection: isMobile ? "column" : "row" }}>
+                <div key={i} className="med-news-item" style={{ background: bgCardSecondary, borderColor, padding: isMobile ? "10px 12px" : isTablet ? "10px 12px" : "11px 14px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: isMobile ? "flex-start" : isTablet ? "flex-start" : "center", gap: isMobile ? 6 : isTablet ? 6 : 8, flexDirection: isMobile ? "column" : isTablet ? "column" : "row" }}>
                     <div style={{ flex: 1, minWidth: 0, width: "100%" }}>
-                      <div style={{ fontSize: isMobile ? "0.72rem" : "0.8rem", fontWeight: 500, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: isMobile ? "normal" : "nowrap", display: isMobile ? "-webkit-box" : "block", WebkitLineClamp: isMobile ? 2 : "unset", WebkitBoxOrient: isMobile ? "vertical" : "unset" }}>
+                      <div style={{ fontSize: isMobile ? "0.72rem" : isTablet ? "0.72rem" : "0.8rem", fontWeight: 500, color: textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: isMobile ? "normal" : isTablet ? "normal" : "nowrap", display: isMobile ? "-webkit-box" : isTablet ? "-webkit-box" : "block", WebkitLineClamp: isMobile ? 2 : isTablet ? 2 : "unset", WebkitBoxOrient: isMobile ? "vertical" : isTablet ? "vertical" : "unset" }}>
                         {item.title}
                       </div>
-                      <div style={{ fontSize: isMobile ? "0.64rem" : "0.7rem", color: textMuted, marginTop: isMobile ? 4 : 2 }}>
+                      <div style={{ fontSize: isMobile ? "0.64rem" : isTablet ? "0.64rem" : "0.7rem", color: textMuted, marginTop: isMobile ? 4 : isTablet ? 4 : 2 }}>
                         {item.first_name ? `by ${item.first_name} ${item.last_name || ""}` : "Editorial Team"} • {item.category || "General"}
                       </div>
                     </div>
                     <span
                       style={{
-                        fontSize: isMobile ? "0.6rem" : "0.66rem",
+                        fontSize: isMobile ? "0.6rem" : isTablet ? "0.6rem" : "0.66rem",
                         fontWeight: 500,
-                        padding: isMobile ? "2px 6px" : "2px 7px",
+                        padding: isMobile ? "2px 6px" : isTablet ? "2px 6px" : "2px 7px",
                         borderRadius: 4,
                         background: isPub ? "rgba(16, 185, 129, 0.15)" : isPen ? "rgba(247, 148, 29, 0.15)" : "rgba(100, 116, 139, 0.15)",
                         color: isPub ? brandEmerald : isPen ? brandAccent : textMuted,
                         border: `1px solid ${isPub ? "rgba(16, 185, 129, 0.3)" : isPen ? "rgba(247, 148, 29, 0.3)" : "rgba(100, 116, 139, 0.3)"}`,
                         textTransform: "capitalize",
                         flexShrink: 0,
-                        marginTop: isMobile ? 4 : 0,
+                        marginTop: isMobile ? 4 : isTablet ? 4 : 0,
                       }}
                     >
                       {item.status}
@@ -1368,7 +1428,20 @@ const DashboardHome = () => {
             </span>
           </div>
 
-          <ReactApexChart options={roleRadialOptions} series={roleRadialSeries} type="radialBar" height={220} />
+          <div style={{ position: 'relative', height: 220 }}>
+            <ReactApexChart options={roleRadialOptions} series={roleRadialSeries} type="radialBar" height={220} />
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              textAlign: 'center',
+              pointerEvents: 'none'
+            }}>
+              <div style={{ fontSize: '11px', color: textSecondary, fontWeight: 500 }}>Total Users</div>
+              <div style={{ fontSize: '18px', fontWeight: 600, color: textPrimary, marginTop: 2 }}>{totalRoleUsers}</div>
+            </div>
+          </div>
         </div>
 
         {/* Card 3: Editorial Velocity & Turnaround Gauge */}
@@ -1390,7 +1463,7 @@ const DashboardHome = () => {
           </div>
 
           <div style={{ textAlign: "center", fontSize: "0.72rem", color: textMuted, marginTop: 8 }}>
-            {pubCount} published / {pubCount + penCount} submissions
+            {kpis.totalPublished} published / {kpis.totalPublished + kpis.totalPending} submissions
           </div>
         </div>
       </div>

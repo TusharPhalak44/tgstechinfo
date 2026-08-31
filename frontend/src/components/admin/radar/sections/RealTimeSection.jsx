@@ -107,7 +107,24 @@ const RealTimeSection = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="realtime-section" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <style>{`
+        @media (max-width: 1024px) {
+          .realtime-section {
+            gap: 16px !important;
+          }
+        }
+        @media (max-width: 768px) {
+          .realtime-section {
+            gap: 14px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .realtime-section {
+            gap: 12px !important;
+          }
+        }
+      `}</style>
       {/* Dynamic Summary KPI Panel */}
       <GeographicAnalyticsSummary
         level={activeLevel}
@@ -120,7 +137,14 @@ const RealTimeSection = ({
       />
 
       {/* Main hero row: 3D WebGL Globe + Real-Time Live Signals Feed */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+      <div className="realtime-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+        <style>{`
+          @media (max-width: 1024px) {
+            .realtime-hero-grid > div {
+              grid-template-columns: 1fr !important;
+            }
+          }
+        `}</style>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
           <AnalyticsGlobe
             globalData={globalData}

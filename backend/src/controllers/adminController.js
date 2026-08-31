@@ -592,8 +592,9 @@ exports.getDashboardKPIs = async (req, res) => {
             vsParams      = [days];
         }
 
-        const [[{ published }]]        = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published' AND ${dateCondition}`, dateParams);
-        const [[{ pending }]]          = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending' AND ${dateCondition}`, dateParams);
+        // Get overall content counts (not date-filtered) for editorial velocity
+        const [[{ published }]]        = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published'`);
+        const [[{ pending }]]          = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending'`);
         const [[{ drafts }]]           = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' AND ${dateCondition}`, dateParams);
         const [[{ scheduled }]]        = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
         const [[{ totalViews }]]       = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents WHERE ${dateCondition}`, dateParams);
