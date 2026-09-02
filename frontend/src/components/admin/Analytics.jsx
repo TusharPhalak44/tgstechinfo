@@ -225,7 +225,10 @@ const Analytics = () => {
     ),
     engagement: (
       <EngagementSection
-        darkMode={darkMode}
+        {...commonProps}
+        recentSessions={recentSessions}
+        sessionAnalytics={sessionAnalytics}
+        overviewData={overviewData}
         timeRange={timeRange}
       />
     ),

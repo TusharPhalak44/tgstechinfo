@@ -265,6 +265,8 @@ app.use('/api/auth', require('./src/routes/authRoutes'));
 
 app.use('/api/admin', require('./src/routes/adminRoutes'));
 
+app.use('/api/user/analytics', require('./src/routes/userAnalyticsRoutes'));
+
 app.use('/api/user', require('./src/routes/userRoutes'));
 
 app.use('/api/public', require('./src/routes/publicRoutes'));

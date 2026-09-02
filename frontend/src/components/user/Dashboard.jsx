@@ -1,18 +1,239 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Statistic, Button, Typography, Tag, Badge, Avatar, Empty, Spin, Space, message, Tabs, Grid, ConfigProvider, theme } from 'antd';
+import { Row, Col, Typography, Tag, Badge, Avatar, Empty, Spin, Space, message, Tabs, Tooltip, Modal } from 'antd';
 import {
-  FileTextOutlined, ClockCircleOutlined, CheckCircleOutlined,
-  PlusOutlined, UserOutlined, CalendarOutlined, EditOutlined,
-  CloseCircleOutlined, SendOutlined, TagOutlined, FormOutlined,
-  DownOutlined, EyeOutlined
+  FileTextOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  PlusOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  EditOutlined,
+  CloseCircleOutlined,
+  SendOutlined,
+  TagOutlined,
+  EyeOutlined,
+  DownOutlined,
+  DeleteOutlined,
+  ReloadOutlined,
+  RiseOutlined,
+  RocketOutlined,
+  ThunderboltOutlined,
+  FolderOpenOutlined,
+  LineChartOutlined,
+  AppstoreOutlined,
+  SearchOutlined,
+  ArrowRightOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const { Title, Text } = Typography;
-const { useBreakpoint } = Grid;
+
+/* ─────────────────────────────────────────────
+   INJECTED CSS — Modern Executive User Dashboard
+───────────────────────────────────────────── */
+const userDashboardStyles = `
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+  .user-dash-root {
+    font-family: 'Plus Jakarta Sans', 'DM Sans', -apple-system, sans-serif;
+    letter-spacing: -0.01em;
+    animation: userDashFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  @keyframes userDashFadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Staggered Entrance Animations ── */
+  .u-stagger-1 { animation: uSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.04s both; }
+  .u-stagger-2 { animation: uSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
+  .u-stagger-3 { animation: uSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both; }
+  .u-stagger-4 { animation: uSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.16s both; }
+  .u-stagger-5 { animation: uSlideUp 0.42s cubic-bezier(0.16, 1, 0.3, 1) 0.20s both; }
+
+  @keyframes uSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Header Command Bar ── */
+  .user-dash-header {
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(16px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .user-dash-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(247, 148, 29, 0.4), transparent);
+  }
+
+  /* ── Live Beacon Animation ── */
+  .user-beacon-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10B981;
+    position: relative;
+    display: inline-block;
+  }
+  .user-beacon-dot::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 50%;
+    border: 2px solid #10B981;
+    animation: userPulse 2s ease-out infinite;
+  }
+  @keyframes userPulse {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    70% { transform: scale(2.2); opacity: 0; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  /* ── Executive KPI Cards ── */
+  .user-kpi-card {
+    border-radius: 14px;
+    padding: 18px 20px;
+    border: 1px solid;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .user-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2.5px;
+    background: var(--card-accent, #2563EB);
+    opacity: 0.9;
+    transition: height 0.2s ease;
+  }
+  .user-kpi-card::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--card-accent, transparent);
+    opacity: 0.08;
+    filter: blur(18px);
+    pointer-events: none;
+  }
+  .user-kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px -8px rgba(0, 0, 0, 0.2), 0 0 16px -2px var(--card-glow, rgba(37, 99, 235, 0.2));
+  }
+  .user-kpi-card:hover::before {
+    height: 3.5px;
+  }
+
+  /* ── Quick Action Tiles ── */
+  .user-quick-tile {
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .user-quick-tile:hover {
+    transform: translateY(-2px);
+  }
+
+  /* ── Content Grid Cards ── */
+  .user-story-card {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid;
+    transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+  }
+  .user-story-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 36px -10px rgba(0, 0, 0, 0.2);
+  }
+  .user-story-thumb {
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+  }
+  .user-story-card:hover .user-story-thumb {
+    transform: scale(1.04);
+  }
+
+  /* ── Custom Tab Styling ── */
+  .user-tab-nav .ant-tabs-nav {
+    margin-bottom: 20px !important;
+  }
+  .user-tab-nav .ant-tabs-tab {
+    font-weight: 600 !important;
+    font-size: 0.84rem !important;
+    padding: 8px 16px !important;
+    border-radius: 8px !important;
+    transition: all 0.2s !important;
+  }
+
+  /* ── Action Buttons ── */
+  .user-btn-primary {
+    background: linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%);
+    border: 1px solid rgba(247, 148, 29, 0.35);
+    color: #FFFFFF;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 6px 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    font-size: 0.82rem;
+  }
+  .user-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(11, 31, 77, 0.3);
+    color: #FFFFFF;
+  }
+`;
 
 const parseTags = (tags) => {
   if (!tags) return [];
@@ -21,798 +242,804 @@ const parseTags = (tags) => {
 };
 
 const statusConfig = {
-  draft: { color: 'default', text: 'Draft' },
-  pending: { color: 'processing', text: 'Pending Review' },
-  approved: { color: 'success', text: 'Approved' },
-  published: { color: 'success', text: 'Published' },
-  rejected: { color: 'error', text: 'Rejected' },
-  changes_requested: { color: 'warning', text: 'Changes Requested' }
+  draft:             { color: '#64748B', bg: 'rgba(100, 116, 139, 0.12)', text: 'Draft' },
+  pending:           { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)',  text: 'Pending Review' },
+  approved:          { color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)', text: 'Approved' },
+  published:         { color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)', text: 'Published' },
+  rejected:          { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)',   text: 'Rejected' },
+  changes_requested: { color: '#F97316', bg: 'rgba(249, 115, 22, 0.12)', text: 'Changes Requested' }
 };
 
-// Tab order & labels
 const CONTENT_TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'article', label: 'Articles' },
-  { key: 'news', label: 'News' },
-  { key: 'blog', label: 'Blogs' },
-  { key: 'whitepaper', label: 'Whitepaper' },
-  { key: 'interview', label: 'Interview' },
-  { key: 'webinar', label: 'Webinar' },
-  { key: 'event', label: 'Event' },
+  { key: 'all',        label: 'All Content' },
+  { key: 'article',    label: 'Articles' },
+  { key: 'news',       label: 'News' },
+  { key: 'blog',       label: 'Blogs' },
+  { key: 'whitepaper', label: 'Whitepapers' },
+  { key: 'interview',  label: 'Interviews' },
+  { key: 'webinar',    label: 'Webinars' },
+  { key: 'event',      label: 'Events' },
 ];
 
 const ITEMS_PER_PAGE = 20;
 const INITIAL_SHOW = 12;
-const LOAD_MORE_COUNT = 4;
-
-const ArticleCard = ({ article, submitting, onSubmit, navigate, darkMode }) => {
-  const status = statusConfig[article.status] || { color: 'default', text: article.status };
-  const tags = parseTags(article.tags);
-  const canEdit = article.status === 'changes_requested' || article.status === 'draft';
-  const screens = useBreakpoint();
-  const isMobile = !screens.md;
-
-  const handleCardClick = async () => {
-    try {
-      // Increment view count when content is clicked (use session-based deduplication)
-      const viewKey = `content-viewed-${article.id}`;
-      const sessionViewed = sessionStorage.getItem(viewKey);
-
-      // Only increment if not already viewed in this session
-      if (!sessionViewed) {
-        console.log('👁️ Incrementing view for content:', article.id);
-        await axios.post(`/api/public/content/${article.id}/view`);
-        sessionStorage.setItem(viewKey, 'true');
-        console.log('✅ View incremented and marked as viewed');
-      } else {
-        console.log('⏭️ Content already viewed in this session, skipping increment');
-      }
-    } catch (error) {
-      console.error('Error incrementing view count:', error);
-    }
-    navigate(`/${article.content_type || 'article'}-preview/${article.id}`);
-  };
-
-  // Limit description to 2-3 lines
-  const truncateDescription = (text, maxLines = 3) => {
-    if (!text) return '';
-    // Split by sentences or words
-    const words = text.split(' ');
-    if (words.length <= 30) return text; // If short, show full
-    return words.slice(0, 30).join(' ') + '...';
-  };
-
-  // Limit tags to 4
-  const displayTags = tags.slice(0, 4);
-  const hasMoreTags = tags.length > 4;
-
-  return (
-    <Col xs={24} sm={12} md={8} lg={6} xl={6} xxl={4} key={article.id}>
-      <Card
-        hoverable
-        style={{ 
-          borderRadius: 12, 
-          height: '100%',
-          border: darkMode ? '1px solid #334155' : '1px solid #f0f0f0',
-          boxShadow: darkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.04)',
-          transition: 'all 0.3s ease',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-          background: darkMode ? '#1e293b' : '#fff'
-        }}
-        bodyStyle={{
-          padding: 0,
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-        onClick={handleCardClick}
-      >
-        {/* Banner Image */}
-        <div style={{ position: 'relative', lineHeight: 0, flexShrink: 0, overflow: 'hidden' }}>
-          {article.banner_image ? (
-            <img
-              src={`/uploads/${article.banner_image}`}
-              alt={article.title}
-              style={{
-                width: '100%',
-                height: isMobile ? 160 : 180,
-                objectFit: 'cover',
-                display: 'block',
-                background: darkMode ? '#1e293b' : '#f0f4ff',
-                transform: 'scale(0.95)',
-                transition: 'transform .3s'
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(0.95)'}
-            />
-          ) : (
-            <div style={{
-              height: isMobile ? 160 : 180,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: darkMode ? 'linear-gradient(135deg,#1e293b,#0f172a)' : 'linear-gradient(135deg,#e0e9ff,#f0f4ff)'
-            }}>
-              <FileTextOutlined style={{ fontSize: 40, color: darkMode ? '#64748b' : '#bfbfbf' }} />
-            </div>
-          )}
-          <div style={{ 
-            position: 'absolute', 
-            top: 12, 
-            left: 12,
-            background: darkMode ? 'rgba(30,41,59,0.95)' : 'rgba(255,255,255,0.95)',
-            padding: '4px 12px',
-            borderRadius: 6,
-            boxShadow: darkMode ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.12)',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6
-          }}>
-            <Badge status={status.color} />
-            <span style={{ fontSize: isMobile ? 11 : 12, fontWeight: 500, color: darkMode ? '#e2e8f0' : '#1a1a1a' }}>{status.text}</span>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div style={{ 
-          padding: isMobile ? '12px 14px' : '14px 16px',
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          {/* Category & Type */}
-          <div style={{ marginBottom: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-            {article.category_name && (
-              <Tag color="blue" style={{ fontSize: 11, margin: 0 }}>
-                {article.category_name}
-              </Tag>
-            )}
-            {article.content_type_name && (
-              <Tag color="purple" style={{ fontSize: 11, margin: 0 }}>
-                {article.content_type_name}
-              </Tag>
-            )}
-          </div>
-
-          {/* Title - 2 lines max */}
-          <div style={{
-            fontWeight: 700, 
-            fontSize: isMobile ? 14 : 15, 
-            lineHeight: 1.4, 
-            marginBottom: 6, 
-            color: darkMode ? '#f1f5f9' : '#1a1a1a',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            minHeight: isMobile ? 40 : 42
-          }}>
-            {article.title}
-          </div>
-
-          {/* Short Description - 3 lines max */}
-          {article.short_description && (
-            <div style={{
-              fontSize: 12, 
-              color: darkMode ? '#94a3b8' : '#595959', 
-              lineHeight: 1.6, 
-              marginBottom: 8,
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              minHeight: 58
-            }}>
-              {article.short_description}
-            </div>
-          )}
-
-          {/* Tags - Max 4 tags */}
-          {displayTags.length > 0 && (
-            <div style={{ 
-              marginBottom: 8, 
-              display: 'flex', 
-              flexWrap: 'wrap', 
-              gap: 4, 
-              alignItems: 'center',
-              minHeight: 26
-            }}>
-              <TagOutlined style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }} />
-              {displayTags.map((tag, i) => (
-                <Tag key={i} color="geekblue" style={{ fontSize: 11, margin: 0 }}>
-                  {tag.length > 15 ? tag.substring(0, 15) + '...' : tag}
-                </Tag>
-              ))}
-              {hasMoreTags && (
-                <Text style={{ fontSize: 11, color: darkMode ? '#64748b' : '#8c8c8c' }}>+{tags.length - 4}</Text>
-              )}
-            </div>
-          )}
-
-          {/* Admin feedback - Only show if present */}
-          {article.status === 'changes_requested' && article.admin_comment && (
-            <div style={{ background: darkMode ? '#451a03' : '#fff7e6', border: darkMode ? '1px solid #8c4b0a' : '1px solid #ffd591', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: darkMode ? '#fbbf24' : '#d46b08', marginBottom: 2 }}>
-                <EditOutlined style={{ marginRight: 4 }} />Feedback
-              </div>
-              <div style={{ fontSize: 11, color: darkMode ? '#fef3c7' : '#614700', 
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}>
-                {article.admin_comment}
-              </div>
-            </div>
-          )}
-          {article.status === 'rejected' && article.admin_comment && (
-            <div style={{ background: darkMode ? '#450a0a' : '#fff2f0', border: darkMode ? '1px solid #7f1d1d' : '1px solid #ffccc7', borderRadius: 6, padding: '6px 10px', marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: darkMode ? '#f87171' : '#cf1322', marginBottom: 2 }}>
-                <CloseCircleOutlined style={{ marginRight: 4 }} />Rejected
-              </div>
-              <div style={{ fontSize: 11, color: darkMode ? '#fecaca' : '#820014',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}>
-                {article.admin_comment}
-              </div>
-            </div>
-          )}
-
-          {/* Edit + Submit */}
-          {canEdit && (
-            <div style={{ marginBottom: 8 }} onClick={e => e.stopPropagation()}>
-              <Space size={4} wrap>
-                <Button 
-                  size="small" 
-                  icon={<EditOutlined />}
-                  onClick={(e) => { e.stopPropagation(); navigate(`/edit-content/${article.id}`); }}
-                  style={{ fontSize: 11 }}
-                >
-                  Edit
-                </Button>
-                <Button 
-                  size="small" 
-                  type="primary" 
-                  icon={<SendOutlined />}
-                  loading={submitting === article.id}
-                  onClick={(e) => onSubmit(e, article.id)}
-                  style={{ fontSize: 11 }}
-                >
-                  Submit
-                </Button>
-              </Space>
-            </div>
-          )}
-
-          {/* Author & Date - Always at bottom */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'space-between', 
-            borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', 
-            paddingTop: 8,
-            marginTop: 'auto'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
-              <Avatar 
-                size={20} 
-                icon={<UserOutlined />} 
-                style={{ background: '#4a7cff', flexShrink: 0 }} 
-              />
-              <Text style={{ 
-                fontSize: 11, 
-                color: darkMode ? '#94a3b8' : '#595959',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
-                {article.first_name} {article.last_name}
-              </Text>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-              <CalendarOutlined style={{ fontSize: 10, color: darkMode ? '#64748b' : '#8c8c8c' }} />
-              <Text style={{ fontSize: 11, color: '#8c8c8c' }}>
-                {moment(article.created_at).format('MMM D, YYYY')}
-              </Text>
-            </div>
-          </div>
-        </div>
-      </Card>
-    </Col>
-  );
-};
+const LOAD_MORE_COUNT = 6;
 
 const Dashboard = () => {
   const { darkMode } = useTheme();
-  const screens = useBreakpoint();
-  const isMobile = !screens.md;
-  const isTablet = screens.md && !screens.lg;
-  const isDesktop = screens.lg;
-  
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const D = darkMode;
+
   const [contents, setContents] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
-  const navigate = useNavigate();
-
-  useEffect(() => { 
-    fetchContents(); 
-  }, []);
+  const [stats, setStats] = useState({
+    total: 0,
+    published: 0,
+    pending: 0,
+    draft: 0,
+    totalViews: 0,
+    totalSubmissions: 0,
+  });
 
   useEffect(() => {
-    setCurrentPage(1);
-    setVisibleCount(INITIAL_SHOW);
-  }, [activeTab]);
+    fetchDashboardContent();
+  }, []);
 
-  const fetchContents = async () => {
+  const fetchDashboardContent = async () => {
     setLoading(true);
     try {
       const res = await axios.get('/api/user/content');
-      setContents(res.data);
-    } catch {
-      console.error('Error fetching contents');
+      const data = res.data || [];
+      setContents(data);
+
+      const total = data.length;
+      const published = data.filter(c => c.status === 'published' || c.status === 'approved').length;
+      const pending = data.filter(c => c.status === 'pending').length;
+      const draft = data.filter(c => c.status === 'draft' || c.status === 'changes_requested').length;
+      const totalViews = data.reduce((acc, c) => acc + (Number(c.views_count) || 0), 0);
+
+      setStats({ total, published, pending, draft, totalViews });
+    } catch (err) {
+      console.error('Failed to load user content', err);
+      message.error('Failed to load workspace data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmitForReview = async (e, articleId) => {
+  const handleSubmitForReview = async (e, contentId) => {
     e.stopPropagation();
-    setSubmitting(articleId);
+    setSubmitting(contentId);
     try {
-      await axios.post(`/api/user/content/${articleId}/submit`);
-      message.success('Content submitted for review!');
-      fetchContents();
-    } catch {
-      message.error('Failed to submit for review');
+      await axios.post(`/api/user/content/${contentId}/submit`);
+      message.success('Story submitted for editorial review!');
+      fetchDashboardContent();
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Failed to submit story');
     } finally {
       setSubmitting(null);
     }
   };
 
-  const handleShowMore = () => {
-    setVisibleCount(prev => Math.min(prev + LOAD_MORE_COUNT, ITEMS_PER_PAGE));
+  const handleDelete = (e, contentId) => {
+    e.stopPropagation();
+    Modal.confirm({
+      title: 'Delete Content',
+      content: 'Are you sure you want to delete this story? This action cannot be undone.',
+      okText: 'Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        try {
+          await axios.delete(`/api/user/content/${contentId}`);
+          message.success('Story deleted successfully');
+          fetchDashboardContent();
+        } catch (err) {
+          message.error('Failed to delete story');
+        }
+      }
+    });
   };
 
-  const stats = {
-    total: contents.length,
-    draft: contents.filter(c => c.status === 'draft').length,
-    pending: contents.filter(c => c.status === 'pending').length,
-    published: contents.filter(c => c.status === 'published').length
-  };
-
-  const filteredContents = activeTab === 'all'
-    ? contents
-    : contents.filter(c => (c.content_type_name || '').toLowerCase() === activeTab);
-
-  const totalItems = filteredContents.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
-  const currentPageItems = filteredContents.slice(startIndex, endIndex);
-  const visibleItems = currentPageItems.slice(0, visibleCount);
-  const hasMoreInPage = visibleCount < currentPageItems.length;
-
-  const tabItems = CONTENT_TABS.map(tab => {
-    const count = tab.key === 'all'
-      ? contents.length
-      : contents.filter(c => (c.content_type_name || '').toLowerCase() === tab.key).length;
-    return {
-      key: tab.key,
-      label: (
-        <span>
-          {tab.label}
-          {count > 0 && (
-            <span style={{
-              marginLeft: 6, 
-              background: activeTab === tab.key ? '#4a7cff' : (darkMode ? '#334155' : '#f0f0f0'),
-              color: activeTab === tab.key ? '#fff' : (darkMode ? '#94a3b8' : '#595959'),
-              borderRadius: 10, 
-              padding: '1px 7px', 
-              fontSize: 11, 
-              fontWeight: 600
-            }}>
-              {count}
-            </span>
-          )}
-        </span>
-      )
-    };
+  const filteredContents = contents.filter(item => {
+    const matchesTab = activeTab === 'all' || (item.content_type || 'article').toLowerCase() === activeTab;
+    const matchesSearch = !searchQuery ||
+      item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category_name?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch;
   });
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    setVisibleCount(INITIAL_SHOW);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const visibleItems = filteredContents.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredContents.length;
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
-        token: {
-          colorBgContainer: darkMode ? '#1a1a1a' : '#ffffff',
-          colorBorder: darkMode ? '#334155' : '#E5E7EB',
-          colorText: darkMode ? '#e2e8f0' : '#1a1a1a',
-          colorTextSecondary: darkMode ? '#94a3b8' : '#6B7280',
-        },
-      }}
-    >
-      <div className="user-dashboard-scroll" style={{ 
-        padding: isMobile ? '12px' : isTablet ? '20px' : '24px',
-        width: '100%',
-        background: darkMode ? '#0f172a' : '#F8FAFC',
-        height: 'calc(100vh - 64px)',
-        overflowY: 'auto'
-      }}>
-      {/* Header */}
-      <div style={{ 
-        marginBottom: isMobile ? '16px' : '24px', 
-        display: 'flex', 
-        alignItems: isMobile ? 'flex-start' : 'center', 
-        justifyContent: 'space-between', 
-        flexDirection: isMobile ? 'column' : 'row',
-        gap: isMobile ? 12 : 0
-      }}>
-        <div>
-          <Title level={isMobile ? 3 : 2} style={{ 
-            margin: 0, 
-            fontSize: isMobile ? '20px' : isTablet ? '24px' : '28px',
-            fontWeight: 700,
-            color: darkMode ? '#f1f5f9' : '#111827'
-          }}>
-            Dashboard
-          </Title>
-          <Text style={{ 
-            fontSize: isMobile ? 13 : 15, 
-            color: darkMode ? '#94a3b8' : '#6B7280'
-          }}>
-            Welcome back! Here's your content overview
-          </Text>
-        </div>
-        <div style={{ 
-          display: 'flex',
-          gap: isMobile ? 8 : 12,
-          flexWrap: 'wrap',
-          width: isMobile ? '100%' : 'auto'
-        }}>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => navigate('/user-dashboard/create-post')}
-            size="small"
+    <div className="user-dash-root">
+      <style>{userDashboardStyles}</style>
+
+      {/* ── COMMAND BAR HEADER ── */}
+      <div
+        className="user-dash-header u-stagger-1"
+        style={{
+          background: D
+            ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 31, 77, 0.5) 100%)'
+            : 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
+          border: `1px solid ${D ? 'rgba(255, 255, 255, 0.08)' : 'rgba(11, 31, 77, 0.08)'}`,
+          boxShadow: D ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 4px 20px rgba(11, 31, 77, 0.05)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div
             style={{
-              flex: isMobile ? 1 : 'none',
-              borderRadius: 6,
-              background: '#4a7cff',
-              borderColor: '#4a7cff',
-              fontSize: 13,
-              height: 32,
-              padding: '4px 12px',
-              minWidth: 'auto'
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)',
+              border: '1px solid rgba(247, 148, 29, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#F7941D',
+              fontSize: 20,
+              flexShrink: 0,
+              boxShadow: '0 4px 14px rgba(11, 31, 77, 0.25)',
             }}
           >
-            {isMobile ? 'Create' : 'Create Content'}
-          </Button>
+            <RocketOutlined />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{
+                margin: 0,
+                fontSize: '1.28rem',
+                fontWeight: 800,
+                color: D ? '#F8FAFC' : '#0B1F4D',
+                letterSpacing: '-0.02em',
+              }}>
+                Creator Workspace
+              </h1>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '3px 10px',
+                borderRadius: 20,
+                background: 'rgba(16, 185, 129, 0.1)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                fontSize: '0.66rem',
+                fontWeight: 700,
+                color: '#10B981',
+              }}>
+                <span className="user-beacon-dot" />
+                <span>STUDIO LIVE</span>
+              </div>
+            </div>
+            <p style={{
+              margin: '3px 0 0',
+              fontSize: '0.78rem',
+              color: D ? '#94A3B8' : '#64748B',
+              fontWeight: 500,
+            }}>
+              Welcome back, <strong>{user?.first_name || 'Creator'}</strong> • Manage your publications, track story review states, and create new content.
+            </p>
+          </div>
+        </div>
+
+        {/* Header Right Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={fetchDashboardContent}
+            style={{
+              background: D ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+              border: `1px solid ${D ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}`,
+              color: D ? '#94A3B8' : '#475569',
+              padding: '7px 14px',
+              borderRadius: 10,
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            <ReloadOutlined spin={loading} />
+            <span>Sync</span>
+          </button>
+
+          <button
+            className="user-btn-primary"
+            onClick={() => navigate('/user-dashboard/create-post')}
+          >
+            <PlusOutlined />
+            <span>New Story</span>
+          </button>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <Row gutter={[isMobile ? 12 : 16, isMobile ? 12 : 16]} style={{ marginBottom: isMobile ? 20 : 24 }}>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              borderRadius: 12, 
-              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
-              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              background: darkMode ? '#1e293b' : '#FFFFFF'
+      {/* ── EXECUTIVE KPI STAT CARDS ── */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }} className="u-stagger-2">
+        {/* Total Content */}
+        <Col xs={12} sm={12} md={6}>
+          <div
+            className="user-kpi-card"
+            style={{
+              '--card-accent': '#2563EB',
+              '--card-glow': 'rgba(37, 99, 235, 0.2)',
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255, 255, 255, 0.07)' : 'rgba(11, 31, 77, 0.08)',
+              minHeight: 115,
             }}
-            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
-            <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Total Content</Text>} 
-              value={stats.total} 
-              prefix={<FileTextOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#4a7cff' }} />} 
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#111827' }} 
-            />
-          </Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Total Stories
+              </span>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(37, 99, 235, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563EB' }}>
+                <FileTextOutlined style={{ fontSize: 16 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>
+              <span style={{ fontSize: '1.65rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0B1F4D', letterSpacing: '-0.02em' }}>
+                {stats.total}
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563EB', background: 'rgba(37, 99, 235, 0.1)', padding: '2px 8px', borderRadius: 12 }}>
+                Portfolio
+              </span>
+            </div>
+          </div>
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              borderRadius: 12, 
-              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
-              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              background: darkMode ? '#1e293b' : '#FFFFFF'
+
+        {/* Published & Live */}
+        <Col xs={12} sm={12} md={6}>
+          <div
+            className="user-kpi-card"
+            style={{
+              '--card-accent': '#10B981',
+              '--card-glow': 'rgba(16, 185, 129, 0.2)',
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255, 255, 255, 0.07)' : 'rgba(11, 31, 77, 0.08)',
+              minHeight: 115,
             }}
-            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
-            <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Drafts</Text>} 
-              value={stats.draft} 
-              prefix={<FileTextOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#8c8c8c' }} />} 
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c' }} 
-            />
-          </Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Live & Published
+              </span>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(16, 185, 129, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981' }}>
+                <CheckCircleOutlined style={{ fontSize: 16 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>
+              <span style={{ fontSize: '1.65rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0B1F4D', letterSpacing: '-0.02em' }}>
+                {stats.published}
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#10B981', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: 12 }}>
+                Active Live
+              </span>
+            </div>
+          </div>
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              borderRadius: 12, 
-              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
-              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              background: darkMode ? '#1e293b' : '#FFFFFF'
+
+        {/* Pending Review */}
+        <Col xs={12} sm={12} md={6}>
+          <div
+            className="user-kpi-card"
+            style={{
+              '--card-accent': '#F59E0B',
+              '--card-glow': 'rgba(245, 158, 11, 0.2)',
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255, 255, 255, 0.07)' : 'rgba(11, 31, 77, 0.08)',
+              minHeight: 115,
             }}
-            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
-            <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Pending Review</Text>} 
-              value={stats.pending} 
-              prefix={<ClockCircleOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#faad14' }} />} 
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#faad14' }} 
-            />
-          </Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                In Editorial Review
+              </span>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(245, 158, 11, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B' }}>
+                <ClockCircleOutlined style={{ fontSize: 16 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>
+              <span style={{ fontSize: '1.65rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0B1F4D', letterSpacing: '-0.02em' }}>
+                {stats.pending}
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#F59E0B', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: 12 }}>
+                Queued
+              </span>
+            </div>
+          </div>
         </Col>
-        <Col xs={12} sm={12} md={6} lg={6}>
-          <Card 
-            style={{ 
-              borderRadius: 12, 
-              border: darkMode ? '1px solid #334155' : '1px solid #E5E7EB',
-              boxShadow: darkMode ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
-              height: '100%',
-              background: darkMode ? '#1e293b' : '#FFFFFF'
+
+        {/* Drafts & Revisions */}
+        <Col xs={12} sm={12} md={6}>
+          <div
+            className="user-kpi-card"
+            style={{
+              '--card-accent': '#8B5CF6',
+              '--card-glow': 'rgba(139, 92, 246, 0.2)',
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255, 255, 255, 0.07)' : 'rgba(11, 31, 77, 0.08)',
+              minHeight: 115,
             }}
-            bodyStyle={{ padding: isMobile ? '16px 12px' : '20px' }}
           >
-            <Statistic 
-              title={<Text style={{ fontSize: isMobile ? 11 : 13, color: darkMode ? '#94a3b8' : '#6B7280', fontWeight: 500 }}>Published</Text>} 
-              value={stats.published} 
-              prefix={<CheckCircleOutlined style={{ fontSize: isMobile ? 14 : 16, color: '#52c41a' }} />} 
-              valueStyle={{ fontSize: isMobile ? 20 : 24, fontWeight: 600, color: '#52c41a' }} 
-            />
-          </Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Drafts & WIP
+              </span>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(139, 92, 246, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B5CF6' }}>
+                <EditOutlined style={{ fontSize: 16 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 10 }}>
+              <span style={{ fontSize: '1.65rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0B1F4D', letterSpacing: '-0.02em' }}>
+                {stats.draft}
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#8B5CF6', background: 'rgba(139, 92, 246, 0.1)', padding: '2px 8px', borderRadius: 12 }}>
+                Editing
+              </span>
+            </div>
+          </div>
         </Col>
       </Row>
 
-      {/* Tabs */}
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        style={{ marginBottom: isMobile ? 16 : 20 }}
-        className="dashboard-tabs"
-        size={isMobile ? 'small' : 'middle'}
-      />
+      {/* ── QUICK ACTION LAUNCHPAD ── */}
+      <Row gutter={[14, 14]} style={{ marginBottom: 24 }} className="u-stagger-3">
+        <Col xs={12} sm={6}>
+          <div
+            className="user-quick-tile"
+            onClick={() => navigate('/user-dashboard/create-post')}
+            style={{
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255,255,255,0.07)' : '#E2E8F0',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(247, 148, 29, 0.12)', color: '#F7941D', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <PlusOutlined style={{ fontSize: 14 }} />
+              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0B1F4D' }}>
+                Create Post
+              </span>
+            </div>
+            <ArrowRightOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 12 }} />
+          </div>
+        </Col>
 
-      {/* Content Grid */}
-      {loading ? (
-        <div style={{ padding: isMobile ? '40px 0' : '48px 0', textAlign: 'center' }}>
-          <Spin size="large" />
-        </div>
-      ) : filteredContents.length === 0 ? (
-        <Empty
-          description={activeTab === 'all' ? 'No content yet' : `No ${CONTENT_TABS.find(t => t.key === activeTab)?.label.toLowerCase() || 'content'} yet`}
-          style={{ padding: isMobile ? '40px 0' : '48px 0' }}
-        >
-          <Button type="primary" onClick={() => navigate('/user-dashboard/create-post')}>
-            Create Your First Content
-          </Button>
-        </Empty>
-      ) : (
-        <>
-          <Row gutter={[isMobile ? 12 : 16, isMobile ? 12 : 16]}>
-            {visibleItems.map(article => (
-              <ArticleCard
-                key={article.id}
-                article={article}
-                submitting={submitting}
-                onSubmit={handleSubmitForReview}
-                navigate={navigate}
-                darkMode={darkMode}
-              />
-            ))}
-          </Row>
-          
-          {/* Show More / Pagination */}
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column',
-            alignItems: 'center', 
-            marginTop: isMobile ? 20 : 32,
-            padding: isMobile ? '12px 0' : '16px 0',
-            gap: isMobile ? 12 : 16
-          }}>
-            {hasMoreInPage && (
-              <Button
-                type="primary"
-                icon={<DownOutlined />}
-                onClick={handleShowMore}
+        <Col xs={12} sm={6}>
+          <div
+            className="user-quick-tile"
+            onClick={() => navigate('/user-dashboard/my-submissions')}
+            style={{
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255,255,255,0.07)' : '#E2E8F0',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <SendOutlined style={{ fontSize: 14 }} />
+              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0B1F4D' }}>
+                My Leads
+              </span>
+            </div>
+            <ArrowRightOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 12 }} />
+          </div>
+        </Col>
+
+        <Col xs={12} sm={6}>
+          <div
+            className="user-quick-tile"
+            onClick={() => navigate('/user-dashboard/media-library')}
+            style={{
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255,255,255,0.07)' : '#E2E8F0',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(37, 99, 235, 0.12)', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <AppstoreOutlined style={{ fontSize: 14 }} />
+              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0B1F4D' }}>
+                Media Library
+              </span>
+            </div>
+            <ArrowRightOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 12 }} />
+          </div>
+        </Col>
+
+        <Col xs={12} sm={6}>
+          <div
+            className="user-quick-tile"
+            onClick={() => navigate('/user-dashboard/analytics')}
+            style={{
+              background: D ? '#0F172A' : '#FFFFFF',
+              borderColor: D ? 'rgba(255,255,255,0.07)' : '#E2E8F0',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(139, 92, 246, 0.12)', color: '#8B5CF6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <LineChartOutlined style={{ fontSize: 14 }} />
+              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0B1F4D' }}>
+                Analytics
+              </span>
+            </div>
+            <ArrowRightOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 12 }} />
+          </div>
+        </Col>
+      </Row>
+
+      {/* ── TOOLBAR & TABS ── */}
+      <div
+        className="u-stagger-4"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
+        {/* Category Tabs */}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', overflowX: 'auto', paddingBottom: 4 }}>
+          {CONTENT_TABS.map(t => {
+            const isSelected = activeTab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => { setActiveTab(t.key); setVisibleCount(INITIAL_SHOW); }}
                 style={{
-                  borderRadius: 24,
-                  padding: isMobile ? '6px 16px' : '8px 32px',
-                  height: 'auto',
-                  minWidth: isMobile ? '140px' : '200px',
-                  fontSize: isMobile ? 13 : 14,
-                  background: '#4a7cff',
-                  borderColor: '#4a7cff'
+                  borderRadius: 10,
+                  padding: '6px 14px',
+                  fontSize: '0.78rem',
+                  fontWeight: isSelected ? 700 : 600,
+                  cursor: 'pointer',
+                  background: isSelected
+                    ? 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)'
+                    : (D ? 'rgba(255,255,255,0.05)' : '#F1F5F9'),
+                  color: isSelected ? '#F7941D' : (D ? '#94A3B8' : '#64748B'),
+                  boxShadow: isSelected ? '0 4px 12px rgba(11, 31, 77, 0.25)' : 'none',
+                  transition: 'all 0.18s ease',
+                  border: isSelected ? '1px solid rgba(247, 148, 29, 0.3)' : '1px solid transparent',
                 }}
               >
-                Show More ({visibleCount}/{currentPageItems.length})
-              </Button>
-            )}
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
 
-            {totalPages > 1 && !hasMoreInPage && (
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                gap: isMobile ? 8 : 16,
-                flexWrap: 'wrap',
-                justifyContent: 'center'
-              }}>
-                <Button
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  size={isMobile ? 'small' : 'middle'}
-                >
-                  Previous
-                </Button>
-                
-                <div style={{ display: 'flex', gap: isMobile ? 4 : 6 }}>
-                  {Array.from({ length: Math.min(totalPages, isMobile ? 3 : 5) }, (_, i) => {
-                    let pageNum;
-                    const maxVisible = isMobile ? 3 : 5;
-                    if (totalPages <= maxVisible) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 2) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 1) {
-                      pageNum = totalPages - maxVisible + 1 + i;
-                    } else {
-                      pageNum = currentPage - 1 + i;
-                    }
-                    
-                    if (pageNum > 0 && pageNum <= totalPages) {
-                      return (
-                        <Button
-                          key={pageNum}
-                          type={currentPage === pageNum ? 'primary' : 'default'}
-                          onClick={() => handlePageChange(pageNum)}
-                          size={isMobile ? 'small' : 'middle'}
-                          style={{ 
-                            borderRadius: 8,
-                            minWidth: isMobile ? 28 : 36
+        {/* Search input */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            borderRadius: 10,
+            padding: '4px 12px',
+            background: D ? '#0F172A' : '#FFFFFF',
+            border: `1px solid ${D ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+            width: 240,
+          }}
+        >
+          <SearchOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 13 }} />
+          <input
+            placeholder="Filter current view..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              outline: 'none',
+              fontSize: '0.78rem',
+              color: D ? '#F8FAFC' : '#0B1F4D',
+              width: '100%',
+              fontFamily: 'inherit',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* ── CONTENT GRID ── */}
+      {loading ? (
+        <div style={{ padding: '60px 0', textAlign: 'center' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: 12, color: D ? '#94A3B8' : '#64748B', fontSize: '0.84rem' }}>
+            Loading your content studio...
+          </div>
+        </div>
+      ) : filteredContents.length === 0 ? (
+        <div
+          style={{
+            padding: '60px 24px',
+            textAlign: 'center',
+            background: D ? '#0F172A' : '#FFFFFF',
+            borderRadius: 16,
+            border: `1px solid ${D ? 'rgba(255,255,255,0.07)' : '#E2E8F0'}`,
+          }}
+        >
+          <Empty
+            description={
+              <div>
+                <div style={{ fontSize: '0.94rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0B1F4D', marginBottom: 4 }}>
+                  No Stories Found
+                </div>
+                <div style={{ fontSize: '0.8rem', color: D ? '#94A3B8' : '#64748B' }}>
+                  {searchQuery ? 'Try adjusting your search criteria.' : 'Create your first piece of content to share with our audience!'}
+                </div>
+              </div>
+            }
+          >
+            <button
+              className="user-btn-primary"
+              onClick={() => navigate('/user-dashboard/create-post')}
+              style={{ marginTop: 14 }}
+            >
+              <PlusOutlined />
+              <span>Create Your First Story</span>
+            </button>
+          </Empty>
+        </div>
+      ) : (
+        <div className="u-stagger-5">
+          <Row gutter={[18, 18]}>
+            {visibleItems.map((article) => {
+              const status = statusConfig[article.status] || { color: '#64748B', bg: 'rgba(100, 116, 139, 0.12)', text: article.status };
+              const tags = parseTags(article.tags);
+              const canEdit = article.status === 'draft' || article.status === 'changes_requested';
+
+              return (
+                <Col xs={24} sm={12} md={8} lg={6} key={article.id}>
+                  <div
+                    className="user-story-card"
+                    style={{
+                      background: D ? '#0F172A' : '#FFFFFF',
+                      borderColor: D ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => navigate(`/${article.content_type || 'article'}-preview/${article.id}`)}
+                  >
+                    {/* Thumbnail Zone */}
+                    <div style={{ position: 'relative', height: 170, overflow: 'hidden', background: D ? '#1E293B' : '#F1F5F9' }}>
+                      {article.banner_image ? (
+                        <img
+                          src={`/uploads/${article.banner_image}`}
+                          alt={article.title}
+                          className="user-story-thumb"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: D ? 'linear-gradient(135deg, #0B1F4D, #0F172A)' : 'linear-gradient(135deg, #EEF2FF, #F8FAFC)' }}>
+                          <FileTextOutlined style={{ fontSize: 36, color: D ? '#3B82F6' : '#94A3B8', opacity: 0.6 }} />
+                        </div>
+                      )}
+
+                      {/* Status Badge */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 10,
+                          left: 10,
+                          background: D ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.94)',
+                          backdropFilter: 'blur(8px)',
+                          borderRadius: 20,
+                          padding: '3px 10px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          border: `1px solid ${status.color}30`,
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: status.color }} />
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: status.color }}>
+                          {status.text}
+                        </span>
+                      </div>
+
+                      {/* Content Type Pill on Right */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 10,
+                          right: 10,
+                          background: 'rgba(11, 31, 77, 0.85)',
+                          color: '#F7941D',
+                          backdropFilter: 'blur(8px)',
+                          borderRadius: 6,
+                          padding: '2px 8px',
+                          fontSize: '0.62rem',
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                          border: '1px solid rgba(247, 148, 29, 0.3)',
+                        }}
+                      >
+                        {article.content_type || 'Article'}
+                      </div>
+                    </div>
+
+                    {/* Card Content Body */}
+                    <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
+                      <div>
+                        {/* Category Tag */}
+                        {article.category_name && (
+                          <span style={{
+                            fontSize: '0.66rem',
+                            fontWeight: 700,
+                            color: '#2563EB',
+                            background: 'rgba(37, 99, 235, 0.08)',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                            display: 'inline-block',
+                            marginBottom: 8,
+                          }}>
+                            {article.category_name}
+                          </span>
+                        )}
+
+                        {/* Title */}
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '0.88rem',
+                            color: D ? '#F8FAFC' : '#0B1F4D',
+                            lineHeight: 1.35,
+                            marginBottom: 8,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
                           }}
                         >
-                          {pageNum}
-                        </Button>
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
+                          {article.title || 'Untitled Story'}
+                        </div>
+                      </div>
 
-                <Button
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  size={isMobile ? 'small' : 'middle'}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+                      {/* Footer Info & Actions */}
+                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${D ? 'rgba(255,255,255,0.06)' : '#F1F5F9'}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CalendarOutlined />
+                            {article.created_at ? moment(article.created_at).format('MMM D, YYYY') : 'Recent'}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <EyeOutlined />
+                            {article.views_count || 0} views
+                          </span>
+                        </div>
 
-            {totalItems > 0 && (
-              <div style={{ 
-                fontSize: isMobile ? 11 : 13, 
-                color: darkMode ? '#64748b' : '#8c8c8c',
-                textAlign: 'center'
-              }}>
-                Showing {startIndex + 1}-{Math.min(startIndex + visibleCount, endIndex)} of {totalItems} items
-                {currentPage < totalPages && ` (Page ${currentPage} of ${totalPages})`}
-              </div>
-            )}
-          </div>
-        </>
+                        {/* Quick Action Buttons */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); navigate(`/${article.content_type || 'article'}-preview/${article.id}`); }}
+                            style={{
+                              flex: 1,
+                              background: D ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
+                              border: `1px solid ${D ? 'rgba(255,255,255,0.08)' : '#E2E8F0'}`,
+                              color: D ? '#94A3B8' : '#475569',
+                              padding: '5px 8px',
+                              borderRadius: 8,
+                              fontSize: '0.72rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <EyeOutlined />
+                            <span>Preview</span>
+                          </button>
+
+                          {canEdit && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); navigate(`/user-dashboard/create-post?edit=${article.id}`); }}
+                              style={{
+                                background: 'rgba(37, 99, 235, 0.08)',
+                                border: '1px solid rgba(37, 99, 235, 0.2)',
+                                color: '#2563EB',
+                                padding: '5px 8px',
+                                borderRadius: 8,
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <EditOutlined />
+                              <span>Edit</span>
+                            </button>
+                          )}
+
+                          {article.status === 'draft' && (
+                            <button
+                              onClick={(e) => handleSubmitForReview(e, article.id)}
+                              disabled={submitting === article.id}
+                              style={{
+                                background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)',
+                                border: '1px solid rgba(247, 148, 29, 0.35)',
+                                color: '#FFFFFF',
+                                padding: '5px 10px',
+                                borderRadius: 8,
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <SendOutlined />
+                              <span>Submit</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={(e) => handleDelete(e, article.id)}
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: D ? '#64748B' : '#94A3B8',
+                              padding: '5px',
+                              cursor: 'pointer',
+                              borderRadius: 6,
+                            }}
+                            title="Delete Story"
+                          >
+                            <DeleteOutlined style={{ fontSize: 13 }} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+              );
+            })}
+          </Row>
+
+          {/* Show More Button */}
+          {hasMore && (
+            <div style={{ textAlign: 'center', marginTop: 28, marginBottom: 16 }}>
+              <button
+                onClick={() => setVisibleCount(prev => prev + LOAD_MORE_COUNT)}
+                style={{
+                  background: D ? '#0F172A' : '#FFFFFF',
+                  border: `1px solid ${D ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+                  color: D ? '#F8FAFC' : '#0B1F4D',
+                  padding: '9px 24px',
+                  borderRadius: 24,
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  boxShadow: D ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 10px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <DownOutlined />
+                <span>Show More ({visibleItems.length} of {filteredContents.length})</span>
+              </button>
+            </div>
+          )}
+        </div>
       )}
-      
-      <style>{`
-        .dashboard-tabs .ant-tabs-nav {
-          overflow-x: auto !important;
-          overflow-y: hidden !important;
-          white-space: nowrap !important;
-          -webkit-overflow-scrolling: touch;
-        }
-        
-        .dashboard-tabs .ant-tabs-nav::-webkit-scrollbar {
-          height: 4px;
-        }
-        
-        .dashboard-tabs .ant-tabs-nav::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 4px;
-        }
-        
-        .dashboard-tabs .ant-tabs-nav::-webkit-scrollbar-thumb {
-          background: #d1d5db;
-          border-radius: 4px;
-        }
-        
-        .dashboard-tabs .ant-tabs-tab {
-          flex-shrink: 0 !important;
-        }
-
-        .user-dashboard-scroll {
-          scrollbar-width: thin;
-          scrollbar-color: #636363 ${darkMode ? '#1e293b' : '#f0f0f0'};
-        }
-        .user-dashboard-scroll::-webkit-scrollbar {
-          width: 6px !important;
-          display: block !important;
-        }
-        .user-dashboard-scroll::-webkit-scrollbar-track {
-          background: ${darkMode ? '#1e293b' : '#f0f0f0'};
-          border-radius: 4px;
-        }
-        .user-dashboard-scroll::-webkit-scrollbar-thumb {
-          background: #636363;
-          border-radius: 4px;
-        }
-        .user-dashboard-scroll::-webkit-scrollbar-thumb:hover {
-          background: #4a4a4a;
-        }
-
-        @media (max-width: 768px) {
-          .dashboard-tabs .ant-tabs-tab {
-            padding: 8px 12px !important;
-            font-size: 12px !important;
-          }
-        }
-
-        @media (min-width: 1200px) {
-          .ant-row > .ant-col {
-            flex: 0 0 25% !important;
-            max-width: 25% !important;
-          }
-        }
-
-        @media (min-width: 992px) and (max-width: 1199px) {
-          .ant-row > .ant-col {
-            flex: 0 0 33.33% !important;
-            max-width: 33.33% !important;
-          }
-        }
-
-        @media (min-width: 768px) and (max-width: 991px) {
-          .ant-row > .ant-col {
-            flex: 0 0 50% !important;
-            max-width: 50% !important;
-          }
-        }
-
-        @media (max-width: 767px) {
-          .ant-row > .ant-col {
-            flex: 0 0 100% !important;
-            max-width: 100% !important;
-          }
-        }
-
-        .ant-card-hoverable:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
-        }
-      `}</style>
-      </div>
-    </ConfigProvider>
+    </div>
   );
 };
 

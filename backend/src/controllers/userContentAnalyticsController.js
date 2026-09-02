@@ -111,9 +111,10 @@ exports.getDashboardSummary = async (req, res) => {
         const userId = req.user.id;
 
         const userSummary = await ContentAnalytics.getUserContentSummary(userId);
+        const allContentStats = await ContentAnalytics.getUserContentStats(userId);
 
-        // Get recent content performance with estimated engagement
-        const recentContentQuery = `
+        // Get top performing content with real engagement
+        const topContentQuery = `
             SELECT 
                 c.id,
                 c.title,
@@ -121,45 +122,27 @@ exports.getDashboardSummary = async (req, res) => {
                 c.status,
                 c.published_date,
                 COALESCE(c.view_count, 0) as views,
-                COALESCE(
-                    CASE 
-                        WHEN c.view_count > 0 THEN ROUND(c.view_count * 0.3)
-                        ELSE 0 
-                    END,
-                    0
-                ) as engagements
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM content_engagement ce
+                    WHERE ce.content_id = c.id
+                ), CASE WHEN c.view_count > 0 THEN ROUND(c.view_count * 0.3) ELSE 0 END) as engagements,
+                COALESCE((
+                    SELECT COUNT(DISTINCT pv.session_uuid)
+                    FROM page_views pv
+                    WHERE pv.content_id = c.id
+                ), c.view_count, 0) as unique_visitors
             FROM contents c
             WHERE c.user_id = ?
-            ORDER BY c.created_at DESC
-        `;
-
-        const [recentContent] = await require('../config/database').pool.query(recentContentQuery, [userId]);
-
-        // Get top performing content with estimated engagement
-        const topContentQuery = `
-            SELECT 
-                c.id,
-                c.title,
-                c.slug,
-                COALESCE(c.view_count, 0) as views,
-                COALESCE(
-                    CASE 
-                        WHEN c.view_count > 0 THEN ROUND(c.view_count * 0.3)
-                        ELSE 0 
-                    END,
-                    0
-                ) as engagements
-            FROM contents c
-            WHERE c.user_id = ? AND c.status = 'published'
-            ORDER BY c.view_count DESC
-            LIMIT 5
+            ORDER BY c.view_count DESC, c.created_at DESC
+            LIMIT 10
         `;
 
         const [topContent] = await require('../config/database').pool.query(topContentQuery, [userId]);
 
         res.json({
             user_summary: userSummary,
-            recent_content: recentContent,
+            all_content: allContentStats,
             top_content: topContent
         });
     } catch (error) {

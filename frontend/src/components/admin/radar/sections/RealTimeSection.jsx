@@ -3,7 +3,41 @@ import AnalyticsGlobe from '../globe/AnalyticsGlobe';
 import GeographicAnalyticsSummary from '../globe/GeographicAnalyticsSummary';
 import LiveSignalsFeed from '../LiveSignalsFeed';
 import WebsitePulseBar from '../WebsitePulseBar';
+import GlobalActivitySection from '../GlobalActivitySection';
 import { geographicAnalyticsService } from '../../../../services/geographicAnalyticsService';
+
+class GlobeErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error, info) {
+    console.warn('AnalyticsGlobe fallback active:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="radar-glass-panel p-6 flex flex-col items-center justify-center min-h-[480px] text-center" style={{
+          background: this.props.darkMode ? 'radial-gradient(circle at center, #0B1E3B 0%, #050D1A 100%)' : '#F8FAFC',
+          borderRadius: 16,
+          border: this.props.darkMode ? '1px solid rgba(30, 58, 102, 0.6)' : '1px solid rgba(226, 232, 240, 0.9)'
+        }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🌐</div>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, color: this.props.darkMode ? '#F1F5F9' : '#0B1F4D', margin: 0 }}>
+            Live Global Radar Map
+          </h3>
+          <p style={{ fontSize: '0.8rem', color: this.props.darkMode ? '#94A3B8' : '#64748B', maxWidth: 380, marginTop: 6 }}>
+            Live reader sessions and real-time conversion signals are streaming via the live feed panel.
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const RealTimeSection = ({
   darkMode,
@@ -146,17 +180,19 @@ const RealTimeSection = ({
           }
         `}</style>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-          <AnalyticsGlobe
-            globalData={globalData}
-            selectedRegion={selectedRegion}
-            selectedCountry={selectedCountry}
-            selectedCity={selectedCity}
-            onSelectRegion={handleSelectRegion}
-            onSelectCountry={handleSelectCountry}
-            onSelectCity={handleSelectCity}
-            onClearSelection={handleClearSelection}
-            darkMode={darkMode}
-          />
+          <GlobeErrorBoundary darkMode={darkMode}>
+            <AnalyticsGlobe
+              globalData={globalData}
+              selectedRegion={selectedRegion}
+              selectedCountry={selectedCountry}
+              selectedCity={selectedCity}
+              onSelectRegion={handleSelectRegion}
+              onSelectCountry={handleSelectCountry}
+              onSelectCity={handleSelectCity}
+              onClearSelection={handleClearSelection}
+              darkMode={darkMode}
+            />
+          </GlobeErrorBoundary>
           <LiveSignalsFeed
             recentSessions={recentSessions}
             ctaClicks={ctaClicks}
@@ -176,6 +212,14 @@ const RealTimeSection = ({
         conversionsCount={totalConversions}
         searchesCount={searchesCount}
         bounceRate={bounceRate}
+        isLoading={isLoading}
+        darkMode={darkMode}
+      />
+
+      {/* Global Activity Telemetry — Country-level distribution & engagement */}
+      <GlobalActivitySection
+        countryData={countryAnalytics}
+        totalSessions={totalSessions}
         isLoading={isLoading}
         darkMode={darkMode}
       />

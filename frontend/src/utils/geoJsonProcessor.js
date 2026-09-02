@@ -42,93 +42,109 @@ export function decodeTopology(topology) {
  * Generates high-resolution 2D Canvas texture of Earth with country landmasses & borders
  */
 export function createWorldTexture(decodedArcs = null) {
-  const width = 2048;
-  const height = 1024;
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
+  try {
+    const width = 2048;
+    const height = 1024;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return new THREE.Texture();
 
-  // 1. Deep Ocean Background
-  ctx.fillStyle = '#061124';
-  ctx.fillRect(0, 0, width, height);
+    // 1. Deep Ocean Background
+    ctx.fillStyle = '#061124';
+    ctx.fillRect(0, 0, width, height);
 
-  // 2. Latitude / Longitude Grid
-  ctx.strokeStyle = 'rgba(10, 174, 239, 0.08)';
-  ctx.lineWidth = 1;
-  for (let lat = -80; lat <= 80; lat += 20) {
-    const y = ((90 - lat) / 180) * height;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-  for (let lon = -180; lon <= 180; lon += 30) {
-    const x = ((lon + 180) / 360) * width;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-
-  // 3. Draw All Country & Continent Polygons from TopoJSON
-  const arcs = decodedArcs || decodeTopology(worldTopology);
-  const objects = worldTopology.objects?.countries?.geometries || [];
-
-  // Fill Country Landmasses
-  ctx.fillStyle = '#0E2442';
-  objects.forEach(geom => {
-    const polygons = geom.type === 'MultiPolygon' ? geom.arcs : [geom.arcs];
-    polygons.forEach(polygon => {
+    // 2. Latitude / Longitude Grid
+    ctx.strokeStyle = 'rgba(10, 174, 239, 0.08)';
+    ctx.lineWidth = 1;
+    for (let lat = -80; lat <= 80; lat += 20) {
+      const y = ((90 - lat) / 180) * height;
       ctx.beginPath();
-      polygon.forEach(ring => {
-        let first = true;
-        ring.forEach(arcIndex => {
-          const isReversed = arcIndex < 0;
-          const actualIndex = isReversed ? ~arcIndex : arcIndex;
-          const arc = arcs[actualIndex];
-          if (!arc) return;
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    for (let lon = -180; lon <= 180; lon += 30) {
+      const x = ((lon + 180) / 360) * width;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
 
-          const points = isReversed ? [...arc].reverse() : arc;
-          points.forEach(([lon, lat]) => {
-            const x = ((lon + 180) / 360) * width;
-            const y = ((90 - lat) / 180) * height;
-            if (first) {
-              ctx.moveTo(x, y);
-              first = false;
-            } else {
-              ctx.lineTo(x, y);
-            }
+    // 3. Draw All Country & Continent Polygons from TopoJSON
+    const arcs = decodedArcs || decodeTopology(worldTopology);
+    const objects = worldTopology?.objects?.countries?.geometries || [];
+
+    // Fill Country Landmasses
+    ctx.fillStyle = '#0E2442';
+    if (Array.isArray(objects)) {
+      objects.forEach(geom => {
+        if (!geom || !geom.arcs) return;
+        const polygons = geom.type === 'MultiPolygon' ? geom.arcs : [geom.arcs];
+        if (!Array.isArray(polygons)) return;
+
+        polygons.forEach(polygon => {
+          if (!Array.isArray(polygon)) return;
+          ctx.beginPath();
+          polygon.forEach(ring => {
+            if (!Array.isArray(ring)) return;
+            let first = true;
+            ring.forEach(arcIndex => {
+              const isReversed = arcIndex < 0;
+              const actualIndex = isReversed ? ~arcIndex : arcIndex;
+              const arc = arcs?.[actualIndex];
+              if (!Array.isArray(arc)) return;
+
+              const points = isReversed ? [...arc].reverse() : arc;
+              points.forEach(([lon, lat]) => {
+                const x = ((lon + 180) / 360) * width;
+                const y = ((90 - lat) / 180) * height;
+                if (first) {
+                  ctx.moveTo(x, y);
+                  first = false;
+                } else {
+                  ctx.lineTo(x, y);
+                }
+              });
+            });
           });
+          ctx.closePath();
+          ctx.fill();
         });
       });
-      ctx.closePath();
-      ctx.fill();
-    });
-  });
+    }
 
-  // Stroke Country Outlines in Glowing Cyan
-  ctx.strokeStyle = '#0AAEEF';
-  ctx.lineWidth = 1.4;
-  ctx.shadowColor = '#0AAEEF';
-  ctx.shadowBlur = 4;
+    // Stroke Country Outlines in Glowing Cyan
+    ctx.strokeStyle = '#0AAEEF';
+    ctx.lineWidth = 1.4;
+    ctx.shadowColor = '#0AAEEF';
+    ctx.shadowBlur = 4;
 
-  arcs.forEach(arc => {
-    ctx.beginPath();
-    arc.forEach(([lon, lat], i) => {
-      const x = ((lon + 180) / 360) * width;
-      const y = ((90 - lat) / 180) * height;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  });
-  ctx.shadowBlur = 0;
+    if (Array.isArray(arcs)) {
+      arcs.forEach(arc => {
+        if (!Array.isArray(arc)) return;
+        ctx.beginPath();
+        arc.forEach(([lon, lat], i) => {
+          const x = ((lon + 180) / 360) * width;
+          const y = ((90 - lat) / 180) * height;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      });
+    }
+    ctx.shadowBlur = 0;
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.ClampToEdgeWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  return texture;
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    return texture;
+  } catch (err) {
+    console.error('Error creating world texture:', err);
+    return new THREE.Texture();
+  }
 }
 
 /**
@@ -139,28 +155,32 @@ export function extractWorldBoundaries(radius = 100) {
     const decodedArcs = decodeTopology(worldTopology);
     const lineVertices = [];
 
-    decodedArcs.forEach(arc => {
-      for (let i = 0; i < arc.length - 1; i++) {
-        const p1 = arc[i];     // [lon, lat]
-        const p2 = arc[i + 1]; // [lon, lat]
+    if (Array.isArray(decodedArcs)) {
+      decodedArcs.forEach(arc => {
+        if (!Array.isArray(arc) || arc.length < 2) return;
+        for (let i = 0; i < arc.length - 1; i++) {
+          const p1 = arc[i];     // [lon, lat]
+          const p2 = arc[i + 1]; // [lon, lat]
+          if (!p1 || !p2) continue;
 
-        // Interpolate along the spherical edge
-        const steps = 3;
-        for (let s = 0; s < steps; s++) {
-          const t1 = s / steps;
-          const t2 = (s + 1) / steps;
-          const lon1 = p1[0] + (p2[0] - p1[0]) * t1;
-          const lat1 = p1[1] + (p2[1] - p1[1]) * t1;
-          const lon2 = p1[0] + (p2[0] - p1[0]) * t2;
-          const lat2 = p1[1] + (p2[1] - p1[1]) * t2;
+          // Interpolate along the spherical edge
+          const steps = 3;
+          for (let s = 0; s < steps; s++) {
+            const t1 = s / steps;
+            const t2 = (s + 1) / steps;
+            const lon1 = p1[0] + (p2[0] - p1[0]) * t1;
+            const lat1 = p1[1] + (p2[1] - p1[1]) * t1;
+            const lon2 = p1[0] + (p2[0] - p1[0]) * t2;
+            const lat2 = p1[1] + (p2[1] - p1[1]) * t2;
 
-          const v1 = latLonToVector3(lat1, lon1, radius * 1.008);
-          const v2 = latLonToVector3(lat2, lon2, radius * 1.008);
+            const v1 = latLonToVector3(lat1, lon1, radius * 1.008);
+            const v2 = latLonToVector3(lat2, lon2, radius * 1.008);
 
-          lineVertices.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+            lineVertices.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z);
+          }
         }
-      }
-    });
+      });
+    }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(

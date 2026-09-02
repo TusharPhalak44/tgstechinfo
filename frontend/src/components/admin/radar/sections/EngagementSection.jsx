@@ -10,7 +10,8 @@ import {
 } from '@ant-design/icons';
 
 const MetricGauge = ({ label, value, unit, color, darkMode, desc, icon }) => {
-  const angle = (Math.min(100, Math.max(0, value)) / 100) * 180;
+  const numVal = typeof value === 'number' ? value : parseFloat(value) || 0;
+  const angle = (Math.min(100, Math.max(0, numVal)) / 100) * 180;
   const r = 52, cx = 70, cy = 68;
   const startAngle = Math.PI;
   const endAngle   = startAngle + (angle * Math.PI) / 180;
@@ -31,12 +32,12 @@ const MetricGauge = ({ label, value, unit, color, darkMode, desc, icon }) => {
         <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
           fill="none" stroke={darkMode ? '#1E293B' : '#E2E8F0'}
           strokeWidth="8" strokeLinecap="round" />
-        {value > 0 && (
+        {numVal > 0 && (
           <path d={`M ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`}
             fill="none" stroke={color} strokeWidth="8" strokeLinecap="round"
             style={{ transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }} />
         )}
-        <text x={cx} y={cy + 20} textAnchor="middle" fill={color}
+        <text x={cx} y={cy + 20} textAnchor="middle" fill={numVal > 0 ? color : (darkMode ? '#64748B' : '#94A3B8')}
           fontSize="18" fontWeight="800" fontFamily="'Plus Jakarta Sans',sans-serif">
           {value}{unit}
         </text>
@@ -58,10 +59,16 @@ const MetricGauge = ({ label, value, unit, color, darkMode, desc, icon }) => {
   );
 };
 
-const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
-  const [sessions,  setSessions]  = useState([]);
-  const [overview,  setOverview]  = useState(null);
-  const [loading,   setLoading]   = useState(true);
+const EngagementSection = ({
+  darkMode = true,
+  recentSessions = [],
+  sessionAnalytics = {},
+  overviewData = null,
+  timeRange = '7d'
+}) => {
+  const [fetchedSessions, setFetchedSessions] = useState([]);
+  const [fetchedOverview, setFetchedOverview] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // ── Build date query string ──────────────────────────────────────────────
   const buildDateQuery = useCallback(() => {
@@ -76,12 +83,10 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
     return `start_date=${s}&end_date=${e}`;
   }, [timeRange]);
 
-  // ── Fetch both sessions + overview on timeRange change ───────────────────
+  // ── Sync with live API when timeRange changes ───────────────────────────
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setSessions([]);
-    setOverview(null);
 
     const q = buildDateQuery();
 
@@ -91,69 +96,58 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
     ]).then(([sessRes, ovRes]) => {
       if (cancelled) return;
 
-      // Sessions — API returns { analytics, recentSessions }
       if (sessRes.status === 'fulfilled' && sessRes.value?.data) {
         const d = sessRes.value.data;
-        setSessions(d.recentSessions || d.sessions || []);
+        setFetchedSessions(d.recentSessions || d.sessions || []);
       }
 
-      // Overview — API returns { sessionAnalytics, scrollDepth, avgReadTime, ... }
       if (ovRes.status === 'fulfilled' && ovRes.value?.data) {
-        setOverview(ovRes.value.data);
+        setFetchedOverview(ovRes.value.data);
       }
 
       setLoading(false);
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
   }, [timeRange, buildDateQuery]);
 
-  // ── Derived metrics from overview API ───────────────────────────────────
-  const sessionAnalytics = overview?.sessionAnalytics || {};
-  const bounceRate    = sessionAnalytics.bounceRate    ?? 28;
-  const avgPagesAPI   = sessionAnalytics.avgPagesPerSession ?? 0;
-  const scrollDepthAPI = overview?.scrollDepth ?? 0;
+  // Consolidate live sessions
+  const sessions = fetchedSessions.length > 0 ? fetchedSessions : recentSessions;
+  const overview = fetchedOverview || overviewData;
+  const currentSessionAnalytics = overview?.sessionAnalytics || sessionAnalytics || {};
 
-  const engagementScore = Math.max(0, Math.min(100, Math.round(100 - bounceRate * 0.8)));
+  const totalCount = sessions.length;
+  const bounceRate = Number(currentSessionAnalytics.bounceRate ?? (totalCount > 0 ? Math.round((sessions.filter(s => (s.total_pages_visited || 1) === 1).length / totalCount) * 100) : 0));
 
-  // Pages/session — prefer live sessions calc, fallback to API
-  const avgPages = sessions.length > 0
-    ? Math.max(1, Math.round(
-        sessions.reduce((s, r) => s + (r.total_pages_visited || 1), 0) / sessions.length
-      ))
-    : (avgPagesAPI || 3);
+  // 1. Engagement Score: 100 - (bounceRate * 0.8)
+  const engagementScore = totalCount > 0 ? Math.max(0, Math.min(100, Math.round(100 - bounceRate * 0.8))) : 0;
 
-  // Returning rate — sessions with >1 page
-  const returningRate = sessions.length > 0
-    ? Math.round(
-        (sessions.filter(s => (s.total_pages_visited || 0) > 1).length / sessions.length) * 100
-      )
-    : 36;
+  // 2. Pages / Session: exact avg from sessions
+  const avgPages = totalCount > 0
+    ? Number((sessions.reduce((acc, r) => acc + (Number(r.total_pages_visited) || 1), 0) / totalCount).toFixed(1))
+    : (currentSessionAnalytics.avgPagesPerSession || 0);
 
-  // Scroll depth — from API content_engagement table, fallback estimate
-  const scrollDepth = scrollDepthAPI > 0
-    ? Math.round(scrollDepthAPI)
+  // 3. Returning Rate: % of sessions with >1 page visited
+  const returningRate = totalCount > 0
+    ? Math.round((sessions.filter(s => (Number(s.total_pages_visited) || 0) > 1).length / totalCount) * 100)
+    : 0;
+
+  // 4. Scroll Depth from overview data or calculated from real session durations
+  const scrollDepth = overview?.scrollDepth && Number(overview.scrollDepth) > 0
+    ? Math.round(Number(overview.scrollDepth))
     : (() => {
-        if (sessions.length === 0) return 62;
-        const avgDur = sessions.reduce((s, r) => s + (r.total_session_duration || 0), 0) / sessions.length;
-        return Math.min(95, Math.max(10, Math.round(40 + (avgDur / 600) * 50)));
+        if (totalCount === 0) return 0;
+        const avgDur = sessions.reduce((acc, r) => acc + (Number(r.total_session_duration) || 0), 0) / totalCount;
+        return Math.min(95, Math.max(5, Math.round(25 + (avgDur / 300) * 50)));
       })();
 
-  // ── Duration buckets ─────────────────────────────────────────────────────
+  // ── Duration Buckets strictly from real session data ──────────────────────
   const durationBuckets = useMemo(() => {
-    const FALLBACK = [
-      { label: '0–10 seconds',  pct: 18, color: '#EF4444' },
-      { label: '10–30 seconds', pct: 14, color: '#F59E0B' },
-      { label: '30s – 1 min',   pct: 16, color: '#06B6D4' },
-      { label: '1–3 minutes',   pct: 24, color: '#8B5CF6' },
-      { label: '3–10 minutes',  pct: 18, color: '#10B981' },
-      { label: '10+ minutes',   pct: 10, color: '#0AAEEF' },
-    ];
-    if (sessions.length === 0) return FALLBACK;
-
     const b = [0, 0, 0, 0, 0, 0];
     sessions.forEach(s => {
-      const sec = s.total_session_duration || 0;
+      const sec = Number(s.total_session_duration) || 0;
       if      (sec <= 10)  b[0]++;
       else if (sec <= 30)  b[1]++;
       else if (sec <= 60)  b[2]++;
@@ -161,40 +155,37 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
       else if (sec <= 600) b[4]++;
       else                 b[5]++;
     });
+
     const total = sessions.length;
-    const pct   = v => Math.round((v / total) * 100);
+    const pct = v => (total > 0 ? Math.round((v / total) * 100) : 0);
+
     return [
-      { label: '0–10 seconds',  pct: pct(b[0]), color: '#EF4444' },
-      { label: '10–30 seconds', pct: pct(b[1]), color: '#F59E0B' },
-      { label: '30s – 1 min',   pct: pct(b[2]), color: '#06B6D4' },
-      { label: '1–3 minutes',   pct: pct(b[3]), color: '#8B5CF6' },
-      { label: '3–10 minutes',  pct: pct(b[4]), color: '#10B981' },
-      { label: '10+ minutes',   pct: pct(b[5]), color: '#0AAEEF' },
+      { label: '0–10 seconds',  count: b[0], pct: pct(b[0]), color: '#EF4444' },
+      { label: '10–30 seconds', count: b[1], pct: pct(b[1]), color: '#F59E0B' },
+      { label: '30s – 1 min',   count: b[2], pct: pct(b[2]), color: '#06B6D4' },
+      { label: '1–3 minutes',   count: b[3], pct: pct(b[3]), color: '#8B5CF6' },
+      { label: '3–10 minutes',  count: b[4], pct: pct(b[4]), color: '#10B981' },
+      { label: '10+ minutes',   count: b[5], pct: pct(b[5]), color: '#0AAEEF' },
     ];
   }, [sessions]);
 
-  // ── Heatmap ──────────────────────────────────────────────────────────────
+  // ── Activity Heatmap strictly from real timestamps ────────────────────────
   const heatmapData = useMemo(() => {
-    const FALLBACK = [
-      { time: '00–04', mon:2,  tue:1,  wed:3,  thu:2,  fri:4,  sat:1,  sun:1  },
-      { time: '04–08', mon:5,  tue:4,  wed:6,  thu:5,  fri:7,  sat:3,  sun:2  },
-      { time: '08–12', mon:18, tue:22, wed:19, thu:21, fri:16, sat:10, sun:8  },
-      { time: '12–16', mon:24, tue:26, wed:28, thu:25, fri:22, sat:14, sun:11 },
-      { time: '16–20', mon:20, tue:18, wed:21, thu:19, fri:25, sat:16, sun:13 },
-      { time: '20–24', mon:12, tue:10, wed:11, thu:9,  fri:14, sat:10, sun:9  },
-    ];
-    if (sessions.length === 0) return FALLBACK;
-
     const dayKeys = ['sun','mon','tue','wed','thu','fri','sat'];
     const slots   = ['00–04','04–08','08–12','12–16','16–20','20–24'];
-    const grid    = slots.map(time => ({ time, mon:0,tue:0,wed:0,thu:0,fri:0,sat:0,sun:0 }));
+    const grid    = slots.map(time => ({ time, mon:0, tue:0, wed:0, thu:0, fri:0, sat:0, sun:0 }));
 
     sessions.forEach(s => {
-      const d       = new Date(s.session_start || Date.now());
+      if (!s.session_start) return;
+      const d       = new Date(s.session_start);
+      if (isNaN(d.getTime())) return;
       const slotIdx = Math.min(5, Math.floor(d.getHours() / 4));
       const dayKey  = dayKeys[d.getDay()];
-      if (grid[slotIdx] && dayKey in grid[slotIdx]) grid[slotIdx][dayKey]++;
+      if (grid[slotIdx] && dayKey in grid[slotIdx]) {
+        grid[slotIdx][dayKey]++;
+      }
     });
+
     return grid;
   }, [sessions]);
 
@@ -205,27 +196,29 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
   const rangeLabel = { '7d':'Last 7 Days','30d':'Last 30 Days','90d':'Last 90 Days','all':'All Time' }[timeRange] || timeRange;
 
   const metrics = [
-    { label:'Engagement Score', value:engagementScore, unit:'',  color:'#0AAEEF', desc:`Bounce rate: ${bounceRate}%`,       icon:<InteractionOutlined /> },
-    { label:'Pages / Session',  value:avgPages,         unit:'',  color:'#8B5CF6', desc:`Avg ${avgPages} pages viewed`,      icon:<ReadOutlined /> },
-    { label:'Scroll Depth',     value:scrollDepth,      unit:'%', color:'#10B981', desc:'Avg content scroll depth',          icon:<FieldTimeOutlined /> },
-    { label:'Returning Rate',   value:returningRate,    unit:'%', color:'#F59E0B', desc:'Multi-page sessions',               icon:<SyncOutlined /> },
+    { label:'Engagement Score', value:engagementScore, unit:'',  color:'#0AAEEF', desc: totalCount > 0 ? `Bounce rate: ${bounceRate}%` : 'No session data', icon:<InteractionOutlined /> },
+    { label:'Pages / Session',  value:avgPages,         unit:'',  color:'#8B5CF6', desc: totalCount > 0 ? `Avg ${avgPages} pages / visit` : 'No session data', icon:<ReadOutlined /> },
+    { label:'Scroll Depth',     value:scrollDepth,      unit:'%', color:'#10B981', desc: totalCount > 0 ? 'Avg content scroll depth' : 'No telemetry data', icon:<FieldTimeOutlined /> },
+    { label:'Returning Rate',   value:returningRate,    unit:'%', color:'#F59E0B', desc: totalCount > 0 ? 'Multi-page readers' : 'No session data', icon:<SyncOutlined /> },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
       {/* Time range + session count badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 600, color: darkMode ? '#94A3B8' : '#64748B' }}>
-        <span style={{
-          padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-          background: darkMode ? 'rgba(10,174,239,0.15)' : '#E0F2FE',
-          color: darkMode ? '#38BDF8' : '#0284C7',
-          border: `1px solid ${darkMode ? 'rgba(10,174,239,0.3)' : '#BAE6FD'}`,
-          fontFamily: 'monospace',
-        }}>
-          {rangeLabel}
-        </span>
-        <span>{loading ? 'Loading...' : `${sessions.length} sessions analyzed`}</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, fontSize: 12, fontWeight: 600, color: darkMode ? '#94A3B8' : '#64748B' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            padding: '3px 10px', borderRadius: 6, fontSize: 11, fontWeight: 700,
+            background: darkMode ? 'rgba(10,174,239,0.15)' : '#E0F2FE',
+            color: darkMode ? '#38BDF8' : '#0284C7',
+            border: `1px solid ${darkMode ? 'rgba(10,174,239,0.3)' : '#BAE6FD'}`,
+            fontFamily: 'monospace',
+          }}>
+            {rangeLabel}
+          </span>
+          <span>{loading ? 'Refreshing real-time telemetry...' : `${totalCount} live sessions analyzed`}</span>
+        </div>
       </div>
 
       {/* Gauge Row */}
@@ -247,11 +240,17 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
         }}>
           <div style={{
             fontSize: 13, fontWeight: 700, color: darkMode ? '#F8FAFC' : '#0F172A',
-            marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8,
+            marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <ClockCircleOutlined style={{ color: '#0AAEEF' }} />
-            <span>Session Duration Breakdown</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ClockCircleOutlined style={{ color: '#0AAEEF' }} />
+              <span>Session Duration Breakdown</span>
+            </div>
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: darkMode ? '#64748B' : '#94A3B8' }}>
+              {totalCount} Total
+            </span>
           </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {durationBuckets.map(b => (
               <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -268,16 +267,17 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
                 }}>
                   <div style={{
                     height: '100%',
-                    width: `${Math.round((b.pct / maxBucketPct) * 100)}%`,
+                    width: `${b.pct > 0 ? Math.round((b.pct / maxBucketPct) * 100) : 0}%`,
                     borderRadius: 3, background: b.color,
                     transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
                   }} />
                 </div>
                 <span style={{
                   fontFamily: 'monospace', fontSize: 11, fontWeight: 700,
-                  color: b.color, width: 36, textAlign: 'right',
+                  color: b.pct > 0 ? b.color : (darkMode ? '#64748B' : '#94A3B8'),
+                  width: 50, textAlign: 'right',
                 }}>
-                  {b.pct}%
+                  {b.pct}% ({b.count})
                 </span>
               </div>
             ))}
@@ -291,11 +291,17 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
         }}>
           <div style={{
             fontSize: 13, fontWeight: 700, color: darkMode ? '#F8FAFC' : '#0F172A',
-            marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8,
+            marginBottom: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <CalendarOutlined style={{ color: '#8B5CF6' }} />
-            <span>Activity Heatmap</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <CalendarOutlined style={{ color: '#8B5CF6' }} />
+              <span>Activity Heatmap</span>
+            </div>
+            <span style={{ fontSize: 11, fontFamily: 'monospace', color: darkMode ? '#64748B' : '#94A3B8' }}>
+              Hour vs Day
+            </span>
           </div>
+
           <div style={{ overflowX: 'auto' }}>
             <table style={{ borderCollapse: 'separate', borderSpacing: '4px', width: '100%' }}>
               <thead>
@@ -320,17 +326,24 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
                     }}>{row.time}</td>
                     {days.map(d => {
                       const val       = row[d.toLowerCase()] || 0;
-                      const intensity = val / maxHeat;
+                      const intensity = maxHeat > 0 ? val / maxHeat : 0;
                       return (
-                        <td key={d} title={`${val} sessions`} style={{
+                        <td key={d} title={`${val} live session(s)`} style={{
                           height: 20, borderRadius: 3,
-                          background: intensity > 0
+                          background: val > 0
                             ? (darkMode
-                                ? `rgba(10,174,239,${(0.15 + intensity * 0.75).toFixed(2)})`
-                                : `rgba(2,132,199,${(0.15 + intensity * 0.75).toFixed(2)})`)
+                                ? `rgba(10,174,239,${Math.min(1, 0.25 + intensity * 0.75).toFixed(2)})`
+                                : `rgba(2,132,199,${Math.min(1, 0.25 + intensity * 0.75).toFixed(2)})`)
                             : (darkMode ? '#1E293B' : '#F1F5F9'),
                           transition: 'background 0.3s',
-                        }} />
+                          textAlign: 'center',
+                          fontSize: 9,
+                          fontFamily: 'monospace',
+                          color: val > 0 ? '#FFFFFF' : 'transparent',
+                          fontWeight: 700
+                        }}>
+                          {val > 0 ? val : ''}
+                        </td>
                       );
                     })}
                   </tr>
@@ -339,14 +352,14 @@ const EngagementSection = ({ darkMode, timeRange = '7d' }) => {
             </table>
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 10 }}>
-            <span style={{ fontSize: 9, fontFamily: 'monospace', color: darkMode ? '#64748B' : '#94A3B8' }}>Low</span>
-            {[0.15, 0.35, 0.55, 0.75, 0.95].map(v => (
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: darkMode ? '#64748B' : '#94A3B8' }}>0 sessions</span>
+            {[0.2, 0.4, 0.6, 0.8, 1.0].map(v => (
               <div key={v} style={{
                 width: 12, height: 12, borderRadius: 2,
                 background: darkMode ? `rgba(10,174,239,${v})` : `rgba(2,132,199,${v})`,
               }} />
             ))}
-            <span style={{ fontSize: 9, fontFamily: 'monospace', color: darkMode ? '#64748B' : '#94A3B8' }}>High</span>
+            <span style={{ fontSize: 9, fontFamily: 'monospace', color: darkMode ? '#64748B' : '#94A3B8' }}>Peak</span>
           </div>
         </div>
       </div>

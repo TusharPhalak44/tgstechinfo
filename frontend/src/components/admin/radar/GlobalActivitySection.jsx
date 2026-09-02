@@ -12,34 +12,34 @@ const GlobalActivitySection = ({
     if (countryData && countryData.length > 0) {
       const map = {};
       countryData.forEach(item => {
-        const countryName = item.country || 'India';
+        const countryName = (item.country || '').trim();
+        if (!countryName || countryName.toLowerCase() === 'unknown' || countryName.toLowerCase() === 'global') return;
         if (!map[countryName]) {
           const geo = getCountryGeo(countryName);
           map[countryName] = {
             country: countryName,
             code: geo.code,
             city: geo.city,
-            activeVisitors: item.unique_visitors || item.total_sessions || 1,
-            sessions: item.total_sessions || item.unique_visitors || 1,
-            pageViews: Math.round((item.total_sessions || 1) * (item.avg_pages_per_session || 2.4)),
-            conversions: Math.max(1, Math.round((item.total_sessions || 1) * 0.12)),
+            activeVisitors: item.unique_visitors || item.uniqueVisitors || item.total_sessions || 1,
+            sessions: item.total_sessions || item.trafficCount || item.unique_visitors || 1,
+            pageViews: item.page_views || item.pageviews || Math.round((item.total_sessions || 1) * (item.avg_pages_per_session || 2.4)),
+            conversions: item.conversion_count || item.conversions || 0,
           };
         } else {
-          map[countryName].sessions += (item.total_sessions || 0);
-          map[countryName].activeVisitors += (item.unique_visitors || 0);
-          map[countryName].pageViews += Math.round((item.total_sessions || 0) * (item.avg_pages_per_session || 2.4));
+          map[countryName].sessions += (item.total_sessions || item.trafficCount || 0);
+          map[countryName].activeVisitors += (item.unique_visitors || item.uniqueVisitors || 0);
+          map[countryName].pageViews += (item.page_views || item.pageviews || Math.round((item.total_sessions || 0) * (item.avg_pages_per_session || 2.4)));
+          map[countryName].conversions += (item.conversion_count || item.conversions || 0);
         }
       });
-      return Object.values(map).sort((a, b) => b.sessions - a.sessions).slice(0, 8);
+      const list = Object.values(map);
+      if (list.length > 0) {
+        return list.sort((a, b) => b.sessions - a.sessions).slice(0, 10);
+      }
     }
 
     return [
-      { country: 'India', code: 'IN', city: 'Mumbai / Pune', activeVisitors: 32, sessions: Math.round(totalSessions * 0.42) || 128, pageViews: 412, conversions: 18 },
-      { country: 'United States', code: 'US', city: 'San Francisco', activeVisitors: 27, sessions: Math.round(totalSessions * 0.28) || 84, pageViews: 289, conversions: 14 },
-      { country: 'United Kingdom', code: 'GB', city: 'London', activeVisitors: 14, sessions: Math.round(totalSessions * 0.14) || 45, pageViews: 156, conversions: 7 },
-      { country: 'Germany', code: 'DE', city: 'Frankfurt', activeVisitors: 9, sessions: Math.round(totalSessions * 0.08) || 28, pageViews: 92, conversions: 4 },
-      { country: 'United Arab Emirates', code: 'AE', city: 'Dubai', activeVisitors: 7, sessions: Math.round(totalSessions * 0.05) || 18, pageViews: 64, conversions: 3 },
-      { country: 'Singapore', code: 'SG', city: 'Singapore', activeVisitors: 6, sessions: Math.round(totalSessions * 0.03) || 12, pageViews: 48, conversions: 2 },
+      { country: 'India', code: 'IN', city: 'Mumbai / Pune', activeVisitors: 1, sessions: totalSessions || 1, pageViews: 3, conversions: 0 },
     ];
   }, [countryData, totalSessions]);
 

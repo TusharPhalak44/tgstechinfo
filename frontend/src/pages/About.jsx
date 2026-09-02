@@ -185,7 +185,7 @@ const verticalMatrix = [
 // Centered Scroll-Linked Alternating Timeline Component
 const CenteredScrollJourney = () => {
   const containerRef = useRef(null);
-  
+
   // Track scroll progress inside the timeline container
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -219,7 +219,7 @@ const CenteredScrollJourney = () => {
 
       {/* Centered Timeline Container */}
       <div className="relative max-w-6xl mx-auto">
-        
+
         {/* Background Track Line (Static Line in Center for Desktop, Left for Mobile) */}
         <div className="absolute left-4 md:left-1/2 top-4 bottom-8 w-1 bg-slate-200 dark:bg-slate-800 rounded-full md:-translate-x-1/2" />
 
@@ -385,7 +385,7 @@ export const About = () => {
       style={{ background: 'var(--color-bg)' }}
     >
       <div className="max-w-7xl mx-auto space-y-20">
-        
+
         {/* 1. Top Asymmetric Editorial Intro Header */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center pt-2 pb-6">
           {/* Left Column: Bold Editorial Typography */}
@@ -452,11 +452,11 @@ export const About = () => {
             <div className="relative rounded-3xl overflow-hidden border shadow-2xl group" style={{ borderColor: 'var(--color-border)' }}>
               <img
                 src="/about_hero_banner.jpg"
-                alt="TGS Tech Info Editorial Room"
+                alt="TGS Tech Info Executive & Editorial Team"
                 className="w-full h-80 sm:h-96 object-cover transition-transform duration-700 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
-              
+
               <div className="absolute bottom-4 left-4 right-4 text-white">
                 <div className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
                   Global Newsroom Operations
@@ -557,11 +557,10 @@ export const About = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                        isActive
-                          ? `${tab.activeColor} shadow-md`
-                          : 'hover:bg-slate-500/10'
-                      }`}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${isActive
+                        ? `${tab.activeColor} shadow-md`
+                        : 'hover:bg-slate-500/10'
+                        }`}
                       style={{
                         backgroundColor: !isActive ? 'var(--color-bg-alt)' : undefined,
                         color: !isActive ? 'var(--color-body)' : undefined,
@@ -712,11 +711,10 @@ export const About = () => {
                 <button
                   key={mat.id}
                   onClick={() => setActiveMatrixTab(mat.id)}
-                  className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-3 ${
-                    isActive
-                      ? 'border-blue-500 bg-blue-500/10 shadow-md ring-2 ring-blue-500/30'
-                      : 'hover:border-slate-400 dark:hover:border-slate-600'
-                  }`}
+                  className={`p-4 rounded-2xl border text-left transition-all flex items-center gap-3 ${isActive
+                    ? 'border-blue-500 bg-blue-500/10 shadow-md ring-2 ring-blue-500/30'
+                    : 'hover:border-slate-400 dark:hover:border-slate-600'
+                    }`}
                   style={{
                     backgroundColor: isActive ? 'rgba(37, 99, 235, 0.08)' : 'var(--color-bg-alt)',
                     borderColor: isActive ? 'var(--color-primary)' : 'var(--color-border)',

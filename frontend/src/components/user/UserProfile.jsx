@@ -40,6 +40,9 @@ const profileStyles = `
   .prof-root {
     font-family: 'Plus Jakarta Sans', 'DM Sans', -apple-system, sans-serif;
     animation: profFadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   @keyframes profFadeIn {

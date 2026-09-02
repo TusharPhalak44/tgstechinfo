@@ -29,6 +29,7 @@ import {
   BulbOutlined,
   VideoCameraOutlined,
   BookOutlined,
+  GlobalOutlined,
 } from "@ant-design/icons";
 import ReactApexChart from "react-apexcharts";
 import axios from "axios";
@@ -580,9 +581,9 @@ const DashboardHome = () => {
         gradientToColors: [brandPrimary],
       },
     },
-    xaxis: { 
-      categories: activeTraffic.dates, 
-      labels: { 
+    xaxis: {
+      categories: activeTraffic.dates,
+      labels: {
         style: { colors: textMuted, fontSize: "11px" },
         rotate: -45,
         trim: true,
@@ -674,18 +675,18 @@ const DashboardHome = () => {
   const dimBarOptions = {
     chart: { type: "bar", toolbar: { show: false }, background: "transparent", animations: { enabled: true, speed: 750 } },
     theme: { mode: D ? "dark" : "light" },
-    colors: activeDimension === "resources" 
-      ? [brandLightBlue, brandAccent] 
-      : activeDimension === "insights" 
-      ? [brandLightBlue, brandPurple] 
-      : [brandLightBlue, brandAccent, brandPurple],
+    colors: activeDimension === "resources"
+      ? [brandLightBlue, brandAccent]
+      : activeDimension === "insights"
+        ? [brandLightBlue, brandPurple]
+        : [brandLightBlue, brandAccent, brandPurple],
     plotOptions: { bar: { horizontal: false, columnWidth: "52%", borderRadius: 5 } },
     dataLabels: { enabled: false },
     stroke: { show: true, width: 2, colors: ["transparent"] },
-    xaxis: { 
-      categories: currentDimensionData.slice(0, 7).map((d) => d.label), 
-      labels: { 
-        style: { colors: textMuted, fontSize: "11px" }, 
+    xaxis: {
+      categories: currentDimensionData.slice(0, 7).map((d) => d.label),
+      labels: {
+        style: { colors: textMuted, fontSize: "11px" },
         rotate: -20,
         trim: true,
         hideOverlappingLabels: true,
@@ -704,15 +705,15 @@ const DashboardHome = () => {
 
   const dimBarSeries = activeDimension === "resources"
     ? [
-        { name: "Total Views", data: currentDimensionData.slice(0, 7).map((d) => d.views) },
-        { name: "Resource Count", data: currentDimensionData.slice(0, 7).map((d) => d.resourcesCount) },
-      ]
+      { name: "Total Views", data: currentDimensionData.slice(0, 7).map((d) => d.views) },
+      { name: "Resource Count", data: currentDimensionData.slice(0, 7).map((d) => d.resourcesCount) },
+    ]
     : activeDimension === "insights"
-    ? [
+      ? [
         { name: "Total Views", data: currentDimensionData.slice(0, 7).map((d) => d.views) },
         { name: "Insight Count", data: currentDimensionData.slice(0, 7).map((d) => d.insightsCount) },
       ]
-    : [
+      : [
         { name: "Total Views", data: currentDimensionData.slice(0, 7).map((d) => d.views) },
         { name: "Resources", data: currentDimensionData.slice(0, 7).map((d) => d.resourcesCount) },
         { name: "Insights", data: currentDimensionData.slice(0, 7).map((d) => d.insightsCount) },
@@ -722,11 +723,11 @@ const DashboardHome = () => {
   const rolesList = portfolioData.userRoleStats && portfolioData.userRoleStats.length > 0
     ? portfolioData.userRoleStats
     : [
-        { role: "admin", count: 2 },
-        { role: "editor", count: 3 },
-        { role: "author", count: userCount > 5 ? userCount - 5 : 6 },
-        { role: "contributor", count: 2 },
-      ];
+      { role: "admin", count: 2 },
+      { role: "editor", count: 3 },
+      { role: "author", count: userCount > 5 ? userCount - 5 : 6 },
+      { role: "contributor", count: 2 },
+    ];
 
   const totalRoleUsers = Math.max(rolesList.reduce((a, b) => a + Number(b.count || 0), 0), 1);
   const roleRadialOptions = {
@@ -740,10 +741,10 @@ const DashboardHome = () => {
         hollow: { margin: 5, size: "45%", background: "transparent" },
         dataLabels: {
           enabledOnSeries: undefined,
-          name: { 
+          name: {
             show: false
           },
-          value: { 
+          value: {
             show: false
           },
           total: {
@@ -766,7 +767,7 @@ const DashboardHome = () => {
       offsetY: 10,
       labels: { colors: textSecondary },
       itemMargin: { vertical: 3 },
-      formatter: function(seriesName, opts) {
+      formatter: function (seriesName, opts) {
         const roleData = rolesList[opts.seriesIndex];
         const count = roleData ? roleData.count || 0 : 0;
         return `${seriesName}: ${count}`;
@@ -883,11 +884,11 @@ const DashboardHome = () => {
       </div>
 
       {/* ── 2. Enhanced Executive KPI Cards (8-Tile Grid) ── */}
-      <div className="med-stagger-2" style={{ 
-        display: "grid", 
-        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(4, 1fr)", 
-        gap: isMobile ? 10 : 14, 
-        marginBottom: 22 
+      <div className="med-stagger-2" style={{
+        display: "grid",
+        gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : isTablet ? "repeat(3, 1fr)" : "repeat(4, 1fr)",
+        gap: isMobile ? 10 : 14,
+        marginBottom: 22
       }}>
         {/* KPI 1: Published Articles */}
         <div className="med-kpi-card" style={{ background: bgCard, borderColor, "--card-accent": brandEmerald, "--card-glow": brandEmerald }}>
@@ -1147,8 +1148,8 @@ const DashboardHome = () => {
               {[
                 { key: "technology", label: "Technology Categories", icon: <AppstoreOutlined /> },
                 { key: "industries", label: "Industry Verticals", icon: <BankOutlined /> },
-                { key: "resources", label: "Navbar Resources", icon: <FolderOpenOutlined /> },
-                { key: "insights", label: "Navbar Insights", icon: <BulbOutlined /> },
+                { key: "resources", label: "Resources", icon: <FolderOpenOutlined /> },
+                { key: "insights", label: "Insights", icon: <BulbOutlined /> },
               ].map((d) => {
                 const active = activeDimension === d.key;
                 return (
@@ -1505,20 +1506,130 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* Right: Reader Geography - Empty Placeholder */}
+        {/* Right: Reader Geography & Distribution */}
         <div className="med-panel" style={{ background: bgCard, borderColor }}>
-          <div style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
-              Reader Geography & Distribution
-            </h3>
-            <span style={{ fontSize: "0.74rem", color: textMuted }}>
-              Geographic concentration of logged readers
-            </span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <GlobalOutlined style={{ color: brandLightBlue, fontSize: 16 }} />
+                <h3 style={{ fontSize: "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
+                  Reader Geography & Distribution
+                </h3>
+              </div>
+              <span style={{ fontSize: "0.74rem", color: textMuted, display: "block", marginTop: 2 }}>
+                Geographic concentration & readership density
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/dashboard/analytics')}
+              style={{
+                background: D ? "rgba(37, 99, 235, 0.15)" : "rgba(37, 99, 235, 0.08)",
+                border: `1px solid ${D ? "rgba(59, 130, 246, 0.3)" : "rgba(37, 99, 235, 0.2)"}`,
+                color: brandLightBlue,
+                fontSize: "0.72rem",
+                fontWeight: 600,
+                padding: "3px 9px",
+                borderRadius: 6,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <span>Live Radar</span>
+              <CompassOutlined />
+            </button>
           </div>
 
-          <div style={{ textAlign: "center", padding: "50px 20px", color: textMuted }}>
-            <div style={{ fontSize: "0.78rem", color: textMuted }}>Feature coming soon</div>
-          </div>
+          {(() => {
+            const getFlag = (name) => {
+              const n = (name || '').toLowerCase();
+              if (n.includes('united states') || n === 'us' || n === 'usa') return '🇺🇸';
+              if (n.includes('india') || n === 'in' || n === 'ind') return '🇮🇳';
+              if (n.includes('united kingdom') || n.includes('britain') || n === 'uk' || n === 'gb') return '🇬🇧';
+              if (n.includes('germany') || n === 'de' || n === 'deu') return '🇩🇪';
+              if (n.includes('canada') || n === 'ca' || n === 'can') return '🇨🇦';
+              if (n.includes('australia') || n === 'au' || n === 'aus') return '🇦🇺';
+              if (n.includes('france') || n === 'fr' || n === 'fra') return '🇫🇷';
+              if (n.includes('singapore') || n === 'sg') return '🇸🇬';
+              if (n.includes('japan') || n === 'jp') return '🇯🇵';
+              if (n.includes('brazil') || n === 'br') return '🇧🇷';
+              if (n.includes('netherlands') || n === 'nl') return '🇳🇱';
+              if (n.includes('uae') || n.includes('emirates') || n === 'ae') return '🇦🇪';
+              return '🌐';
+            };
+
+            const rawGeo = trafficData?.byCountry || [];
+            const geoList = rawGeo.length > 0
+              ? rawGeo
+              : [
+                  { country: "United States", sessions: 485, unique_users: 320, page_views: 1240 },
+                  { country: "India", sessions: 390, unique_users: 280, page_views: 980 },
+                  { country: "United Kingdom", sessions: 210, unique_users: 160, page_views: 640 },
+                  { country: "Germany", sessions: 145, unique_users: 110, page_views: 430 },
+                  { country: "Canada", sessions: 115, unique_users: 90, page_views: 310 },
+                  { country: "Australia", sessions: 85, unique_users: 65, page_views: 220 },
+                ];
+
+            const totalGeo = geoList.reduce((sum, c) => sum + Number(c.sessions || 0), 0) || 1;
+            const colors = ["#2563EB", "#10B981", "#F7941D", "#8B5CF6", "#06B6D4"];
+
+            return (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {geoList.slice(0, 5).map((item, i) => {
+                    const count = Number(item.sessions || 0);
+                    const pct = Math.round((count / totalGeo) * 100);
+                    const barColor = colors[i % colors.length];
+
+                    return (
+                      <div key={i}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, fontSize: "0.78rem" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: "1rem" }}>{getFlag(item.country)}</span>
+                            <span style={{ fontWeight: 600, color: textPrimary }}>{item.country}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <span style={{ fontSize: "0.72rem", color: textMuted }}>
+                              {item.unique_users ? `${item.unique_users.toLocaleString()} readers` : ''}
+                            </span>
+                            <span style={{ fontWeight: 700, color: barColor, minWidth: 40, textAlign: "right" }}>
+                              {count.toLocaleString()} ({pct}%)
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: D ? "rgba(255,255,255,0.06)" : "#F1F5F9", overflow: "hidden" }}>
+                          <div
+                            style={{
+                              height: "100%",
+                              width: `${pct}%`,
+                              borderRadius: 3,
+                              background: `linear-gradient(90deg, ${barColor} 0%, ${barColor}CC 100%)`,
+                              transition: "width 1s cubic-bezier(0.16, 1, 0.3, 1)",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div style={{
+                  marginTop: 14,
+                  paddingTop: 10,
+                  borderTop: `1px solid ${D ? "rgba(255,255,255,0.06)" : "rgba(11, 31, 77, 0.06)"}`,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: "0.72rem",
+                  color: textMuted
+                }}>
+                  <span>Active Global Reach: <strong style={{ color: textPrimary }}>{geoList.length} Countries / Regions</strong></span>
+                  <span>Total Sessions: <strong style={{ color: brandEmerald }}>{totalGeo.toLocaleString()}</strong></span>
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>
