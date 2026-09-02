@@ -14,6 +14,8 @@ router.use(authenticate);
 // Notifications
 router.get('/notifications', hasPermission('settings.read'), notificationController.getNotifications);
 router.put('/notifications/:id/read', hasPermission('settings.update'), notificationController.markAsRead);
+router.get('/admin/notifications', hasPermission('settings.read'), notificationController.getAdminNotifications);
+router.put('/admin/notifications/:id/read', hasPermission('settings.update'), notificationController.markAdminAsRead);
 
 // Content management
 router.get('/content/all', adminController.getAllContent);

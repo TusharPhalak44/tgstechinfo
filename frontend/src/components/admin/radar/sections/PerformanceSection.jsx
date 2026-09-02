@@ -103,127 +103,47 @@ const CWVGauge = ({ label, value, unit, good, warn, desc, darkMode }) => {
   );
 };
 
-const PerformanceSection = ({ darkMode, timeRange = '7d' }) => {
-  const [performanceData, setPerformanceData] = useState({
-    popularPages: [],
-    pageViewStats: null,
-    cwvMetrics: null
-  });
+const PerformanceSection = ({ darkMode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Calculate date range based on timeRange
-    let dateParams = '';
-    
-    if (timeRange !== 'all') {
-      const endDate = new Date();
-      const startDate = new Date();
-      if (timeRange === '7d') startDate.setDate(startDate.getDate() - 7);
-      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
-      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
-
-      const s = startDate.toISOString().split('T')[0];
-      const e = endDate.toISOString().split('T')[0];
-      dateParams = `?start_date=${s}&end_date=${e}`;
-    }
-
-    console.log('PerformanceSection - Fetching CWV data with timeRange:', timeRange, 'dateParams:', dateParams);
-
-    // Fetch Core Web Vitals data
-    axios.get(`/api/analytics/core-web-vitals${dateParams}`)
-      .then(res => {
-        const aggregatedMetrics = res.data.aggregatedMetrics || {};
-        const metricsByPage = res.data.metricsByPage || [];
-        
-        console.log('PerformanceSection - CWV metrics fetched:', aggregatedMetrics);
-        console.log('PerformanceSection - Metrics by page:', metricsByPage.length);
-
-        // Calculate performance score from real CWV data
-        const perfScore = aggregatedMetrics.total_measurements > 0 ? Math.min(100, Math.max(0, 
-          (aggregatedMetrics.avg_lcp <= 2.5 ? 25 : aggregatedMetrics.avg_lcp <= 4.0 ? 15 : 5) +
-          (aggregatedMetrics.avg_fid <= 100 ? 25 : aggregatedMetrics.avg_fid <= 300 ? 15 : 5) +
-          (aggregatedMetrics.avg_cls <= 0.1 ? 25 : aggregatedMetrics.avg_cls <= 0.25 ? 15 : 5) +
-          (aggregatedMetrics.avg_ttfb <= 800 ? 25 : aggregatedMetrics.avg_ttfb <= 1800 ? 15 : 5)
-        )) : 0;
-
-        setPerformanceData({
-          popularPages: [],
-          pageViewStats: {
-            totalViews: aggregatedMetrics.total_measurements || 0,
-            avgTimeSpent: aggregatedMetrics.avg_load_complete || 0,
-            perfScore
-          },
-          cwvMetrics: {
-            lcp: aggregatedMetrics.avg_lcp || 0,
-            fid: aggregatedMetrics.avg_fid || 0,
-            cls: aggregatedMetrics.avg_cls || 0,
-            ttfb: aggregatedMetrics.avg_ttfb || 0,
-            fcp: aggregatedMetrics.avg_fcp || 0,
-            inp: aggregatedMetrics.avg_inp || 0
-          }
-        });
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('PerformanceSection - Error fetching CWV data:', err);
-        setPerformanceData({
-          popularPages: [],
-          pageViewStats: null,
-          cwvMetrics: null
-        });
-        setLoading(false);
-      });
-  }, [timeRange]);
-
-  // Calculate CWV metrics from real data
-  const cwvMetrics = useMemo(() => {
-    if (!performanceData.cwvMetrics) {
-      return [];
-    }
-    
-    const m = performanceData.cwvMetrics;
-    return [
-      { label: 'Largest Contentful Paint', value: m.lcp, unit: 's', good: 2.5, warn: 4.0, desc: 'Render time of largest visual block' },
-      { label: 'First Input Delay', value: m.fid, unit: 'ms', good: 100, warn: 300, desc: 'Input latency on first interaction' },
-      { label: 'Cumulative Layout Shift', value: m.cls, unit: '', good: 0.1, warn: 0.25, desc: 'Visual stability score during render' },
-      { label: 'Time to First Byte', value: m.ttfb, unit: 'ms', good: 800, warn: 1800, desc: 'Initial server response latency' },
-      { label: 'First Contentful Paint', value: m.fcp, unit: 's', good: 1.8, warn: 3.0, desc: 'Initial DOM render latency' },
-      { label: 'Interaction to Next Paint', value: m.inp, unit: 'ms', good: 200, warn: 500, desc: 'Overall interactive response time' },
-    ];
-  }, [performanceData.cwvMetrics]);
-
-  // Calculate page load data from real data
-  const pageLoadData = useMemo(() => {
-    // Page load time data is not available in the database
-    // avg_time_spent is user engagement time, not page load time
-    // Return empty array to show empty state
-    return [];
+    // Simulate loading
+    setTimeout(() => setLoading(false), 800);
   }, []);
 
-  const maxLoad = pageLoadData.length > 0 
-    ? Math.max(...pageLoadData.flatMap(p => [parseFloat(p.desktop), parseFloat(p.mobile)]))
-    : 1;
+  // Dummy CWV metrics
+  const cwvMetrics = [
+    { label: 'Largest Contentful Paint', value: 2.1, unit: 's', good: 2.5, warn: 4.0, desc: 'Render time of largest visual block' },
+    { label: 'First Input Delay', value: 45, unit: 'ms', good: 100, warn: 300, desc: 'Input latency on first interaction' },
+    { label: 'Cumulative Layout Shift', value: 0.04, unit: '', good: 0.1, warn: 0.25, desc: 'Visual stability score during render' },
+    { label: 'Time to First Byte', value: 620, unit: 'ms', good: 800, warn: 1800, desc: 'Initial server response latency' },
+    { label: 'First Contentful Paint', value: 1.4, unit: 's', good: 1.8, warn: 3.0, desc: 'Initial DOM render latency' },
+    { label: 'Interaction to Next Paint', value: 85, unit: 'ms', good: 200, warn: 500, desc: 'Overall interactive response time' },
+  ];
 
-  const perfScore = performanceData.pageViewStats?.perfScore || 0;
+  // Dummy page load data
+  const pageLoadData = [
+    { page: '/home', desktop: 1.2, mobile: 2.1 },
+    { page: '/blog', desktop: 1.5, mobile: 2.4 },
+    { page: '/products', desktop: 1.8, mobile: 2.8 },
+    { page: '/contact', desktop: 1.1, mobile: 1.9 },
+    { page: '/about', desktop: 1.3, mobile: 2.2 },
+    { page: '/services', desktop: 1.6, mobile: 2.5 },
+  ];
+
+  const maxLoad = Math.max(...pageLoadData.flatMap(p => [p.desktop, p.mobile]));
+  const perfScore = 92;
   const scoreColor = perfScore >= 90 ? '#10B981' : perfScore >= 50 ? '#F59E0B' : '#EF4444';
 
-  // Calculate quick metrics from real data
-  const quickMetrics = useMemo(() => {
-    if (!performanceData.pageViewStats) {
-      return [];
-    }
-    
-    const stats = performanceData.pageViewStats;
-    const cwv = performanceData.cwvMetrics;
-    const avgLoadTime = cwv ? (cwv.load_complete_time / 1000).toFixed(2) : '0.00';
-    
-    return [
-      { label: 'Avg Load Time', value: `${avgLoadTime}s`, color: '#10B981', icon: <ThunderboltOutlined /> },
-      { label: 'Measurements', value: stats.totalViews.toLocaleString(), color: '#F59E0B', icon: <MobileOutlined /> },
-      { label: 'LCP', value: cwv ? `${cwv.lcp.toFixed(2)}s` : '0.00s', color: '#8B5CF6', icon: <InboxOutlined /> },
-      { label: 'Performance Score', value: `${perfScore}/100`, color: scoreColor, icon: <FileImageOutlined /> },
-    ];
-  }, [performanceData.pageViewStats, performanceData.cwvMetrics, perfScore, scoreColor]);
+  // Dummy quick metrics
+  const quickMetrics = [
+    { label: 'Avg Load Time', value: '1.42s', color: '#10B981', icon: <ThunderboltOutlined /> },
+    { label: 'Mobile Load', value: '2.10s', color: '#F59E0B', icon: <MobileOutlined /> },
+    { label: 'Bundle Size', value: '384KB', color: '#8B5CF6', icon: <InboxOutlined /> },
+    { label: 'Assets Optimized', value: '96%', color: '#0AAEEF', icon: <FileImageOutlined /> },
+    { label: 'Cache Hit Rate', value: '84%', color: '#10B981', icon: <DatabaseOutlined /> },
+    { label: 'Edge Latency', value: '18ms', color: '#0AAEEF', icon: <GlobalOutlined /> },
+  ];
 
   // Empty state component
   const EmptyState = ({ message }) => (

@@ -2,51 +2,43 @@ import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   Button, 
-  Modal, 
   Tag, 
   Space, 
-  Typography, 
   message, 
   Input,
   DatePicker,
   Select,
-  Row,
-  Col,
   Avatar,
   Tooltip,
   Popconfirm,
   Segmented,
   ConfigProvider,
   Switch,
+  Modal,
+  Input as AntInput,
 } from 'antd';
 import { 
-  CheckOutlined, 
-  CloseOutlined, 
   EditOutlined, 
   EyeOutlined, 
   SendOutlined,
   ClockCircleOutlined,
   UserOutlined,
-  CalendarOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
   SearchOutlined,
-  AppstoreOutlined,
-  UnorderedListOutlined,
   DeleteOutlined,
   ReloadOutlined,
   EyeInvisibleOutlined,
+  ThunderboltOutlined,
   CheckSquareOutlined,
-  ThunderboltOutlined
+  CloseOutlined,
+  CheckOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 
-const { Text } = Typography;
-const { TextArea } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
@@ -125,9 +117,6 @@ const ContentReview = () => {
   const [contents, setContents] = useState([]);
   const [allContents, setAllContents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedContent, setSelectedContent] = useState(null);
-  const [reviewModalVisible, setReviewModalVisible] = useState(false);
-  const [adminComment, setAdminComment] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchText, setSearchText] = useState('');
@@ -138,15 +127,38 @@ const ContentReview = () => {
   const [viewMode, setViewMode] = useState('table');
   const [togglingVisibility, setTogglingVisibility] = useState(null);
   const [dateRange, setDateRange] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [reviewActionLoading, setReviewActionLoading] = useState(null);
+  const [selectedContent, setSelectedContent] = useState(null);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const [adminComment, setAdminComment] = useState('');
+  const [statusCounts, setStatusCounts] = useState({
+    pending: 0,
+    approved: 0,
+    published: 0,
+    changes_requested: 0,
+    rejected: 0
+  });
 
   useEffect(() => {
     setCurrentPage(1);
     fetchContents();
+    fetchStatusCounts();
   }, [activeTab, filterStatus]);
 
   useEffect(() => {
     fetchContents();
   }, [currentPage, pageSize]);
+
+  // Real-time data polling - fetch every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchContents();
+      fetchStatusCounts();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [activeTab, filterStatus, currentPage, pageSize]);
 
   useEffect(() => {
     let filtered = [...allContents];
@@ -177,17 +189,16 @@ const ContentReview = () => {
     if (reviewId && contents.length > 0) {
       const found = contents.find(c => String(c.id) === String(reviewId));
       if (found) {
-        setSelectedContent(found);
-        setReviewModalVisible(true);
+        navigate(`/dashboard/content/${reviewId}`);
       }
     }
-  }, [reviewId, contents]);
+  }, [reviewId, contents, navigate]);
 
   const fetchContents = async () => {
     setLoading(true);
     try {
-      const shouldFetchAll = searchText && searchText.trim();
-      const params = shouldFetchAll ? {} : { limit: pageSize, offset: (currentPage - 1) * pageSize };
+      // Always fetch all content without pagination limits
+      const params = {};
       const statusToFetch = filterStatus !== 'all' ? filterStatus : (activeTab !== 'all' ? activeTab : null);
       if (statusToFetch) params.status = statusToFetch;
 
@@ -196,6 +207,7 @@ const ContentReview = () => {
       setAllContents(Array.isArray(result) ? result : []);
       setContents(Array.isArray(result) ? result : []);
       setTotalItems(Array.isArray(result) ? result.length : 0);
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Fetch error:', error);
       message.error('Failed to load contents');
@@ -204,7 +216,34 @@ const ContentReview = () => {
     }
   };
 
+  const fetchStatusCounts = async () => {
+    try {
+      const response = await axios.get('/api/admin/content/pending');
+      const result = response.data?.data || response.data || [];
+      const counts = {
+        pending: 0,
+        approved: 0,
+        published: 0,
+        changes_requested: 0,
+        rejected: 0
+      };
+      
+      if (Array.isArray(result)) {
+        result.forEach(item => {
+          if (item.status && counts[item.status] !== undefined) {
+            counts[item.status]++;
+          }
+        });
+      }
+      
+      setStatusCounts(counts);
+    } catch (error) {
+      console.error('Failed to fetch status counts:', error);
+    }
+  };
+
   const handleReview = async (action, contentId) => {
+    setReviewActionLoading(contentId);
     try {
       await axios.put(`/api/admin/content/${contentId}/review`, {
         action,
@@ -219,12 +258,15 @@ const ContentReview = () => {
       };
       
       message.success(actionMessages[action] || 'Action completed');
-      setReviewModalVisible(false);
-      setAdminComment('');
-      setSelectedContent(null);
       fetchContents();
+      fetchStatusCounts();
+      setReviewModalVisible(false);
+      setSelectedContent(null);
+      setAdminComment('');
     } catch (error) {
       message.error('Failed to review content');
+    } finally {
+      setReviewActionLoading(null);
     }
   };
 
@@ -279,10 +321,10 @@ const ContentReview = () => {
     }
   };
 
-  const pendingCount = allContents.filter(c => c.status === 'pending').length;
-  const approvedCount = allContents.filter(c => c.status === 'approved').length;
-  const publishedCount = allContents.filter(c => c.status === 'published').length;
-  const revisionCount = allContents.filter(c => c.status === 'changes_requested' || c.status === 'rejected').length;
+  const pendingCount = statusCounts.pending || 0;
+  const approvedCount = statusCounts.approved || 0;
+  const publishedCount = statusCounts.published || 0;
+  const revisionCount = (statusCounts.changes_requested || 0) + (statusCounts.rejected || 0);
 
   const StatCard = ({ title, value, icon, color = 'primary', accentColor, subtitle }) => {
     const colorMap = {
@@ -418,11 +460,8 @@ const ContentReview = () => {
             <Button
               type="primary"
               size="small"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedContent(record);
-                setReviewModalVisible(true);
-              }}
+              icon={<CheckCircleOutlined />}
+              onClick={() => navigate(`/dashboard/content-review/${record.id}`)}
               style={{
                 borderRadius: 8,
                 background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
@@ -430,7 +469,7 @@ const ContentReview = () => {
                 fontWeight: 700,
               }}
             >
-              Review
+              Approve
             </Button>
           ) : record.status === 'approved' ? (
             <Button 
@@ -453,8 +492,8 @@ const ContentReview = () => {
               size="small"
               icon={<EyeOutlined />}
               onClick={() => {
-                setSelectedContent(record);
-                setReviewModalVisible(true);
+                const contentType = (record.content_type_name || record.content_type || 'article').toLowerCase().replace(/\s+/g, '-');
+                navigate(`/dashboard/${contentType}/${record.id}`);
               }}
               style={{ borderRadius: 8, background: D ? 'rgba(59, 130, 246, 0.1)' : 'rgba(37, 99, 235, 0.06)', color: '#3B82F6' }}
             >
@@ -657,7 +696,7 @@ const ContentReview = () => {
               </div>
             }
             open={reviewModalVisible}
-            onCancel={() => { setReviewModalVisible(false); setSelectedContent(null); }}
+            onCancel={() => { setReviewModalVisible(false); setSelectedContent(null); setAdminComment(''); }}
             width={720}
             footer={[
               <Button key="reject" danger icon={<CloseOutlined />} onClick={() => handleReview('reject', selectedContent.id)} style={{ borderRadius: 8 }}>
@@ -697,7 +736,7 @@ const ContentReview = () => {
                 <label style={{ fontSize: '0.82rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0F172A', display: 'block', marginBottom: 6 }}>
                   Reviewer Notes / Feedback to Author
                 </label>
-                <TextArea
+                <AntInput.TextArea
                   rows={4}
                   placeholder="Provide detailed feedback or reasons for approval / requested revisions..."
                   value={adminComment}

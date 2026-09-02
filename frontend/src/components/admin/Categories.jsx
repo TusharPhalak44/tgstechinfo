@@ -166,10 +166,15 @@ const Categories = () => {
     }
   };
 
-  const filteredCategories = categories.filter((c) =>
-    (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.slug || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCategories = categories.filter((c) => {
+    const nameMatch = (c.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const slugMatch = (c.slug || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matches = nameMatch || slugMatch;
+    console.log('Filtering category:', { name: c.name, slug: c.slug, searchQuery, nameMatch, slugMatch, matches });
+    return matches;
+  });
+
+  console.log('Search debug:', { searchQuery, totalCategories: categories.length, filteredCount: filteredCategories.length, filteredCategories });
 
   const StatCard = ({ title, value, icon, color = 'primary', accentColor, subtitle }) => {
     const colorMap = {
@@ -465,7 +470,10 @@ const Categories = () => {
                   type="text"
                   placeholder="Search categories..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    console.log('Search input changed:', e.target.value);
+                    setSearchQuery(e.target.value);
+                  }}
                   style={{
                     border: 'none',
                     outline: 'none',

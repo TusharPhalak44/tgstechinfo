@@ -183,9 +183,10 @@ const ContentListing = () => {
     e?.stopPropagation();
     const canUserEdit = record.status === 'draft' || record.status === 'changes_requested';
     if (canUserEdit) {
-      navigate(`/edit-content/${record.id}`);
+      navigate(`/dashboard/create-post/${record.id}`);
     } else {
-      navigate(`/admin/edit/${record.id}`);
+      const contentType = (record.content_type || 'article').replace(/\s+/g, '-').toLowerCase();
+      navigate(`/dashboard/${contentType}/${record.id}`);
     }
   };
 

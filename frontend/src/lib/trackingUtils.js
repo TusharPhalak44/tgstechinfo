@@ -110,17 +110,27 @@ export const getUserCountry = () => {
   return null; // Will be detected by backend IP geolocation
 };
 
+// Content type routes map
+const CONTENT_TYPE_ROUTES = [
+  { prefix: '/article/', type: 'article' },
+  { prefix: '/blog/', type: 'blog' },
+  { prefix: '/news/', type: 'news' },
+  { prefix: '/interview/', type: 'interview' },
+  { prefix: '/webinar/', type: 'webinar' },
+  { prefix: '/event/', type: 'event' },
+  { prefix: '/ebook/', type: 'ebook' },
+  { prefix: '/whitepaper/', type: 'whitepaper' },
+  { prefix: '/report/', type: 'report' },
+  { prefix: '/case-study/', type: 'case-study' },
+  { prefix: '/guide/', type: 'guide' },
+];
+
 // Get page type from URL
 export const getPageType = (pathname) => {
   if (pathname === '/') return 'home';
-  if (pathname.startsWith('/article/')) return 'article';
-  if (pathname.startsWith('/blog/')) return 'blog';
-  if (pathname.startsWith('/news/')) return 'news';
-  if (pathname.startsWith('/interview/')) return 'interview';
-  if (pathname.startsWith('/webinar/')) return 'webinar';
-  if (pathname.startsWith('/event/')) return 'event';
-  if (pathname.startsWith('/ebook/')) return 'ebook';
-  if (pathname.startsWith('/whitepaper/')) return 'whitepaper';
+  for (const { prefix, type } of CONTENT_TYPE_ROUTES) {
+    if (pathname.startsWith(prefix)) return type;
+  }
   if (pathname.startsWith('/category/')) return 'category';
   if (pathname === '/search') return 'search';
   if (pathname === '/contact') return 'contact';
@@ -128,12 +138,20 @@ export const getPageType = (pathname) => {
   return 'other';
 };
 
-// Extract content ID from URL
+// Extract slug from content URL
+export const extractContentSlug = (pathname) => {
+  for (const { prefix } of CONTENT_TYPE_ROUTES) {
+    if (pathname.startsWith(prefix)) {
+      return pathname.slice(prefix.length).split('/')[0] || null;
+    }
+  }
+  return null;
+};
+
+// Extract content ID from URL (kept for backward compat, now resolves via slug lookup)
 export const extractContentId = (pathname) => {
-  const articleMatch = pathname.match(/\/article\/(\d+)/);
-  const contentMatch = pathname.match(/\/content\/(\d+)/);
-  if (articleMatch) return articleMatch[1];
-  if (contentMatch) return contentMatch[1];
+  const numericMatch = pathname.match(/\/(?:article|content)\/(\d+)/);
+  if (numericMatch) return numericMatch[1];
   return null;
 };
 

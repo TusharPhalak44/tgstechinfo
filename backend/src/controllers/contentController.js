@@ -388,7 +388,7 @@ exports.submitForReview = async (req, res) => {
 
         // Send notification to admins (non-blocking)
         const userName = `${req.user.first_name} ${req.user.last_name}`;
-        notifyAdmins(id, 'review', `${userName} submitted "${content.title}" for review.`).catch(err => {
+        notifyAdmins(id, 'review', 'Content Review Required', `${userName} submitted "${content.title}" for review.`).catch(err => {
             console.error('Notification error (non-critical):', err.message);
         });
          // Send email to user about content submission

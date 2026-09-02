@@ -37,17 +37,44 @@ exports.createNotification = async (userId, contentId, type, message) => {
 };
 
 // Notify all admins
-exports.notifyAdmins = async (contentId, type, message) => {
+exports.notifyAdmins = async (contentId, type, title, message) => {
     try {
         const [admins] = await pool.query(`SELECT id FROM users WHERE role = 'admin'`);
         for (const admin of admins) {
             await pool.query(
-                `INSERT INTO notifications (user_id, content_id, type, message) VALUES (?, ?, ?, ?)`,
-                [admin.id, contentId, type, message]
+                `INSERT INTO notifications (user_id, content_id, type, title, message) VALUES (?, ?, ?, ?, ?)`,
+                [admin.id, contentId, type, title, message]
             );
         }
     } catch (error) {
         console.error('Notify admins error:', error.message);
+    }
+};
+
+exports.getAdminNotifications = async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC`,
+            [req.user.id]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Get admin notifications error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.markAdminAsRead = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query(
+            `UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?`,
+            [id, req.user.id]
+        );
+        res.json({ message: 'Notification marked as read' });
+    } catch (error) {
+        console.error('Mark admin notification as read error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 };
 

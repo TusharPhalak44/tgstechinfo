@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useCookieConsent } from './CookieContext';
-import { trackingApi, generateSessionUuid, parseUtmParams, getDeviceInfo, getUserCountry, getPageType, extractContentId, debounce, throttle, getScrollPercentage } from '../lib/trackingUtils';
-import performanceTracker from '../utils/performanceTracking';
+import { trackingApi, generateSessionUuid, parseUtmParams, getDeviceInfo, getUserCountry, getPageType, extractContentId, extractContentSlug, debounce, throttle, getScrollPercentage } from '../lib/trackingUtils';
 
 const TrackingContext = createContext(null);
 
@@ -70,9 +69,6 @@ export const TrackingProvider = ({ children }) => {
       // Store session UUID in localStorage for persistence
       localStorage.setItem('tracking_session_uuid', response.session.session_uuid);
       
-      // Initialize performance tracking
-      performanceTracker.initialize(response.session.session_uuid, consent.uuid);
-      
       console.log('Tracking session initialized:', response.session.session_uuid);
     } catch (error) {
       console.error('Failed to initialize tracking session:', error);
@@ -90,22 +86,33 @@ export const TrackingProvider = ({ children }) => {
   const trackPageView = async () => {
     try {
       const pageType = getPageType(location.pathname);
-      const contentId = extractContentId(location.pathname);
-      
+      const slug = extractContentSlug(location.pathname);
+      let contentId = extractContentId(location.pathname);
+
+      // Resolve content_id from slug via API if we have a slug but no numeric ID
+      if (slug && !contentId) {
+        try {
+          const res = await import('axios').then(m => m.default.get(`/api/public/content/slug/${slug}`));
+          contentId = res.data?.id || res.data?.data?.id || null;
+        } catch {
+          // slug lookup failed — content_id stays null, content_type still tracked
+        }
+      }
+
       const pageViewData = {
         session_uuid: sessionUuid,
         consent_uuid: consent.uuid,
         page_url: window.location.href,
         page_title: document.title,
         page_type: pageType,
-        content_type: pageType === 'article' ? 'article' : null,
-        content_id: contentId
+        content_type: slug ? pageType : null,
+        content_id: contentId ? parseInt(contentId, 10) : null
       };
 
       const response = await trackingApi.trackPageView(pageViewData);
       setCurrentPageViewId(response.pageView.id);
       setPageEnterTime(Date.now());
-      
+
       console.log('Page view tracked:', response.pageView);
     } catch (error) {
       console.error('Failed to track page view:', error);

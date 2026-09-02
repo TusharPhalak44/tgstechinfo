@@ -99,6 +99,7 @@ const CreateContent = () => {
   const [builderPageData, setBuilderPageData] = useState(null); // v2.0 full page tree from VisualBuilder
   const [builderContent, setBuilderContent] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
+  const [editContentType, setEditContentType] = useState(null); // Store content type for back navigation
   const [builderSections, setBuilderSections] = useState([
     { id: 'sec-1', type: 'content_type_category' },
     { id: 'sec-2', type: 'title_description' },
@@ -148,9 +149,21 @@ const CreateContent = () => {
 
   const fetchExistingContent = async () => {
     try {
+      console.log('[CreateContent] fetchExistingContent - id:', id, 'isAdmin:', isAdmin);
       const apiBase = isAdmin ? '/api/admin' : '/api/user';
+      console.log('[CreateContent] fetchExistingContent - apiBase:', apiBase);
+      console.log('[CreateContent] fetchExistingContent - URL:', `${apiBase}/content/${id}`);
+      
       const res = await axios.get(`${apiBase}/content/${id}`);
       const data = res.data;
+      console.log('[CreateContent] fetchExistingContent - data received:', data);
+      
+      // Store content type for back navigation
+      if (data.content_type_name) {
+        const contentTypeSlug = data.content_type_name.toLowerCase().replace(/\s+/g, '-');
+        setEditContentType(contentTypeSlug);
+      }
+      
       const tags = (() => {
         if (!data.tags) return [];
         if (Array.isArray(data.tags)) return data.tags;
@@ -863,8 +876,20 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
           display: 'flex', alignItems: 'center', justifyContent: 'space-between'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 16px)' }}>
-            <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/admin' : '/user-dashboard')} style={{ color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(12px, 0.9vw, 13px)' }} size={window.innerWidth < 768 ? 'small' : 'middle'}>
-              {window.innerWidth < 768 ? '' : (isAdmin ? 'Dashboard' : 'Dashboard')}
+            <Button 
+              type="text" 
+              icon={<ArrowLeftOutlined />} 
+              onClick={() => {
+                if (isEditMode && editContentType && id) {
+                  navigate(`/dashboard/${editContentType}/${id}`);
+                } else {
+                  navigate(isAdmin ? '/admin' : '/user-dashboard');
+                }
+              }} 
+              style={{ color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(12px, 0.9vw, 13px)' }} 
+              size={window.innerWidth < 768 ? 'small' : 'middle'}
+            >
+              {window.innerWidth < 768 ? '' : (isEditMode ? 'Back to Content' : (isAdmin ? 'Dashboard' : 'Dashboard'))}
             </Button>
             {window.innerWidth >= 768 && <Divider orientation="vertical" style={{ margin: 0, borderColor: darkMode ? '#334155' : '#e8e8e8' }} />}
             <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>{isEditMode ? 'Edit Article' : 'New Article'}</Text>

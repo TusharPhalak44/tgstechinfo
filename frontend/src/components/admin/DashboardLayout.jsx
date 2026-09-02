@@ -29,7 +29,7 @@ import {
   SendOutlined,
   ThunderboltOutlined,
   GlobalOutlined,
-  ApiOutlined,
+  // ApiOutlined,
   SafetyCertificateOutlined,
   ApartmentOutlined,
   LockOutlined,
@@ -390,7 +390,8 @@ const DashboardLayout = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
-  const { cmsLogo, mainLogo } = useSiteSettings();
+  // const { cmsLogo, mainLogo } = useSiteSettings();
+    const { settings, navbarLogo, mainLogo, cmsLogo, cmsLogo1, cmsLogo2, favicon, logoSizes } = useSiteSettings();
 
   const D = darkMode;
 
@@ -437,6 +438,9 @@ const DashboardLayout = () => {
       }
     };
     fetch();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetch, 30000);
+    return () => clearInterval(interval);
   }, [user?.id]);
 
   /* ── KEYBOARD SHORTCUT ⌘K / Ctrl+K ── */
@@ -463,20 +467,15 @@ const DashboardLayout = () => {
       /* ── 2. CONTENT STUDIO (Royal Indigo & Purple) ── */
       navGroup('g-content', '✍️ Content Studio', [
         navItem('/dashboard/content', <FileTextOutlined style={{ color: D ? '#818CF8' : '#4F46E5' }} />, 'All Content'),
-        navItem('/dashboard/content?action=create', <EditOutlined style={{ color: D ? '#A78BFA' : '#7C3AED' }} />, 'Create Article'),
+        navItem('/dashboard/pending-review', <CheckCircleOutlined style={{ color: D ? '#34D399' : '#059669' }} />, 'Review Queue', pendingCount > 0 ? pendingCount : null, '#10B981'),
+        navItem('/dashboard/create-post', <EditOutlined style={{ color: D ? '#A78BFA' : '#7C3AED' }} />, 'Create Article'),
         navItem('/dashboard/categories', <FolderOutlined style={{ color: D ? '#C084FC' : '#9333EA' }} />, 'Categories'),
         navItem('/dashboard/tags', <TagOutlined style={{ color: D ? '#E879F9' : '#C026D3' }} />, 'Tags & Topics'),
         navItem('/dashboard/media-library', <PictureOutlined style={{ color: D ? '#818CF8' : '#4338CA' }} />, 'Media Library'),
         navItem('/dashboard/uploads', <UploadOutlined style={{ color: D ? '#60A5FA' : '#2563EB' }} />, 'Asset Uploads'),
       ]),
 
-      /* ── 3. EDITORIAL GOVERNANCE (Emerald & Sage) ── */
-      navGroup('g-editorial', '🛡️ Editorial Governance', [
-        navItem('/dashboard/pending-review', <CheckCircleOutlined style={{ color: D ? '#34D399' : '#059669' }} />, 'Review Queue', pendingCount > 0 ? pendingCount : null, '#10B981'),
-        navItem('/dashboard/drafts', <EditOutlined style={{ color: D ? '#6EE7B7' : '#10B981' }} />, 'Drafts Workspace'),
-      ]),
-
-      /* ── 4. LEAD GEN & INBOUND (Solar Flame & Amber) ── */
+      /* ── 3. LEAD GEN & INBOUND (Solar Flame & Amber) ── */
       navGroup('g-leads', '🎯 Lead Gen & Inbound', [
         navItem('/admin/submissions', <SendOutlined style={{ color: D ? '#FB923C' : '#EA580C' }} />, 'Form Submissions', unreadLeads > 0 ? unreadLeads : null, '#EA580C'),
         navItem('/dashboard/forms', <FormOutlined style={{ color: D ? '#FBBF24' : '#D97706' }} />, 'Forms Builder'),
@@ -492,7 +491,7 @@ const DashboardLayout = () => {
       /* ── 5. SEO & DISTRIBUTION (Teal & Cyan) ── */
       navGroup('g-seo', '🌐 SEO & Distribution', [
         navItem('/dashboard/seo', <LineChartOutlined style={{ color: D ? '#2DD4BF' : '#0D9488' }} />, 'SEO Health'),
-        navItem('/dashboard/integrations', <ApiOutlined style={{ color: D ? '#22D3EE' : '#0891B2' }} />, 'Integrations'),
+        // navItem('/dashboard/integrations', <ApiOutlined style={{ color: D ? '#22D3EE' : '#0891B2' }} />, 'Integrations'),
       ]),
     ];
 
@@ -534,7 +533,9 @@ const DashboardLayout = () => {
   const searchBg = D ? '#111C3D' : '#F8FAFC';
   const iconBtnHover = D ? 'rgba(255, 255, 255, 0.08)' : 'rgba(11, 31, 77, 0.05)';
 
-  const logoDisplay = cmsLogo || mainLogo;
+  // const logoDisplay = cmsLogo || mainLogo;
+  const logoDisplay = cmsLogo1 || settings?.cms_logo1 || navbarLogo || settings?.website_navbar_logo || mainLogo || settings?.website_main_logo || '';
+  const iconLogo = cmsLogo1 || settings?.cms_logo1 || cmsLogo2 || settings?.cms_logo2 || settings?.cms_favicon || favicon || settings?.website_favicon || '';
   const selectedKey = (location.pathname === '/admin' || location.pathname === '/dashboard' || location.pathname === '/dashboard/') ? '/dashboard' : location.pathname;
 
   /* ─ NOTIFICATION POPUP PANEL ─ */
@@ -557,11 +558,45 @@ const DashboardLayout = () => {
             onMouseEnter={e => e.currentTarget.style.background = D ? '#0A1229' : '#F8FAFC'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: textPrimary, marginBottom: 2 }}>
-              {n.title || 'System Alert'}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: textMuted }}>
-              {n.message || 'Operational log details'}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: textPrimary, marginBottom: 2 }}>
+                  {n.title || 'System Alert'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: textMuted }}>
+                  {n.message || 'Operational log details'}
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    await notificationApi.markAdminAsRead(n.id);
+                    setNotifications(prev => prev.filter(notif => notif.id !== n.id));
+                  } catch (error) {
+                    console.error('Mark as read error:', error);
+                  }
+                }}
+                style={{
+                  background: D ? 'rgba(59, 130, 246, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+                  color: D ? '#60A5FA' : '#2563EB',
+                  border: `1px solid ${D ? 'rgba(59, 130, 246, 0.3)' : 'rgba(37, 99, 235, 0.2)'}`,
+                  borderRadius: 6,
+                  padding: '4px 8px',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = D ? 'rgba(59, 130, 246, 0.25)' : 'rgba(37, 99, 235, 0.15)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = D ? 'rgba(59, 130, 246, 0.15)' : 'rgba(37, 99, 235, 0.1)';
+                }}
+              >
+                Mark as Read
+              </button>
             </div>
           </div>
         ))
@@ -636,20 +671,75 @@ const DashboardLayout = () => {
           {/* ─ LOGO ZONE ─ */}
           <div
             className="admin-logo-zone"
-            style={{ borderBottom: `1px solid ${borderColor}`, padding: collapsed && !isMobile ? '0 17px' : '0 18px' }}
+            style={{
+              borderBottom: `1px solid ${borderColor}`,
+              height: 64,
+              padding: collapsed && !isMobile ? '0 18px' : '0 20px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0 }}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0, overflow: 'hidden' }}
               onClick={() => navigate('/admin')}
             >
-              {logoDisplay ? (
+              {collapsed && !isMobile ? (
+                iconLogo ? (
+                  <img
+                    src={iconLogo}
+                    alt="TGS"
+                    style={{
+                      height: 36,
+                      width: 36,
+                      maxWidth: 36,
+                      maxHeight: 36,
+                      objectFit: 'contain',
+                      display: 'block',
+                      margin: '0 auto',
+                    }}
+                  />
+                ) : (
+                  <div className="admin-logo-mark">TGS</div>
+                )
+              ) : (cmsLogo1 && cmsLogo2) ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, maxWidth: 215, overflow: 'hidden' }}>
+                  <img
+                    src={cmsLogo1}
+                    alt="TGS"
+                    style={{
+                      height: logoSizes?.cms_logo1?.height ? Math.min(logoSizes.cms_logo1.height, 42) : 38,
+                      width: 'auto',
+                      maxWidth: 52,
+                      maxHeight: 42,
+                      objectFit: 'contain',
+                      flexShrink: 0,
+                      display: 'block',
+                    }}
+                  />
+                  <img
+                    src={cmsLogo2}
+                    alt="TECHINFO"
+                    style={{
+                      height: logoSizes?.cms_logo2?.height ? Math.min(logoSizes.cms_logo2.height, 36) : 32,
+                      width: 'auto',
+                      maxWidth: 145,
+                      maxHeight: 36,
+                      objectFit: 'contain',
+                      flexShrink: 1,
+                      display: 'block',
+                    }}
+                  />
+                </div>
+              ) : logoDisplay ? (
                 <img
                   src={logoDisplay}
-                  alt="TGS Tech"
+                  alt={settings?.site_name || "TgsTechInfo"}
                   style={{
-                    height: 36,
-                    maxWidth: collapsed && !isMobile ? 36 : 130,
+                    height: logoSizes?.cms_logo1?.height || 42,
+                    maxWidth: logoSizes?.cms_logo1?.width || 195,
                     objectFit: 'contain',
-                    transition: 'max-width 0.28s ease',
+                    objectPosition: 'left center',
+                    display: 'block',
                   }}
                 />
               ) : (
@@ -658,7 +748,7 @@ const DashboardLayout = () => {
                   {(!collapsed || isMobile) && (
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.9rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-                        TGS Tech
+                      {settings?.site_name || 'TgsTechInfo'}
                       </div>
                       <div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         Enterprise Control
@@ -812,7 +902,7 @@ const DashboardLayout = () => {
               {!isMobile && (
                 <button
                   className="admin-create-btn"
-                  onClick={() => navigate('/dashboard/content')}
+                  onClick={() => navigate('/dashboard/create-post')}
                 >
                   <PlusOutlined style={{ fontSize: 12, color: '#F7941D' }} />
                   Create Publication

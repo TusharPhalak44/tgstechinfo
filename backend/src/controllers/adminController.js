@@ -21,13 +21,16 @@ const stripEmDash = (val) => {
 // ✅ Get pending content for review
 exports.getPendingContent = async (req, res) => {
     try {
-        const { status, page = 1, limit = 15 } = req.query;
-        const offset = (page - 1) * limit;
-
-        const filters = {
-            limit: parseInt(limit),
-            offset: parseInt(offset) || 0
-        };
+        const { status, page = 1, limit } = req.query;
+        
+        const filters = {};
+        
+        // Only apply pagination if limit is provided
+        if (limit) {
+            const offset = (page - 1) * limit;
+            filters.limit = parseInt(limit);
+            filters.offset = parseInt(offset) || 0;
+        }
 
         if (status && status !== 'all') filters.status = status;
 
@@ -592,14 +595,14 @@ exports.getDashboardKPIs = async (req, res) => {
             vsParams      = [days];
         }
 
-        // Get overall content counts (not date-filtered) for editorial velocity
-        const [[{ published }]]        = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published'`);
-        const [[{ pending }]]          = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending'`);
+        // Get content counts filtered by selected period
+        const [[{ published }]]        = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published' AND ${dateCondition}`, dateParams);
+        const [[{ pending }]]          = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending' AND ${dateCondition}`, dateParams);
         const [[{ drafts }]]           = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' AND ${dateCondition}`, dateParams);
         const [[{ scheduled }]]        = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
         const [[{ totalViews }]]       = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents WHERE ${dateCondition}`, dateParams);
         const [[{ totalUsers }]]       = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
-        const [[{ totalSubs }]]        = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1`).catch(()=>[[{totalSubs:0}]]);
+        const [[{ totalSubs }]]        = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams).catch(()=>[[{totalSubs:0}]]);
         
         const [[{ periodViews }]]      = await pool.query(`SELECT COALESCE(SUM(view_count),0) as periodViews FROM contents WHERE ${dateCondition}`, dateParams);
         const [[{ avgTime }]]          = await pool.query(`SELECT COALESCE(AVG(time_spent_seconds)/60,0) as avgTime FROM page_views WHERE ${pvCondition}`, pvParams).catch(()=>[[{avgTime:4.2}]]);
@@ -680,10 +683,24 @@ exports.getTrafficAnalytics = async (req, res) => {
             WHERE ${vsCondition}
         `, vsParams).catch(()=>[[{totalSessions:0,uniqueVisitors:0,avgDuration:0,bounceCount:0}]]);
 
+        // Geographic / Country distribution
+        const [byCountry] = await pool.query(`
+            SELECT
+                COALESCE(country, 'Global') as country,
+                COUNT(*) as sessions,
+                COUNT(DISTINCT ip_address) as unique_users,
+                SUM(COALESCE(total_pages_visited, 1)) as page_views
+            FROM visitor_sessions
+            WHERE ${vsCondition}
+            GROUP BY country
+            ORDER BY sessions DESC
+            LIMIT 10
+        `, vsParams).catch(() => [[]]);
+
         const totalSessions = summary.totalSessions || 1;
         const bounceRate = Math.round((summary.bounceCount / totalSessions) * 100);
 
-        res.json({ dailySessions, dailyPageViews, summary: { ...summary, bounceRate } });
+         res.json({ dailySessions, dailyPageViews, byCountry, summary: { ...summary, bounceRate } });
     } catch (error) {
         console.error('Get traffic analytics error:', error);
         res.status(500).json({ message: 'Server error' });

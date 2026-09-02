@@ -6,9 +6,134 @@ const SearchHistory = require('../models/SearchHistory');
 const VideoProgress = require('../models/VideoProgress');
 const CtaClick = require('../models/CtaClick');
 const NewsletterEvent = require('../models/NewsletterEvent');
-const CoreWebVitals = require('../models/CoreWebVitals');
 const UserJourney = require('../models/UserJourney');
 const Content = require('../models/Content');
+
+// Get content type breakdown by views
+exports.getContentTypeBreakdown = async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+        const pool = require('../config/database').pool;
+
+        const isAllTime = !start_date && !end_date;
+        const startDateTime = start_date ? `${start_date} 00:00:00` : '1970-01-01 00:00:00';
+        const endDateTime = end_date ? `${end_date} 23:59:59` : new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+        console.log('getContentTypeBreakdown called with:', { start_date, end_date, isAllTime, startDateTime, endDateTime });
+
+        // Debug: Check what content types exist in the database
+        const debugQuery = `
+            SELECT ct.slug, ct.name, COUNT(c.id) as content_count
+            FROM content_types ct
+            LEFT JOIN contents c ON ct.id = c.content_type_id AND c.status = 'published'
+            GROUP BY ct.slug, ct.name
+            ORDER BY ct.slug
+        `;
+        const [debugRows] = await pool.query(debugQuery);
+        console.log('Debug - Content types in database:', debugRows);
+
+        // Always get view_count totals (all-time cumulative counter on contents table)
+        const viewCountQuery = `
+            SELECT ct.slug as content_type, ct.name as content_type_name,
+                SUM(c.view_count) as total_views, COUNT(c.id) as content_count
+            FROM contents c
+            JOIN content_types ct ON c.content_type_id = ct.id
+            WHERE c.status = 'published'
+            GROUP BY ct.slug, ct.name
+            ORDER BY total_views DESC
+        `;
+
+        // Period-specific page_views (linked by content_id)
+        const periodLinkedQuery = `
+            SELECT ct.slug as content_type, COUNT(DISTINCT pv.id) as period_views
+            FROM contents c
+            JOIN content_types ct ON c.content_type_id = ct.id
+            JOIN page_views pv ON c.id = pv.content_id
+                AND pv.entered_at >= ? AND pv.entered_at <= ?
+            WHERE c.status = 'published'
+            GROUP BY ct.slug
+        `;
+
+        // Period-specific page_views (matched by URL pattern)
+        const periodUrlQuery = `
+            SELECT ct.slug as content_type, COUNT(DISTINCT pv.id) as period_views
+            FROM contents c
+            JOIN content_types ct ON c.content_type_id = ct.id
+            JOIN page_views pv ON (
+                pv.page_url REGEXP CONCAT('/(article|blog|news|interview|ebook|whitepaper|report|case-study|guide|webinar|event)/', c.id, '($|[/?#])')
+                OR pv.page_url LIKE CONCAT('%/', CONVERT(c.slug USING utf8mb4) COLLATE utf8mb4_unicode_ci)
+                OR pv.page_url LIKE CONCAT('%/', CONVERT(c.slug USING utf8mb4) COLLATE utf8mb4_unicode_ci, '?%')
+            )
+            AND pv.content_id IS NULL
+            AND pv.entered_at >= ? AND pv.entered_at <= ?
+            WHERE c.status = 'published'
+            GROUP BY ct.slug
+        `;
+
+        // Total page_views in the period (for scaling)
+        const periodTotalQuery = `
+            SELECT COUNT(*) as total FROM page_views
+            WHERE entered_at >= ? AND entered_at <= ?
+        `;
+
+        // All-time total page_views (for scaling ratio)
+        const allTimeTotalQuery = `SELECT COUNT(*) as total FROM page_views`;
+
+        const [[viewCountRows], [periodLinkedRows], [periodUrlRows], [periodTotalRows], [allTimeTotalRows]] = await Promise.all([
+            pool.query(viewCountQuery),
+            pool.query(periodLinkedQuery, [startDateTime, endDateTime]),
+            pool.query(periodUrlQuery, [startDateTime, endDateTime]),
+            pool.query(periodTotalQuery, [startDateTime, endDateTime]),
+            pool.query(allTimeTotalQuery),
+        ]);
+
+        const periodTotal = Number(periodTotalRows[0]?.total || 0);
+        const allTimeTotal = Number(allTimeTotalRows[0]?.total || 1);
+        // Ratio of period traffic vs all-time traffic
+        const periodRatio = isAllTime ? 1 : Math.min(1, periodTotal / allTimeTotal);
+
+        // Build period views map from actual tracked data
+        const periodViewsMap = {};
+        for (const row of [...periodLinkedRows, ...periodUrlRows]) {
+            const key = row.content_type;
+            periodViewsMap[key] = (periodViewsMap[key] || 0) + Number(row.period_views);
+        }
+
+        const insightsTypes = ['article', 'news', 'interview', 'ebook', 'whitepaper', 'case-study', 'report', 'guide'];
+        const resourcesTypes = ['blog', 'webinar', 'event', 'video', 'podcast'];
+
+        const insightsItems = [];
+        const resourcesItems = [];
+        let insightsTotal = 0;
+        let resourcesTotal = 0;
+
+        for (const row of viewCountRows) {
+            const type = row.content_type || 'article';
+            const allTimeViews = Number(row.total_views || 0);
+
+            // Use actual period tracked views if available, otherwise scale view_count by period ratio
+            const trackedPeriodViews = periodViewsMap[type] || 0;
+            const scaledViews = trackedPeriodViews > 0
+                ? trackedPeriodViews
+                : Math.round(allTimeViews * periodRatio);
+
+            const views = isAllTime ? allTimeViews : scaledViews;
+
+            if (insightsTypes.includes(type)) {
+                insightsTotal += views;
+                insightsItems.push({ label: row.content_type_name || type, views, content_type: type });
+            } else if (resourcesTypes.includes(type)) {
+                resourcesTotal += views;
+                resourcesItems.push({ label: row.content_type_name || type, views, content_type: type });
+            }
+        }
+
+        res.json({ insightsItems, resourcesItems, insightsTotal, resourcesTotal });
+    } catch (error) {
+        console.error('Get content type breakdown error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
 // Get overall analytics overview
 exports.getOverview = async (req, res) => {
@@ -193,7 +318,6 @@ exports.getTopContentByEngagement = async (req, res) => {
         const { start_date, end_date, limit = 10 } = req.query;
         const pool = require('../config/database').pool;
 
-        const hasDateFilter = start_date && end_date;
         const startVal = start_date || '1970-01-01';
         const endVal = end_date || new Date().toISOString().split('T')[0];
 
@@ -211,14 +335,14 @@ exports.getTopContentByEngagement = async (req, res) => {
                 COUNT(DISTINCT pv.id) as period_views
             FROM contents c
             LEFT JOIN content_engagement ce ON c.id = ce.content_id
-                AND ce.created_at >= ? AND ce.created_at <= ?
+                AND DATE(ce.created_at) >= ? AND DATE(ce.created_at) <= ?
             LEFT JOIN page_views pv ON c.id = pv.content_id
-                AND pv.entered_at >= ? AND pv.entered_at <= ?
+                AND DATE(pv.entered_at) >= ? AND DATE(pv.entered_at) <= ?
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             WHERE c.status = 'published'
             GROUP BY c.id, c.title, c.slug, c.view_count, ct.slug
-            HAVING engagement_count > 0 OR period_views > 0
-            ORDER BY (engagement_count + period_views) DESC
+            HAVING COUNT(DISTINCT ce.id) > 0 OR COUNT(DISTINCT pv.id) > 0
+            ORDER BY (COUNT(DISTINCT ce.id) + COUNT(DISTINCT pv.id)) DESC
             LIMIT ?
         `;
 
@@ -377,107 +501,6 @@ exports.getSearchAnalytics = async (req, res) => {
     } catch (error) {
         console.error('Get search analytics error:', error);
         res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Get Core Web Vitals analytics
-exports.getCoreWebVitalsAnalytics = async (req, res) => {
-    try {
-        const { start_date, end_date } = req.query;
-
-        console.log('getCoreWebVitalsAnalytics - Request params:', { start_date, end_date });
-
-        const filters = {};
-        if (start_date) filters.start_date = start_date;
-        if (end_date) filters.end_date = end_date;
-
-        const aggregatedMetrics = await CoreWebVitals.getAggregatedMetrics(filters);
-        const metricsByPage = await CoreWebVitals.getMetricsByPage(filters, 10);
-
-        console.log('getCoreWebVitalsAnalytics - Aggregated metrics:', aggregatedMetrics);
-        console.log('getCoreWebVitalsAnalytics - Metrics by page:', metricsByPage.length);
-
-        res.json({
-            aggregatedMetrics,
-            metricsByPage
-        });
-    } catch (error) {
-        console.error('Get Core Web Vitals analytics error:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Record Core Web Vitals
-exports.recordCoreWebVitals = async (req, res) => {
-    try {
-        const cwvData = req.body;
-
-        console.log('recordCoreWebVitals - Data received:', cwvData);
-
-        const cwv = await CoreWebVitals.create(cwvData);
-
-        console.log('recordCoreWebVitals - CWV created successfully:', cwv);
-
-        res.json({
-            success: true,
-            cwv
-        });
-    } catch (error) {
-        console.error('Record Core Web Vitals error:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// Create Core Web Vitals table (migration)
-exports.createCoreWebVitalsTable = async (req, res) => {
-    try {
-        const createTableSQL = `
-            CREATE TABLE IF NOT EXISTS core_web_vitals (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                session_uuid VARCHAR(255) NOT NULL,
-                consent_uuid VARCHAR(255),
-                
-                -- Core Web Vitals Metrics
-                lcp DECIMAL(10, 2) COMMENT 'Largest Contentful Paint (seconds)',
-                fid INT COMMENT 'First Input Delay (milliseconds)',
-                cls DECIMAL(10, 4) COMMENT 'Cumulative Layout Shift',
-                ttfb INT COMMENT 'Time to First Byte (milliseconds)',
-                fcp DECIMAL(10, 2) COMMENT 'First Contentful Paint (seconds)',
-                inp INT COMMENT 'Interaction to Next Paint (milliseconds)',
-                
-                -- Additional Performance Metrics
-                dom_content_loaded_time INT COMMENT 'DOM Content Loaded (milliseconds)',
-                load_complete_time INT COMMENT 'Load Complete (milliseconds)',
-                total_resources INT COMMENT 'Total number of resources loaded',
-                
-                -- Context
-                page_url VARCHAR(500),
-                page_title VARCHAR(255),
-                device_type VARCHAR(50),
-                browser VARCHAR(100),
-                
-                -- Timestamps
-                measured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                
-                -- Indexes
-                INDEX idx_session_uuid (session_uuid),
-                INDEX idx_measured_at (measured_at),
-                INDEX idx_page_url (page_url(255))
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `;
-
-        await require('../config/database').pool.query(createTableSQL);
-
-        console.log('Core Web Vitals table created successfully');
-
-        res.json({
-            success: true,
-            message: 'Core Web Vitals table created successfully'
-        });
-    } catch (error) {
-        console.error('Create Core Web Vitals table error:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
 

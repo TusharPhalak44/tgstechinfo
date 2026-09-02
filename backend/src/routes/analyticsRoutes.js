@@ -10,6 +10,9 @@ router.use(isAdmin);
 // Overview Analytics
 router.get('/overview', analyticsController.getOverview);
 
+// Content Type Analytics
+router.get('/content-type-breakdown', analyticsController.getContentTypeBreakdown);
+
 // Content Analytics
 router.get('/content/:content_id', analyticsController.getContentAnalytics);
 
@@ -27,11 +30,6 @@ router.get('/popular-downloads', analyticsController.getPopularDownloads);
 
 // Search Analytics
 router.get('/search', analyticsController.getSearchAnalytics);
-
-// Core Web Vitals Analytics
-router.get('/core-web-vitals', analyticsController.getCoreWebVitalsAnalytics);
-router.post('/core-web-vitals', analyticsController.recordCoreWebVitals);
-router.post('/core-web-vitals/create-table', analyticsController.createCoreWebVitalsTable);
 
 // User Journey Analytics
 router.get('/journey', analyticsController.getJourneyAnalytics);

@@ -56,6 +56,85 @@ const parseTags = (tags) => {
   try { return JSON.parse(tags); } catch { return []; }
 };
 
+// Add custom styles for content display
+const contentDisplayStyles = `
+  .admin-content-display p {
+    margin-bottom: 16px;
+    margin-top: 16px;
+  }
+  .admin-content-display h1,
+  .admin-content-display h2,
+  .admin-content-display h3,
+  .admin-content-display h4,
+  .admin-content-display h5,
+  .admin-content-display h6 {
+    margin-top: 20px;
+    margin-bottom: 12px;
+  }
+  .admin-content-display ul {
+    margin-bottom: 16px;
+    margin-top: 16px;
+    padding-left: 25px;
+    list-style-type: disc;
+  }
+  .admin-content-display ol {
+    margin-bottom: 16px;
+    margin-top: 16px;
+    padding-left: 25px;
+    list-style-type: decimal;
+  }
+  .admin-content-display li {
+    margin-bottom: 8px;
+    line-height: 1.6;
+  }
+  .admin-content-display ul ul {
+    list-style-type: circle;
+  }
+  .admin-content-display ul ul ul {
+    list-style-type: square;
+  }
+  .admin-content-display br {
+    line-height: 1.6;
+  }
+  .admin-content-display div {
+    margin-bottom: 12px;
+  }
+  .admin-content-display strong {
+    font-weight: 700;
+  }
+  .admin-content-display em {
+    font-style: italic;
+  }
+  .admin-content-display a {
+    color: #0AAEEF;
+    text-decoration: underline;
+  }
+  .admin-content-display blockquote {
+    border-left: 3px solid #0AAEEF;
+    padding-left: 16px;
+    margin: 16px 0;
+    color: #64748B;
+    font-style: italic;
+  }
+  .admin-content-display code {
+    background: rgba(10, 174, 239, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+  .admin-content-display pre {
+    background: rgba(15, 23, 42, 0.8);
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+  .admin-content-display pre code {
+    background: transparent;
+    padding: 0;
+  }
+`;
+
 const formatImageUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
   let cleaned = url.trim().replace(/\\/g, '/');
@@ -118,7 +197,7 @@ const AdminContent = () => {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(18);
+  const [displayCount, setDisplayCount] = useState(16); // Cards to show on current page (16, 20, or 24)
 
   // Quick Inspection Drawer
   const [selectedArticle, setSelectedArticle] = useState(null);
@@ -183,7 +262,7 @@ const AdminContent = () => {
     setVisibilityLoadingId(content.id);
     const newVisibility = content.is_visible === 0 ? 1 : 0;
     try {
-      await axios.put(`/api/admin/content/${content.id}/visibility`, { is_visible: newVisibility });
+      await axios.put(`/api/admin/content/${content.id}/visibility`, { is_visible_on_site: newVisibility });
       message.success(`Publication is now ${newVisibility ? 'visible' : 'hidden'} on live website`);
       setAllContents(prev => prev.map(c => c.id === content.id ? { ...c, is_visible: newVisibility } : c));
       if (selectedArticle?.id === content.id) {
@@ -263,9 +342,10 @@ const AdminContent = () => {
 
   // Paginated Slices
   const paginatedContents = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredContents.slice(start, start + pageSize);
-  }, [filteredContents, currentPage, pageSize]);
+    const start = (currentPage - 1) * 24; // Fixed 24 cards per page
+    const end = start + displayCount; // Show displayCount cards on current page
+    return filteredContents.slice(start, end);
+  }, [filteredContents, currentPage, displayCount]);
 
   // Dynamic Theme Colors
   const bgCard = darkMode ? 'rgba(30, 41, 59, 0.75)' : '#ffffff';
@@ -305,7 +385,10 @@ const AdminContent = () => {
             </div>
             <div style={{ minWidth: 0 }}>
               <div
-                onClick={() => { setSelectedArticle(record); setDrawerOpen(true); }}
+                onClick={() => {
+                  const contentType = (record.content_type_name || record.content_type || 'article').toLowerCase().replace(/\s+/g, '-');
+                  navigate(`/dashboard/${contentType}/${record.id}`);
+                }}
                 style={{
                   fontWeight: 600,
                   fontSize: '0.86rem',
@@ -399,7 +482,7 @@ const AdminContent = () => {
               type="text"
               size="small"
               icon={<EditOutlined />}
-              onClick={() => navigate(`/dashboard/create-post?edit=${record.id}`)}
+              onClick={() => navigate(`/dashboard/create-post/${record.id}`)}
               style={{ color: '#3B82F6' }}
             />
           </Tooltip>
@@ -762,7 +845,10 @@ const AdminContent = () => {
                       </div>
 
                       <h3
-                        onClick={() => { setSelectedArticle(item); setDrawerOpen(true); }}
+                        onClick={() => {
+                          const contentType = (item.content_type_name || item.content_type || 'article').toLowerCase().replace(/\s+/g, '-');
+                          navigate(`/dashboard/${contentType}/${item.id}`);
+                        }}
                         style={{
                           fontSize: '0.94rem',
                           fontWeight: 700,
@@ -828,7 +914,7 @@ const AdminContent = () => {
                           type="text"
                           size="small"
                           icon={<EditOutlined />}
-                          onClick={() => navigate(`/dashboard/create-post?edit=${item.id}`)}
+                          onClick={() => navigate(`/dashboard/create-post/${item.id}`)}
                           style={{ color: '#3B82F6' }}
                         />
                       </Tooltip>
@@ -875,16 +961,40 @@ const AdminContent = () => {
       )}
 
       {/* ── 5. CYBER PAGINATION BAR ── */}
-      {filteredContents.length > pageSize && (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-          <Pagination
-            current={currentPage}
-            pageSize={pageSize}
-            total={filteredContents.length}
-            onChange={(page, pSize) => { setCurrentPage(page); setPageSize(pSize); }}
-            showSizeChanger
-            pageSizeOptions={['12', '18', '24', '48', '96']}
-          />
+      {filteredContents.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 24, flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          {/* Show More Button - show on all pages before reaching 24 cards */}
+          {displayCount < 24 && ((currentPage - 1) * 24 + displayCount) < filteredContents.length && (
+            <Button
+              onClick={() => setDisplayCount(prev => Math.min(prev + 4, 24))}
+              style={{
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, #0B1F4D 0%, #2563EB 100%)',
+                border: '1px solid rgba(247,148,29,0.35)',
+                color: '#FFFFFF',
+                fontWeight: 600,
+                padding: '6px 24px',
+                height: 40
+              }}
+            >
+              Show More ({displayCount + 4} / 24)
+            </Button>
+          )}
+
+          {/* Standard Pagination - show after displayCount reaches 24 */}
+          {displayCount >= 24 && filteredContents.length > 24 && (
+            <Pagination
+              current={currentPage}
+              pageSize={24}
+              total={filteredContents.length}
+              onChange={(page) => {
+                setCurrentPage(page);
+                setDisplayCount(16); // Reset to initial 16 on page change
+                window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top on page change
+              }}
+              showSizeChanger={false}
+            />
+          )}
         </div>
       )}
 
@@ -903,6 +1013,7 @@ const AdminContent = () => {
         drawerStyle={{ background: darkMode ? '#0c1c38' : '#f8fafc', color: textPrimary }}
         headerStyle={{ background: darkMode ? '#060c18' : '#fff', borderBottom: `1px solid ${borderColor}` }}
       >
+        <style>{contentDisplayStyles}</style>
         {selectedArticle && (() => {
           const selectedImg = getContentImage(selectedArticle);
           return (
@@ -954,12 +1065,85 @@ const AdminContent = () => {
             {/* Short Description */}
             {selectedArticle.short_description && (
               <div>
-                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Description</h4>
+                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Short Description</h4>
                 <p style={{ fontSize: '0.86rem', color: textPrimary, lineHeight: '1.5' }}>
                   {selectedArticle.short_description}
                 </p>
               </div>
             )}
+
+            {/* Long Description / Full Content */}
+            {selectedArticle.content && (
+              <div>
+                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Long Description</h4>
+                <div 
+                  className="admin-content-display"
+                  style={{ 
+                    fontSize: '0.9rem', 
+                    color: textPrimary, 
+                    lineHeight: '1.6',
+                    padding: '16px',
+                    background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)',
+                    borderRadius: 8,
+                    border: `1px solid ${borderColor}`,
+                    maxHeight: '400px',
+                    overflowY: 'auto'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
+                />
+              </div>
+            )}
+
+            {/* SEO Settings */}
+            <div className="radar-glass-panel" style={{ padding: '16px', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8, border: `1px solid ${borderColor}` }}>
+              <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em', marginBottom: 12 }}>SEO Settings</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {selectedArticle.seo_title && (
+                  <div>
+                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Title</Text>
+                    <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 600, display: 'block' }}>
+                      {selectedArticle.seo_title}
+                    </Text>
+                  </div>
+                )}
+
+                {selectedArticle.seo_description && (
+                  <div>
+                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Description</Text>
+                    <Text style={{ fontSize: '0.9rem', color: textPrimary, lineHeight: '1.4', display: 'block' }}>
+                      {selectedArticle.seo_description}
+                    </Text>
+                  </div>
+                )}
+
+                {selectedArticle.seo_keywords && (
+                  <div>
+                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Keywords</Text>
+                    <Text style={{ fontSize: '0.9rem', color: textPrimary, display: 'block' }}>
+                      {selectedArticle.seo_keywords}
+                    </Text>
+                  </div>
+                )}
+
+                {selectedArticle.slug && (
+                  <div>
+                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>URL Slug</Text>
+                    <Text style={{ fontSize: '0.9rem', color: '#0AAEEF', fontWeight: 600, display: 'block' }}>
+                      {selectedArticle.slug}
+                    </Text>
+                  </div>
+                )}
+
+                {selectedArticle.canonical_url && (
+                  <div>
+                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Canonical URL</Text>
+                    <Text style={{ fontSize: '0.9rem', color: textPrimary, display: 'block' }}>
+                      {selectedArticle.canonical_url}
+                    </Text>
+                  </div>
+                )}
+              </div>
+            </div>
 
             {/* Meta Tags */}
             {parseTags(selectedArticle.tags).length > 0 && (
@@ -983,7 +1167,7 @@ const AdminContent = () => {
                 type="primary"
                 icon={<EditOutlined />}
                 block
-                onClick={() => { setDrawerOpen(false); navigate(`/dashboard/create-post?edit=${selectedArticle.id}`); }}
+                onClick={() => { setDrawerOpen(false); navigate(`/dashboard/create-post/${selectedArticle.id}`); }}
                 style={{ borderRadius: 10, background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 60%, #F7941D 200%)', border: '1px solid rgba(247,148,29,0.35)', boxShadow: '0 4px 14px rgba(11,31,77,0.3)' }}
               >
                 Edit Publication

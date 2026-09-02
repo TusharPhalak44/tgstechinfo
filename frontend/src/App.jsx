@@ -110,13 +110,17 @@ import AdminContent from './components/admin/AdminContent';
 
 import ContentReview from './components/admin/ContentReview';
 
+import ContentReviewDetail from './components/admin/ContentReviewDetail';
+
+import ContentDetail from './components/admin/ContentDetail';
+
 import MediaLibrary from './components/admin/MediaLibrary';
 
 import Uploads from './components/admin/Uploads';
 
 import Categories from './components/admin/Categories';
 
-import Integrations from './components/admin/Integrations';
+// import Integrations from './components/admin/Integrations';
 
 import AuditLogs from './components/admin/AuditLogs';
 
@@ -591,7 +595,22 @@ function AppContent() {
 
                 <Route path="content" element={<AdminContent />} />
 
+                <Route path="content/:id" element={<ContentDetail />} />
+
+                <Route path="article/:id" element={<ContentDetail />} />
+                <Route path="blog/:id" element={<ContentDetail />} />
+                <Route path="news/:id" element={<ContentDetail />} />
+                <Route path="interview/:id" element={<ContentDetail />} />
+                <Route path="webinar/:id" element={<ContentDetail />} />
+                <Route path="event/:id" element={<ContentDetail />} />
+                <Route path="ebook/:id" element={<ContentDetail />} />
+                <Route path="whitepaper/:id" element={<ContentDetail />} />
+                <Route path="report/:id" element={<ContentDetail />} />
+                <Route path="case-study/:id" element={<ContentDetail />} />
+
                 <Route path="pending-review" element={<ContentReview />} />
+
+                <Route path="content-review/:id" element={<ContentReviewDetail />} />
 
                <Route path="drafts" element={
 
@@ -606,6 +625,7 @@ function AppContent() {
                 <Route path="media-library" element={<MediaLibrary />} />
 
                 <Route path="create-post" element={<CreateContent />} />
+                <Route path="create-post/:id" element={<CreateContent />} />
 
                 <Route path="tags" element={<Tags />} />
 
@@ -627,7 +647,7 @@ function AppContent() {
 
                 <Route path="audit-logs" element={<AuditLogs />} />
 
-                <Route path="integrations" element={<Integrations />} />
+                {/* <Route path="integrations" element={<Integrations />} /> */}
 
                 <Route path="sessions" element={<SessionManagement />} />
 
@@ -675,6 +695,8 @@ function AppContent() {
 
                 <Route path="drafts" element={<ContentListing />} />
 
+                <Route path="analytics" element={<ContentAnalytics />} />
+
                 <Route path="profile" element={<UserProfile />} />
 
                 <Route path="scheduled" element={<MyContent />} />
@@ -701,11 +723,27 @@ function AppContent() {
 
                 <Route path="content" element={<AdminContent />} />
 
+                <Route path="content/:id" element={<ContentDetail />} />
+
+                <Route path="article/:id" element={<ContentDetail />} />
+                <Route path="blog/:id" element={<ContentDetail />} />
+                <Route path="news/:id" element={<ContentDetail />} />
+                <Route path="interview/:id" element={<ContentDetail />} />
+                <Route path="webinar/:id" element={<ContentDetail />} />
+                <Route path="event/:id" element={<ContentDetail />} />
+                <Route path="ebook/:id" element={<ContentDetail />} />
+                <Route path="whitepaper/:id" element={<ContentDetail />} />
+                <Route path="report/:id" element={<ContentDetail />} />
+                <Route path="case-study/:id" element={<ContentDetail />} />
+
                 <Route path="pending-review" element={<ContentReview />} />
+
+                <Route path="content-review/:id" element={<ContentReviewDetail />} />
 
                 <Route path="drafts" element={<ContentListing />} />
 
                 <Route path="create-post" element={<CreateContent />} />
+                <Route path="create-post/:id" element={<CreateContent />} />
 
                 <Route path="tags" element={<Tags />} />
 

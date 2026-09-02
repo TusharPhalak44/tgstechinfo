@@ -32,7 +32,10 @@ const StatCard = ({ icon, label, value, color }) => (
 );
 
 const AVATAR_COLORS = ['#4a7cff', '#6c5ce7', '#00b894', '#e17055', '#fdcb6e', '#0984e3', '#e84393'];
-const avatarColor = (str) => AVATAR_COLORS[(str?.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+const avatarColor = (str) => {
+  const strValue = String(str || '');
+  return AVATAR_COLORS[(strValue.charCodeAt(0) || 0) % AVATAR_COLORS.length];
+};
 
 const getDisplayName = (extra_fields) => {
   if (!extra_fields) return '—';

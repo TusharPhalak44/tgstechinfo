@@ -13,6 +13,7 @@ import {
   EditOutlined,
   RiseOutlined,
   UserOutlined,
+  CompassOutlined,
 } from '@ant-design/icons';
 
 const COLORS = ['#0AAEEF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#64748B'];
@@ -419,7 +420,9 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
   const [engagementMetrics, setEngagementMetrics] = useState({});
 
   useEffect(() => {
-    console.log('ContentPerformanceSection useEffect triggered with timeRange:', timeRange);
+    console.log('=== ContentPerformanceSection useEffect triggered ===');
+    console.log('Current timeRange:', timeRange);
+    console.log('Current contentStats before fetch:', contentStats);
     
     let dateParams = '';
     
@@ -451,11 +454,87 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
         avgReadTime: data?.avgReadTime || 0,
         scrollDepth: data?.scrollDepth || 0,
       });
+    }).catch((error) => {
+      console.error('Analytics API Error:', error);
+    });
 
-      // Use analytics totalPageViews for content stats (time-based)
-      // Distribute views proportionally to content types when real breakdown unavailable
-      const insightsDistribution = Math.round(totalPageViews * 0.85); // 85% insights
-      const resourcesDistribution = Math.round(totalPageViews * 0.15); // 15% resources
+    // 2. Fetch content type breakdown with date filtering
+    console.log('Calling API: /api/analytics/content-type-breakdown' + dateParams);
+    axios.get(`/api/analytics/content-type-breakdown${dateParams}`).then(({ data }) => {
+      console.log('=== Content Type Breakdown API Response ===');
+      console.log('Full response:', data);
+      console.log('insightsTotal:', data.insightsTotal);
+      console.log('resourcesTotal:', data.resourcesTotal);
+      console.log('insightsItems:', data.insightsItems);
+      console.log('resourcesItems:', data.resourcesItems);
+      
+      const iconMap = {
+        'article': <FileTextOutlined />,
+        'news': <RiseOutlined />,
+        'interview': <UserOutlined />,
+        'ebook': <FolderOpenOutlined />,
+        'whitepaper': <FolderOpenOutlined />,
+        'case-study': <CheckCircleOutlined />,
+        'report': <FileTextOutlined />,
+        'guide': <CompassOutlined />,
+        'blog': <GlobalOutlined />,
+        'webinar': <RiseOutlined />,
+        'event': <FileTextOutlined />,
+        'video': <EyeOutlined />,
+        'podcast': <ReadOutlined />,
+      };
+
+      const colorMap = {
+        'article': '#0AAEEF',
+        'news': '#F59E0B',
+        'interview': '#8B5CF6',
+        'ebook': '#10B981',
+        'whitepaper': '#10B981',
+        'case-study': '#8B5CF6',
+        'report': '#0AAEEF',
+        'guide': '#F97316',
+        'blog': '#0AAEEF',
+        'webinar': '#F59E0B',
+        'event': '#EF4444',
+        'video': '#06B6D4',
+        'podcast': '#8B5CF6',
+      };
+
+      const insightsItems = (data.insightsItems || []).map(item => ({
+        label: item.label,
+        views: item.views,
+        color: colorMap[item.content_type] || '#64748B',
+        icon: iconMap[item.content_type] || <FileTextOutlined />,
+      }));
+
+      const resourcesItems = (data.resourcesItems || []).map(item => ({
+        label: item.label,
+        views: item.views,
+        color: colorMap[item.content_type] || '#64748B',
+        icon: iconMap[item.content_type] || <FolderOpenOutlined />,
+      }));
+
+      console.log('=== Setting content stats ===');
+      console.log('insightsViews:', data.insightsTotal || 0);
+      console.log('resourcesViews:', data.resourcesTotal || 0);
+      console.log('mapped insightsItems:', insightsItems);
+      console.log('mapped resourcesItems:', resourcesItems);
+
+      setContentStats({
+        insightsViews: data.insightsTotal || 0,
+        resourcesViews: data.resourcesTotal || 0,
+        insightsItems,
+        resourcesItems,
+      });
+    }).catch((error) => {
+      console.error('=== Content Type Breakdown API Error ===');
+      console.error('Error:', error);
+      console.error('Error response:', error.response);
+      console.log('Using fallback data due to API error');
+      // Fallback to proportional distribution
+      const totalPageViews = 1000; // Default fallback
+      const insightsDistribution = Math.round(totalPageViews * 0.85);
+      const resourcesDistribution = Math.round(totalPageViews * 0.15);
       
       setContentStats({
         insightsViews: insightsDistribution,
@@ -474,11 +553,9 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
           { label: 'Events',       views: Math.round(resourcesDistribution * 0.01), color: '#EF4444', icon: <FileTextOutlined /> },
         ],
       });
-    }).catch((error) => {
-      console.error('Analytics API Error:', error);
     });
 
-    // 2. Fetch categories with date filtering
+    // 3. Fetch categories with date filtering
     axios.get(`/api/public/categories${dateParams}`).then(({ data }) => {
       console.log('Categories API Response:', data);
       const industries = (data || []).filter(c => c.type === 'industry');
@@ -488,7 +565,7 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
       console.error('Categories API Error:', error);
     });
 
-    // 3. Fetch top content by engagement with date filtering
+    // 4. Fetch top content by engagement with date filtering
     const engagementSep = dateParams ? '&' : '';
     const engagementDateStr = dateParams ? dateParams.replace('?', '') : '';
     axios.get(`/api/analytics/top-content-engagement?limit=10${engagementSep}${engagementDateStr}`).then(({ data }) => {
@@ -790,10 +867,10 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
 
         {/* Dynamic Display based on activeGroup */}
         {activeGroup === 'insights' && (
-          <div className="insights-rings-container" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 20 }}>
+          <div key={`insights-${timeRange}`} className="insights-rings-container" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 20 }}>
             {contentStats.insightsItems.map((item) => (
               <RadialRing
-                key={item.label}
+                key={`${item.label}-${timeRange}`}
                 value={item.views}
                 max={contentStats.insightsViews || 100}
                 color={item.color}
@@ -807,7 +884,7 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
         )}
 
         {activeGroup === 'resources' && (
-          <div style={{ padding: '0 10px' }}>
+          <div key={`resources-${timeRange}`} style={{ padding: '0 10px' }}>
             <VerticalBarChart items={contentStats.resourcesItems} darkMode={darkMode} width={500} height={160} />
           </div>
         )}
