@@ -120,6 +120,8 @@ import Uploads from './components/admin/Uploads';
 
 import Categories from './components/admin/Categories';
 
+import ContentAnalytics from './components/user/ContentAnalytics';
+
 // import Integrations from './components/admin/Integrations';
 
 import AuditLogs from './components/admin/AuditLogs';
@@ -765,7 +767,7 @@ function AppContent() {
 
                 <Route path="audit-logs" element={<AuditLogs />} />
 
-                <Route path="integrations" element={<Integrations />} />
+                {/* <Route path="integrations" element={<Integrations />} /> */}
 
                 <Route path="sessions" element={<SessionManagement />} />
 
