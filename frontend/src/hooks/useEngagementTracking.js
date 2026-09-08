@@ -15,8 +15,8 @@ const useEngagementTracking = ({ contentId, contentType, pageTitle, enabled = tr
   // Get session and consent UUIDs from localStorage
   const getSessionData = () => {
     try {
-      const sessionUuid = localStorage.getItem('session_uuid');
-      const consentUuid = localStorage.getItem('consent_uuid');
+      const sessionUuid = localStorage.getItem('tracking_session_uuid') || localStorage.getItem('session_uuid');
+      const consentUuid = localStorage.getItem('consent_uuid') || window.__CONSENT_UUID;
       return { sessionUuid, consentUuid };
     } catch {
       return { sessionUuid: null, consentUuid: null };
@@ -55,7 +55,12 @@ const useEngagementTracking = ({ contentId, contentType, pageTitle, enabled = tr
 
     const { sessionUuid, consentUuid } = getSessionData();
     
-    if (!sessionUuid) return;
+    console.log('sendEngagementData called:', { enabled, contentId, sessionUuid, consentUuid, engagementType });
+    
+    if (!sessionUuid) {
+      console.warn('No session_uuid available, skipping engagement tracking');
+      return;
+    }
 
     try {
       const readingTime = startTimeRef.current 
@@ -65,8 +70,12 @@ const useEngagementTracking = ({ contentId, contentType, pageTitle, enabled = tr
       const engagementData = {
         session_uuid: sessionUuid,
         consent_uuid: consentUuid,
+        page_url: window.location.href,
+        page_title: pageTitle || document.title,
         content_id: contentId,
-        engagement_type: engagementType,
+        engagement_type: engagementType === 'page_view' ? 'view' : 'read',
+        page_url: window.location.href,
+        page_title: document.title,
         engagement_data: {
           content_type: contentType,
           page_title: pageTitle,
@@ -79,10 +88,12 @@ const useEngagementTracking = ({ contentId, contentType, pageTitle, enabled = tr
         reading_completed: maxScrollDepthRef.current >= 90
       };
 
+      console.log('Sending engagement data to backend:', engagementData);
       await axios.post('/api/tracking/engagement', engagementData);
-      console.log('Engagement data sent:', engagementType, engagementData);
+      console.log('Engagement data sent successfully:', engagementType);
     } catch (error) {
       console.error('Failed to send engagement data:', error);
+      console.error('Error response:', error.response?.data);
     }
   };
 

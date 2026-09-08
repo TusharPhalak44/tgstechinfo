@@ -2,35 +2,48 @@ const { pool } = require('../config/database');
 
 class ContentEngagement {
     static async create(engagementData) {
-        const {
-            session_uuid,
-            consent_uuid,
-            content_id,
-            engagement_type,
-            engagement_data,
-            reading_time_seconds,
-            scroll_depth,
-            max_scroll_depth,
-            exit_position,
-            reading_completed
-        } = engagementData;
+        try {
+            const {
+                session_uuid,
+                consent_uuid,
+                content_id,
+                engagement_type,
+                engagement_data,
+                reading_time_seconds,
+                scroll_depth,
+                max_scroll_depth,
+                exit_position,
+                reading_completed
+            } = engagementData;
 
-        const query = `
-            INSERT INTO content_engagement (
-                session_uuid, consent_uuid, content_id, engagement_type, engagement_data,
-                reading_time_seconds, scroll_depth, max_scroll_depth, exit_position, reading_completed
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+            console.log('ContentEngagement.create called with:', { session_uuid, content_id, engagement_type });
 
-        const values = [
-            session_uuid, consent_uuid, content_id, engagement_type,
-            engagement_data ? JSON.stringify(engagement_data) : null,
-            reading_time_seconds || 0, scroll_depth || 0, max_scroll_depth || 0,
-            exit_position || 0, reading_completed || false
-        ];
+            const query = `
+                INSERT INTO content_engagement (
+                    session_uuid, consent_uuid, content_id, engagement_type, engagement_data,
+                    reading_time_seconds, scroll_depth, max_scroll_depth, exit_position, reading_completed
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
 
-        const [result] = await pool.query(query, values);
-        return await ContentEngagement.findById(result.insertId);
+            const values = [
+                session_uuid, consent_uuid, content_id, engagement_type,
+                engagement_data ? JSON.stringify(engagement_data) : null,
+                reading_time_seconds || 0, scroll_depth || 0, max_scroll_depth || 0,
+                exit_position || 0, reading_completed || false
+            ];
+
+            console.log('Executing query with values:', values);
+            const [result] = await pool.query(query, values);
+            console.log('Query result:', result);
+            
+            const engagement = await ContentEngagement.findById(result.insertId);
+            console.log('Created engagement:', engagement);
+            return engagement;
+        } catch (error) {
+            console.error('ContentEngagement.create error:', error);
+            console.error('Error stack:', error.stack);
+            throw error;
+        }
     }
 
     static async findById(id) {

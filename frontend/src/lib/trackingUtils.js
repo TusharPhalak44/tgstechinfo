@@ -129,7 +129,9 @@ const CONTENT_TYPE_ROUTES = [
 export const getPageType = (pathname) => {
   if (pathname === '/') return 'home';
   for (const { prefix, type } of CONTENT_TYPE_ROUTES) {
-    if (pathname.startsWith(prefix)) return type;
+    if (pathname.startsWith(prefix)) {
+      return ['article', 'blog'].includes(type) ? type : 'other';
+    }
   }
   if (pathname.startsWith('/category/')) return 'category';
   if (pathname === '/search') return 'search';
@@ -140,6 +142,13 @@ export const getPageType = (pathname) => {
 
 // Extract slug from content URL
 export const extractContentSlug = (pathname) => {
+  const standalonePrefixes = ['/content/', '/lp/', '/landing-page/'];
+  for (const prefix of standalonePrefixes) {
+    if (pathname.startsWith(prefix)) {
+      return pathname.slice(prefix.length).split('/')[0] || null;
+    }
+  }
+
   for (const { prefix } of CONTENT_TYPE_ROUTES) {
     if (pathname.startsWith(prefix)) {
       return pathname.slice(prefix.length).split('/')[0] || null;

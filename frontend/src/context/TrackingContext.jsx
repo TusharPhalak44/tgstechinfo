@@ -92,9 +92,11 @@ export const TrackingProvider = ({ children }) => {
       // Resolve content_id from slug via API if we have a slug but no numeric ID
       if (slug && !contentId) {
         try {
-          const res = await import('axios').then(m => m.default.get(`/api/public/content/slug/${slug}`));
-          contentId = res.data?.id || res.data?.data?.id || null;
-        } catch {
+          const res = await import('axios').then(m => m.default.get(`/api/public/content/${slug}`));
+          contentId = res.data?.content?.id || res.data?.id || null;
+          console.log('Resolved content_id from slug:', slug, '->', contentId);
+        } catch (err) {
+          console.warn('Failed to resolve content_id from slug:', slug, err);
           // slug lookup failed — content_id stays null, content_type still tracked
         }
       }
@@ -109,6 +111,7 @@ export const TrackingProvider = ({ children }) => {
         content_id: contentId ? parseInt(contentId, 10) : null
       };
 
+      console.log('Tracking page view with data:', pageViewData);
       const response = await trackingApi.trackPageView(pageViewData);
       setCurrentPageViewId(response.pageView.id);
       setPageEnterTime(Date.now());

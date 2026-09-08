@@ -13,6 +13,7 @@ import moment from 'moment';
 import '../../prose-content.css';
 import ContentRenderer from '../common/ContentRenderer';
 import { useTheme } from '../../context/ThemeContext';
+import { useTracking } from '../../context/TrackingContext';
 import useEngagementTracking from '../../hooks/useEngagementTracking';
 
 const { Title, Text } = Typography;
@@ -136,6 +137,7 @@ const ArticleDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { darkMode } = useTheme();
+  const { isTrackingEnabled, sessionUuid, trackEngagement } = useTracking();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [relatedArticles, setRelatedArticles] = useState([]);
@@ -151,11 +153,11 @@ const ArticleDetail = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Engagement tracking hook
-  const { isTracking, trackEngagement } = useEngagementTracking({
+  const { isTracking, trackEngagement: trackEngagementHook } = useEngagementTracking({
     contentId: content?.id,
     contentType: content?.content_type_slug || content?.content_type,
     pageTitle: content?.title,
-    enabled: !!content?.id
+    enabled: !!content?.id && isTrackingEnabled
   });
 
   useEffect(() => {
@@ -287,6 +289,19 @@ const ArticleDetail = () => {
 
   const handleDownloadPdf = () => {
     if (!pdfFile) return;
+    
+    // Track download engagement
+    if (isTrackingEnabled && content?.id) {
+      trackEngagement({
+        content_id: content.id,
+        engagement_type: 'download',
+        engagement_data: {
+          file_name: pdfFile,
+          content_type: content.content_type_slug || content.content_type
+        }
+      }).catch(err => console.error('Download tracking error:', err));
+    }
+    
     const link = document.createElement('a');
     link.href = `/uploads/${pdfFile}`;
     link.download = pdfFile;

@@ -6,15 +6,25 @@ import { Spin, Result, Button } from 'antd';
 import { useCookieConsent } from '../context/CookieContext';
 import { useTheme } from '../context/ThemeContext';
 import StandaloneBuilderPage from './StandaloneBuilderPage';
+import { useTracking } from '../context/TrackingContext';
+import useEngagementTracking from '../hooks/useEngagementTracking';
 
 const StandaloneLandingPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { consent, hasAnalyticsConsent } = useCookieConsent();
   const { darkMode } = useTheme();
+  const { isTrackingEnabled } = useTracking();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  useEngagementTracking({
+    contentId: content?.id,
+    contentType: content?.content_type_slug || content?.content_type,
+    pageTitle: content?.title,
+    enabled: !!content?.id && isTrackingEnabled
+  });
 
   useEffect(() => {
     fetchContent();

@@ -109,9 +109,13 @@ exports.getContentEngagementAnalytics = async (req, res) => {
 exports.getDashboardSummary = async (req, res) => {
     try {
         const userId = req.user.id;
+        console.log('Fetching dashboard summary for user:', userId);
 
         const userSummary = await ContentAnalytics.getUserContentSummary(userId);
+        console.log('User summary:', userSummary);
+
         const allContentStats = await ContentAnalytics.getUserContentStats(userId);
+        console.log('All content stats count:', allContentStats?.length);
 
         // Get top performing content with real engagement
         const topContentQuery = `
@@ -122,16 +126,13 @@ exports.getDashboardSummary = async (req, res) => {
                 c.status,
                 c.published_date,
                 COALESCE(c.view_count, 0) as views,
-                COALESCE((
-                    SELECT COUNT(*)
-                    FROM content_engagement ce
-                    WHERE ce.content_id = c.id
-                ), CASE WHEN c.view_count > 0 THEN ROUND(c.view_count * 0.3) ELSE 0 END) as engagements,
-                COALESCE((
-                    SELECT COUNT(DISTINCT pv.session_uuid)
-                    FROM page_views pv
-                    WHERE pv.content_id = c.id
-                ), c.view_count, 0) as unique_visitors
+                                (SELECT COUNT(DISTINCT ce.session_uuid) FROM content_engagement ce
+                                 WHERE ce.content_id = c.id AND ce.engagement_type <> 'view'
+                                     AND EXISTS (SELECT 1 FROM page_views pv
+                                                             WHERE pv.content_id = c.id
+                                                                 AND pv.session_uuid = ce.session_uuid)) as engagements,
+                (SELECT COUNT(DISTINCT pv.session_uuid) FROM page_views pv
+                 WHERE pv.content_id = c.id) as unique_visitors
             FROM contents c
             WHERE c.user_id = ?
             ORDER BY c.view_count DESC, c.created_at DESC
@@ -139,6 +140,7 @@ exports.getDashboardSummary = async (req, res) => {
         `;
 
         const [topContent] = await require('../config/database').pool.query(topContentQuery, [userId]);
+        console.log('Top content count:', topContent?.length);
 
         res.json({
             user_summary: userSummary,
@@ -147,6 +149,7 @@ exports.getDashboardSummary = async (req, res) => {
         });
     } catch (error) {
         console.error('Get dashboard summary error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 };

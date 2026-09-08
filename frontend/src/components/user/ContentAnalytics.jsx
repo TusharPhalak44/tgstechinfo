@@ -178,7 +178,7 @@ const ContentAnalytics = () => {
         axios.get(`/api/user/analytics/content/${content.id || content.content_id}/engagement`)
       ]);
       setContentDetail(detailRes.data);
-      setEngagementData(engagementRes.data.engagement_data || []);
+      setEngagementData((engagementRes.data.engagement_data || []).filter(item => item.engagement_type !== 'view'));
     } catch (error) {
       console.error('Error fetching content detail:', error);
       setContentDetail({});

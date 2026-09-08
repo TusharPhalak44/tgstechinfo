@@ -457,9 +457,9 @@ const UserDashboardLayout = () => {
       navItem('/user-dashboard', <DashboardOutlined />, 'Overview'),
     ]),
     navGroup('content-group', 'Content Studio', [
-      navItem('/user-dashboard/my-content', <FileTextOutlined />, 'My Content', contentCounts.total > 0 ? contentCounts.total : null, '#2563EB'),
-      navItem('/user-dashboard/drafts', <EditOutlined />, 'Drafts', contentCounts.drafts > 0 ? contentCounts.drafts : null, '#64748B'),
-      navItem('/user-dashboard/my-submissions', <SendOutlined />, 'Leads & Submissions', submissionsCount > 0 ? submissionsCount : null, '#10B981'),
+      navItem('/user-dashboard/my-content', <FileTextOutlined />, 'My Content'),
+      navItem('/user-dashboard/drafts', <EditOutlined />, 'Drafts'),
+      navItem('/user-dashboard/my-submissions', <SendOutlined />, 'Leads & Submissions'),
       navItem('/user-dashboard/create-post', <PlusOutlined />, 'Create New Story'),
       navItem('/user-dashboard/analytics', <LineChartOutlined />, 'Content Analytics'),
     ]),
@@ -564,6 +564,7 @@ const UserDashboardLayout = () => {
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
+            justifyContent: 'space-between',
             transition: 'left 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)',
           }}
         >
@@ -577,6 +578,7 @@ const UserDashboardLayout = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexShrink: 0,
             }}
           >
             <div
@@ -697,7 +699,8 @@ const UserDashboardLayout = () => {
               overflowY: 'auto',
               overflowX: 'hidden',
               paddingTop: 8,
-              paddingBottom: 24,
+              paddingBottom: 16,
+              minHeight: 0,
             }}
           >
             <Menu
@@ -712,32 +715,39 @@ const UserDashboardLayout = () => {
             />
           </div>
 
-          {/* Sidebar Footer — Workspace Badge */}
-          {!collapsed && (
-            <div
-              style={{
-                padding: '12px 16px',
-                borderTop: `1px solid ${D ? 'rgba(255,255,255,0.07)' : 'rgba(11, 31, 77, 0.08)'}`,
-                background: D ? 'rgba(0,0,0,0.2)' : '#F8FAFC',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <CrownOutlined style={{ color: '#F7941D', fontSize: 14 }} />
-                <div>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 700, color: D ? '#E2E8F0' : '#1E293B' }}>
-                    Creator Plan
-                  </div>
-                  <div style={{ fontSize: '0.62rem', color: D ? '#64748B' : '#94A3B8' }}>
-                    Standard Edition
+          {/* Sidebar Footer — Workspace Badge - Stuck to bottom */}
+          <div
+            style={{
+              flexShrink: 0,
+              marginTop: 'auto',
+            }}
+          >
+            {!collapsed && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderTop: `1px solid ${D ? 'rgba(255,255,255,0.07)' : 'rgba(11, 31, 77, 0.08)'}`,
+                  background: D ? 'rgba(0,0,0,0.2)' : '#F8FAFC',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <CrownOutlined style={{ color: '#F7941D', fontSize: 14 }} />
+                  <div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: D ? '#E2E8F0' : '#1E293B' }}>
+                      Creator Plan
+                    </div>
+                    <div style={{ fontSize: '0.62rem', color: D ? '#64748B' : '#94A3B8' }}>
+                      Standard Edition
+                    </div>
                   </div>
                 </div>
+                <Tag color="orange" style={{ margin: 0, fontSize: '0.62rem', fontWeight: 800 }}>PRO</Tag>
               </div>
-              <Tag color="orange" style={{ margin: 0, fontSize: '0.62rem', fontWeight: 800 }}>PRO</Tag>
-            </div>
-          )}
+            )}
+          </div>
         </Sider>
 
         {/* ── RIGHT WORKSPACE CONTENT ── */}

@@ -25,30 +25,35 @@ router.post('/session/end', [
     body('session_uuid').notEmpty().withMessage('Session UUID is required')
 ], trackingController.endSession);
 
-// Apply analytics consent check to all other tracking routes
-router.use(checkAnalyticsConsent);
-
-// Session Management
+// Session start should also be before consent check for initialization
 router.post('/session/start', [
     body('landing_page').notEmpty().withMessage('Landing page is required')
     // consent_uuid is now optional for compatibility
 ], trackingController.startSession);
+
+// Content Engagement Tracking - moved before consent check for compatibility
+router.post('/engagement', [
+    body('session_uuid').notEmpty().withMessage('Session UUID is required'),
+    body('content_id').notEmpty().withMessage('Content ID is required'),
+    body('engagement_type').notEmpty().withMessage('Engagement type is required')
+], trackingController.trackEngagement);
+
+// Apply analytics consent check to all other tracking routes
+router.use(checkAnalyticsConsent);
 
 // Page View Tracking
 router.post('/page-view', [
     body('session_uuid').notEmpty().withMessage('Session UUID is required'),
     body('consent_uuid').notEmpty().withMessage('Consent UUID is required'),
     body('page_url').notEmpty().withMessage('Page URL is required'),
-    body('page_type').isIn(['home', 'article', 'blog', 'category', 'search', 'contact', 'landing', 'other']).withMessage('Invalid page type')
+    body('page_type').custom(value => {
+        const supportedPageTypes = ['home', 'article', 'blog', 'category', 'search', 'contact', 'landing', 'other'];
+        if (!supportedPageTypes.includes(value)) {
+            throw new Error('Invalid page type');
+        }
+        return true;
+    }).withMessage('Invalid page type')
 ], trackingController.trackPageView);
-
-// Content Engagement Tracking
-router.post('/engagement', [
-    body('session_uuid').notEmpty().withMessage('Session UUID is required'),
-    body('consent_uuid').notEmpty().withMessage('Consent UUID is required'),
-    body('content_id').notEmpty().withMessage('Content ID is required'),
-    body('engagement_type').isIn(['view', 'read', 'download', 'share', 'bookmark', 'print', 'copy_link']).withMessage('Invalid engagement type')
-], trackingController.trackEngagement);
 
 // Download Tracking
 router.post('/download', [
