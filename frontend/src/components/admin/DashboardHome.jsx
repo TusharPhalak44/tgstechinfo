@@ -501,6 +501,7 @@ const DashboardHome = () => {
 
   const pubCount = useCountUp(kpis.totalPublished);
   const penCount = useCountUp(kpis.totalPending);
+  const draftCount = useCountUp(kpis.totalDrafts);
   const viewCount = useCountUp(kpis.totalViews);
   const userCount = useCountUp(kpis.totalUsers);
   const subCount = useCountUp(kpis.totalSubscribers);
@@ -911,6 +912,27 @@ const DashboardHome = () => {
           </div>
         </div>
 
+        {/* KPI: Draft Workspaces */}
+        <div className="med-kpi-card" style={{ background: bgCard, borderColor, cursor: "pointer", "--card-accent": brandAccent, "--card-glow": brandAccent }} onClick={() => navigate("/dashboard/drafts")}>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 4 : 6 }}>
+              <span style={{ fontSize: isMobile ? "0.66rem" : "0.72rem", fontWeight: 600, color: textMuted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Draft Articles
+              </span>
+              <span style={{ fontSize: isMobile ? "0.6rem" : "0.66rem", fontWeight: 600, color: draftCount > 0 ? brandAccent : textMuted, background: "rgba(247, 148, 29, 0.15)", padding: "2px 7px", borderRadius: 100, border: "1px solid rgba(247, 148, 29, 0.3)" }}>
+                {draftCount > 0 ? `${draftCount} Drafts` : "Empty"}
+              </span>
+            </div>
+            <div style={{ fontSize: isMobile ? "1.4rem" : "1.75rem", fontWeight: 700, color: textPrimary, letterSpacing: "-0.02em" }}>
+              {draftCount}
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: isMobile ? 6 : 8, paddingTop: isMobile ? 6 : 8, borderTop: `1px solid ${borderColor}`, fontSize: isMobile ? "0.64rem" : "0.7rem", color: textMuted }}>
+            <span>Work In Progress</span>
+            <span style={{ color: brandAccent, fontWeight: 500 }}>Draft Studio →</span>
+          </div>
+        </div>
+
         {/* KPI 2: Review Queue */}
         <div className="med-kpi-card" style={{ background: bgCard, borderColor, cursor: "pointer", "--card-accent": brandAccent, "--card-glow": brandAccent }} onClick={() => navigate("/dashboard/pending-review")}>
           <div>
@@ -953,26 +975,6 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* KPI 4: Inbound Inquiries */}
-        <div className="med-kpi-card" style={{ background: bgCard, borderColor, cursor: "pointer", "--card-accent": brandAccent, "--card-glow": brandAccent }} onClick={() => navigate("/admin/submissions")}>
-          <div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-              <span style={{ fontSize: "0.72rem", fontWeight: 600, color: textMuted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                Inbound Leads
-              </span>
-              <span style={{ fontSize: "0.66rem", fontWeight: 600, color: brandAccent, background: "rgba(247, 148, 29, 0.15)", padding: "2px 7px", borderRadius: 100, border: "1px solid rgba(247, 148, 29, 0.3)" }}>
-                Forms Sync
-              </span>
-            </div>
-            <div style={{ fontSize: "1.75rem", fontWeight: 700, color: textPrimary, letterSpacing: "-0.02em" }}>
-              {leadCount}
-            </div>
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${borderColor}`, fontSize: "0.7rem", color: textMuted }}>
-            <span>Converted Submissions</span>
-            <span style={{ color: brandAccent, fontWeight: 500 }}>View Leads →</span>
-          </div>
-        </div>
 
         {/* KPI 5: Active Authors & Users */}
         <div className="med-kpi-card" style={{ background: bgCard, borderColor, "--card-accent": brandPurple, "--card-glow": brandPurple }}>
@@ -1469,42 +1471,8 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* ── 6. Inbound Conversion & Reader Geography Grid ── */}
-      <div className="med-stagger-7" style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 12 : 16 }}>
-        {/* Left: Lead Generation Pipeline */}
-        <div className="med-panel" style={{ background: bgCard, borderColor }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 16 }}>
-            <div>
-              <h3 style={{ fontSize: "0.94rem", fontWeight: 600, color: textPrimary, margin: 0 }}>
-                Inbound Inquiries & Lead Funnel
-              </h3>
-              <span style={{ fontSize: "0.74rem", color: textMuted }}>
-                Visitor-to-lead acquisition progression
-              </span>
-            </div>
-            <span style={{ fontSize: "0.84rem", fontWeight: 600, color: brandEmerald }}>
-              {conversionPct}% Conversion
-            </span>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {funnelStages.map((stage, i) => {
-              const maxVal = Math.max(funnelStages[0].value, 1);
-              const pct = (stage.value / maxVal) * 100;
-              return (
-                <div key={i}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: "0.78rem" }}>
-                    <span style={{ fontWeight: 500, color: textSecondary }}>{stage.label}</span>
-                    <span style={{ fontWeight: 600, color: textPrimary }}>{stage.value.toLocaleString()}</span>
-                  </div>
-                  <div style={{ height: 6, borderRadius: 3, background: D ? "rgba(255,255,255,0.06)" : "#F1F5F9", overflow: "hidden" }}>
-                    <div style={{ height: "100%", width: `${pct}%`, borderRadius: 3, background: stage.color, transition: "width 1s cubic-bezier(0.16, 1, 0.3, 1)" }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      {/* ── 6. Reader Geography Grid ── */}
+      <div className="med-stagger-7">
 
         {/* Right: Reader Geography & Distribution */}
         <div className="med-panel" style={{ background: bgCard, borderColor }}>
@@ -1581,13 +1549,16 @@ const DashboardHome = () => {
                     const count = Number(item.sessions || 0);
                     const pct = Math.round((count / totalGeo) * 100);
                     const barColor = colors[i % colors.length];
+                    const countryName = (typeof item.country === 'string' && item.country !== '[object Object]')
+                      ? item.country
+                      : (typeof item.country === 'object' && item.country?.name ? item.country.name : "Global");
 
                     return (
                       <div key={i}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, fontSize: "0.78rem" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: "1rem" }}>{getFlag(item.country)}</span>
-                            <span style={{ fontWeight: 600, color: textPrimary }}>{item.country}</span>
+                            <span style={{ fontSize: "1rem" }}>{getFlag(countryName)}</span>
+                            <span style={{ fontWeight: 600, color: textPrimary }}>{countryName}</span>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <span style={{ fontSize: "0.72rem", color: textMuted }}>

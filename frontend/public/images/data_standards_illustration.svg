@@ -108,27 +108,27 @@
   </g>
 
   <!-- ── Floating Verified Badge 1 (Deliverability 99.4%) ── -->
-  <g transform="translate(75, 110)" filter="url(#softShadow)">
-    <rect width="130" height="46" rx="12" fill="#0B132B" stroke="#0AAEEF" stroke-width="1.5" opacity="0.95"/>
+  <g transform="translate(52, 110)" filter="url(#softShadow)">
+    <rect width="155" height="46" rx="12" fill="#0B132B" stroke="#0AAEEF" stroke-width="1.5" opacity="0.95"/>
     <circle cx="24" cy="23" r="10" fill="rgba(10,174,239,0.2)" stroke="#0AAEEF" stroke-width="1.5"/>
     <path d="M19,23 L23,27 L29,19" fill="none" stroke="#0AAEEF" stroke-width="2" stroke-linecap="round"/>
-    <text x="42" y="20" fill="#94A3B8" font-size="9" font-family="system-ui, sans-serif" font-weight="700">DELIVERABILITY</text>
-    <text x="42" y="34" fill="#38BDF8" font-size="13" font-family="system-ui, sans-serif" font-weight="800">99.4% Verified</text>
+    <text x="42" y="20" fill="#94A3B8" font-size="9.5" font-family="system-ui, sans-serif" font-weight="700">DELIVERABILITY</text>
+    <text x="42" y="34" fill="#38BDF8" font-size="12.5" font-family="system-ui, sans-serif" font-weight="800">99.4% Verified</text>
   </g>
 
   <!-- ── Floating Verified Badge 2 (30-Day Freshness Cycle) ── -->
-  <g transform="translate(395, 110)" filter="url(#softShadow)">
-    <rect width="135" height="46" rx="12" fill="#0B132B" stroke="#F7941D" stroke-width="1.5" opacity="0.95"/>
+  <g transform="translate(392, 110)" filter="url(#softShadow)">
+    <rect width="150" height="46" rx="12" fill="#0B132B" stroke="#F7941D" stroke-width="1.5" opacity="0.95"/>
     <circle cx="24" cy="23" r="10" fill="rgba(247,148,29,0.2)" stroke="#F7941D" stroke-width="1.5"/>
     <path d="M21,19 A5,5 0 1,1 19,25" fill="none" stroke="#F7941D" stroke-width="2" stroke-linecap="round"/>
     <polyline points="21,16 21,20 17,20" fill="none" stroke="#F7941D" stroke-width="1.5"/>
-    <text x="42" y="20" fill="#94A3B8" font-size="9" font-family="system-ui, sans-serif" font-weight="700">FRESHNESS SYNC</text>
-    <text x="42" y="34" fill="#FBBF24" font-size="13" font-family="system-ui, sans-serif" font-weight="800">30-Day Cycle</text>
+    <text x="42" y="20" fill="#94A3B8" font-size="9.5" font-family="system-ui, sans-serif" font-weight="700">FRESHNESS SYNC</text>
+    <text x="42" y="34" fill="#FBBF24" font-size="12.5" font-family="system-ui, sans-serif" font-weight="800">30-Day Cycle</text>
   </g>
 
   <!-- ── Floating Bottom Badge 3 (Zero PII Compliance) ── -->
-  <g transform="translate(205, 310)" filter="url(#softShadow)">
-    <rect width="190" height="42" rx="21" fill="#0B132B" stroke="#10B981" stroke-width="1.5" opacity="0.95"/>
+  <g transform="translate(200, 310)" filter="url(#softShadow)">
+    <rect width="200" height="42" rx="21" fill="#0B132B" stroke="#10B981" stroke-width="1.5" opacity="0.95"/>
     <circle cx="22" cy="21" r="11" fill="rgba(16,185,129,0.2)" stroke="#10B981" stroke-width="1.5"/>
     <!-- Lock Icon -->
     <rect x="17" y="19" width="10" height="8" rx="1.5" fill="#10B981"/>

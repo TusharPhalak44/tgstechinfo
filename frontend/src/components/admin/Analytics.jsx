@@ -32,8 +32,8 @@ const Analytics = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading]     = useState(true);
   const [timeRange, setTimeRange] = useState('7d');
-  const [refreshInterval, setRefreshInterval] = useState(10);
-  const [lastRefreshInterval, setLastRefreshInterval] = useState(10);
+  const [refreshInterval, setRefreshInterval] = useState(5);
+  const [lastRefreshInterval, setLastRefreshInterval] = useState(5);
   const [lastUpdated, setLastUpdated]         = useState(new Date());
   const [currentTime, setCurrentTime]         = useState(new Date());
   const [isRefreshing, setIsRefreshing]       = useState(false);
@@ -64,6 +64,7 @@ const Analytics = () => {
   });
   const [recentSessions, setRecentSessions]     = useState([]);
   const [countryAnalytics, setCountryAnalytics] = useState([]);
+  const [activeVisitorsCount, setActiveVisitorsCount] = useState(0);
   const [popularPages, setPopularPages]         = useState([]);
   const [topBlogs, setTopBlogs]                 = useState([]);
   const [journeyData, setJourneyData]           = useState([]);
@@ -114,6 +115,9 @@ const Analytics = () => {
         const d = sessionsRes.value.data;
         setRecentSessions(d.recentSessions || []);
         setCountryAnalytics(d.analytics || []);
+        if (d.activeVisitorsCount !== undefined) {
+          setActiveVisitorsCount(d.activeVisitorsCount);
+        }
       }
 
       if (popularPagesRes.status === 'fulfilled' && popularPagesRes.value?.data)
@@ -156,13 +160,21 @@ const Analytics = () => {
   const lastUpdatedText = secondsAgo < 5 ? 'Just now' : `${secondsAgo}s ago`;
 
   const sessionAnalytics = overviewData.sessionAnalytics || {};
-  const activeVisitorsCalculated = recentSessions.length > 0
-    ? Math.max(recentSessions.length, sessionAnalytics.uniqueVisitors || 12)
-    : (sessionAnalytics.uniqueVisitors || 128);
-  const totalSessionsCalculated  = sessionAnalytics.totalSessions || 1420;
-  const totalPageViewsCalculated = overviewData.totalPageViews || 3890;
-  const totalConversionsCalculated = (overviewData.ctaClicks || []).reduce((a, c) => a + (c.click_count || 1), 0) || 48;
-  const totalSearchesCalculated  = searchData.popularSearches?.length || 34;
+
+  const totalSessionsCalculated = Number(sessionAnalytics.totalSessions || 0) || ((countryAnalytics && countryAnalytics.length > 0)
+    ? countryAnalytics.reduce((acc, curr) => acc + Number(curr.trafficCount || curr.total_sessions || curr.unique_visitors || 0), 0)
+    : recentSessions.length);
+
+  const activeVisitorsCalculated = activeVisitorsCount > 0
+    ? activeVisitorsCount
+    : (sessionAnalytics.uniqueVisitors || (recentSessions.length > 0 ? Math.min(recentSessions.length, 5) : 0));
+
+  const totalPageViewsCalculated = Number(overviewData.totalPageViews || 0);
+
+  const totalConversionsCalculated = (overviewData.ctaClicks || []).reduce((a, c) => a + Number(c.click_count || 0), 0);
+
+  const totalSearchesCalculated = (searchData.searchAnalytics || []).reduce((a, b) => a + Number(b.total_searches || b.search_count || 0), 0)
+    || Number(searchData.popularSearches?.length || 0);
 
   // ── Section props bundles ────────────────────────────────────────────────
   const commonProps = { darkMode, isLoading: loading };

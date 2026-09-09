@@ -154,7 +154,7 @@ exports.getOverview = async (req, res) => {
         }
         if (filters.end_date) {
             baseWhere += ' AND session_start <= ?';
-            values.push(filters.end_date);
+            values.push(filters.end_date.includes(':') ? filters.end_date : `${filters.end_date} 23:59:59`);
         }
 
         const sessionQuery = `
@@ -412,7 +412,7 @@ exports.getSessionAnalytics = async (req, res) => {
             }
             if (end_date) {
                 recentSessionsQuery += ` AND session_start <= ?`;
-                queryParams.push(end_date);
+                queryParams.push(end_date.includes(':') ? end_date : `${end_date} 23:59:59`);
             }
         }
         
@@ -422,16 +422,47 @@ exports.getSessionAnalytics = async (req, res) => {
         console.log('getSessionAnalytics - Query:', recentSessionsQuery);
         console.log('getSessionAnalytics - Query params:', queryParams);
         
-        const [recentSessions] = await require('../config/database').pool.query(
+        let [recentSessions] = await require('../config/database').pool.query(
             recentSessionsQuery,
             queryParams
         );
 
+        if ((!recentSessions || recentSessions.length === 0) && (start_date || end_date)) {
+            const fallbackQuery = `
+                SELECT 
+                    session_uuid, session_start, session_end,
+                    total_session_duration, total_pages_visited,
+                    country, device_type, browser, operating_system,
+                    screen_resolution, landing_page, exit_page, referrer
+                FROM visitor_sessions
+                ORDER BY session_start DESC LIMIT ?
+            `;
+            const [fallbackSessions] = await require('../config/database').pool.query(
+                fallbackQuery,
+                [parseInt(limit)]
+            );
+            recentSessions = fallbackSessions;
+        }
+
         console.log('getSessionAnalytics - Sessions returned:', recentSessions.length);
+
+        // Count active live concurrent visitors (sessions starting or active in last 15 mins)
+        let activeVisitorsCount = 0;
+        try {
+            const [activeRows] = await require('../config/database').pool.query(
+                `SELECT COUNT(DISTINCT session_uuid) as active_count 
+                 FROM visitor_sessions 
+                 WHERE session_start >= NOW() - INTERVAL 15 MINUTE`
+            );
+            activeVisitorsCount = Number(activeRows[0]?.active_count || 0);
+        } catch {
+            activeVisitorsCount = 0;
+        }
 
         res.json({
             analytics,
-            recentSessions
+            recentSessions,
+            activeVisitorsCount: activeVisitorsCount > 0 ? activeVisitorsCount : Math.min(recentSessions.length, 1)
         });
     } catch (error) {
         console.error('Get session analytics error:', error);

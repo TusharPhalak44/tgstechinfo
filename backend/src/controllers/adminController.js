@@ -22,9 +22,9 @@ const stripEmDash = (val) => {
 exports.getPendingContent = async (req, res) => {
     try {
         const { status, page = 1, limit } = req.query;
-        
+
         const filters = {};
-        
+
         // Only apply pagination if limit is provided
         if (limit) {
             const offset = (page - 1) * limit;
@@ -91,7 +91,7 @@ exports.reviewContent = async (req, res) => {
                         dashboard_url: `${frontendUrl}/dashboard`
                     });
                 } catch (e) { console.warn('Email failed:', e.message); }
- 
+
                 break;
             case 'reject':
                 status = 'rejected';
@@ -107,7 +107,7 @@ exports.reviewContent = async (req, res) => {
                         dashboard_url: `${frontendUrl}/dashboard`
                     });
                 } catch (e) { console.warn('Email failed:', e.message); }
- 
+
                 break;
             case 'request_changes':
                 status = 'changes_requested';
@@ -155,11 +155,11 @@ exports.getContentDetails = async (req, res) => {
     try {
         const { id } = req.params;
         const content = await Content.findById(id);
-        
+
         if (!content) {
             return res.status(404).json({ message: 'Content not found' });
         }
-        
+
         res.json(content);
     } catch (error) {
         console.error('Get content details error:', error);
@@ -172,11 +172,11 @@ exports.getAllContent = async (req, res) => {
     try {
         const { status, user_id, category_id, content_type, content_type_id, limit = 20, offset = 0 } = req.query;
         const filters = {};
-        
+
         if (status) filters.status = status;
         if (user_id) filters.user_id = user_id;
         if (category_id) filters.category_id = category_id;
-        
+
         // Handle content_type (slug) by converting to content_type_id
         if (content_type && !content_type_id) {
             const ContentType = require('../models/ContentType');
@@ -187,7 +187,7 @@ exports.getAllContent = async (req, res) => {
         } else if (content_type_id) {
             filters.content_type_id = content_type_id;
         }
-        
+
         if (limit) filters.limit = parseInt(limit);
         if (offset) filters.offset = parseInt(offset);
 
@@ -363,6 +363,8 @@ exports.adminEditContent = async (req, res) => {
         }
         if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
+        if (req.files?.video_file?.[0]) updateData.video_file = req.files.video_file[0].filename;
+        if (req.body.webinar_date !== undefined) updateData.webinar_date = req.body.webinar_date;
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
 
@@ -379,7 +381,7 @@ exports.adminEditContent = async (req, res) => {
                     filename: bannerFile.filename,
                     original_name: bannerFile.originalname,
                     file_path: `/uploads/${bannerFile.filename}`,
-                    file_type: ['jpg','jpeg','png','gif','webp'].includes(ext) ? 'image' : 'other',
+                    file_type: ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other',
                     file_size: bannerFile.size,
                     mime_type: bannerFile.mimetype,
                     folder: 'Images',
@@ -407,11 +409,167 @@ exports.adminEditContent = async (req, res) => {
                 });
             } catch (e) { console.error('Media save error:', e.message); }
         }
+        if (req.files?.video_file?.[0]) {
+            try {
+                const videoFile = req.files.video_file[0];
+                const Media = require('../models/Media');
+                const fileData = require('fs').readFileSync(videoFile.path);
+                await Media.create({
+                    filename: videoFile.filename,
+                    original_name: videoFile.originalname,
+                    file_path: `/uploads/${videoFile.filename}`,
+                    file_type: 'video',
+                    file_size: videoFile.size,
+                    mime_type: videoFile.mimetype,
+                    folder: 'Videos',
+                    uploaded_by: req.user.id,
+                    file_data: fileData // Store video directly in database like images
+                });
+                console.log('✓ Video file added to media_files table (admin) with database storage:', videoFile.filename);
+
+                // Clean up the uploaded file from filesystem since it's now in database
+                try {
+                    require('fs').unlinkSync(videoFile.path);
+                    console.log('✓ Cleaned up video file from filesystem (admin):', videoFile.path);
+                } catch (cleanupError) {
+                    console.warn('Could not clean up video file from filesystem (admin):', cleanupError.message);
+                }
+            } catch (e) { console.error('Media save error:', e.message); }
+        }
+
+
+
+
 
         res.json({ message: 'Content updated successfully', content: updated });
     } catch (error) {
         console.error('Admin edit content error:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Get all dynamic form submission tables created in the database (Admin view)
+exports.getSubmissionTables = async (req, res) => {
+    try {
+        const [tablesResult] = await pool.query("SHOW TABLES LIKE 'form_submissions_%'");
+        if (!tablesResult || tablesResult.length === 0) {
+            return res.json({ success: true, tables: [] });
+        }
+
+        const sampleObj = tablesResult[0];
+        const tableKey = Object.keys(sampleObj)[0];
+        const tablesInfo = [];
+
+        for (const row of tablesResult) {
+            const tableName = row[tableKey];
+            const contentIdStr = tableName.replace('form_submissions_', '');
+            const contentId = parseInt(contentIdStr, 10);
+            if (isNaN(contentId)) continue;
+
+            const [contentRows] = await pool.query(
+                `SELECT c.id, c.title, c.slug, c.custom_fields, c.builder_page_data, c.status, c.created_at as content_created_at,
+                        u.id as user_id, CONCAT(u.first_name, ' ', COALESCE(u.last_name, '')) as author_name, u.email as author_email
+                 FROM contents c
+                 LEFT JOIN users u ON c.user_id = u.id
+                 WHERE c.id = ?`,
+                [contentId]
+            );
+
+            const contentInfo = contentRows[0] || null;
+
+            let totalRecords = 0;
+            let lastSubmission = null;
+            try {
+                const [[countRes]] = await pool.query(`SELECT COUNT(*) as total, MAX(created_at) as last_sub FROM \`${tableName}\``);
+                totalRecords = countRes?.total || 0;
+                lastSubmission = countRes?.last_sub || null;
+            } catch (cntErr) {
+                console.warn(`Could not count records for table ${tableName}:`, cntErr.message);
+            }
+
+            let builderType = 'standard';
+            if (contentInfo?.builder_page_data) builderType = 'drag_drop';
+
+            tablesInfo.push({
+                table_name: tableName,
+                content_id: contentId,
+                content_title: contentInfo ? contentInfo.title : `Content #${contentId}`,
+                content_slug: contentInfo ? contentInfo.slug : null,
+                builder_type: builderType,
+                status: contentInfo ? contentInfo.status : 'published',
+                user_id: contentInfo ? contentInfo.user_id : null,
+                author_name: contentInfo && contentInfo.author_name ? String(contentInfo.author_name).trim() : 'System / Unknown',
+                author_email: contentInfo ? contentInfo.author_email : null,
+                total_records: totalRecords,
+                last_submission: lastSubmission,
+                content_created_at: contentInfo ? contentInfo.content_created_at : null
+            });
+        }
+
+        tablesInfo.sort((a, b) => (new Date(b.last_submission || 0) - new Date(a.last_submission || 0)) || (b.content_id - a.content_id));
+
+        res.json({ success: true, tables: tablesInfo });
+    } catch (error) {
+        console.error('Get submission tables error:', error);
+        res.status(500).json({ message: 'Server error fetching submission tables' });
+    }
+};
+
+// ✅ Get data rows and schema columns for a specific submission table (Admin view)
+exports.getSubmissionTableDetails = async (req, res) => {
+    try {
+        const { contentId } = req.params;
+        const tableName = `form_submissions_${contentId}`;
+
+        const [tableCheck] = await pool.query(`SHOW TABLES LIKE ?`, [tableName]);
+        if (tableCheck.length === 0) {
+            return res.status(404).json({ message: `Submission table for content #${contentId} does not exist.` });
+        }
+
+        const [columnsResult] = await pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+        const columns = columnsResult.map(col => ({
+            field: col.Field,
+            type: col.Type,
+            label: col.Field
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase())
+        }));
+
+        const [contentRows] = await pool.query(
+            `SELECT c.id, c.title, c.slug, c.custom_fields, c.builder_page_data,
+                    CONCAT(u.first_name, ' ', COALESCE(u.last_name, '')) as author_name, u.email as author_email
+             FROM contents c
+             LEFT JOIN users u ON c.user_id = u.id
+             WHERE c.id = ?`,
+            [contentId]
+        );
+        const rawContentInfo = contentRows[0] || null;
+        let contentInfo = null;
+
+        if (rawContentInfo) {
+            contentInfo = {
+                id: rawContentInfo.id,
+                title: rawContentInfo.title,
+                slug: rawContentInfo.slug,
+                builder_type: rawContentInfo.builder_page_data ? 'drag_drop' : 'standard',
+                author_name: rawContentInfo.author_name ? String(rawContentInfo.author_name).trim() : 'System / Unknown',
+                author_email: rawContentInfo.author_email
+            };
+        }
+
+        const [rows] = await pool.query(`SELECT * FROM \`${tableName}\` ORDER BY id DESC`);
+
+        res.json({
+            success: true,
+            table_name: tableName,
+            content: contentInfo,
+            columns,
+            rows,
+            total: rows.length
+        });
+    } catch (error) {
+        console.error('Get submission table details error:', error);
+        res.status(500).json({ message: 'Server error fetching table details' });
     }
 };
 
@@ -443,7 +601,7 @@ exports.getSubmissionById = async (req, res) => {
 
         const row = rows[0];
         let extraFields = {};
-        try { extraFields = row.extra_fields ? (typeof row.extra_fields === 'string' ? JSON.parse(row.extra_fields) : row.extra_fields) : {}; } catch {}
+        try { extraFields = row.extra_fields ? (typeof row.extra_fields === 'string' ? JSON.parse(row.extra_fields) : row.extra_fields) : {}; } catch { }
 
         res.json({
             id: row.id,
@@ -514,10 +672,10 @@ exports.getDashboardStats = async (req, res) => {
         const [[{ totalScheduled }]] = await pool.query("SELECT COUNT(*) as totalScheduled FROM contents WHERE status = 'scheduled'");
         const [[{ totalViews }]] = await pool.query('SELECT SUM(view_count) as totalViews FROM contents');
         const [[{ monthlyViews }]] = await pool.query('SELECT SUM(view_count) as monthlyViews FROM contents WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)');
-        
-        res.json({ 
-            totalContent, 
-            pendingReview, 
+
+        res.json({
+            totalContent,
+            pendingReview,
             totalPublished: published,
             totalDrafts,
             totalScheduled,
@@ -571,43 +729,43 @@ exports.getDashboardKPIs = async (req, res) => {
     try {
         const { period = '30d', start_date, end_date } = req.query;
         let dateCondition = "updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        let pvCondition   = "entered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        let vsCondition   = "session_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        let dateParams    = [];
-        let pvParams      = [];
-        let vsParams      = [];
+        let pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        let vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        let dateParams = [];
+        let pvParams = [];
+        let vsParams = [];
 
         if (start_date && end_date) {
             dateCondition = "updated_at BETWEEN ? AND ?";
-            pvCondition   = "entered_at BETWEEN ? AND ?";
-            vsCondition   = "session_start BETWEEN ? AND ?";
-            dateParams    = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
-            pvParams      = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
-            vsParams      = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            pvCondition = "entered_at BETWEEN ? AND ?";
+            vsCondition = "session_start BETWEEN ? AND ?";
+            dateParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            pvParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            vsParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
         } else {
             const periodMap = { 'today': 1, '7d': 7, '30d': 30, '90d': 90, 'ytd': 365, 'all': 36500 };
             const days = periodMap[period] || 30;
             dateCondition = "updated_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            pvCondition   = "entered_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            vsCondition   = "session_start >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            dateParams    = [days];
-            pvParams      = [days];
-            vsParams      = [days];
+            pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+            vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+            dateParams = [days];
+            pvParams = [days];
+            vsParams = [days];
         }
 
         // Get content counts filtered by selected period
-        const [[{ published }]]        = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published' AND ${dateCondition}`, dateParams);
-        const [[{ pending }]]          = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending' AND ${dateCondition}`, dateParams);
-        const [[{ drafts }]]           = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' AND ${dateCondition}`, dateParams);
-        const [[{ scheduled }]]        = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
-        const [[{ totalViews }]]       = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents WHERE ${dateCondition}`, dateParams);
-        const [[{ totalUsers }]]       = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
-        const [[{ totalSubs }]]        = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams).catch(()=>[[{totalSubs:0}]]);
-        
-        const [[{ periodViews }]]      = await pool.query(`SELECT COALESCE(SUM(view_count),0) as periodViews FROM contents WHERE ${dateCondition}`, dateParams);
-        const [[{ avgTime }]]          = await pool.query(`SELECT COALESCE(AVG(time_spent_seconds)/60,0) as avgTime FROM page_views WHERE ${pvCondition}`, pvParams).catch(()=>[[{avgTime:4.2}]]);
-        const [[{ engagedSessions }]]  = await pool.query(`SELECT COUNT(*) as engagedSessions FROM visitor_sessions WHERE total_pages_visited > 1 AND ${vsCondition}`, vsParams).catch(()=>[[{engagedSessions:0}]]);
-        const [[{ totalSessions }]]    = await pool.query(`SELECT COUNT(*) as totalSessions FROM visitor_sessions WHERE ${vsCondition}`, vsParams).catch(()=>[[{totalSessions:1}]]);
+        const [[{ published }]] = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published' AND ${dateCondition}`, dateParams);
+        const [[{ pending }]] = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending' OR status='review'`);
+        const [[{ drafts }]] = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' OR status='changes_requested' OR status='' OR status IS NULL`);
+        const [[{ scheduled }]] = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
+        const [[{ totalViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents WHERE ${dateCondition}`, dateParams);
+        const [[{ totalUsers }]] = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
+        const [[{ totalSubs }]] = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams).catch(() => [[{ totalSubs: 0 }]]);
+
+        const [[{ periodViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as periodViews FROM contents WHERE ${dateCondition}`, dateParams);
+        const [[{ avgTime }]] = await pool.query(`SELECT COALESCE(AVG(time_spent_seconds)/60,0) as avgTime FROM page_views WHERE ${pvCondition}`, pvParams).catch(() => [[{ avgTime: 4.2 }]]);
+        const [[{ engagedSessions }]] = await pool.query(`SELECT COUNT(*) as engagedSessions FROM visitor_sessions WHERE total_pages_visited > 1 AND ${vsCondition}`, vsParams).catch(() => [[{ engagedSessions: 0 }]]);
+        const [[{ totalSessions }]] = await pool.query(`SELECT COUNT(*) as totalSessions FROM visitor_sessions WHERE ${vsCondition}`, vsParams).catch(() => [[{ totalSessions: 1 }]]);
         const engagementRate = totalSessions > 0 ? Math.round((engagedSessions / totalSessions) * 100) : 0;
 
         res.json({
@@ -640,15 +798,15 @@ exports.getTrafficAnalytics = async (req, res) => {
         if (start_date && end_date) {
             vsCondition = "session_start BETWEEN ? AND ?";
             pvCondition = "entered_at BETWEEN ? AND ?";
-            vsParams    = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
-            pvParams    = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            vsParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            pvParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
         } else {
             const periodMap = { 'today': 1, '7d': 7, '30d': 30, '90d': 90, 'ytd': 365, 'all': 730 };
             const days = periodMap[period] || 30;
             vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL ? DAY)";
             pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            vsParams    = [days];
-            pvParams    = [days];
+            vsParams = [days];
+            pvParams = [days];
         }
 
         // Daily sessions time series
@@ -661,7 +819,7 @@ exports.getTrafficAnalytics = async (req, res) => {
             WHERE ${vsCondition}
             GROUP BY DATE(session_start)
             ORDER BY date ASC
-        `, vsParams).catch(()=>[[]]);
+        `, vsParams).catch(() => [[]]);
 
         // Page views daily
         const [dailyPageViews] = await pool.query(`
@@ -670,7 +828,7 @@ exports.getTrafficAnalytics = async (req, res) => {
             WHERE ${pvCondition}
             GROUP BY DATE(entered_at)
             ORDER BY date ASC
-        `, pvParams).catch(()=>[[]]);
+        `, pvParams).catch(() => [[]]);
 
         // Summary stats
         const [[summary]] = await pool.query(`
@@ -681,7 +839,7 @@ exports.getTrafficAnalytics = async (req, res) => {
                 SUM(CASE WHEN total_pages_visited=1 THEN 1 ELSE 0 END) as bounceCount
             FROM visitor_sessions
             WHERE ${vsCondition}
-        `, vsParams).catch(()=>[[{totalSessions:0,uniqueVisitors:0,avgDuration:0,bounceCount:0}]]);
+        `, vsParams).catch(() => [[{ totalSessions: 0, uniqueVisitors: 0, avgDuration: 0, bounceCount: 0 }]]);
 
         // Geographic / Country distribution
         const [byCountry] = await pool.query(`
@@ -700,7 +858,7 @@ exports.getTrafficAnalytics = async (req, res) => {
         const totalSessions = summary.totalSessions || 1;
         const bounceRate = Math.round((summary.bounceCount / totalSessions) * 100);
 
-         res.json({ dailySessions, dailyPageViews, byCountry, summary: { ...summary, bounceRate } });
+        res.json({ dailySessions, dailyPageViews, byCountry, summary: { ...summary, bounceRate } });
     } catch (error) {
         console.error('Get traffic analytics error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -817,35 +975,35 @@ exports.getLeadAnalytics = async (req, res) => {
     try {
         const { period = '30d', start_date, end_date } = req.query;
         let subCondition = "created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        let vsCondition  = "session_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        let pvCondition  = "entered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        let subParams    = [];
-        let vsParams     = [];
-        let pvParams     = [];
+        let vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        let pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        let subParams = [];
+        let vsParams = [];
+        let pvParams = [];
 
         if (start_date && end_date) {
             subCondition = "created_at BETWEEN ? AND ?";
-            vsCondition  = "session_start BETWEEN ? AND ?";
-            pvCondition  = "entered_at BETWEEN ? AND ?";
-            subParams    = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
-            vsParams     = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
-            pvParams     = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            vsCondition = "session_start BETWEEN ? AND ?";
+            pvCondition = "entered_at BETWEEN ? AND ?";
+            subParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            vsParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+            pvParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
         } else {
             const periodMap = { 'today': 1, '7d': 7, '30d': 30, '90d': 90, 'ytd': 365, 'all': 36500 };
             const days = periodMap[period] || 30;
             subCondition = "created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            vsCondition  = "session_start >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            pvCondition  = "entered_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            subParams    = [days];
-            vsParams     = [days];
-            pvParams     = [days];
+            vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+            pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+            subParams = [days];
+            vsParams = [days];
+            pvParams = [days];
         }
 
         // Total submissions in period
         const [[{ totalSubmissions }]] = await pool.query(
             `SELECT COUNT(*) as totalSubmissions FROM landing_page_submissions WHERE ${subCondition}`,
             subParams
-        ).catch(()=>[[{totalSubmissions:0}]]);
+        ).catch(() => [[{ totalSubmissions: 0 }]]);
 
         // Submissions per content (top 5 forms)
         const [byContent] = await pool.query(`
@@ -856,7 +1014,7 @@ exports.getLeadAnalytics = async (req, res) => {
             GROUP BY c.id, c.title
             ORDER BY submissions DESC
             LIMIT 5
-        `, subParams).catch(()=>[[]]);
+        `, subParams).catch(() => [[]]);
 
         // Daily submissions trend
         const [dailySubmissions] = await pool.query(`
@@ -865,18 +1023,18 @@ exports.getLeadAnalytics = async (req, res) => {
             WHERE ${subCondition}
             GROUP BY DATE(created_at)
             ORDER BY date ASC
-        `, subParams).catch(()=>[[]]);
+        `, subParams).catch(() => [[]]);
 
         // Total visitors for funnel calculation
         const [[{ totalVisitors }]] = await pool.query(
             `SELECT COUNT(DISTINCT ip_address) as totalVisitors FROM visitor_sessions WHERE ${vsCondition}`,
             vsParams
-        ).catch(()=>[[{totalVisitors:0}]]);
+        ).catch(() => [[{ totalVisitors: 0 }]]);
 
         const [[{ formPageViews }]] = await pool.query(
             `SELECT COUNT(*) as formPageViews FROM page_views WHERE page_type='landing_page' AND ${pvCondition}`,
             pvParams
-        ).catch(()=>[[{formPageViews:0}]]);
+        ).catch(() => [[{ formPageViews: 0 }]]);
 
         res.json({ totalSubmissions, totalVisitors, formPageViews, byContent, dailySubmissions });
     } catch (error) {
@@ -897,22 +1055,22 @@ exports.getSubscriberAnalytics = async (req, res) => {
             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
             GROUP BY month
             ORDER BY month ASC
-        `).catch(()=>[[]]);
+        `).catch(() => [[]]);
 
         // Total active subscribers
         const [[{ totalActive }]] = await pool.query(
             `SELECT COUNT(*) as totalActive FROM newsletter_subscribers WHERE is_active=1`
-        ).catch(()=>[[{totalActive:0}]]);
+        ).catch(() => [[{ totalActive: 0 }]]);
 
         // Total inactive / unsubscribed
         const [[{ totalInactive }]] = await pool.query(
             `SELECT COUNT(*) as totalInactive FROM newsletter_subscribers WHERE is_active=0`
-        ).catch(()=>[[{totalInactive:0}]]);
+        ).catch(() => [[{ totalInactive: 0 }]]);
 
         // New this month
         const [[{ newThisMonth }]] = await pool.query(
             `SELECT COUNT(*) as newThisMonth FROM newsletter_subscribers WHERE created_at >= DATE_FORMAT(NOW(),'%Y-%m-01')`
-        ).catch(()=>[[{newThisMonth:0}]]);
+        ).catch(() => [[{ newThisMonth: 0 }]]);
 
         res.json({ monthlyGrowth, totalActive, totalInactive, newThisMonth });
     } catch (error) {
@@ -925,7 +1083,7 @@ exports.getSubscriberAnalytics = async (req, res) => {
 exports.getContentPortfolio = async (req, res) => {
     try {
         const { period = '30d' } = req.query;
-        const periodMap = { '7d':7,'30d':30,'90d':90,'ytd':365,'all':36500 };
+        const periodMap = { '7d': 7, '30d': 30, '90d': 90, 'ytd': 365, 'all': 36500 };
         const days = periodMap[period] || 30;
 
         // Top articles by view_count
@@ -969,7 +1127,7 @@ exports.getContentPortfolio = async (req, res) => {
             GROUP BY pv.page_url, pv.page_title
             ORDER BY view_count DESC
             LIMIT 8
-        `, [days]).catch(()=>[[]]);
+        `, [days]).catch(() => [[]]);
 
         // Top Author Analytics & Contributors
         const [topAuthors] = await pool.query(`
@@ -983,7 +1141,7 @@ exports.getContentPortfolio = async (req, res) => {
             GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.is_active
             ORDER BY total_views DESC, article_count DESC
             LIMIT 8
-        `).catch(()=>[[]]);
+        `).catch(() => [[]]);
 
         // User role breakdown & activity
         const [userRoleStats] = await pool.query(`
@@ -993,7 +1151,7 @@ exports.getContentPortfolio = async (req, res) => {
                 SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) as active_count
             FROM users
             GROUP BY role
-        `).catch(()=>[[]]);
+        `).catch(() => [[]]);
 
         res.json({ topArticles, recentActivity, topPages, topAuthors, userRoleStats });
     } catch (error) {
@@ -1022,20 +1180,38 @@ exports.toggleContentVisibility = async (req, res) => {
         // Log to audit logs
         const visibilityStatus = is_visible_on_site ? 'visible' : 'hidden';
         await logAudit(
-            req, 
-            'update', 
-            'content', 
-            id, 
-            `Changed content visibility to ${visibilityStatus}: ${content.title}`, 
+            req,
+            'update',
+            'content',
+            id,
+            `Changed content visibility to ${visibilityStatus}: ${content.title}`,
             'success'
         );
 
-        res.json({ 
-            message: `Content ${visibilityStatus} on site successfully`, 
-            content: updatedContent 
+        res.json({
+            message: `Content ${visibilityStatus} on site successfully`,
+            content: updatedContent
         });
     } catch (error) {
         console.error('Toggle content visibility error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Get content for a specific user ID
+exports.getUserContent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { limit = 50, offset = 0, status } = req.query;
+        const filters = { user_id: id };
+        if (status && status !== 'all') filters.status = status;
+        if (limit) filters.limit = parseInt(limit);
+        if (offset !== undefined && offset !== null) filters.offset = parseInt(offset);
+
+        const { rows, total } = await Content.findAll(filters);
+        res.json({ data: rows, total });
+    } catch (error) {
+        console.error('Admin get user content error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

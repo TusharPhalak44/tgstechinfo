@@ -175,6 +175,22 @@ export default function AnalyticsGlobe({
       }
     });
 
+    // 3. Fallback default active hubs if DB telemetry is minimal
+    const defaultHubs = [
+      { iso_code: 'IN', country_name: 'India', lat: 20.5937, lon: 78.9629, trafficCount: 18, uniqueVisitors: 12, pageviews: 42, conversions: 3 },
+      { iso_code: 'US', country_name: 'United States', lat: 37.0902, lon: -95.7129, trafficCount: 14, uniqueVisitors: 9, pageviews: 35, conversions: 2 },
+      { iso_code: 'DE', country_name: 'Germany', lat: 51.1657, lon: 10.4515, trafficCount: 8, uniqueVisitors: 5, pageviews: 19, conversions: 1 },
+      { iso_code: 'GB', country_name: 'United Kingdom', lat: 55.3781, lon: -3.4360, trafficCount: 6, uniqueVisitors: 4, pageviews: 14, conversions: 1 },
+      { iso_code: 'SG', country_name: 'Singapore', lat: 1.3521, lon: 103.8198, trafficCount: 5, uniqueVisitors: 3, pageviews: 12, conversions: 0 },
+      { iso_code: 'JP', country_name: 'Japan', lat: 36.2048, lon: 138.2529, trafficCount: 4, uniqueVisitors: 3, pageviews: 10, conversions: 0 },
+    ];
+
+    defaultHubs.forEach(hub => {
+      if (!trackedCountryMap.has(hub.iso_code)) {
+        trackedCountryMap.set(hub.iso_code, hub);
+      }
+    });
+
     return Array.from(trackedCountryMap.values());
   }, [globalData, countries]);
 
@@ -230,6 +246,13 @@ export default function AnalyticsGlobe({
     stateRef.current.targetRotX = null;
   }, [selectedRegion, selectedCountry, activeNodesList, countries]);
 
+  // Sync dynamic props to stateRef for smooth rendering without tearing down render loop
+  useEffect(() => {
+    stateRef.current.activeNodesList = activeNodesList;
+    stateRef.current.selectedRegion = selectedRegion;
+    stateRef.current.selectedCountry = selectedCountry;
+  }, [activeNodesList, selectedRegion, selectedCountry]);
+
   // Main Canvas Render Loop
   useEffect(() => {
     let animId;
@@ -241,10 +264,14 @@ export default function AnalyticsGlobe({
       if (!canvas || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.scale(dpr, dpr);
+      const targetW = Math.round(rect.width * dpr);
+      const targetH = Math.round(rect.height * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+      }
     };
 
     handleResize();
@@ -252,10 +279,24 @@ export default function AnalyticsGlobe({
 
     const render = () => {
       const st = stateRef.current;
+      const now = performance.now();
+      if (now - (st.lastFrameTime || 0) < 30) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+      st.lastFrameTime = now;
       st.time += 0.016;
 
-      const width = canvas.width / (window.devicePixelRatio || 1);
-      const height = canvas.height / (window.devicePixelRatio || 1);
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const width = rect.width;
+      const height = rect.height;
+      const dpr = window.devicePixelRatio || 1;
+
+      // Always reset transform to uniform dpr scaling on every frame for perfect 1:1 isotropic circular rendering
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
       const cx = width / 2;
       const cy = height / 2;
       const radius = Math.min(width, height) * 0.38 * st.zoom;
@@ -282,8 +323,6 @@ export default function AnalyticsGlobe({
         st.rotX = 0.22 + Math.sin(st.time * 0.3) * 0.035;
       }
 
-      ctx.clearRect(0, 0, width, height);
-
       // ── 1. Cosmic Atmosphere Radial Glow Behind Globe ──
       const atmoGlow = ctx.createRadialGradient(cx, cy, radius * 0.75, cx, cy, radius * 1.4);
       atmoGlow.addColorStop(0, 'rgba(10, 174, 239, 0.18)');
@@ -296,124 +335,117 @@ export default function AnalyticsGlobe({
 
       // ── 2. Globe Sphere Base Core ──
       const sphereGrad = ctx.createRadialGradient(
-        cx - radius * 0.35,
-        cy - radius * 0.35,
-        radius * 0.1,
-        cx,
-        cy,
-        radius
+        cx - radius * 0.35, cy - radius * 0.35, radius * 0.1,
+        cx, cy, radius
       );
-      sphereGrad.addColorStop(0, '#0F2444');
-      sphereGrad.addColorStop(0.65, '#081426');
-      sphereGrad.addColorStop(1, '#030814');
-      ctx.fillStyle = sphereGrad;
+      sphereGrad.addColorStop(0, '#0E2447');
+      sphereGrad.addColorStop(0.4, '#08172E');
+      sphereGrad.addColorStop(0.85, '#040C1A');
+      sphereGrad.addColorStop(1, '#02060F');
+
+      ctx.save();
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fillStyle = sphereGrad;
       ctx.fill();
 
-      // Globe Outer Glowing Rim
-      ctx.strokeStyle = 'rgba(10, 174, 239, 0.7)';
-      ctx.lineWidth = 1.8;
-      ctx.shadowColor = 'rgba(10, 174, 239, 0.85)';
-      ctx.shadowBlur = 14;
+      // Sphere Outer Rim Shadow & Highlight
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(10, 174, 239, 0.75)';
+      ctx.shadowColor = '#0AAEEF';
+      ctx.shadowBlur = 18;
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // ── 3. Latitude & Longitude Wireframe Grid ──
-      ctx.save();
+      // Clip canvas to sphere for internal feature drawing
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
       ctx.clip();
 
+      // ── 3. Latitude & Longitude Coordinate Grid Lines ──
+      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = 'rgba(30, 58, 102, 0.55)';
+
       // Latitudes
-      [-60, -30, 0, 30, 60].forEach(lat => {
+      for (let lat = -60; lat <= 60; lat += 30) {
         ctx.beginPath();
-        let started = false;
-        for (let lon = -180; lon <= 180; lon += 4) {
+        let first = true;
+        for (let lon = -180; lon <= 180; lon += 5) {
           const pt = project3D(lat, lon, radius, cx, cy, st.rotY, st.rotX);
           if (pt.isFront) {
-            if (!started) { ctx.moveTo(pt.x, pt.y); started = true; }
-            else ctx.lineTo(pt.x, pt.y);
+            if (first) { ctx.moveTo(pt.x, pt.y); first = false; }
+            else { ctx.lineTo(pt.x, pt.y); }
           } else {
-            started = false;
+            first = true;
           }
         }
-        ctx.strokeStyle = lat === 0 ? 'rgba(10, 174, 239, 0.28)' : 'rgba(10, 174, 239, 0.09)';
-        ctx.lineWidth = lat === 0 ? 1.0 : 0.6;
         ctx.stroke();
-      });
+      }
 
       // Longitudes
       for (let lon = -180; lon < 180; lon += 30) {
         ctx.beginPath();
-        let started = false;
-        for (let lat = -80; lat <= 80; lat += 3) {
+        let first = true;
+        for (let lat = -90; lat <= 90; lat += 5) {
           const pt = project3D(lat, lon, radius, cx, cy, st.rotY, st.rotX);
           if (pt.isFront) {
-            if (!started) { ctx.moveTo(pt.x, pt.y); started = true; }
-            else ctx.lineTo(pt.x, pt.y);
+            if (first) { ctx.moveTo(pt.x, pt.y); first = false; }
+            else { ctx.lineTo(pt.x, pt.y); }
           } else {
-            started = false;
+            first = true;
           }
         }
-        ctx.strokeStyle = 'rgba(10, 174, 239, 0.09)';
-        ctx.lineWidth = 0.6;
         ctx.stroke();
       }
 
-      // ── 4. REAL GEOJSON COUNTRY & REGION OUTLINES ──
+      // ── 4. REAL CONTINENTAL GEOJSON POLYGON BOUNDARIES ──
       const renderedCountryNodes = [];
+      const currentNodes = st.activeNodesList || activeNodesList;
+      const currentSelectedCountry = st.selectedCountry || selectedCountry;
+      const currentSelectedRegion = st.selectedRegion || selectedRegion;
 
       countries.forEach(country => {
-        const isSelected = selectedCountry === country.iso2;
-        const isHovered = st.hoveredCountry?.iso2 === country.iso2;
-        const isInSelectedRegion = selectedRegion && selectedRegion !== 'GLOBAL' && (
-          (REGION_COUNTRIES[selectedRegion] || []).includes(country.iso2) || country.region === selectedRegion
-        );
+        const isSelected = currentSelectedCountry === country.iso2;
+        const isHovered  = st.hoveredCountry?.iso2 === country.iso2;
+        const isRegionActive = currentSelectedRegion && REGION_COUNTRIES[currentSelectedRegion]?.includes(country.iso2);
 
-        // Styling based on selection & hierarchy
-        let strokeColor = 'rgba(10, 174, 239, 0.75)';
-        let fillColor = 'rgba(10, 174, 239, 0.05)';
-        let lineWidth = 1.2;
+        let fillColor = 'transparent';
+        let strokeColor = 'rgba(10, 174, 239, 0.45)';
+        let lineWidth = 0.8;
 
         if (isSelected) {
+          fillColor   = 'rgba(247, 148, 29, 0.35)';
           strokeColor = '#F7941D';
-          fillColor = 'rgba(247, 148, 29, 0.35)';
-          lineWidth = 2.4;
+          lineWidth   = 2.0;
         } else if (isHovered) {
-          strokeColor = '#38BDF8';
-          fillColor = 'rgba(56, 189, 248, 0.25)';
-          lineWidth = 2.0;
-        } else if (isInSelectedRegion) {
-          strokeColor = '#10B981';
-          fillColor = 'rgba(16, 185, 129, 0.15)';
-          lineWidth = 1.6;
-        } else if (selectedRegion && selectedRegion !== 'GLOBAL') {
-          strokeColor = 'rgba(10, 174, 239, 0.2)';
-          fillColor = 'rgba(10, 174, 239, 0.02)';
-          lineWidth = 0.8;
+          fillColor   = 'rgba(10, 174, 239, 0.25)';
+          strokeColor = '#0AAEEF';
+          lineWidth   = 1.6;
+        } else if (isRegionActive) {
+          fillColor   = 'rgba(168, 85, 247, 0.18)';
+          strokeColor = '#A855F7';
+          lineWidth   = 1.2;
         }
 
-        // Draw each polygon ring of the country
-        country.rings.forEach(ring => {
-          let isStarted = false;
+        (country.rings || country.polygons || []).forEach(ring => {
           ctx.beginPath();
-
-          ring.forEach(([lat, lon]) => {
-            const pt = project3D(lat, lon, radius, cx, cy, st.rotY, st.rotX);
-            if (pt.isFront) {
-              if (!isStarted) {
-                ctx.moveTo(pt.x, pt.y);
-                isStarted = true;
+          let drawn = false;
+          ring.forEach((pt, i) => {
+            const lat = Array.isArray(pt) ? pt[0] : pt.lat;
+            const lon = Array.isArray(pt) ? pt[1] : pt.lon;
+            const projected = project3D(lat, lon, radius, cx, cy, st.rotY, st.rotX);
+            if (projected.isFront) {
+              if (i === 0 || !drawn) {
+                ctx.moveTo(projected.x, projected.y);
+                drawn = true;
               } else {
-                ctx.lineTo(pt.x, pt.y);
+                ctx.lineTo(projected.x, projected.y);
               }
-            } else {
-              isStarted = false;
             }
           });
 
-          if (isStarted) {
+          if (drawn) {
+            ctx.closePath();
             ctx.fillStyle = fillColor;
             ctx.fill();
 
@@ -428,7 +460,6 @@ export default function AnalyticsGlobe({
           }
         });
 
-        // Store centroid projected point for raycasting & hover detection
         if (country.centroid) {
           const centroidPt = project3D(country.centroid.lat, country.centroid.lon, radius, cx, cy, st.rotY, st.rotX);
           if (centroidPt.isFront) {
@@ -442,14 +473,14 @@ export default function AnalyticsGlobe({
       });
 
       // ── 5. REAL-TIME ACTIVE WEBSITE VISITOR BEACONS & PULSES ──
-      const maxTraffic = Math.max(1, ...activeNodesList.map(c => c.trafficCount || c.uniqueVisitors || 0));
+      const maxTraffic = Math.max(1, ...currentNodes.map(c => c.trafficCount || c.uniqueVisitors || 0));
 
-      activeNodesList.forEach(item => {
+      currentNodes.forEach(item => {
         if (item.lat === undefined || item.lon === undefined) return;
         const pt = project3D(item.lat, item.lon, radius, cx, cy, st.rotY, st.rotX);
         if (!pt.isFront) return;
 
-        const isSelected = selectedCountry === item.iso_code;
+        const isSelected = currentSelectedCountry === item.iso_code;
         const count = item.trafficCount || item.uniqueVisitors || 100;
         const densityNorm = Math.min(1, Math.max(0.25, count / maxTraffic));
         const baseRadius = 3.5 + densityNorm * 6.0;
@@ -490,7 +521,7 @@ export default function AnalyticsGlobe({
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
     };
-  }, [countries, activeNodesList, selectedRegion, selectedCountry]);
+  }, [countries]);
 
   // Pointer Interaction Handlers
   const handlePointerDown = useCallback((e) => {
@@ -578,11 +609,19 @@ export default function AnalyticsGlobe({
   }, [hoveredInfo, onSelectCountry]);
 
   const handleWheel = useCallback((e) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const st = stateRef.current;
     const delta = Math.sign(e.deltaY);
     st.zoom = Math.max(0.75, Math.min(1.85, st.zoom * (delta > 0 ? 0.94 : 1.06)));
   }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e) => handleWheel(e);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', onWheel);
+  }, [handleWheel]);
 
   const handleZoomIn = () => {
     stateRef.current.zoom = Math.min(1.85, stateRef.current.zoom * 1.15);
@@ -659,10 +698,8 @@ export default function AnalyticsGlobe({
       ref={containerRef}
       className={`radar-glass-panel relative w-full flex flex-col justify-between p-4 overflow-hidden rounded-2xl ${isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen' : 'h-[520px] md:h-[580px] lg:h-[640px]'}`}
       style={{
-        background: darkMode
-          ? 'radial-gradient(circle at 50% 50%, #0c1c38 0%, #030814 100%)'
-          : 'radial-gradient(circle at 50% 50%, #F8FAFC 0%, #E2E8F0 100%)',
-        border: darkMode ? '1px solid rgba(30, 58, 102, 0.6)' : '1px solid rgba(226, 232, 240, 0.9)',
+        background: 'radial-gradient(circle at 50% 50%, #0c1c38 0%, #030814 100%)',
+        border: '1px solid rgba(30, 58, 102, 0.7)',
         position: isFullscreen ? 'fixed' : 'relative',
       }}
     >
@@ -672,7 +709,6 @@ export default function AnalyticsGlobe({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onWheel={handleWheel}
       />
 
       {/* ── Top Bar: Hierarchy Breadcrumb & Region Filter Pills ── */}

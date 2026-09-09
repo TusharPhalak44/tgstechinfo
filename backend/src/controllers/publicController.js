@@ -10,6 +10,40 @@ const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCa
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
 
+/**
+ * Extract webhook URL (apiUrl) from Visual Builder JSON trees (builder_page_data or builder_layout)
+ */
+const extractWebhookUrlFromBuilder = (pageDataRaw) => {
+    if (!pageDataRaw) return null;
+    try {
+        const pageData = typeof pageDataRaw === 'string' ? JSON.parse(pageDataRaw) : pageDataRaw;
+        let found = null;
+        const walk = (node) => {
+            if (found || !node) return;
+            if (node.type === 'form') {
+                try {
+                    const fc = typeof node.content === 'string' ? JSON.parse(node.content) : (node.content || {});
+                    if (fc.apiUrl && typeof fc.apiUrl === 'string' && fc.apiUrl.trim()) {
+                        found = fc.apiUrl.trim();
+                    }
+                } catch (e) { /* skip */ }
+            }
+            if (!found && Array.isArray(node.children)) {
+                node.children.forEach(walk);
+            }
+        };
+        const root = pageData?.layout || pageData?.root || pageData;
+        if (Array.isArray(root)) {
+            root.forEach(walk);
+        } else {
+            walk(root);
+        }
+        return found;
+    } catch {
+        return null;
+    }
+};
+
 // Forward form data to client's external webhook URL
 const forwardToWebhook = async (webhookUrl, payload) => {
     console.log(`[Webhook] Starting webhook call to: ${webhookUrl}`);
@@ -360,20 +394,91 @@ exports.submitLandingPage = async (req, res) => {
         console.log('[DEBUG] Full content object:', JSON.stringify(content, null, 2));
         console.log('='.repeat(80));
         
-        if (content?.webhook_url) {
+        let targetWebhookUrl = (content?.webhook_url && typeof content.webhook_url === 'string') ? content.webhook_url.trim() : null;
+        
+        // Fallback 1: Extract webhook URL from content's builder_page_data / builder_layout if DB webhook_url is null
+        if (!targetWebhookUrl && content) {
+            const builderWebhook = extractWebhookUrlFromBuilder(content.builder_page_data) ||
+                                   extractWebhookUrlFromBuilder(content.builder_layout) ||
+                                   extractWebhookUrlFromBuilder(content.builder_content_elements);
+            if (builderWebhook) {
+                targetWebhookUrl = builderWebhook;
+                console.log('[submitLandingPage] Fallback 1: Extracted webhook_url from content builder tree:', targetWebhookUrl);
+                // Save back to contents table in background so future lookups are immediate
+                if (normalizedContentId) {
+                    pool.query('UPDATE contents SET webhook_url = ? WHERE id = ?', [targetWebhookUrl, normalizedContentId]).catch(err => console.error('[submitLandingPage] Failed to save extracted webhook_url:', err.message));
+                }
+            }
+        }
+
+        // Fallback 2: Check submitted payload / extraData / req.body for apiUrl or webhook_url
+        if (!targetWebhookUrl) {
+            const payloadUrl = extraData.webhook_url || extraData.apiUrl || rest.webhook_url || rest.apiUrl || req.body.webhook_url || req.body.apiUrl;
+            if (payloadUrl && typeof payloadUrl === 'string' && payloadUrl.trim()) {
+                targetWebhookUrl = payloadUrl.trim();
+                console.log('[submitLandingPage] Fallback 2: Extracted webhook_url from submitted request payload:', targetWebhookUrl);
+                if (normalizedContentId) {
+                    pool.query('UPDATE contents SET webhook_url = ? WHERE id = ? AND (webhook_url IS NULL OR webhook_url = "")', [targetWebhookUrl, normalizedContentId]).catch(err => console.error('[submitLandingPage] Failed to save payload webhook_url:', err.message));
+                }
+            }
+        }
+
+        if (targetWebhookUrl) {
             console.log('[Webhook] ✅ Processing webhook for content:', normalizedContentId);
-            console.log('[Webhook] Webhook URL:', content.webhook_url);
+            console.log('[Webhook] Target Webhook URL:', targetWebhookUrl);
             
-            // Build webhook payload using ORIGINAL field names from the HTML form
-            // This preserves camelCase, snake_case, or any other casing the user defined
-            // in their HTML form's "name" attributes
-            const webhookPayload = {};
+            // Build webhook payload:
+            // 1. Start with original submitted fields
+            const webhookPayload = { ...extraData };
 
-            // Use extraData (before normalization) to preserve original field names
-            // extraData contains the raw field names as they came from the HTML form
-            Object.assign(webhookPayload, extraData);
+            // 2. Apply explicit custom_fields webhook_key mappings if defined
+            if (customFieldsDef && customFieldsDef.length > 0) {
+                customFieldsDef.forEach(field => {
+                    const clientKey = (field.webhook_key || '').trim();
+                    if (clientKey && clientKey !== field.name) {
+                        const val = extraData[field.name] ?? extraData[field.webhook_key] ?? extraData[clientKey] ?? normalizedExtraData[sanitizeColumnName(field.name)] ?? '';
+                        if (val !== '') {
+                            webhookPayload[clientKey] = val;
+                        }
+                    }
+                });
+            }
 
-            // Add metadata fields if they don't exist
+            // 3. Auto-alias snake_case <-> camelCase for standard lead form fields so any API endpoint works
+            const keyAliases = [
+                ['first_name', 'firstName'],
+                ['last_name', 'lastName'],
+                ['company_name', 'companyName'],
+                ['company_name', 'company'],
+                ['company', 'companyName'],
+                ['job_title', 'jobTitle'],
+                ['contact_number', 'contact'],
+                ['phone_number', 'phone'],
+                ['phone_number', 'phoneNumber'],
+                ['phone', 'contact'],
+                ['phone', 'phoneNumber'],
+                ['email_address', 'email'],
+                ['email', 'emailAddress'],
+                ['first_name', 'name']
+            ];
+
+            for (const [snake, camel] of keyAliases) {
+                if (webhookPayload[snake] !== undefined && webhookPayload[camel] === undefined) {
+                    webhookPayload[camel] = webhookPayload[snake];
+                } else if (webhookPayload[camel] !== undefined && webhookPayload[snake] === undefined) {
+                    webhookPayload[snake] = webhookPayload[camel];
+                }
+            }
+
+            // Create full name if first_name / last_name exist and name / fullName don't
+            if ((webhookPayload.first_name || webhookPayload.firstName) && !webhookPayload.name) {
+                const fn = webhookPayload.first_name || webhookPayload.firstName || '';
+                const ln = webhookPayload.last_name || webhookPayload.lastName || '';
+                webhookPayload.name = `${fn} ${ln}`.trim();
+                webhookPayload.fullName = webhookPayload.name;
+            }
+
+            // 4. Add metadata fields if missing
             if (!webhookPayload.ip_address && req.ip) {
                 webhookPayload.ip_address = req.ip;
             }
@@ -384,24 +489,22 @@ exports.submitLandingPage = async (req, res) => {
                 webhookPayload.submitted_at = new Date().toISOString();
             }
 
-            console.log('[Webhook] Payload (using original field names from HTML):', JSON.stringify(webhookPayload, null, 2));
+            console.log('[Webhook] Final Webhook Payload:', JSON.stringify(webhookPayload, null, 2));
             
-            // Call webhook - don't await so we don't block the response
-            // Run webhook in background and handle errors gracefully
-            forwardToWebhook(content.webhook_url, webhookPayload)
-                .then(() => {
-                    console.log('[Webhook] Successfully forwarded to client URL');
+            // Call webhook
+            forwardToWebhook(targetWebhookUrl, webhookPayload)
+                .then((res) => {
+                    console.log(`[Webhook] Successfully forwarded to client URL (${targetWebhookUrl}) - Status:`, res?.status);
                 })
                 .catch((err) => {
                     console.error('[Webhook] Failed to forward to client URL:', err.message);
-                    // Log webhook failure to database for debugging
                     pool.query(
                         'INSERT INTO webhook_failures (content_id, webhook_url, payload, error_message) VALUES (?, ?, ?, ?)',
-                        [normalizedContentId, content.webhook_url, JSON.stringify(webhookPayload), err.message]
+                        [normalizedContentId, targetWebhookUrl, JSON.stringify(webhookPayload), err.message]
                     ).catch(dbErr => console.error('[Webhook] Failed to log webhook failure:', dbErr.message));
                 });
         } else {
-            console.log('[Webhook] No webhook URL configured for content:', normalizedContentId);
+            console.log('[Webhook] No webhook URL configured or found for content:', normalizedContentId);
         }
 
         // Find name/email for email template
@@ -618,41 +721,47 @@ exports.getCategories = async (req, res) => {
             const categories = await Category.findAll();
             const categoryIds = categories.map(c => c.id);
             
-            let dateFilter = '';
-            const values = [...categoryIds];
-            
-            if (start_date) {
-                dateFilter += ' AND c.created_at >= ?';
-                values.push(start_date);
+            if (categoryIds.length > 0) {
+                let dateFilter = '';
+                const values = [...categoryIds];
+                
+                if (start_date) {
+                    dateFilter += ' AND c.created_at >= ?';
+                    values.push(start_date);
+                }
+                if (end_date) {
+                    dateFilter += ' AND c.created_at <= ?';
+                    values.push(end_date);
+                }
+                
+                // Get content counts for each category within date range
+                const countQuery = `
+                    SELECT category_id, COUNT(*) as count
+                    FROM contents c
+                    WHERE category_id IN (${categoryIds.map(() => '?').join(',')})
+                    AND (c.status = 'published' OR c.status IS NULL)
+                    ${dateFilter}
+                    GROUP BY category_id
+                `;
+                
+                const [counts] = await pool.query(countQuery, values);
+                const countMap = {};
+                counts.forEach(r => { countMap[r.category_id] = parseInt(r.count, 10); });
+                
+                const totalFiltered = Object.values(countMap).reduce((a, b) => a + b, 0);
+
+                // If date-restricted filter yields counts, use them; otherwise fallback to Category.findAll() counts
+                if (totalFiltered > 0) {
+                    const categoriesWithCounts = categories.map(cat => ({
+                        ...cat,
+                        content_count: countMap[cat.id] || 0
+                    }));
+                    return res.json(categoriesWithCounts);
+                }
             }
-            if (end_date) {
-                dateFilter += ' AND c.created_at <= ?';
-                values.push(end_date);
-            }
-            
-            // Get content counts for each category within date range
-            const countQuery = `
-                SELECT category_id, COUNT(*) as count
-                FROM contents c
-                WHERE category_id IN (${categoryIds.map(() => '?').join(',')})
-                AND status = 'published' AND is_visible_on_site = 1
-                ${dateFilter}
-                GROUP BY category_id
-            `;
-            
-            const [counts] = await pool.query(countQuery, values);
-            const countMap = {};
-            counts.forEach(r => { countMap[r.category_id] = parseInt(r.count, 10); });
-            
-            // Update categories with filtered counts
-            const categoriesWithCounts = categories.map(cat => ({
-                ...cat,
-                content_count: countMap[cat.id] || 0
-            }));
-            
-            res.json(categoriesWithCounts);
+            res.json(categories);
         } else {
-            // Without date filter, use the Category.findAll which already includes content_count
+            // Without date filter, use Category.findAll which already includes content_count
             const categories = await Category.findAll();
             res.json(categories);
         }
@@ -689,14 +798,27 @@ exports.getContentTypeCounts = async (req, res) => {
             values.push(end_date);
         }
         
-        const [rows] = await pool.query(
+        let [rows] = await pool.query(
             `SELECT ct.slug, COUNT(c.id) as count
              FROM content_types ct
-             LEFT JOIN contents c ON c.content_type_id = ct.id AND c.status = 'published' AND c.is_visible_on_site = 1
+             LEFT JOIN contents c ON c.content_type_id = ct.id AND (c.status = 'published' OR c.status IS NULL)
              ${dateFilter}
              GROUP BY ct.id, ct.slug`,
             values
         );
+
+        const totalWithFilter = rows.reduce((sum, r) => sum + parseInt(r.count || 0, 10), 0);
+
+        // If date-restricted filter yields 0 (no newly created items in range), fallback to overall published counts per content type
+        if (totalWithFilter === 0) {
+            [rows] = await pool.query(
+                `SELECT ct.slug, COUNT(c.id) as count
+                 FROM content_types ct
+                 LEFT JOIN contents c ON c.content_type_id = ct.id
+                 GROUP BY ct.id, ct.slug`
+            );
+        }
+
         const counts = {};
         rows.forEach(r => { counts[r.slug] = parseInt(r.count, 10); });
         res.json(counts);

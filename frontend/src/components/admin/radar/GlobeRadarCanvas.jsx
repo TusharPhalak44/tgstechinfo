@@ -638,11 +638,19 @@ const GlobeRadarCanvas = ({
   }, []);
 
   const handleWheel = useCallback((e) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const delta = Math.sign(e.deltaY);
     const next = stateRef.current.zoom * (delta > 0 ? 0.92 : 1.08);
     stateRef.current.zoom = Math.max(0.85, Math.min(1.9, next));
   }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e) => handleWheel(e);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', onWheel);
+  }, [handleWheel]);
 
   // NEW: Handle continent click for highlighting and rotation
   const handleContinentClick = useCallback((continent) => {
@@ -708,7 +716,6 @@ const GlobeRadarCanvas = ({
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
           onPointerLeave={handlePointerLeave}
-          onWheel={handleWheel}
           style={{ touchAction: 'none' }}
           className={`w-full h-full block ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
         />

@@ -114,7 +114,7 @@ const journeyItems = [
     subtitle: 'Taraj Global Solutions Pvt. Ltd.',
     desc: 'Founded in Kharadi, Pune with an initial editorial team dedicated to B2B technology communication and enterprise digital publishing.',
     metric: 'Founded 2021',
-    mediaImage: '/about_hero_banner.jpg',
+    mediaImage: '/images/journey/journey_2021_founding.jpg',
     tags: ['Incorporated in India', 'Initial Editorial Team', 'B2B Digital Media']
   },
   {
@@ -123,7 +123,7 @@ const journeyItems = [
     subtitle: 'Digital Publishing Ecosystem',
     desc: 'Engineered and launched the TGS Tech Info platform, introducing whitepaper syndication, author submission portals, and tech news vertical feeds.',
     metric: '1,000+ Articles',
-    mediaImage: '/about_mission_img.jpg',
+    mediaImage: '/images/journey/journey_2022_platform.jpg',
     tags: ['Platform Launch', 'Whitepaper Syndication', 'Author Portals']
   },
   {
@@ -132,7 +132,7 @@ const journeyItems = [
     subtitle: '100,000+ Monthly IT Decision-Makers',
     desc: 'Expanded coverage across AI, Cybersecurity, Cloud Computing, SaaS, and DevOps, reaching over 100,000 monthly technology leaders worldwide.',
     metric: '100K+ Monthly Readers',
-    mediaImage: '/about_hero_banner.jpg',
+    mediaImage: '/images/journey/journey_2023_scaling.jpg',
     tags: ['50+ Tech Verticals', 'Global Reach', 'SaaS & AI Focus']
   },
   {
@@ -141,7 +141,7 @@ const journeyItems = [
     subtitle: 'Global Intelligence Distribution',
     desc: 'Integrating AI-driven editorial tools, interactive research webinars, enterprise case studies, and dedicated media kits for global partners.',
     metric: '10,000+ Total Articles',
-    mediaImage: '/about_mission_img.jpg',
+    mediaImage: '/images/journey/journey_2024_expansion.jpg',
     tags: ['AI Content Tools', 'Webinars & eBooks', 'Media Partnerships']
   }
 ];
@@ -451,7 +451,7 @@ export const About = () => {
           >
             <div className="relative rounded-3xl overflow-hidden border shadow-2xl group" style={{ borderColor: 'var(--color-border)' }}>
               <img
-                src="/about_hero_banner.jpg"
+                src="/about_hero_banner.png"
                 alt="TGS Tech Info Executive & Editorial Team"
                 className="w-full h-80 sm:h-96 object-cover transition-transform duration-700 group-hover:scale-105"
               />
@@ -783,20 +783,19 @@ export const About = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="p-8 sm:p-12 rounded-3xl border shadow-xl text-center relative overflow-hidden group"
+          className="p-8 sm:p-12 rounded-3xl border border-amber-500/20 shadow-2xl text-center relative overflow-hidden bg-slate-900 dark:bg-slate-950"
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary) 0%, #0F172A 100%)',
-            borderColor: 'var(--color-border)'
+            backgroundImage: 'linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #0F172A 100%)'
           }}
         >
           <div className="relative z-10 max-w-3xl mx-auto text-white">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 !text-amber-300 border border-amber-500/40 mb-4 shadow-sm">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Join Our Publishing Network
             </span>
-            <h2 className="text-2xl sm:text-4xl font-extrabold mb-4 leading-tight">
+            <h2 className="text-2xl sm:text-4xl font-extrabold mb-4 leading-tight !text-white text-white drop-shadow-md">
               Ready to Share Your Technology Expertise or Partner with Our Desk?
             </h2>
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed mb-8 max-w-2xl mx-auto">
+            <p className="text-xs sm:text-sm !text-slate-200 text-slate-200 leading-relaxed mb-8 max-w-2xl mx-auto">
               Whether you are an enterprise tech writer pitching a story or a brand seeking media partnerships, our editorial team is here to collaborate.
             </p>
 

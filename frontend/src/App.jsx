@@ -96,6 +96,8 @@ import PrivateRoute from './components/common/PrivateRoute';
 
 import AdminRoute from './components/common/AdminRoute';
 
+import ErrorBoundary from './components/common/ErrorBoundary';
+
 import DashboardLayout from './components/admin/DashboardLayout';
 
 import UserDashboardLayout from './components/user/UserDashboardLayout';
@@ -585,7 +587,11 @@ function AppContent() {
 
                   <AdminRoute>
 
-                    <DashboardLayout />
+                    <ErrorBoundary>
+
+                      <DashboardLayout />
+
+                    </ErrorBoundary>
 
                   </AdminRoute>
 
@@ -679,7 +685,11 @@ function AppContent() {
 
                 <PrivateRoute>
 
-                  <UserDashboardLayout />
+                  <ErrorBoundary>
+
+                    <UserDashboardLayout />
+
+                  </ErrorBoundary>
 
                 </PrivateRoute>
 
@@ -713,7 +723,11 @@ function AppContent() {
 
                 <AdminRoute>
 
-                  <DashboardLayout />
+                  <ErrorBoundary>
+
+                    <DashboardLayout />
+
+                  </ErrorBoundary>
 
                 </AdminRoute>
 

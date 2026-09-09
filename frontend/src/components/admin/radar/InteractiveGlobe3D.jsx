@@ -109,9 +109,9 @@ const InteractiveGlobe3D = ({
     renderer.domElement.addEventListener('mousemove', handleMouseMove);
     renderer.domElement.addEventListener('mouseup', handleMouseUp);
     renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
-    renderer.domElement.addEventListener('touchstart', handleTouchStart);
-    renderer.domElement.addEventListener('touchmove', handleTouchMove);
-    renderer.domElement.addEventListener('touchend', handleTouchEnd);
+    renderer.domElement.addEventListener('touchstart', handleTouchStart, { passive: false });
+    renderer.domElement.addEventListener('touchmove', handleTouchMove, { passive: false });
+    renderer.domElement.addEventListener('touchend', handleTouchEnd, { passive: false });
 
     // Start animation loop
     animateGlobe();
@@ -375,7 +375,7 @@ const InteractiveGlobe3D = ({
   };
 
   const handleWheel = (e) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const delta = e.deltaY > 0 ? 1.1 : 0.9;
     const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoomLevel * delta));
     setZoomLevel(newZoom);
@@ -386,6 +386,7 @@ const InteractiveGlobe3D = ({
   };
 
   const handleTouchStart = (e) => {
+    if (e.cancelable) e.preventDefault();
     if (e.touches.length === 1) {
       stateRef.current.isMouseDown = true;
       stateRef.current.previousMousePosition = {
@@ -396,6 +397,7 @@ const InteractiveGlobe3D = ({
   };
 
   const handleTouchMove = (e) => {
+    if (e.cancelable) e.preventDefault();
     if (e.touches.length === 1 && stateRef.current.isMouseDown) {
       const deltaX = e.touches[0].clientX - stateRef.current.previousMousePosition.x;
       const deltaY = e.touches[0].clientY - stateRef.current.previousMousePosition.y;

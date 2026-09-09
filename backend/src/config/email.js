@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 const { pool } = require('./database');
 
 dotenv.config();
@@ -48,7 +50,7 @@ const getBackendUrl = () => {
 };
 
 /**
- * Convert a logo path/data to a public HTTPS URL or base64 data
+ * Convert a logo path/data to a public HTTPS URL or inline base64 data
  * @param {string} logoValue - Logo path or base64 data from database
  * @returns {object|null} - Object with {type: 'url'|'base64', value: string} or null
  */
@@ -57,14 +59,8 @@ const convertLogoToPublicUrl = (logoValue) => {
         return null;
     }
 
-    // If it's already a full HTTP/HTTPS URL, return it
-    if (logoValue.startsWith('http://') || logoValue.startsWith('https://')) {
-        return { type: 'url', value: logoValue };
-    }
-
     // If it's a base64 data URI, validate and return it as base64 type
     if (logoValue.startsWith('data:')) {
-        // Validate base64 format
         if (logoValue.startsWith('data:image/') && logoValue.includes('base64,')) {
             return { type: 'base64', value: logoValue };
         }
@@ -72,25 +68,32 @@ const convertLogoToPublicUrl = (logoValue) => {
         return null;
     }
 
-    // If it's a relative path like /uploads/branding/logo.png
-    if (logoValue.startsWith('/uploads/')) {
-        const backendUrl = getBackendUrl(); // Use backend URL for hosted files
-        const fullUrl = `${backendUrl}${logoValue}`;
-        console.log('[convertLogoToPublicUrl] Converting relative path to URL:', logoValue, '->', fullUrl);
-        return { type: 'url', value: fullUrl };
+    // Check if relative path image exists on local disk -> convert to inline Base64 Data URI for emails (NOT as attachment)
+    const relativePath = logoValue.startsWith('/') ? logoValue : '/' + logoValue;
+    const localDiskPath = path.join(__dirname, '../../', relativePath);
+    if (fs.existsSync(localDiskPath)) {
+        try {
+            const ext = path.extname(localDiskPath).replace('.', '').toLowerCase() || 'png';
+            const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+            const imageBuffer = fs.readFileSync(localDiskPath);
+            const base64Data = `data:${mimeType};base64,${imageBuffer.toString('base64')}`;
+            console.log('[convertLogoToPublicUrl] Embedded local logo file inline as Base64 Data URI:', relativePath);
+            return { type: 'base64', value: base64Data };
+        } catch (readErr) {
+            console.warn('[convertLogoToPublicUrl] Could not read local logo file:', readErr.message);
+        }
     }
 
-    // If it's just a filename or relative path
-    if (logoValue.startsWith('uploads/')) {
-        const backendUrl = getBackendUrl(); // Use backend URL for hosted files
-        const fullUrl = `${backendUrl}/${logoValue}`;
-        console.log('[convertLogoToPublicUrl] Converting filename to URL:', logoValue, '->', fullUrl);
-        return { type: 'url', value: fullUrl };
+    // If it's already a full HTTP/HTTPS URL, return it
+    if (logoValue.startsWith('http://') || logoValue.startsWith('https://')) {
+        return { type: 'url', value: logoValue };
     }
 
-    // Unknown format
-    console.warn('Unknown logo format:', logoValue);
-    return null;
+    // Fallback to backend public URL
+    const backendUrl = getBackendUrl();
+    const fullUrl = `${backendUrl}${relativePath}`;
+    console.log('[convertLogoToPublicUrl] Fallback logo URL:', fullUrl);
+    return { type: 'url', value: fullUrl };
 };
 
 /**
@@ -100,13 +103,19 @@ const convertLogoToPublicUrl = (logoValue) => {
 const getWebsiteLogoUrl = async () => {
     try {
         const [settingsRows] = await pool.query(
-            'SELECT website_main_logo, website_logo FROM site_settings LIMIT 1'
+            'SELECT website_main_logo, website_logo, cms_logo1 FROM site_settings LIMIT 1'
         );
         if (settingsRows && settingsRows[0]) {
-            const logoValue = settingsRows[0].website_main_logo || settingsRows[0].website_logo || '';
+            const logoValue = settingsRows[0].website_main_logo || settingsRows[0].website_logo || settingsRows[0].cms_logo1 || '';
             if (logoValue) {
-                return convertLogoToPublicUrl(logoValue);
+                const converted = convertLogoToPublicUrl(logoValue);
+                if (converted) return converted;
             }
+        }
+        // Fallback check for default branding logo file on disk
+        const defaultLogoPath = path.join(__dirname, '../../uploads/branding/logo.png');
+        if (fs.existsSync(defaultLogoPath)) {
+            return convertLogoToPublicUrl('/uploads/branding/logo.png');
         }
         return null;
     } catch (error) {
@@ -139,7 +148,8 @@ const buildLogoHtml = (logoData) => {
 
 const sendEmail = async (to, subject, html, options = {}) => {
     const user = process.env.EMAIL_USER;
-    const pass = process.env.EMAIL_PASSWORD;
+    const rawPass = process.env.EMAIL_PASSWORD;
+    const pass = rawPass ? rawPass.replace(/^['"]|['"]$/g, '') : rawPass;
     const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
     const port = Number(process.env.EMAIL_PORT || 587);
     const fromAddress = process.env.EMAIL_FROM || 'noreply@tgstechinfo.com';
@@ -192,8 +202,22 @@ const sendEmail = async (to, subject, html, options = {}) => {
         mailOptions.attachments = options.attachments;
     }
 
-    const info = await transporter.sendMail(mailOptions);
-    return info;
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`[sendEmail] Email successfully sent to ${to}. MessageId: ${info.messageId || info.id}`);
+        return info;
+    } catch (sendErr) {
+        console.error(`[sendEmail] SMTP Send Error for recipient ${to}:`, sendErr.message);
+        if (sendErr.responseCode === 554 || (sendErr.message && sendErr.message.includes('554'))) {
+            console.warn(`[sendEmail] CRITICAL: Outbound sending is disabled on SMTP host (${host}:${port}) for user ${user}. Please verify SMTP user credentials / outbound email status with your mail provider.`);
+        }
+        return {
+            error: sendErr.message,
+            responseCode: sendErr.responseCode || 500,
+            skipped: true,
+            reason: 'smtp_error'
+        };
+    }
 };
 
 // Template for subscription email
@@ -408,9 +432,34 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             return { skipped: true, reason: 'template_not_found' };
         }
 
-        // Add default variables
+        const publicUrl = getPublicUrl();
+        const derivedName = variables.name || [variables.first_name, variables.last_name].filter(Boolean).join(' ') || variables.first_name || (to ? to.split('@')[0] : 'there');
+        const derivedFirstName = variables.first_name || (variables.name ? variables.name.split(' ')[0] : '') || (to ? to.split('@')[0] : 'there');
+        const derivedLastName = variables.last_name || (variables.name && variables.name.split(' ').length > 1 ? variables.name.split(' ').slice(1).join(' ') : '');
+        const derivedTitle = variables.title || variables.content_title || 'Content';
+
+        // Add default variables with complete aliases and fallback URLs
         const defaultVars = {
             year: new Date().getFullYear(),
+            site_url: publicUrl,
+            frontend_url: publicUrl,
+            login_url: `${publicUrl}/login`,
+            dashboard_url: `${publicUrl}/user/dashboard`,
+            unsubscribe_url: `${publicUrl}/unsubscribe`,
+            download_url: publicUrl,
+            reset_url: `${publicUrl}/reset-password`,
+            name: derivedName,
+            first_name: derivedFirstName,
+            last_name: derivedLastName,
+            title: derivedTitle,
+            content_title: derivedTitle,
+            category: 'General',
+            submitted_date: new Date().toLocaleDateString(),
+            approved_date: new Date().toLocaleDateString(),
+            published_date: new Date().toLocaleDateString(),
+            reviewed_date: new Date().toLocaleDateString(),
+            feedback: '',
+            email: to || '',
             ...variables
         };
 
@@ -419,10 +468,11 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         let renderedHtml = template.html_body;
 
         Object.keys(defaultVars).forEach(key => {
-            const placeholder = `{{${key}}}`;
-            const value = defaultVars[key] || '';
-            renderedSubject = renderedSubject.replace(new RegExp(placeholder, 'g'), value);
-            renderedHtml = renderedHtml.replace(new RegExp(placeholder, 'g'), value);
+            const val = defaultVars[key] !== undefined && defaultVars[key] !== null ? String(defaultVars[key]) : '';
+            // Escape special regex characters in key if any
+            const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'gi');
+            renderedSubject = renderedSubject.replace(regex, val);
+            renderedHtml = renderedHtml.replace(regex, val);
         });
 
         // Handle company logo if include_logo is enabled
@@ -438,10 +488,10 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
                 
                 // Replace logo placeholders with improved HTML
                 renderedHtml = renderedHtml
-                    .replace(/\{\{website_logo_html\}\}/g, logoHtml)
-                    .replace(/\{\{website_logo_img\}\}/g, `<img src="${logoValue}" alt="TGS Tech Info Logo" style="max-width:180px;height:auto;display:block;margin:0 auto;border:none;" width="180" border="0" />`)
-                    .replace(/\{\{website_logo\}\}/g, logoValue)
-                    .replace(/\{\{logo\}\}/g, logoValue);
+                    .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
+                    .replace(/\{\{website_logo_img\}\}/gi, `<img src="${logoValue}" alt="TGS Tech Info Logo" style="max-width:180px;height:auto;display:block;margin:0 auto;border:none;" width="180" border="0" />`)
+                    .replace(/\{\{website_logo\}\}/gi, logoValue)
+                    .replace(/\{\{logo\}\}/gi, logoValue);
                 
                 console.log('[sendTemplatedEmail] Logo placeholders replaced successfully');
                 
@@ -455,22 +505,22 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
                 console.warn('[sendTemplatedEmail] Company logo is enabled but no valid logo found in database');
                 // Remove any logo placeholders to avoid broken images
                 renderedHtml = renderedHtml
-                    .replace(/\{\{website_logo_html\}\}/g, '')
-                    .replace(/\{\{website_logo_img\}\}/g, '')
-                    .replace(/\{\{website_logo\}\}/g, '')
-                    .replace(/\{\{logo\}\}/g, '');
+                    .replace(/\{\{website_logo_html\}\}/gi, '')
+                    .replace(/\{\{website_logo_img\}\}/gi, '')
+                    .replace(/\{\{website_logo\}\}/gi, '')
+                    .replace(/\{\{logo\}\}/gi, '');
             }
         } else {
             console.log('[sendTemplatedEmail] Logo is disabled for template:', template.template_type);
             // Remove any logo placeholders if logo is not enabled
             renderedHtml = renderedHtml
-                .replace(/\{\{website_logo_html\}\}/g, '')
-                .replace(/\{\{website_logo_img\}\}/g, '')
-                .replace(/\{\{website_logo\}\}/g, '')
-                .replace(/\{\{logo\}\}/g, '');
+                .replace(/\{\{website_logo_html\}\}/gi, '')
+                .replace(/\{\{website_logo_img\}\}/gi, '')
+                .replace(/\{\{website_logo\}\}/gi, '')
+                .replace(/\{\{logo\}\}/gi, '');
         }
 
-        // Send email (NO ATTACHMENTS for logo)
+        // Send email
         const result = await sendEmail(to, renderedSubject, renderedHtml);
         return result;
     } catch (error) {

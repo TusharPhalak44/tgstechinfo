@@ -71,6 +71,16 @@ const SIGNAL_TYPES = {
   },
 };
 
+const cleanPath = (urlStr) => {
+  if (!urlStr) return '/';
+  try {
+    const parsed = new URL(urlStr);
+    return parsed.pathname === '/' ? '/' : parsed.pathname;
+  } catch {
+    return urlStr;
+  }
+};
+
 const LiveSignalsFeed = ({ 
   recentSessions = [], 
   ctaClicks = [], 
@@ -83,117 +93,62 @@ const LiveSignalsFeed = ({
   const [filterType, setFilterType] = useState('ALL');
   const [isPaused, setIsPaused] = useState(false);
 
+  // Process live sessions and events from props
   useEffect(() => {
-    if (isPaused) return;
-
     const eventList = [];
 
     if (ctaClicks && ctaClicks.length > 0) {
-      ctaClicks.slice(0, 4).forEach((cta, i) => {
+      ctaClicks.slice(0, 5).forEach((cta, i) => {
+        const ctaTime = cta.created_at ? new Date(cta.created_at).getTime() : (Date.now() - (i + 1) * 12000);
+        const ageSec = Math.max(1, Math.floor((Date.now() - ctaTime) / 1000));
+        const ctaCountry = cta.country || cta.country_name || 'India';
+        const geo = getCountryGeo(ctaCountry);
         eventList.push({
-          id: `conv-${i}-${Date.now()}`,
+          id: `conv-${cta.id || i}-${ctaTime}`,
           type: 'conversion',
           title: cta.cta_type ? `Form Submission: ${cta.cta_type.replace(/_/g, ' ').toUpperCase()}` : 'Contact form submitted',
           subtitle: 'Completed goal action & converted',
-          country: i === 0 ? 'India' : (i === 1 ? 'USA' : 'Germany'),
-          secondsAgo: (i + 1) * 14,
+          country: geo.country || ctaCountry,
+          secondsAgo: ageSec,
         });
       });
     }
 
     if (recentSessions && recentSessions.length > 0) {
-      const highIntent = recentSessions.filter(s => (s.total_pages_visited >= 2 || s.total_session_duration > 90));
-      highIntent.slice(0, 5).forEach((session, i) => {
+      recentSessions.forEach((session, i) => {
+        const startTime = session.session_start ? new Date(session.session_start).getTime() : (Date.now() - (i + 1) * 15000);
+        const ageSec = Math.max(1, Math.floor((Date.now() - startTime) / 1000));
         const geo = getCountryGeo(session.country);
-        eventList.push({
-          id: `intent-${session.session_uuid || i}`,
-          type: 'high_intent',
-          title: `Journey: ${session.landing_page || '/services'} → ${session.exit_page || '/pricing'}`,
-          subtitle: `${session.total_pages_visited || 3} pages visited · ${session.browser || 'Chrome'} on ${session.device_type || 'Desktop'}`,
-          country: geo.country,
-          secondsAgo: (i + 1) * 24,
-        });
-      });
-
-      recentSessions.slice(0, 6).forEach((session, i) => {
-        const geo = getCountryGeo(session.country);
+        const isHighIntent = (session.total_pages_visited >= 2 || session.total_session_duration > 90);
         const isNew = i % 2 === 0;
+
+        const landingClean = cleanPath(session.landing_page);
+        const exitClean = session.exit_page ? cleanPath(session.exit_page) : null;
+        const journeyText = exitClean ? `${landingClean} → ${exitClean}` : landingClean;
+
         eventList.push({
-          id: `eng-${session.session_uuid || i}-${i}`,
-          type: isNew ? 'new_visitor' : 'engagement',
-          title: isNew ? `Entered via ${session.landing_page || 'Google Search'}` : `Article/Page view: ${session.landing_page || '/case-studies'}`,
-          subtitle: `${session.device_type || 'Desktop'} · ${session.browser || 'Web browser'}`,
+          id: `sess-${session.session_uuid || i}-${startTime}`,
+          type: isHighIntent ? 'high_intent' : (isNew ? 'new_visitor' : 'engagement'),
+          title: isHighIntent 
+            ? `Journey: ${journeyText}`
+            : (isNew ? `Entered via ${landingClean}` : `Page View: ${landingClean}`),
+          subtitle: `${session.total_pages_visited || 1} pages visited · ${session.browser || 'Chrome'} on ${session.device_type || 'Desktop'}`,
           country: geo.country,
-          secondsAgo: (i + 1) * 38,
+          secondsAgo: ageSec,
         });
       });
-    }
-
-    if (chatbotActivity && chatbotActivity.length > 0) {
-      chatbotActivity.slice(0, 3).forEach((chat, i) => {
-        eventList.push({
-          id: `chat-${i}`,
-          type: 'chatbot',
-          title: `Chatbot inquiry: "${chat.query || 'Solution architecture'}"`,
-          subtitle: 'Automated assistant session started',
-          country: 'UK',
-          secondsAgo: (i + 1) * 45,
-        });
-      });
-    }
-
-    if (eventList.length === 0) {
-      eventList.push(
-        {
-          id: 'fb-1',
-          type: 'conversion',
-          title: 'Contact form submitted',
-          subtitle: 'Enterprise evaluation request',
-          country: 'India',
-          secondsAgo: 12,
-        },
-        {
-          id: 'fb-2',
-          type: 'high_intent',
-          title: 'Visitor viewed Services → Pricing',
-          subtitle: 'Multi-stage product comparison',
-          country: 'USA',
-          secondsAgo: 24,
-        },
-        {
-          id: 'fb-3',
-          type: 'engagement',
-          title: 'Article viewed: Cloud Native AI Solutions',
-          subtitle: 'Deep technical read (4m duration)',
-          country: 'UK',
-          secondsAgo: 41,
-        },
-        {
-          id: 'fb-4',
-          type: 'new_visitor',
-          title: 'Entered through Google Search',
-          subtitle: 'Organic search query on homepage',
-          country: 'Germany',
-          secondsAgo: 52,
-        },
-        {
-          id: 'fb-5',
-          type: 'chatbot',
-          title: 'Chatbot query: "Pricing & Integration"',
-          subtitle: 'Live conversational assist',
-          country: 'Singapore',
-          secondsAgo: 78,
-        }
-      );
     }
 
     eventList.sort((a, b) => a.secondsAgo - b.secondsAgo);
-    setSignals(eventList);
-  }, [recentSessions, ctaClicks, chatbotActivity, isPaused]);
+    setSignals(eventList.slice(0, 25));
+  }, [recentSessions, ctaClicks, chatbotActivity]);
 
+  // Real-time 1s ticker for true session events
   useEffect(() => {
     if (isPaused) return;
-    const interval = setInterval(() => {
+
+    // Ticker: Increment secondsAgo smoothly for all items every 1s
+    const ticker = setInterval(() => {
       setSignals(prev =>
         prev.map(s => ({
           ...s,
@@ -201,7 +156,10 @@ const LiveSignalsFeed = ({
         }))
       );
     }, 1000);
-    return () => clearInterval(interval);
+
+    return () => {
+      clearInterval(ticker);
+    };
   }, [isPaused]);
 
   const filteredSignals = filterType === 'ALL' 
@@ -277,7 +235,12 @@ const LiveSignalsFeed = ({
         {filteredSignals.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400 font-mono text-xs">
             <FieldTimeOutlined className="text-2xl text-cyan-500/40 mb-2 animate-pulse" />
-            <p>Waiting for live signal triggers...</p>
+            <p className={`font-semibold ${darkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+              Waiting for live signal triggers...
+            </p>
+            <p className={`text-[11px] mt-1 max-w-xs ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Real-time reader journeys and conversion events will stream here live as visitors interact with the site.
+            </p>
           </div>
         ) : (
           filteredSignals.map(sig => {

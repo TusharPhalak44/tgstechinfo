@@ -9,8 +9,8 @@ const GlobalActivitySection = ({
   darkMode = true 
 }) => {
   const processedCountries = React.useMemo(() => {
+    const map = {};
     if (countryData && countryData.length > 0) {
-      const map = {};
       countryData.forEach(item => {
         const countryName = (item.country || '').trim();
         if (!countryName || countryName.toLowerCase() === 'unknown' || countryName.toLowerCase() === 'global') return;
@@ -32,16 +32,10 @@ const GlobalActivitySection = ({
           map[countryName].conversions += (item.conversion_count || item.conversions || 0);
         }
       });
-      const list = Object.values(map);
-      if (list.length > 0) {
-        return list.sort((a, b) => b.sessions - a.sessions).slice(0, 10);
-      }
     }
 
-    return [
-      { country: 'India', code: 'IN', city: 'Mumbai / Pune', activeVisitors: 1, sessions: totalSessions || 1, pageViews: 3, conversions: 0 },
-    ];
-  }, [countryData, totalSessions]);
+    return Object.values(map).sort((a, b) => b.sessions - a.sessions).slice(0, 10);
+  }, [countryData]);
 
   const maxSessions = Math.max(...processedCountries.map(c => c.sessions), 1);
 

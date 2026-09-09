@@ -162,9 +162,9 @@ exports.upsertTaxonomyItem = async (req, res, next) => {
             if (type === 'countries') {
                 await pool.query(`
                     UPDATE audience_countries 
-                    SET name=?, iso_code=?, iso3_code=?, lat=?, lon=?, is_active=?, display_order=?
+                    SET name=?, iso_code=?, iso_alpha3=?, lat=?, lon=?, is_active=?, display_order=?
                     WHERE id=?
-                `, [name, iso_code || code, iso3_code || null, lat || 0, lon || 0, is_active !== false, display_order || 0, id]);
+                `, [name, iso_code || code, iso3_code || iso_alpha3 || null, lat || 0, lon || 0, is_active !== false, display_order || 0, id]);
             } else if (type === 'regions') {
                 await pool.query(`
                     UPDATE audience_geo_regions 
@@ -196,9 +196,9 @@ exports.upsertTaxonomyItem = async (req, res, next) => {
             // Insert
             if (type === 'countries') {
                 const [res] = await pool.query(`
-                    INSERT INTO audience_countries (name, iso_code, iso3_code, lat, lon, is_active, display_order)
+                    INSERT INTO audience_countries (name, iso_code, iso_alpha3, lat, lon, is_active, display_order)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                `, [name, iso_code || code, iso3_code || null, lat || 0, lon || 0, is_active !== false, display_order || 0]);
+                `, [name, iso_code || code, iso3_code || iso_alpha3 || null, lat || 0, lon || 0, is_active !== false, display_order || 0]);
                 insertedId = res.insertId;
             } else if (type === 'regions') {
                 const [res] = await pool.query(`
@@ -421,6 +421,18 @@ exports.updateStatisticRecord = async (req, res, next) => {
 
         await logAudit(req, 'UPDATE_STATISTIC', 'audience_statistics', id, existing, req.body);
 
+        // Recalculate Global Database Total
+        const [[newGlobalRow]] = await pool.query('SELECT SUM(contact_count) as total FROM audience_statistics WHERE status = "Published"');
+        const newGlobalTotal = parseInt(newGlobalRow?.total || 0, 10);
+
+        await pool.query(`
+            UPDATE audience_global_settings 
+            SET setting_value = ?, updated_by = ?
+            WHERE setting_key = 'global_contacts_total'
+        `, [String(newGlobalTotal), req.user?.id || null]);
+
+        invalidateMetadataCache();
+
         res.json({
             success: true,
             message: 'Audience statistic updated successfully'
@@ -452,7 +464,7 @@ exports.importAudienceData = async (req, res, next) => {
             [[currentTotalRow]]
         ] = await Promise.all([
             pool.query('SELECT id, name, code FROM audience_geo_regions'),
-            pool.query('SELECT id, name, iso_code, iso3_code FROM audience_countries'),
+            pool.query('SELECT id, name, iso_code, iso_alpha3 AS iso3_code FROM audience_countries'),
             pool.query('SELECT id, name, code FROM audience_industries'),
             pool.query('SELECT id, name, code FROM audience_employee_sizes'),
             pool.query('SELECT id, name, code FROM audience_departments'),
@@ -467,7 +479,8 @@ exports.importAudienceData = async (req, res, next) => {
                 item.name.toLowerCase() === normalized ||
                 item[codeKey]?.toLowerCase() === normalized ||
                 (item.iso_code && item.iso_code.toLowerCase() === normalized) ||
-                (item.iso3_code && item.iso3_code.toLowerCase() === normalized)
+                (item.iso3_code && item.iso3_code.toLowerCase() === normalized) ||
+                (item.iso_alpha3 && item.iso_alpha3.toLowerCase() === normalized)
             );
         };
 
@@ -657,3 +670,360 @@ exports.getImportHistory = async (req, res, next) => {
         next(err);
     }
 };
+
+/**
+ * Preview Proportional Volume Adjustment for Region / Scope
+ */
+exports.previewAudienceAdjustment = async (req, res, next) => {
+    try {
+        const { scope_type = 'REGION', scope_code: rawScopeCode, adjustment_mode = 'DELTA', delta_contacts = 0, target_total_contacts = 0 } = req.body;
+        const scope_code = (rawScopeCode || '').trim().toUpperCase();
+
+        if (!scope_code) {
+            return res.status(400).json({ error: 'scope_code is required (e.g., APAC, EMEA, IN, GLOBAL)' });
+        }
+
+        // Build WHERE clause based on scope
+        let scopeWhere = '';
+        let scopeParams = [];
+        let scopeName = scope_code;
+
+        if (scope_type === 'GLOBAL' || scope_code === 'GLOBAL') {
+            scopeWhere = "s.status = 'Published'";
+            scopeName = 'Global Database';
+        } else if (scope_type === 'REGION') {
+            scopeWhere = "r.code = ? AND s.status = 'Published'";
+            scopeParams = [scope_code];
+            const [[rRow]] = await pool.query('SELECT name FROM audience_geo_regions WHERE code = ?', [scope_code]);
+            if (rRow) scopeName = `${rRow.name} (${scope_code})`;
+        } else if (scope_type === 'GEO_GROUP') {
+            scopeWhere = "s.country_id IN (SELECT gc.country_id FROM audience_geo_group_countries gc JOIN audience_geo_groups g ON gc.geo_group_id = g.id WHERE g.code = ?) AND s.status = 'Published'";
+            scopeParams = [scope_code];
+            const [[gRow]] = await pool.query('SELECT name FROM audience_geo_groups WHERE code = ?', [scope_code]);
+            if (gRow) scopeName = `${gRow.name} (${scope_code})`;
+        } else if (scope_type === 'COUNTRY') {
+            scopeWhere = "c.iso_code = ? AND s.status = 'Published'";
+            scopeParams = [scope_code];
+            const [[cRow]] = await pool.query('SELECT name FROM audience_countries WHERE iso_code = ?', [scope_code]);
+            if (cRow) scopeName = `${cRow.name} (${scope_code})`;
+        } else {
+            return res.status(400).json({ error: 'Invalid scope_type' });
+        }
+
+        const joinSql = `
+            FROM audience_statistics s
+            JOIN audience_geo_regions r ON s.region_id = r.id
+            JOIN audience_countries c ON s.country_id = c.id
+        `;
+
+        // 1. Get current baseline for scope
+        const [[scopeTotals]] = await pool.query(`
+            SELECT 
+                COALESCE(SUM(s.contact_count), 0) AS current_contacts,
+                COALESCE(SUM(s.company_count), 0) AS current_companies,
+                COUNT(s.id) AS records_count
+            ${joinSql}
+            WHERE ${scopeWhere}
+        `, scopeParams);
+
+        // 2. Get global total baseline
+        const [[globalTotals]] = await pool.query(`
+            SELECT COALESCE(SUM(contact_count), 0) AS current_global_total
+            FROM audience_statistics WHERE status = 'Published'
+        `);
+
+        const currentScopeTotal = parseInt(scopeTotals?.current_contacts || 0, 10);
+        const currentGlobalTotal = parseInt(globalTotals?.current_global_total || 0, 10);
+
+        if (currentScopeTotal <= 0) {
+            return res.status(400).json({ error: `No active records found for scope "${scope_code}"` });
+        }
+
+        // Calculate target scope total and delta
+        let delta = 0;
+        let targetScopeTotal = 0;
+
+        if (adjustment_mode === 'DELTA') {
+            delta = parseInt(delta_contacts || 0, 10);
+            targetScopeTotal = Math.max(0, currentScopeTotal + delta);
+        } else {
+            targetScopeTotal = Math.max(0, parseInt(target_total_contacts || 0, 10));
+            delta = targetScopeTotal - currentScopeTotal;
+        }
+
+        const ratio = currentScopeTotal > 0 ? (targetScopeTotal / currentScopeTotal) : 1.0;
+        const projectedGlobalTotal = currentGlobalTotal + delta;
+
+        // 3. Country-by-country breakdown within scope
+        const [countryBreakdown] = await pool.query(`
+            SELECT 
+                c.id AS country_id,
+                c.name AS country_name,
+                c.iso_code,
+                SUM(s.contact_count) AS current_country_contacts,
+                SUM(s.company_count) AS current_country_companies
+            ${joinSql}
+            WHERE ${scopeWhere}
+            GROUP BY c.id, c.name, c.iso_code
+            ORDER BY current_country_contacts DESC
+        `, scopeParams);
+
+        const countryPreview = countryBreakdown.map(c => {
+            const currentCount = parseInt(c.current_country_contacts || 0, 10);
+            const currentCompany = parseInt(c.current_country_companies || 0, 10);
+            const weightPct = currentScopeTotal > 0 ? ((currentCount / currentScopeTotal) * 100) : 0;
+            const countryDelta = Math.round(delta * (weightPct / 100));
+            const projectedCount = Math.max(0, Math.round(currentCount * ratio));
+
+            return {
+                country_id: c.country_id,
+                country_name: c.country_name,
+                iso_code: c.iso_code,
+                current_contacts: currentCount,
+                current_companies: currentCompany,
+                weight_percentage: Number(weightPct.toFixed(2)),
+                added_delta: countryDelta,
+                projected_contacts: projectedCount,
+                projected_companies: Math.max(0, Math.round(currentCompany * ratio))
+            };
+        });
+
+        res.json({
+            success: true,
+            data: {
+                scope_type,
+                scope_code,
+                scope_name: scopeName,
+                adjustment_mode,
+                baseline_scope_contacts: currentScopeTotal,
+                delta_applied: delta,
+                target_scope_contacts: targetScopeTotal,
+                proportional_ratio: Number(ratio.toFixed(6)),
+                records_to_update: parseInt(scopeTotals?.records_count || 0, 10),
+                current_global_total: currentGlobalTotal,
+                projected_global_total: projectedGlobalTotal,
+                country_breakdown: countryPreview
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Execute Proportional Volume Adjustment for Region / Scope
+ */
+exports.adjustAudienceVolume = async (req, res, next) => {
+    try {
+        const { scope_type = 'REGION', scope_code: rawScopeCode, adjustment_mode = 'DELTA', delta_contacts = 0, target_total_contacts = 0, notes } = req.body;
+        const scope_code = (rawScopeCode || '').trim().toUpperCase();
+
+        if (!scope_code) {
+            return res.status(400).json({ error: 'scope_code is required' });
+        }
+
+        // Build WHERE clause based on scope
+        let scopeWhere = '';
+        let scopeParams = [];
+        let scopeName = scope_code;
+
+        if (scope_type === 'GLOBAL' || scope_code === 'GLOBAL') {
+            scopeWhere = "status = 'Published'";
+            scopeName = 'Global Database';
+        } else if (scope_type === 'REGION') {
+            scopeWhere = "region_id = (SELECT id FROM audience_geo_regions WHERE code = ?) AND status = 'Published'";
+            scopeParams = [scope_code];
+            const [[rRow]] = await pool.query('SELECT name FROM audience_geo_regions WHERE code = ?', [scope_code]);
+            if (rRow) scopeName = `${rRow.name} (${scope_code})`;
+        } else if (scope_type === 'GEO_GROUP') {
+            scopeWhere = "country_id IN (SELECT gc.country_id FROM audience_geo_group_countries gc JOIN audience_geo_groups g ON gc.geo_group_id = g.id WHERE g.code = ?) AND status = 'Published'";
+            scopeParams = [scope_code];
+            const [[gRow]] = await pool.query('SELECT name FROM audience_geo_groups WHERE code = ?', [scope_code]);
+            if (gRow) scopeName = `${gRow.name} (${scope_code})`;
+        } else if (scope_type === 'COUNTRY') {
+            scopeWhere = "country_id = (SELECT id FROM audience_countries WHERE iso_code = ?) AND status = 'Published'";
+            scopeParams = [scope_code];
+            const [[cRow]] = await pool.query('SELECT name FROM audience_countries WHERE iso_code = ?', [scope_code]);
+            if (cRow) scopeName = `${cRow.name} (${scope_code})`;
+        } else {
+            return res.status(400).json({ error: 'Invalid scope_type' });
+        }
+
+        // 1. Get baseline scope totals
+        const [[currentScopeRow]] = await pool.query(`
+            SELECT COALESCE(SUM(contact_count), 0) AS total_contacts, COUNT(*) AS records_count 
+            FROM audience_statistics 
+            WHERE ${scopeWhere}
+        `, scopeParams);
+
+        const currentScopeTotal = parseInt(currentScopeRow?.total_contacts || 0, 10);
+        const recordsCount = parseInt(currentScopeRow?.records_count || 0, 10);
+
+        if (currentScopeTotal <= 0) {
+            return res.status(400).json({ error: `No records found to adjust for scope "${scope_code}"` });
+        }
+
+        // Calculate target scope total and delta
+        let delta = 0;
+        let targetScopeTotal = 0;
+
+        if (adjustment_mode === 'DELTA') {
+            delta = parseInt(delta_contacts || 0, 10);
+            targetScopeTotal = Math.max(0, currentScopeTotal + delta);
+        } else {
+            targetScopeTotal = Math.max(0, parseInt(target_total_contacts || 0, 10));
+            delta = targetScopeTotal - currentScopeTotal;
+        }
+
+        const ratio = currentScopeTotal > 0 ? (targetScopeTotal / currentScopeTotal) : 1.0;
+
+        // 2. Perform Proportional Bulk Update in MySQL
+        await pool.query(`
+            UPDATE audience_statistics 
+            SET contact_count = GREATEST(1, ROUND(contact_count * ?)),
+                company_count = GREATEST(1, ROUND(company_count * ?))
+            WHERE ${scopeWhere}
+        `, [ratio, ratio, ...scopeParams]);
+
+        // 3. Recalculate Global Database Total
+        const [[newGlobalRow]] = await pool.query('SELECT SUM(contact_count) as total FROM audience_statistics WHERE status = "Published"');
+        const newGlobalTotal = parseInt(newGlobalRow?.total || 0, 10);
+
+        // 4. Update Global Settings
+        await pool.query(`
+            UPDATE audience_global_settings 
+            SET setting_value = ?, updated_by = ?
+            WHERE setting_key = 'global_contacts_total'
+        `, [String(newGlobalTotal), req.user?.id || null]);
+
+        // 5. Record History & Audit Log
+        await pool.query(`
+            INSERT INTO audience_adjustment_history
+            (scope_type, scope_id, scope_name, adjustment_type, delta_applied, previous_total, new_total, records_affected, performed_by, performed_by_name, details_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            scope_type,
+            scope_code,
+            scopeName,
+            adjustment_mode,
+            delta,
+            currentScopeTotal,
+            targetScopeTotal,
+            recordsCount,
+            req.user?.id || null,
+            req.user?.name || req.user?.email || 'Admin',
+            JSON.stringify({ ratio: Number(ratio.toFixed(6)), notes: notes || '' })
+        ]);
+
+        await logAudit(req, 'PROPORTIONAL_ADJUSTMENT', 'audience_statistics', scope_code, { previous_scope_total: currentScopeTotal }, { new_scope_total: targetScopeTotal, delta, new_global_total: newGlobalTotal });
+
+        invalidateMetadataCache();
+
+        res.json({
+            success: true,
+            message: `Proportional volume adjustment applied! ${scopeName} updated from ${currentScopeTotal.toLocaleString()} to ${targetScopeTotal.toLocaleString()} contacts.`,
+            data: {
+                scope_code,
+                scope_name: scopeName,
+                delta_applied: delta,
+                previous_scope_total: currentScopeTotal,
+                new_scope_total: targetScopeTotal,
+                new_global_total: newGlobalTotal,
+                records_affected: recordsCount
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get Proportional Adjustment History
+ */
+exports.getAdjustmentHistory = async (req, res, next) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM audience_adjustment_history ORDER BY id DESC LIMIT 50');
+        res.json({
+            success: true,
+            data: rows
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * Get Data Quality & Coverage Matrix Report
+ */
+exports.getDataQualityReport = async (req, res, next) => {
+    try {
+        const [
+            [totalStats],
+            [indCoverage],
+            [funcCoverage],
+            [sizeCoverage],
+            [levelCoverage],
+            [geoCoverage]
+        ] = await Promise.all([
+            pool.query('SELECT SUM(contact_count) as total_contacts, COUNT(*) as total_records FROM audience_statistics WHERE status = "Published"'),
+            pool.query(`
+                SELECT 
+                    SUM(CASE WHEN ind.code != 'UNCLASSIFIED' THEN s.contact_count ELSE 0 END) as classified_contacts,
+                    SUM(CASE WHEN ind.code = 'UNCLASSIFIED' THEN s.contact_count ELSE 0 END) as unclassified_contacts
+                FROM audience_statistics s JOIN audience_industries ind ON s.industry_id = ind.id WHERE s.status = 'Published'
+            `),
+            pool.query(`
+                SELECT 
+                    SUM(CASE WHEN s.function_id IS NOT NULL THEN s.contact_count ELSE 0 END) as classified_contacts,
+                    SUM(CASE WHEN s.function_id IS NULL THEN s.contact_count ELSE 0 END) as unclassified_contacts
+                FROM audience_statistics s WHERE s.status = 'Published'
+            `),
+            pool.query(`
+                SELECT 
+                    SUM(CASE WHEN sz.code IS NOT NULL THEN s.contact_count ELSE 0 END) as classified_contacts
+                FROM audience_statistics s JOIN audience_employee_sizes sz ON s.employee_size_id = sz.id WHERE s.status = 'Published'
+            `),
+            pool.query(`
+                SELECT 
+                    SUM(CASE WHEN lvl.code IS NOT NULL THEN s.contact_count ELSE 0 END) as classified_contacts
+                FROM audience_statistics s JOIN audience_job_levels lvl ON s.job_level_id = lvl.id WHERE s.status = 'Published'
+            `),
+            pool.query(`
+                SELECT 
+                    SUM(CASE WHEN c.iso_code IS NOT NULL THEN s.contact_count ELSE 0 END) as classified_contacts
+                FROM audience_statistics s JOIN audience_countries c ON s.country_id = c.id WHERE s.status = 'Published'
+            `)
+        ]);
+
+        const totalContacts = parseInt(totalStats[0]?.total_contacts || 0, 10);
+
+        const calcMetric = (classified, unclassified = 0) => {
+            const cls = parseInt(classified || 0, 10);
+            const uncls = parseInt(unclassified || 0, 10);
+            const pct = totalContacts > 0 ? Number(((cls / totalContacts) * 100).toFixed(2)) : 0;
+            return {
+                classified_contacts: cls,
+                unclassified_contacts: uncls,
+                coverage_percentage: pct
+            };
+        };
+
+        res.json({
+            success: true,
+            data: {
+                total_contacts: totalContacts,
+                total_indexed_records: parseInt(totalStats[0]?.total_records || 0, 10),
+                dimensions: {
+                    geography: calcMetric(geoCoverage[0]?.classified_contacts),
+                    industry_linkedin_v2: calcMetric(indCoverage[0]?.classified_contacts, indCoverage[0]?.unclassified_contacts),
+                    linkedin_functions: calcMetric(funcCoverage[0]?.classified_contacts, funcCoverage[0]?.unclassified_contacts),
+                    company_headcount: calcMetric(sizeCoverage[0]?.classified_contacts),
+                    seniority_levels: calcMetric(levelCoverage[0]?.classified_contacts)
+                }
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+

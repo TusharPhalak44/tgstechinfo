@@ -19,42 +19,46 @@ const WebsitePulseBar = ({
   isLoading = false,
   darkMode = true,
 }) => {
+  const activePct = totalSessions > 0 ? Math.min(100, Math.round((activeVisitors / totalSessions) * 100)) : 0;
+  const viewsPerSession = totalSessions > 0 ? (totalPageViews / totalSessions).toFixed(1) : '1.0';
+  const convRatePct = totalSessions > 0 ? Math.min(100, Math.round((conversionsCount / totalSessions) * 100)) : 0;
+
   const pulseCards = [
     {
       id: 'active_visitors',
       label: 'ACTIVE VISITORS',
       value: activeVisitors,
-      change: '+14%',
+      change: `${activePct}% of total`,
       isPositive: true,
       icon: <UserOutlined className="text-cyan-500" />,
       glowColor: '#0AAEEF',
-      subtext: 'Current live concurrents',
+      subtext: 'Live concurrent visitors',
     },
     {
       id: 'total_sessions',
       label: 'SESSIONS',
       value: totalSessions,
-      change: '+9.2%',
+      change: '100%',
       isPositive: true,
       icon: <ThunderboltOutlined className="text-blue-500" />,
       glowColor: '#3B82F6',
-      subtext: 'Total visitor journeys',
+      subtext: 'Recorded user journeys',
     },
     {
       id: 'page_views',
       label: 'PAGE VIEWS',
       value: totalPageViews,
-      change: '+18.5%',
+      change: `${viewsPerSession}/sess`,
       isPositive: true,
       icon: <EyeOutlined className="text-purple-500" />,
       glowColor: '#A855F7',
-      subtext: 'Content impressions',
+      subtext: 'Total impressions',
     },
     {
       id: 'conversions',
       label: 'LEADS & GOALS',
       value: conversionsCount,
-      change: '+24.0%',
+      change: `${convRatePct}% conv`,
       isPositive: true,
       icon: <CheckCircleOutlined className="text-emerald-500" />,
       glowColor: '#10B981',
@@ -63,12 +67,12 @@ const WebsitePulseBar = ({
     {
       id: 'searches',
       label: 'SEARCHES & INTENT',
-      value: searchesCount || (Math.max(12, Math.round(totalSessions * 0.18))),
-      change: '-2.1%',
-      isPositive: false,
+      value: searchesCount,
+      change: `Bounce ${bounceRate}%`,
+      isPositive: bounceRate < 40,
       icon: <SearchOutlined className="text-amber-500" />,
       glowColor: '#F59E0B',
-      subtext: `Avg Bounce: ${bounceRate}%`,
+      subtext: `Search query activity`,
     },
   ];
 

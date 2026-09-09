@@ -40,56 +40,52 @@ export default function FormRenderer({ node, contentWebhookUrl }) {
   // Priority: context (set by CreateContent when editing) > stored in node > empty (falls back to Referer slug on backend)
   const contentId = contextContentId || content.contentId || '';
 
+  const resolveFieldKey = (field) => {
+    if (field.apiKey && field.apiKey.trim()) return field.apiKey.trim();
+    if (field.name && field.name.trim()) return field.name.trim();
+    if (field.label && field.label.trim()) {
+      return field.label
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+    }
+    return field.id;
+  };
+
   const onFinish = async (values) => {
     setSubmitting(true);
     try {
+      const dbFields = {};
+      fields.forEach(field => {
+        const rawValue = values[field.id];
+        if (rawValue === undefined) return;
+        const key = resolveFieldKey(field);
+        dbFields[key] = rawValue;
+      });
+
       // Save to backend database if a contentId is configured
-      // Use apiKey as the field name if set, otherwise fall back to field.id
       if (contentId) {
-        const dbFields = {};
-        fields.forEach(field => {
-          const rawValue = values[field.id];
-          if (rawValue === undefined) return;
-          const key = (field.apiKey && field.apiKey.trim()) ? field.apiKey.trim() : field.id;
-          dbFields[key] = rawValue;
-        });
+        if (apiUrl) {
+          dbFields.apiUrl = apiUrl;
+        }
         await axios.post('/api/public/landing-page', {
           content_id: contentId,
           extra_fields: dbFields,
         });
-      }
-
-      // Also forward to external API URL if configured (non-blocking)
-      if (apiUrl) {
+      } else if (apiUrl) {
+        // Fallback for standalone preview mode without TGS backend content ID
         try {
-          // Remap field values using apiKey mappings if defined
-          // e.g. { field_123: 'John' } → { first_name: 'John' } when apiKey = 'first_name'
-          const mappedValues = {};
-          fields.forEach(field => {
-            const rawValue = values[field.id];
-            if (rawValue === undefined) return;
-            const key = (field.apiKey && field.apiKey.trim()) ? field.apiKey.trim() : field.id;
-            mappedValues[key] = rawValue;
-          });
-          await axios.post(apiUrl, mappedValues, {
+          await axios.post(apiUrl, dbFields, {
             headers: { 'Content-Type': 'application/json' },
             timeout: 10000,
-            withCredentials: false, // Don't send cookies to external APIs
+            withCredentials: false,
           });
           console.log('✅ External API submission successful');
         } catch (webhookErr) {
-          // Log detailed error but don't fail the form submission
-          console.warn('⚠️ External API submission failed (non-blocking):', webhookErr.message);
-          if (webhookErr.response) {
-            console.warn('Response status:', webhookErr.response.status);
-            console.warn('Response data:', webhookErr.response.data);
-          } else if (webhookErr.request) {
-            console.warn('No response received - possible CORS or network issue');
-          }
+          console.warn('⚠️ External API submission failed:', webhookErr.message);
         }
-      }
-
-      if (!contentId && !apiUrl) {
+      } else {
         console.log('Form submitted (no backend configured):', values);
       }
 

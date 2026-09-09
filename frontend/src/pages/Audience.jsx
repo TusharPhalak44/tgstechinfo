@@ -53,6 +53,175 @@ const cardItemVariants = {
 export default function Audience() {
   const { darkMode } = useTheme();
   const [selectedRegionId, setSelectedRegionId] = useState('GLOBAL');
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchLiveAudienceStats() {
+      try {
+        const res = await audienceService.getAudienceStats({});
+        if (isMounted && res?.data) {
+          setStats(res.data);
+        }
+      } catch (err) {
+        console.error('Failed to load live audience stats:', err);
+      }
+    }
+    fetchLiveAudienceStats();
+    return () => { isMounted = false; };
+  }, []);
+
+  const totalContacts = stats?.matching_contacts || 78000000;
+  const totalCompanies = stats?.matching_companies || 4250000;
+  const totalCountries = stats?.matching_countries_count || 195;
+
+  const contactsInMillions = totalContacts / 1000000;
+  const companiesInMillions = totalCompanies / 1000000;
+
+  const formattedHeadlineContacts = contactsInMillions >= 1 
+    ? `${contactsInMillions.toFixed(1).replace(/\.0$/, '')} Million+`
+    : `${(totalContacts / 1000).toFixed(0)}K+`;
+
+  const formattedGlobalPill = contactsInMillions >= 1 
+    ? `${contactsInMillions.toFixed(1).replace(/\.0$/, '')}M+`
+    : `${(totalContacts / 1000).toFixed(0)}K+`;
+
+  const keyMetrics = [
+    {
+      icon: Users,
+      num: Number(contactsInMillions.toFixed(1)),
+      decimals: contactsInMillions % 1 === 0 ? 0 : 1,
+      suffix: 'M+',
+      label: 'Business Professionals',
+      color: 'text-[#0AAEEF]',
+      iconBg: 'bg-sky-500/10 border-sky-500/20 text-[#0AAEEF]',
+      glowRgba: 'rgba(10, 174, 239, 0.25)',
+      borderHover: 'hover:border-[#0AAEEF]'
+    },
+    {
+      icon: Building2,
+      num: Number(companiesInMillions.toFixed(2)),
+      decimals: 2,
+      suffix: 'M+',
+      label: 'Target Enterprise Accounts',
+      color: 'text-[#F7941D]',
+      iconBg: 'bg-amber-500/10 border-amber-500/20 text-[#F7941D]',
+      glowRgba: 'rgba(247, 148, 29, 0.25)',
+      borderHover: 'hover:border-[#F7941D]'
+    },
+    {
+      icon: Globe,
+      num: totalCountries,
+      decimals: 0,
+      suffix: '+',
+      label: 'Countries & Territories',
+      color: 'text-[#10B981]',
+      iconBg: 'bg-emerald-500/10 border-emerald-500/20 text-[#10B981]',
+      glowRgba: 'rgba(16, 185, 129, 0.25)',
+      borderHover: 'hover:border-[#10B981]'
+    },
+    {
+      icon: Award,
+      num: 82,
+      decimals: 0,
+      suffix: '%',
+      label: 'CXO & Director Level',
+      color: 'text-[#0284C7]',
+      iconBg: 'bg-blue-500/10 border-blue-500/20 text-[#0284C7]',
+      glowRgba: 'rgba(2, 132, 199, 0.25)',
+      borderHover: 'hover:border-[#0284C7]'
+    }
+  ];
+
+  // Dynamic Regional Pills Data
+  const regionMap = {};
+  if (stats?.region_breakdown) {
+    stats.region_breakdown.forEach(r => {
+      const codeKey = r.region_code === 'NORTH_AMERICA' ? 'NA' : r.region_code;
+      regionMap[codeKey] = r.contact_count;
+    });
+  }
+
+  const dynamicRegionalData = REGIONAL_DATA.map(reg => {
+    let rawCount = regionMap[reg.code];
+
+    if (!rawCount && stats?.country_breakdown) {
+      rawCount = stats.country_breakdown
+        .filter(c => {
+          if (reg.code === 'NA') return ['US', 'CA'].includes(c.iso_code);
+          if (reg.code === 'LATAM') return ['BR', 'MX', 'CO', 'PE', 'CL', 'AR', 'VE', 'EC', 'GT', 'CU', 'BO', 'DOM', 'HN', 'PY', 'SV', 'NI', 'CR', 'PA', 'UY'].includes(c.iso_code);
+          if (reg.code === 'EMEA') return ['GB', 'DE', 'FR', 'NL', 'IT', 'ES', 'AE', 'SA', 'ZA', 'SE', 'CH', 'BE', 'AT', 'PL', 'IE', 'NO', 'DK', 'FI', 'PT', 'GR', 'CZ', 'RO', 'HU', 'IL', 'EG', 'TR', 'CY', 'QA', 'KW', 'OM', 'BH'].includes(c.iso_code);
+          if (reg.code === 'APAC') return ['IN', 'AU', 'JP', 'SG', 'KR', 'ID', 'MY', 'PH', 'NZ', 'CN', 'TH', 'VN', 'TW', 'HK', 'PK', 'BD', 'LK'].includes(c.iso_code);
+          return false;
+        })
+        .reduce((sum, item) => sum + (item.contact_count || 0), 0);
+    }
+
+    if (rawCount && rawCount > 0) {
+      const formattedContacts = rawCount >= 1000000
+        ? `${(rawCount / 1000000).toFixed(1).replace(/\.0$/, '')}M+`
+        : `${Math.round(rawCount / 1000)}K+`;
+      return { ...reg, contacts: formattedContacts };
+    }
+    return reg;
+  });
+
+  const defaultIndustries = [
+    { name: 'Technology & Telecommunications', count: '17.2M+', share: 22 },
+    { name: 'Finance, Banking & VC', count: '12.5M+', share: 16 },
+    { name: 'Manufacturing & Process', count: '11.0M+', share: 14 },
+    { name: 'Healthcare & Pharma', count: '8.6M+', share: 11 },
+    { name: 'Business & Professional Services', count: '7.8M+', share: 10 },
+    { name: 'Retail, Wholesale & Logistics', count: '6.2M+', share: 8 }
+  ];
+
+  const industrySectors = stats?.industry_breakdown?.length > 0
+    ? stats.industry_breakdown.slice(0, 6).map(item => ({
+        name: item.industry_name,
+        count: item.contact_count >= 1000000 
+          ? `${(item.contact_count / 1000000).toFixed(1)}M+` 
+          : `${Math.round(item.contact_count / 1000)}K+`,
+        share: item.percentage || 10
+      }))
+    : defaultIndustries;
+
+  const defaultDepartments = [
+    { name: 'IT & Engineering', count: '25.1M+', share: 32 },
+    { name: 'Sales & Revenue Leadership', count: '14.1M+', share: 18 },
+    { name: 'Marketing & Digital', count: '12.5M+', share: 16 },
+    { name: 'Operations & Procurement', count: '10.9M+', share: 14 },
+    { name: 'Finance & Accounting', count: '7.8M+', share: 10 },
+    { name: 'Human Resources & Talent', count: '4.7M+', share: 6 }
+  ];
+
+  const departmentFunctions = stats?.department_breakdown?.length > 0
+    ? stats.department_breakdown.slice(0, 6).map(item => ({
+        name: item.department_name,
+        count: item.contact_count >= 1000000 
+          ? `${(item.contact_count / 1000000).toFixed(1)}M+` 
+          : `${Math.round(item.contact_count / 1000)}K+`,
+        share: item.percentage || 10
+      }))
+    : defaultDepartments;
+
+  const defaultLevels = [
+    { name: 'Director Level', count: '20.4M+', share: 26 },
+    { name: 'Manager / Decision Maker', count: '23.5M+', share: 30 },
+    { name: 'VP & Executive Leadership', count: '10.9M+', share: 14 },
+    { name: 'C-Level & Board CXOs', count: '9.4M+', share: 12 },
+    { name: 'Technical Leads & Architects', count: '10.9M+', share: 14 },
+    { name: 'Other Professional Staff', count: '3.1M+', share: 4 }
+  ];
+
+  const seniorityLevels = stats?.job_level_breakdown?.length > 0
+    ? stats.job_level_breakdown.slice(0, 6).map(item => ({
+        name: item.job_level_name,
+        count: item.contact_count >= 1000000 
+          ? `${(item.contact_count / 1000000).toFixed(1)}M+` 
+          : `${Math.round(item.contact_count / 1000)}K+`,
+        share: item.percentage || 10
+      }))
+    : defaultLevels;
 
   return (
     <div
@@ -142,7 +311,7 @@ export default function Audience() {
             >
               Connect with{' '}
               <span className="bg-gradient-to-r from-[#0AAEEF] via-[#0284C7] to-[#F7941D] bg-clip-text text-transparent">
-                78 Million+
+                {formattedHeadlineContacts}
               </span>{' '}
               Decision-Makers Worldwide
             </motion.h1>
@@ -168,52 +337,7 @@ export default function Audience() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6"
           >
-            {[
-              {
-                icon: Users,
-                num: 78,
-                decimals: 0,
-                suffix: 'M+',
-                label: 'Business Professionals',
-                color: 'text-[#0AAEEF]',
-                iconBg: 'bg-sky-500/10 border-sky-500/20 text-[#0AAEEF]',
-                glowRgba: 'rgba(10, 174, 239, 0.25)',
-                borderHover: 'hover:border-[#0AAEEF]'
-              },
-              {
-                icon: Building2,
-                num: 4.25,
-                decimals: 2,
-                suffix: 'M+',
-                label: 'Target Enterprise Accounts',
-                color: 'text-[#F7941D]',
-                iconBg: 'bg-amber-500/10 border-amber-500/20 text-[#F7941D]',
-                glowRgba: 'rgba(247, 148, 29, 0.25)',
-                borderHover: 'hover:border-[#F7941D]'
-              },
-              {
-                icon: Globe,
-                num: 195,
-                decimals: 0,
-                suffix: '+',
-                label: 'Countries & Territories',
-                color: 'text-[#10B981]',
-                iconBg: 'bg-emerald-500/10 border-emerald-500/20 text-[#10B981]',
-                glowRgba: 'rgba(16, 185, 129, 0.25)',
-                borderHover: 'hover:border-[#10B981]'
-              },
-              {
-                icon: Award,
-                num: 82,
-                decimals: 0,
-                suffix: '%',
-                label: 'CXO & Director Level',
-                color: 'text-[#0284C7]',
-                iconBg: 'bg-blue-500/10 border-blue-500/20 text-[#0284C7]',
-                glowRgba: 'rgba(2, 132, 199, 0.25)',
-                borderHover: 'hover:border-[#0284C7]'
-              }
-            ].map((stat, i) => (
+            {keyMetrics.map((stat, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -308,10 +432,10 @@ export default function Audience() {
                     : 'bg-white border-slate-200 text-slate-700 hover:border-[#0AAEEF]'
                 }`}
               >
-                🌍 Global (78M+)
+                🌍 Global ({formattedGlobalPill})
               </button>
 
-              {REGIONAL_DATA.map((reg) => (
+              {dynamicRegionalData.map((reg) => (
                 <button
                   key={reg.id}
                   onClick={() => setSelectedRegionId(reg.id)}
@@ -420,14 +544,7 @@ export default function Audience() {
               </div>
 
               <div className="space-y-4">
-                {[
-                  { name: 'Technology & Telecommunications', count: '17.2M+', share: 22 },
-                  { name: 'Finance, Banking & VC', count: '12.5M+', share: 16 },
-                  { name: 'Manufacturing & Process', count: '11.0M+', share: 14 },
-                  { name: 'Healthcare & Pharma', count: '8.6M+', share: 11 },
-                  { name: 'Business & Professional Services', count: '7.8M+', share: 10 },
-                  { name: 'Retail, Wholesale & Logistics', count: '6.2M+', share: 8 }
-                ].map((item, i) => (
+                {industrySectors.map((item, i) => (
                   <div key={i} className="group/row">
                     <div className="flex justify-between text-xs font-semibold mb-1.5">
                       <span className="truncate max-w-[70%] group-hover/row:text-[#F7941D] transition-colors">
@@ -438,7 +555,7 @@ export default function Audience() {
                     <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                       <motion.div
                         initial={{ width: 0 }}
-                        whileInView={{ width: `${item.share * 4.2}%` }}
+                        whileInView={{ width: `${Math.min(100, Math.max(8, item.share * 3.5))}%` }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, delay: i * 0.08, ease: 'easeOut' }}
                         className="h-full bg-gradient-to-r from-[#F7941D] to-[#FB923C] rounded-full shadow-[0_0_8px_rgba(247,148,29,0.5)]"
@@ -475,14 +592,7 @@ export default function Audience() {
               </div>
 
               <div className="space-y-4">
-                {[
-                  { name: 'IT & Engineering', count: '25.1M+', share: 32 },
-                  { name: 'Sales & Revenue Leadership', count: '14.1M+', share: 18 },
-                  { name: 'Marketing & Digital', count: '12.5M+', share: 16 },
-                  { name: 'Operations & Procurement', count: '10.9M+', share: 14 },
-                  { name: 'Finance & Accounting', count: '7.8M+', share: 10 },
-                  { name: 'Human Resources & Talent', count: '4.7M+', share: 6 }
-                ].map((item, i) => (
+                {departmentFunctions.map((item, i) => (
                   <div key={i} className="group/row">
                     <div className="flex justify-between text-xs font-semibold mb-1.5">
                       <span className="group-hover/row:text-[#10B981] transition-colors">
@@ -493,7 +603,7 @@ export default function Audience() {
                     <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                       <motion.div
                         initial={{ width: 0 }}
-                        whileInView={{ width: `${item.share * 3.1}%` }}
+                        whileInView={{ width: `${Math.min(100, Math.max(8, item.share * 2.8))}%` }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, delay: i * 0.08, ease: 'easeOut' }}
                         className="h-full bg-gradient-to-r from-[#10B981] to-[#34D399] rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"
@@ -530,14 +640,7 @@ export default function Audience() {
               </div>
 
               <div className="space-y-4">
-                {[
-                  { name: 'Director Level', count: '20.4M+', share: 26 },
-                  { name: 'Manager / Decision Maker', count: '23.5M+', share: 30 },
-                  { name: 'VP & Executive Leadership', count: '10.9M+', share: 14 },
-                  { name: 'C-Level & Board CXOs', count: '9.4M+', share: 12 },
-                  { name: 'Technical Leads & Architects', count: '10.9M+', share: 14 },
-                  { name: 'Other Professional Staff', count: '3.1M+', share: 4 }
-                ].map((item, i) => (
+                {seniorityLevels.map((item, i) => (
                   <div key={i} className="group/row">
                     <div className="flex justify-between text-xs font-semibold mb-1.5">
                       <span className="group-hover/row:text-[#0AAEEF] transition-colors">
@@ -550,7 +653,7 @@ export default function Audience() {
                     <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                       <motion.div
                         initial={{ width: 0 }}
-                        whileInView={{ width: `${item.share * 3.3}%` }}
+                        whileInView={{ width: `${Math.min(100, Math.max(8, item.share * 3.0))}%` }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8, delay: i * 0.08, ease: 'easeOut' }}
                         className="h-full bg-gradient-to-r from-[#0AAEEF] to-[#0284C7] rounded-full shadow-[0_0_8px_rgba(10,174,239,0.5)]"

@@ -78,6 +78,7 @@ const migrateAll = async () => {
         // Read and execute visitor_tracking.sql
         console.log('📋 Running visitor_tracking.sql...');
         await executeSqlFile(path.join(__dirname, '../database/visitor_tracking.sql'));
+        await pool.query(`ALTER TABLE visitor_sessions MODIFY COLUMN consent_uuid VARCHAR(36) NULL`).catch(() => {});
         console.log('✅ Visitor tracking tables created');
 
         // Read and execute add_account_lockout_columns.sql

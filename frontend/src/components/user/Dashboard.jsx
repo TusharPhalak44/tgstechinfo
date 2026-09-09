@@ -297,7 +297,8 @@ const Dashboard = () => {
     setLoading(true);
     try {
       const res = await axios.get('/api/user/content');
-      const data = res.data || [];
+      const rawData = res.data;
+      const data = Array.isArray(rawData) ? rawData : (rawData?.data || []);
       setContents(data);
 
       const total = data.length;
@@ -310,6 +311,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Failed to load user content', err);
       message.error('Failed to load workspace data');
+      setContents([]);
     } finally {
       setLoading(false);
     }
@@ -349,7 +351,8 @@ const Dashboard = () => {
     });
   };
 
-  const filteredContents = contents.filter(item => {
+  const safeContents = Array.isArray(contents) ? contents : [];
+  const filteredContents = safeContents.filter(item => {
     const matchesTab = activeTab === 'all' || (item.content_type || 'article').toLowerCase() === activeTab;
     const matchesSearch = !searchQuery ||
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||

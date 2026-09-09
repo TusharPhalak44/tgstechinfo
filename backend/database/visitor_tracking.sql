@@ -4,7 +4,7 @@
 -- Visitor Sessions Table
 CREATE TABLE IF NOT EXISTS visitor_sessions (
     session_uuid VARCHAR(36) PRIMARY KEY,
-    consent_uuid VARCHAR(36) NOT NULL,
+    consent_uuid VARCHAR(36) NULL,
     user_id BIGINT(20) UNSIGNED NULL,
     session_start TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     session_end TIMESTAMP NULL,

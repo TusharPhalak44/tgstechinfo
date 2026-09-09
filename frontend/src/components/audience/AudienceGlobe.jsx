@@ -168,16 +168,16 @@ export default function AudienceGlobe({
       const cy = height / 2;
       const radius = Math.min(width, height) * 0.38 * st.zoom;
 
-      // Handle Smooth Camera Interpolation or Continuous Slow Auto-Rotation
+      // Handle Smooth Camera Interpolation or Continuous Auto-Rotation
       if (st.targetRotY !== null) {
         let diffY = st.targetRotY - st.rotY;
         while (diffY > Math.PI) diffY -= 2 * Math.PI;
         while (diffY < -Math.PI) diffY += 2 * Math.PI;
-        st.rotY += diffY * 0.06;
+        st.rotY += diffY * 0.14;
 
         if (st.targetRotX !== null) {
           const diffX = st.targetRotX - st.rotX;
-          st.rotX += diffX * 0.06;
+          st.rotX += diffX * 0.14;
         }
 
         // Once target is reached, clear target so it resumes gentle continuous auto-rotation
@@ -187,9 +187,9 @@ export default function AudienceGlobe({
           st.autoRotate = true;
         }
       } else if (!st.isDragging) {
-        // Slow speed continuous auto-rotation
-        st.rotY += 0.0016;
-        st.rotX = 0.22 + Math.sin(st.time * 0.3) * 0.035;
+        // Continuous auto-rotation with enhanced dynamic speed
+        st.rotY += 0.0048;
+        st.rotX = 0.22 + Math.sin(st.time * 0.5) * 0.04;
       }
 
       ctx.clearRect(0, 0, width, height);
@@ -352,42 +352,7 @@ export default function AudienceGlobe({
         }
       });
 
-      // ── 5. Active Country Demographic Nodes & Radar Ripples (Instant Visibility) ──
-      const maxCount = Math.max(1, ...activeNodesList.map(c => c.contact_count || 0));
-
-      activeNodesList.forEach(item => {
-        if (item.lat === undefined || item.lon === undefined) return;
-        const pt = project3D(item.lat, item.lon, radius, cx, cy, st.rotY, st.rotX);
-        if (!pt.isFront) return;
-
-        const isSelected = selectedCountries.includes(item.iso_code);
-        const densityNorm = Math.min(1, Math.max(0.2, (item.contact_count || 0) / maxCount));
-        const baseRadius = 3.5 + densityNorm * 6.5;
-        const pulse = (st.time * 2.8 + item.lat) % 1;
-
-        // Concentric Ripple Ring
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, baseRadius * (1 + pulse * 1.5), 0, Math.PI * 2);
-        ctx.strokeStyle = isSelected ? `rgba(247, 148, 29, ${1 - pulse})` : `rgba(10, 174, 239, ${1 - pulse})`;
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-
-        // Node Solid Core
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, baseRadius, 0, Math.PI * 2);
-        ctx.fillStyle = isSelected ? '#F7941D' : '#0AAEEF';
-        ctx.shadowColor = isSelected ? '#F7941D' : '#0AAEEF';
-        ctx.shadowBlur = 10;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-
-        // Inner White Specular Center
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, baseRadius * 0.35, 0, Math.PI * 2);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fill();
-      });
-
+      // ── 5. Clean Globe Polygon Boundaries (Dot highlights removed) ──
       ctx.restore(); // End globe clip
 
       st.renderedCountryNodes = renderedCountryNodes;
@@ -483,11 +448,19 @@ export default function AudienceGlobe({
   }, [hoveredInfo, onSelectCountry]);
 
   const handleWheel = useCallback((e) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const st = stateRef.current;
     const delta = Math.sign(e.deltaY);
     st.zoom = Math.max(0.75, Math.min(1.85, st.zoom * (delta > 0 ? 0.94 : 1.06)));
   }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e) => handleWheel(e);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', onWheel);
+  }, [handleWheel]);
 
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return;
@@ -564,7 +537,6 @@ export default function AudienceGlobe({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onWheel={handleWheel}
       />
 
       {/* ── Toggle Fullscreen Button ── */}

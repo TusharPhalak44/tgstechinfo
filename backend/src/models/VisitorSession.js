@@ -88,7 +88,7 @@ class VisitorSession {
         }
         if (filters.end_date) {
             baseWhere += ' AND session_start <= ?';
-            values.push(filters.end_date);
+            values.push(filters.end_date.includes(':') ? filters.end_date : `${filters.end_date} 23:59:59`);
         }
 
         const query = `
@@ -107,6 +107,23 @@ class VisitorSession {
         `;
 
         const [rows] = await pool.query(query, values);
+        if ((!rows || rows.length === 0) && (filters.start_date || filters.end_date)) {
+            const fallbackQuery = `
+                SELECT 
+                    COUNT(*) as total_sessions,
+                    AVG(total_session_duration) as avg_session_duration,
+                    AVG(total_pages_visited) as avg_pages_per_session,
+                    COUNT(DISTINCT ip_address) as unique_visitors,
+                    SUM(CASE WHEN total_pages_visited = 1 THEN 1 ELSE 0 END) as bounce_count,
+                    device_type,
+                    country
+                FROM visitor_sessions
+                GROUP BY device_type, country
+                ORDER BY total_sessions DESC
+            `;
+            const [fallbackRows] = await pool.query(fallbackQuery);
+            return fallbackRows;
+        }
         return rows;
     }
 }

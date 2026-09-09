@@ -1,14 +1,13 @@
-﻿import React, { useState, useEffect } from 'react';
-import { Table, Select, Button, Input, message, Avatar, Tooltip, Badge } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Input, message, Tag, Badge } from 'antd';
 import {
-  DownloadOutlined, SearchOutlined, ReloadOutlined,
-  FileTextOutlined, FilePdfOutlined, UserOutlined,
-  CalendarOutlined, FormOutlined
+  SearchOutlined, ReloadOutlined,
+  FileTextOutlined, UserOutlined,
+  TableOutlined, ArrowLeftOutlined, DatabaseOutlined,
+  FileExcelOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
-
-const { Option } = Select;
 
 const StatCard = ({ icon, label, value, color }) => (
   <div style={{
@@ -31,320 +30,454 @@ const StatCard = ({ icon, label, value, color }) => (
   </div>
 );
 
-const AVATAR_COLORS = ['#4a7cff', '#6c5ce7', '#00b894', '#e17055', '#fdcb6e', '#0984e3', '#e84393'];
-const avatarColor = (str) => {
-  const strValue = String(str || '');
-  return AVATAR_COLORS[(strValue.charCodeAt(0) || 0) % AVATAR_COLORS.length];
-};
+// Helper for exporting data table to Excel CSV with UTF-8 BOM
+const exportToExcel = (columns, rows, fileNamePrefix = 'form_submissions') => {
+  if (!rows || rows.length === 0) {
+    message.warning('No records available to export');
+    return;
+  }
 
-const getDisplayName = (extra_fields) => {
-  if (!extra_fields) return '—';
-  try {
-    const data = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
-    const nameKey = Object.keys(data).find(k => /name|first/i.test(k));
-    return nameKey ? String(data[nameKey]) : Object.values(data)[0] || '—';
-  } catch { return '—'; }
-};
+  const colKeys = columns && columns.length > 0
+    ? columns.map(c => c.field || c.dataIndex || c)
+    : Object.keys(rows[0]);
 
-const getEmail = (extra_fields) => {
-  if (!extra_fields) return null;
-  try {
-    const data = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
-    const emailKey = Object.keys(data).find(k => /email/i.test(k));
-    return emailKey ? data[emailKey] : null;
-  } catch { return null; }
+  const headerLabels = columns && columns.length > 0
+    ? columns.map(c => c.label || c.title || c.field)
+    : colKeys.map(k => k.replace(/_/g, ' ').toUpperCase());
+
+  const escapeCell = (val) => {
+    if (val === null || val === undefined) return '""';
+    let str = typeof val === 'object' ? JSON.stringify(val) : String(val);
+    str = str.replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  const csvContent = [
+    headerLabels.map(escapeCell).join(','),
+    ...rows.map(row => colKeys.map(key => escapeCell(row[key])).join(','))
+  ].join('\r\n');
+
+  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', `${fileNamePrefix}_${moment().format('YYYYMMDD_HHmmss')}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  message.success(`Exported ${rows.length} records to Excel successfully!`);
 };
 
 const AdminSubmissions = () => {
-  const [submissions, setSubmissions] = useState([]);
-  const [allContents, setAllContents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [contentFilter, setContentFilter] = useState(null);
-  const [search, setSearch] = useState('');
-  const pageSize = 20;
+  const [tables, setTables] = useState([]);
+  const [loadingTables, setLoadingTables] = useState(true);
+  const [searchTable, setSearchTable] = useState('');
+  
+  // Table details view state
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [tableDetails, setTableDetails] = useState({ columns: [], rows: [], total: 0, content: null });
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailSearch, setDetailSearch] = useState('');
+  const [detailPage, setDetailPage] = useState(1);
 
-  useEffect(() => { fetchSubmissions(); }, [page, contentFilter]);
+  useEffect(() => {
+    fetchTables();
+  }, []);
 
-  const fetchSubmissions = async () => {
-    setLoading(true);
+  const fetchTables = async () => {
+    setLoadingTables(true);
     try {
-      const params = { page, limit: pageSize };
-      if (contentFilter) params.content_id = contentFilter;
-      const res = await axios.get('/api/admin/submissions', { params });
-      const data = res.data?.data || [];
-      setSubmissions(data);
-      setTotal(res.data?.total || 0);
-      if (!contentFilter) {
-        const unique = [...new Map(
-          data.filter(s => s.content_id && s.content_title)
-            .map(s => [s.content_id, { id: s.content_id, title: s.content_title }])
-        ).values()];
-        setAllContents(prev => {
-          const merged = new Map([...prev, ...unique].map(c => [c.id, c]));
-          return [...merged.values()];
-        });
+      const res = await axios.get('/api/admin/submission-tables');
+      if (res.data?.success) {
+        setTables(res.data.tables || []);
+      } else {
+        message.error('Failed to load submission tables');
       }
-    } catch {
-      message.error('Failed to load submissions');
+    } catch (err) {
+      console.error('Error loading submission tables:', err);
+      message.error('Failed to fetch submission tables from database');
     } finally {
-      setLoading(false);
+      setLoadingTables(false);
     }
   };
 
-  const exportCSV = () => {
-    const rows = filtered.map(s => [
-      s.id,
-      s.content_title || '-',
-      s.extra_fields ? JSON.stringify(typeof s.extra_fields === 'string' ? JSON.parse(s.extra_fields) : s.extra_fields) : '-',
-      moment(s.created_at).format('YYYY-MM-DD HH:mm')
-    ]);
-    const headers = ['ID', 'Article', 'Form Data', 'Submitted At'];
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const a = Object.assign(document.createElement('a'), {
-      href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })),
-      download: `submissions-${moment().format('YYYY-MM-DD')}.csv`
-    });
-    a.click();
+  const openTableDetails = async (tableItem) => {
+    setSelectedTable(tableItem);
+    setLoadingDetails(true);
+    setDetailSearch('');
+    setDetailPage(1);
+    try {
+      const res = await axios.get(`/api/admin/submission-tables/${tableItem.content_id}`);
+      if (res.data?.success) {
+        setTableDetails({
+          columns: res.data.columns || [],
+          rows: res.data.rows || [],
+          total: res.data.total || 0,
+          content: res.data.content || null
+        });
+      } else {
+        message.error('Failed to fetch table details');
+      }
+    } catch (err) {
+      console.error('Error fetching table details:', err);
+      message.error('Could not load records for table ' + tableItem.table_name);
+    } finally {
+      setLoadingDetails(false);
+    }
   };
 
-  const filtered = submissions.filter(s => {
-    if (!search) return true;
-    const name = getDisplayName(s.extra_fields).toLowerCase();
-    const email = (getEmail(s.extra_fields) || '').toLowerCase();
-    const q = search.toLowerCase();
-    return name.includes(q) || email.includes(q);
+  const backToTableList = () => {
+    setSelectedTable(null);
+    setTableDetails({ columns: [], rows: [], total: 0, content: null });
+  };
+
+  // Filter tables list
+  const filteredTables = tables.filter(t => {
+    if (!searchTable) return true;
+    const q = searchTable.toLowerCase();
+    return (
+      (t.content_title && t.content_title.toLowerCase().includes(q)) ||
+      (t.table_name && t.table_name.toLowerCase().includes(q)) ||
+      (t.author_name && t.author_name.toLowerCase().includes(q)) ||
+      (t.builder_type && t.builder_type.toLowerCase().includes(q))
+    );
   });
 
-  const uniqueContents = allContents;
-  const todayCount = submissions.filter(s => moment(s.created_at).isSame(moment(), 'day')).length;
+  // Filter rows inside active table detail view
+  const filteredDetailRows = tableDetails.rows.filter(row => {
+    if (!detailSearch) return true;
+    const q = detailSearch.toLowerCase();
+    return Object.values(row).some(val => 
+      val !== null && val !== undefined && String(val).toLowerCase().includes(q)
+    );
+  });
 
-  const columns = [
+  // Calculate high-level KPIs
+  const totalTables = tables.length;
+  const totalRecordsAcrossAll = tables.reduce((acc, t) => acc + (t.total_records || 0), 0);
+  const uniqueAuthorsCount = new Set(tables.map(t => t.user_id).filter(Boolean)).size;
+
+  // Render Table Columns for List View
+  const listColumns = [
     {
-      title: 'Subscriber',
-      key: 'subscriber',
-      width: 260,
-      render: (_, r) => {
-        const name = getDisplayName(r.extra_fields);
-        const email = getEmail(r.extra_fields);
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Avatar size={36} style={{ background: avatarColor(name), fontSize: 13, fontWeight: 600, flexShrink: 0 }}>
-              {name[0]?.toUpperCase() || '?'}
-            </Avatar>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a2e' }}>{name}</div>
-              {email && <a href={`mailto:${email}`} style={{ fontSize: 11, color: '#4a7cff' }}>{email}</a>}
-              <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 1 }}>ID #{r.id}</div>
-            </div>
+      title: 'Database Table',
+      key: 'table_name',
+      width: 220,
+      render: (_, r) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 8,
+            background: '#eef2ff', color: '#4f46e5',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, flexShrink: 0
+          }}>
+            <DatabaseOutlined />
           </div>
-        );
-      },
+          <div>
+            <span style={{
+              fontFamily: 'monospace', fontWeight: 600, fontSize: 13,
+              color: '#4f46e5', background: '#f5f3ff', padding: '2px 6px', borderRadius: 4
+            }}>
+              {r.table_name}
+            </span>
+            <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>ID #{r.content_id}</div>
+          </div>
+        </div>
+      )
     },
     {
-      title: 'Article',
+      title: 'Associated Page / Content',
       dataIndex: 'content_title',
-      width: 220,
-      render: v => v ? (
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-          <FileTextOutlined style={{ color: '#4a7cff', fontSize: 13, marginTop: 2, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, color: '#1a1a2e', lineHeight: 1.4 }}>{v}</span>
-        </div>
-      ) : <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>,
-    },
-    {
-      title: 'Extra Fields',
-      dataIndex: 'extra_fields',
-      width: 220,
-      render: (val) => {
-        if (!val) return <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>;
-        let data;
-        try { data = typeof val === 'string' ? JSON.parse(val) : val; } catch { return <span style={{ color: '#d9d9d9' }}>—</span>; }
-        const entries = Object.entries(data);
-        if (!entries.length) return <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>;
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {entries.map(([k, v]) => (
-              <div key={k} style={{ fontSize: 11 }}>
-                <span style={{
-                  display: 'inline-block', background: '#f0f5ff',
-                  color: '#4a7cff', borderRadius: 4, padding: '1px 6px',
-                  fontWeight: 600, marginRight: 4
-                }}>{k}</span>
-                <span style={{ color: '#1a1a2e' }}>{String(v)}</span>
-              </div>
-            ))}
+      key: 'content_title',
+      width: 250,
+      render: (v, r) => (
+        <div>
+          <div style={{ fontWeight: 600, fontSize: 13, color: '#1a1a2e' }}>
+            <FileTextOutlined style={{ color: '#4a7cff', marginRight: 6 }} />
+            {v}
           </div>
-        );
-      },
-    },
-    {
-      title: 'API URL',
-      key: 'api_url',
-      width: 80,
-      align: 'center',
-      render: (_, r) => {
-        const apiUrl = `${window.location.origin}/api/public/submission/${r.id}`;
-        return (
-          <Tooltip title={apiUrl} placement="left">
-            <Button
-              size="small"
-              type="text"
-              icon={<span style={{ fontSize: 13 }}>🔗</span>}
-              onClick={() => {
-                navigator.clipboard.writeText(apiUrl);
-                message.success('API URL copied!');
-              }}
-              style={{ height: 28, padding: '0 6px' }}
-            />
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: 'PDF',
-      dataIndex: 'pdf_file',
-      width: 80,
-      align: 'center',
-      render: v => v ? (
-        <Tooltip title="Download PDF">
-          <Button
-            size="small" type="text"
-            href={`/uploads/${v}`} target="_blank"
-            icon={<FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 16 }} />}
-            style={{ height: 28, width: 28, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          />
-        </Tooltip>
-      ) : <span style={{ color: '#d9d9d9', fontSize: 12 }}>—</span>,
-    },
-
-    {
-      title: 'Submitted',
-      dataIndex: 'created_at',
-      width: 130,
-      render: v => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <span style={{ fontSize: 12, color: '#1a1a2e', fontWeight: 500 }}>{moment(v).format('MMM D, YYYY')}</span>
-          <span style={{ fontSize: 11, color: '#8c8c8c' }}>{moment(v).format('h:mm A')}</span>
+          <div style={{ fontSize: 11, color: '#8c8c8c', marginTop: 2 }}>
+            Slug: {r.content_slug || '—'}
+          </div>
         </div>
-      ),
+      )
     },
+    {
+      title: 'Form Builder',
+      dataIndex: 'builder_type',
+      key: 'builder_type',
+      width: 150,
+      render: (v) => {
+        let color = 'blue';
+        let label = 'Standard Form';
+        if (v === 'drag_drop') { color = 'purple'; label = 'Drag & Drop'; }
+        else if (v === 'html') { color = 'orange'; label = 'HTML Builder'; }
+        return <Tag color={color} style={{ borderRadius: 4, textTransform: 'capitalize' }}>{label}</Tag>;
+      }
+    },
+    {
+      title: 'Created By',
+      key: 'author',
+      width: 180,
+      render: (_, r) => (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{r.author_name}</div>
+          {r.author_email && <div style={{ fontSize: 11, color: '#8c8c8c' }}>{r.author_email}</div>}
+        </div>
+      )
+    },
+    {
+      title: 'Submissions',
+      dataIndex: 'total_records',
+      key: 'total_records',
+      width: 120,
+      align: 'center',
+      render: (count) => (
+        <Badge
+          count={count}
+          overflowCount={99999}
+          style={{ backgroundColor: count > 0 ? '#10b981' : '#d1d5db', color: '#fff', fontWeight: 700 }}
+        />
+      )
+    },
+    {
+      title: 'Last Submission',
+      dataIndex: 'last_submission',
+      key: 'last_submission',
+      width: 160,
+      render: (v) => v ? (
+        <div style={{ fontSize: 12, color: '#475569' }}>
+          <div>{moment(v).format('MMM D, YYYY')}</div>
+          <div style={{ fontSize: 11, color: '#94a3b8' }}>{moment(v).format('h:mm A')}</div>
+        </div>
+      ) : <span style={{ color: '#cbd5e1', fontSize: 12 }}>No submissions</span>
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      width: 140,
+      align: 'right',
+      render: (_, r) => (
+        <Button
+          type="primary"
+          size="small"
+          icon={<TableOutlined />}
+          onClick={() => openTableDetails(r)}
+          style={{ borderRadius: 6, background: '#4a7cff' }}
+        >
+          View Data
+        </Button>
+      )
+    }
   ];
 
+  // Dynamically generated Ant Design columns for Detail View
+  const detailTableColumns = tableDetails.columns.map(col => {
+    return {
+      title: col.label,
+      dataIndex: col.field,
+      key: col.field,
+      width: col.field === 'id' ? 70 : col.field.includes('created') ? 160 : 180,
+      render: (val) => {
+        if (val === null || val === undefined) return <span style={{ color: '#cbd5e1' }}>—</span>;
+        
+        if (col.field === 'id') {
+          return <span style={{ fontWeight: 700, color: '#4f46e5' }}>#{val}</span>;
+        }
+
+        if (col.field === 'created_at' || col.field === 'updated_at') {
+          return (
+            <span style={{ fontSize: 12, color: '#475569' }}>
+              {moment(val).format('YYYY-MM-DD HH:mm:ss')}
+            </span>
+          );
+        }
+
+        return <span style={{ fontSize: 13, color: '#1e293b' }}>{String(val)}</span>;
+      }
+    };
+  });
+
   return (
-    <div style={{ padding: '24px', background: '#f7f8fa', minHeight: '100vh' }}>
+    <div style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh' }}>
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1a1a2e', margin: 0 }}>Landing Page Submissions</h1>
-          <p style={{ fontSize: 13, color: '#8c8c8c', margin: '4px 0 0' }}>
-            Track and manage all form submissions from your published content
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button icon={<ReloadOutlined />} onClick={fetchSubmissions} style={{ borderRadius: 8 }}>
-            Refresh
-          </Button>
-          <Button
-            icon={<DownloadOutlined />} onClick={exportCSV} type="primary"
-            style={{ borderRadius: 8, background: '#4a7cff', borderColor: '#4a7cff' }}
-          >
-            Export CSV
-          </Button>
-        </div>
-      </div>
+      {/* VIEW 1: TABLES LIST VIEW */}
+      {!selectedTable ? (
+        <>
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <DatabaseOutlined style={{ color: '#4f46e5' }} />
+                Form Submissions Database Tables
+              </h1>
+              <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+                All dynamic database tables (<code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>form_submissions_&#123;content_id&#125;</code>) generated by published forms
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button icon={<ReloadOutlined />} onClick={fetchTables} loading={loadingTables} style={{ borderRadius: 8 }}>
+                Refresh
+              </Button>
+            </div>
+          </div>
 
-      {/* Stat Cards */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
-        <StatCard icon={<FormOutlined />} label="Total Submissions" value={total} color="#4a7cff" />
-        <StatCard icon={<CalendarOutlined />} label="Today" value={todayCount} color="#6c5ce7" />
-        <StatCard icon={<UserOutlined />} label="Unique Articles" value={uniqueContents.length} color="#00b894" />
-        <StatCard icon={<FileTextOutlined />} label="Articles Tracked" value={uniqueContents.length} color="#e17055" />
-      </div>
+          {/* Stat Cards */}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+            <StatCard icon={<DatabaseOutlined />} label="Total Form Tables" value={totalTables} color="#4f46e5" />
+            <StatCard icon={<TableOutlined />} label="Total Submitted Records" value={totalRecordsAcrossAll} color="#10b981" />
+            <StatCard icon={<UserOutlined />} label="Content Authors" value={uniqueAuthorsCount} color="#3b82f6" />
+          </div>
 
-      {/* Filter Bar */}
-      <div style={{
-        background: '#fff', borderRadius: 12, padding: '16px 20px',
-        border: '1px solid #f0f0f0', marginBottom: 16,
-        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
-      }}>
-        <Input
-          placeholder="Search by name, email or phone..."
-          prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          allowClear
-          style={{ width: 300, borderRadius: 8 }}
-        />
-        <Select
-          placeholder="Filter by article"
-          style={{ width: 280, borderRadius: 8 }}
-          allowClear
-          value={contentFilter}
-          onChange={v => { setContentFilter(v); setPage(1); }}
-          showSearch
-          optionFilterProp="children"
-        >
-          {uniqueContents.map(c => <Option key={c.id} value={c.id}>{c.title}</Option>)}
-        </Select>
-        <div style={{ marginLeft: 'auto', fontSize: 13, color: '#8c8c8c' }}>
-          Showing <strong style={{ color: '#1a1a2e' }}>{filtered.length}</strong> of <strong style={{ color: '#1a1a2e' }}>{total}</strong> results
-        </div>
-      </div>
+          {/* Search Filter Bar */}
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: '16px 20px',
+            border: '1px solid #e2e8f0', marginBottom: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+          }}>
+            <Input
+              placeholder="Search table name, page title, author or form type..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              value={searchTable}
+              onChange={e => setSearchTable(e.target.value)}
+              allowClear
+              style={{ width: 340, borderRadius: 8 }}
+            />
+            <div style={{ fontSize: 13, color: '#64748b' }}>
+              Showing <strong style={{ color: '#0f172a' }}>{filteredTables.length}</strong> of <strong style={{ color: '#0f172a' }}>{totalTables}</strong> tables
+            </div>
+          </div>
 
-      {/* Table */}
-      <div style={{
-        background: '#fff', borderRadius: 12,
-        border: '1px solid #f0f0f0',
-        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        overflow: 'hidden'
-      }}>
-        <Table
-          dataSource={filtered}
-          columns={columns}
-          rowKey="id"
-          loading={loading}
-          scroll={{ x: 1100 }}
-          pagination={{
-            current: page,
-            pageSize,
-            total,
-            onChange: p => setPage(p),
-            showSizeChanger: false,
-            showTotal: (t, range) => `${range[0]}–${range[1]} of ${t} submissions`,
-            style: { padding: '12px 20px', margin: 0 }
-          }}
-          size="middle"
-          rowClassName={() => 'submission-row'}
-          style={{ fontSize: 13 }}
-          onRow={() => ({
-            style: { cursor: 'default' }
-          })}
-        />
-      </div>
+          {/* Tables Grid / List */}
+          <div style={{
+            background: '#fff', borderRadius: 12,
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            overflow: 'hidden'
+          }}>
+            <Table
+              dataSource={filteredTables}
+              columns={listColumns}
+              rowKey="table_name"
+              loading={loadingTables}
+              scroll={{ x: 1000 }}
+              pagination={{
+                pageSize: 15,
+                showTotal: (t, range) => `${range[0]}–${range[1]} of ${t} form tables`,
+                style: { padding: '12px 20px', margin: 0 }
+              }}
+              size="middle"
+            />
+          </div>
+        </>
+      ) : (
 
-      <style>{`
-        .submission-row:hover td { background: #fafbff !important; }
-        .ant-table-thead > tr > th {
-          background: #fafafa !important;
-          font-size: 11px !important;
-          font-weight: 600 !important;
-          text-transform: uppercase !important;
-          letter-spacing: 0.05em !important;
-          color: #8c8c8c !important;
-          border-bottom: 1px solid #f0f0f0 !important;
-          padding: 12px 16px !important;
-        }
-        .ant-table-tbody > tr > td {
-          padding: 14px 16px !important;
-          border-bottom: 1px solid #f7f8fa !important;
-          vertical-align: middle !important;
-        }
-        .ant-table-pagination { padding: 12px 20px !important; }
-      `}</style>
+        /* VIEW 2: TABLE DETAIL VIEW */
+        <>
+          {/* Top Bar with Back Button */}
+          <div style={{ marginBottom: 16 }}>
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={backToTableList}
+              style={{ borderRadius: 8, fontWeight: 600 }}
+            >
+              Back to Tables
+            </Button>
+          </div>
+
+          {/* Table Details Header */}
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: '20px 24px',
+            border: '1px solid #e2e8f0', marginBottom: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <h1 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                  {selectedTable.content_title}
+                </h1>
+                <Tag color="purple" style={{ borderRadius: 4 }}>
+                  {selectedTable.builder_type}
+                </Tag>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 13, color: '#64748b' }}>
+                <span>Database Table: <code style={{ color: '#4f46e5', fontWeight: 600, background: '#f5f3ff', padding: '2px 6px', borderRadius: 4 }}>{selectedTable.table_name}</code></span>
+                <span>•</span>
+                <span>Content ID: #{selectedTable.content_id}</span>
+                <span>•</span>
+                <span>Created by: {selectedTable.author_name}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Button
+                icon={<ReloadOutlined />}
+                onClick={() => openTableDetails(selectedTable)}
+                loading={loadingDetails}
+                style={{ borderRadius: 8 }}
+              >
+                Refresh Data
+              </Button>
+              <Button
+                type="primary"
+                icon={<FileExcelOutlined />}
+                onClick={() => exportToExcel(tableDetails.columns, filteredDetailRows, selectedTable.table_name)}
+                disabled={filteredDetailRows.length === 0}
+                style={{ borderRadius: 8, background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+              >
+                Export to Excel
+              </Button>
+            </div>
+          </div>
+
+          {/* Filter Bar for Detail View */}
+          <div style={{
+            background: '#fff', borderRadius: 12, padding: '14px 20px',
+            border: '1px solid #e2e8f0', marginBottom: 16,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap'
+          }}>
+            <Input
+              placeholder="Search within submission records..."
+              prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+              value={detailSearch}
+              onChange={e => { setDetailSearch(e.target.value); setDetailPage(1); }}
+              allowClear
+              style={{ width: 320, borderRadius: 8 }}
+            />
+            <div style={{ fontSize: 13, color: '#64748b' }}>
+              Showing <strong style={{ color: '#0f172a' }}>{filteredDetailRows.length}</strong> of <strong style={{ color: '#0f172a' }}>{tableDetails.total}</strong> records
+            </div>
+          </div>
+
+          {/* Dynamic Records Table */}
+          <div style={{
+            background: '#fff', borderRadius: 12,
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+            overflow: 'hidden'
+          }}>
+            <Table
+              dataSource={filteredDetailRows}
+              columns={detailTableColumns}
+              rowKey="id"
+              loading={loadingDetails}
+              scroll={{ x: 'max-content' }}
+              pagination={{
+                current: detailPage,
+                pageSize: 20,
+                total: filteredDetailRows.length,
+                onChange: p => setDetailPage(p),
+                showSizeChanger: false,
+                showTotal: (t, range) => `${range[0]}–${range[1]} of ${t} submissions`,
+                style: { padding: '12px 20px', margin: 0 }
+              }}
+              size="middle"
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };

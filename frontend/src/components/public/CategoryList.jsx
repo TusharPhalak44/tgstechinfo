@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Skeleton, Pagination } from 'antd';
-import { CalendarOutlined, EyeOutlined, UserOutlined } from '@ant-design/icons';
+import { CalendarOutlined, EyeOutlined, UserOutlined, SearchOutlined, CompassOutlined, ReadOutlined, FireOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
@@ -26,226 +26,451 @@ const PAGE_SIZE = 15;
 const INITIAL_SHOW = 9;
 const SEE_MORE_STEP = 3;
 
-const parseTags = (value) => {
-  if (!value) return [];
-  if (Array.isArray(value)) return value.filter(Boolean);
-  if (typeof value === 'string') {
-    try { const p = JSON.parse(value); if (Array.isArray(p)) return p.filter(Boolean); } catch {}
-    return value.split(',').map(t => t.trim()).filter(Boolean);
-  }
-  return [];
-};
-
 const navigateContent = (item, navigate) => {
   navigateContentItem(item, navigate);
 };
 
 const TYPE_MAP = {
-  articles:       { type: 'article',      title: 'Articles',      accent: '#4a7cff', leftImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80' },
-  blogs:          { type: 'blog',         title: 'Blogs',         accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=800&q=80' },
-  news:           { type: 'news',         title: 'News',          accent: '#00b894', leftImg: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&q=80' },
-  interviews:     { type: 'interview',    title: 'Interviews',    accent: '#e17055', leftImg: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=800&q=80' },
-  webinars:       { type: 'webinar',      title: 'Webinars',      accent: '#fd79a8', leftImg: 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80' },
-  events:         { type: 'event',        title: 'Events',        accent: '#fdcb6e', leftImg: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&q=80' },
-  ebooks:         { type: 'ebook',        title: 'eBooks',        accent: '#00cec9', leftImg: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80' },
-  whitepapers:    { type: 'whitepaper',   title: 'Whitepapers',   accent: '#e84393', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
-  'case-studies': { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
-  'case-study':   { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
-  'landing-pages': { type: 'landing-page', title: 'Landing Pages', accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1551650975-87deedd944c3?w=800&q=80' },
+  articles:       { type: 'article',      title: 'Articles',      accent: '#0AAEEF' },
+  blogs:          { type: 'blog',         title: 'Blogs',         accent: '#6c5ce7' },
+  news:           { type: 'news',         title: 'News',          accent: '#00b894' },
+  interviews:     { type: 'interview',    title: 'Interviews',    accent: '#e17055' },
+  webinars:       { type: 'webinar',      title: 'Webinars',      accent: '#fd79a8' },
+  events:         { type: 'event',        title: 'Events',        accent: '#fdcb6e' },
+  ebooks:         { type: 'ebook',        title: 'eBooks',        accent: '#00cec9' },
+  whitepapers:    { type: 'whitepaper',   title: 'Whitepapers',   accent: '#e84393' },
+  'case-studies': { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF' },
+  'case-study':   { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF' },
+  'landing-pages': { type: 'landing-page', title: 'Landing Pages', accent: '#6c5ce7' },
 };
 
-// Category slug → hero images mapping
-const CATEGORY_IMG_MAP = {
-  'technology':               { accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80' },
-  'artificial-intelligence':  { accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&q=80' },
-  'cybersecurity':            { accent: '#e17055', leftImg: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800&q=80' },
-  'cloud-computing':          { accent: '#00b894', leftImg: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80' },
-  'data-analytics':           { accent: '#4a7cff', leftImg: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80' },
-  'devops':                   { accent: '#fd79a8', leftImg: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=800&q=80' },
-  'machine-learning':         { accent: '#a29bfe', leftImg: 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1507146153580-69a1fe6d8aa1?w=800&q=80' },
-  'software-development':     { accent: '#00cec9', leftImg: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80' },
-  'healthcare':               { accent: '#00b894', leftImg: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=800&q=80' },
-  'fintech':                  { accent: '#fdcb6e', leftImg: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80' },
-  'hr-tech':                  { accent: '#e17055', leftImg: 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80' },
-  'edtech':                   { accent: '#6c5ce7', leftImg: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80' },
-  'whitepaper':               { accent: '#4a7cff', leftImg: 'https://images.unsplash.com/photo-1456324504439-367cee3b3c32?w=800&q=80', rightImg: 'https://images.unsplash.com/photo-1471107340929-a87cd0f5b5f3?w=800&q=80' },
+const CATEGORY_ACCENT_MAP = {
+  'technology': '#6c5ce7',
+  'artificial-intelligence': '#6c5ce7',
+  'cybersecurity': '#e17055',
+  'cloud-computing': '#00b894',
+  'data-analytics': '#0AAEEF',
+  'devops': '#fd79a8',
+  'machine-learning': '#a29bfe',
+  'software-development': '#00cec9',
+  'healthcare': '#00b894',
+  'fintech': '#fdcb6e',
+  'hr-tech': '#e17055',
+  'edtech': '#6c5ce7',
+  'whitepaper': '#0AAEEF'
 };
 
-// ── Split Hero Banner ────────────────────────────────────────────
-const HeroBanner = ({ title, accent, leftImg, rightImg }) => {
-  const isMobile = window.innerWidth < 768;
+// ── Premium Executive Frosted Light Band Animation Background ──
+const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) => {
   return (
-    <div style={{ display: 'flex', height: isMobile ? 280 : 400, overflow: 'hidden', position: 'relative' }} className="cat-hero">
-      {/* Left half */}
-      <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: isMobile ? 'none' : 'block' }}>
-        <img src={leftImg} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}cc 0%, ${accent}66 60%, transparent 100%)` }} />
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 48px' }}>
-          <div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,.75)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>
-              TGS Tech Info
-            </div>
-            <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 'clamp(28px,3vw,42px)', margin: 0, letterSpacing: -1, textShadow: '0 2px 12px rgba(0,0,0,.3)' }}>
-              {title.toUpperCase()}
-            </h1>
-          </div>
-        </div>
-      </div>
-      {/* Right half - shown on mobile as full width */}
-      <div style={{ flex: isMobile ? 1 : 1, position: 'relative', overflow: 'hidden' }}>
-        <img src={isMobile ? leftImg : rightImg} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        <div style={{ position: 'absolute', inset: 0, background: isMobile ? `linear-gradient(135deg, ${accent}cc 0%, ${accent}66 100%)` : 'linear-gradient(135deg, rgba(10,22,40,.3) 0%, rgba(10,22,40,.6) 100%)' }} />
-        {isMobile && (
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-            <div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,.75)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>
-                TGS Tech Info
-              </div>
-              <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 'clamp(20px,5vw,32px)', margin: 0, letterSpacing: -1, textShadow: '0 2px 12px rgba(0,0,0,.3)' }}>
-                {title.toUpperCase()}
-              </h1>
-            </div>
-          </div>
-        )}
-      </div>
-      {/* Center divider glow - hidden on mobile */}
-      {!isMobile && (
-        <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 3, background: `linear-gradient(to bottom, transparent, ${accent}, transparent)`, transform: 'translateX(-50%)', zIndex: 2 }} />
-      )}
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      overflow: 'hidden',
+      pointerEvents: 'none',
+      zIndex: 0
+    }}>
+      <style>{`
+        @keyframes lightSweep1 {
+          0% { transform: translate3d(-18%, -12%, 0) rotate(18deg); opacity: 0.65; }
+          50% { transform: translate3d(12%, 8%, 0) rotate(24deg); opacity: 0.95; }
+          100% { transform: translate3d(-18%, -12%, 0) rotate(18deg); opacity: 0.65; }
+        }
+        @keyframes lightSweep2 {
+          0% { transform: translate3d(14%, 10%, 0) rotate(-15deg); opacity: 0.55; }
+          50% { transform: translate3d(-12%, -8%, 0) rotate(-22deg); opacity: 0.90; }
+          100% { transform: translate3d(14%, 10%, 0) rotate(-15deg); opacity: 0.55; }
+        }
+        @keyframes sheenPulse {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.85; transform: scale(1.1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .frosted-light-band { animation: none !important; }
+        }
+      `}</style>
+
+      {/* Base Gradient Canvas */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: darkMode
+          ? 'linear-gradient(135deg, #070F1E 0%, #0F172A 50%, #172554 100%)'
+          : 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 40%, #BAE6FD 80%, #7DD3FC 100%)',
+        transition: 'background 0.3s ease'
+      }} />
+
+      {/* Light Band 1: Diagonal Primary Light Beam */}
+      <div
+        className="frosted-light-band"
+        style={{
+          position: 'absolute',
+          top: '-40%',
+          left: '-20%',
+          width: '140%',
+          height: '180%',
+          background: darkMode
+            ? 'linear-gradient(120deg, transparent 20%, rgba(14, 165, 233, 0.35) 45%, rgba(59, 130, 246, 0.25) 55%, transparent 80%)'
+            : 'linear-gradient(120deg, transparent 20%, rgba(10, 174, 239, 0.45) 45%, rgba(255, 255, 255, 0.8) 55%, transparent 80%)',
+          filter: 'blur(12px)',
+          animation: 'lightSweep1 14s ease-in-out infinite'
+        }}
+      />
+
+      {/* Light Band 2: Counter Diagonal Light Beam */}
+      <div
+        className="frosted-light-band"
+        style={{
+          position: 'absolute',
+          bottom: '-35%',
+          right: '-15%',
+          width: '130%',
+          height: '160%',
+          background: darkMode
+            ? 'linear-gradient(145deg, transparent 20%, rgba(99, 102, 241, 0.3) 50%, transparent 80%)'
+            : 'linear-gradient(145deg, transparent 20%, rgba(141, 213, 238, 0.6) 50%, rgba(255, 255, 255, 0.9) 65%, transparent 85%)',
+          filter: 'blur(10px)',
+          animation: 'lightSweep2 18s ease-in-out infinite'
+        }}
+      />
+
+      {/* Radiant Glowing Light Accent Behind Spotlight Card */}
+      <div
+        className="frosted-light-band"
+        style={{
+          position: 'absolute',
+          top: '5%',
+          right: '5%',
+          width: 500,
+          height: 500,
+          borderRadius: '50%',
+          background: darkMode
+            ? 'radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(14, 165, 233, 0.45) 0%, rgba(186, 230, 253, 0.3) 50%, transparent 75%)',
+          filter: 'blur(20px)',
+          animation: 'sheenPulse 10s ease-in-out infinite'
+        }}
+      />
     </div>
   );
 };
 
-// ── Main list item ───────────────────────────────────────────────
+// ── Modern Executive Publishing Hero Header ─────────────────────────
+const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigate, darkMode, searchTerm, setSearchTerm }) => {
+  const isMobile = window.innerWidth < 768;
+
+  return (
+    <div style={{
+      position: 'relative',
+      borderBottom: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #CBD5E1',
+      padding: isMobile ? '36px 16px' : '52px 24px',
+      overflow: 'hidden'
+    }}>
+      {/* Keyframe Badge Animation */}
+      <style>{`
+        @keyframes badgePulse {
+          0%, 100% { box-shadow: 0 0 0 0 ${accent}66; }
+          50% { box-shadow: 0 0 0 6px ${accent}00; }
+        }
+      `}</style>
+
+      {/* ── Frosted Glass Light Band Animation Background ── */}
+      <FrostedLightBandBackground accent={accent} darkMode={darkMode} />
+
+      <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 32 }}>
+          
+          {/* Left Column: Publication Title & Search */}
+          <div style={{ flex: 1, maxWidth: featuredPost && !isMobile ? 620 : '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+              <span style={{
+                background: darkMode ? 'rgba(10, 174, 239, 0.15)' : 'rgba(10, 174, 239, 0.1)',
+                color: accent,
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                padding: '4px 14px',
+                borderRadius: 20,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                border: `1px solid ${accent}40`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                animation: 'badgePulse 3s infinite'
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: accent }} />
+                TGS EXECUTIVE JOURNAL
+              </span>
+              <span style={{ fontSize: '0.8125rem', color: darkMode ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
+                • {totalCount} Verified {title} Published
+              </span>
+            </div>
+
+            <h1 style={{
+              margin: '0 0 12px 0',
+              fontSize: 'clamp(2.2rem, 4.4vw, 3.3rem)',
+              fontWeight: 900,
+              color: darkMode ? '#F8FAFC' : '#0F172A',
+              letterSpacing: '-0.035em',
+              lineHeight: 1.15
+            }}>
+              {title} <span style={{ color: accent }}>& Perspectives</span>
+            </h1>
+
+            <p style={{
+              margin: '0 0 26px 0',
+              fontSize: 'clamp(0.95rem, 1.5vw, 1.08rem)',
+              color: darkMode ? '#94A3B8' : '#475569',
+              lineHeight: 1.65,
+              maxWidth: 600
+            }}>
+              Curated enterprise intelligence, executive CXO thought leadership, emerging tech market trends, and high-impact strategy reports.
+            </p>
+
+            {/* Quick Filter Search Bar */}
+            <div style={{ display: 'flex', alignItems: 'center', maxWidth: 480, position: 'relative' }}>
+              <input
+                type="text"
+                placeholder={`Search ${title.toLowerCase()} by keyword...`}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '13px 18px 13px 44px',
+                  borderRadius: 12,
+                  border: darkMode ? '1px solid rgba(10, 174, 239, 0.4)' : '1px solid #CBD5E1',
+                  background: darkMode ? 'rgba(15, 23, 42, 0.85)' : '#FFFFFF',
+                  backdropFilter: 'blur(8px)',
+                  color: darkMode ? '#F8FAFC' : '#0F172A',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 14px rgba(0,0,0,0.06)',
+                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease'
+                }}
+              />
+              <SearchOutlined style={{ position: 'absolute', left: 16, color: accent, fontSize: 17 }} />
+            </div>
+          </div>
+
+          {/* Right Column: Featured Spotlight Article */}
+          {featuredPost && !isMobile && (
+            <div
+              onClick={() => navigateContentItem(featuredPost, navigate)}
+              style={{
+                width: 430,
+                flexShrink: 0,
+                background: darkMode ? 'rgba(15, 23, 42, 0.8)' : '#FFFFFF',
+                border: darkMode ? '1px solid rgba(10, 174, 239, 0.3)' : '1px solid rgba(0, 0, 0, 0.08)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: 16,
+                padding: 16,
+                cursor: 'pointer',
+                transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
+                e.currentTarget.style.boxShadow = `0 20px 40px ${accent}35`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                e.currentTarget.style.boxShadow = darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)';
+              }}
+            >
+              <div style={{ height: 175, borderRadius: 10, overflow: 'hidden', position: 'relative', marginBottom: 14, background: '#1E293B' }}>
+                {featuredPost.banner_image ? (
+                  <img
+                    src={`/uploads/${featuredPost.banner_image}`}
+                    alt={featuredPost.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>⚡</div>
+                )}
+                <span style={{
+                  position: 'absolute',
+                  top: 10,
+                  left: 10,
+                  background: accent,
+                  color: '#FFF',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  padding: '3px 10px',
+                  borderRadius: 12,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                }}>
+                  Spotlight Story
+                </span>
+              </div>
+
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: accent, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.05em' }}>
+                {featuredPost.category_name || title}
+              </div>
+              <h3 style={{
+                margin: '0 0 8px 0',
+                fontSize: '1.05rem',
+                fontWeight: 800,
+                color: darkMode ? '#F8FAFC' : '#0F172A',
+                lineHeight: 1.35,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
+                {featuredPost.title}
+              </h3>
+              <p style={{
+                margin: 0,
+                fontSize: '0.8125rem',
+                color: darkMode ? '#94A3B8' : '#64748B',
+                lineHeight: 1.5,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>
+                {featuredPost.short_description}
+              </p>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main List Article Item ───────────────────────────────────────────
 const ListItem = ({ item, navigate, accent, darkMode }) => {
   const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
   return (
-  <div style={{
-    display: 'flex', gap: isMobile ? 12 : 20, padding: isMobile ? '16px 0' : '20px 0',
-    borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer',
-    transition: 'background .15s', borderRadius: 4,
-    flexDirection: isMobile ? 'column' : 'row'
-  }}
-    className="cat-list-item"
-    onClick={() => navigateContent(item, navigate)}
-    onMouseEnter={e => e.currentTarget.style.background = darkMode ? '#1e293b' : '#fafbff'}
-    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-  >
-    {/* Thumbnail */}
-    <div style={{ 
-      width: isMobile ? '100%' : 220, 
-      height: isMobile ? 180 : 150, 
-      flexShrink: 0, 
-      borderRadius: 10, 
-      overflow: 'hidden', 
-      background: darkMode ? '#1e293b' : '#f0f4ff', 
-      position: 'relative',
-      minHeight: isMobile ? 180 : 150,
-      maxHeight: isMobile ? 180 : 150,
-    }} className="cat-list-item-thumb">
-      {item.banner_image
-        ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="cat-list-item-thumb-img" style={{ transition: 'transform .4s ease' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          />
-        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 40 : 32 }}>📄</div>
-      }
-      {/* Landing Page or content type badge on thumbnail */}
-      <span style={{
-        position: 'absolute', top: 8, left: 8,
-        background: isLandingPage ? '#6c5ce7' : accent,
-        color: '#fff', fontSize: isMobile ? 9 : 10, fontWeight: 700,
-        padding: isMobile ? '2px 7px' : '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase'
-      }}>
-        {isLandingPage ? 'Landing Page' : (item.content_type_name || item.content_type || '')}
-      </span>
-    </div>
-    {/* Content */}
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isMobile ? 6 : 8 }}>
-        {item.category_name && (
-          <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8 }}>
-            {item.category_name}
-          </span>
-        )}
-      </div>
-      <h3 style={{ fontWeight: 700, fontSize: isMobile ? 15 : 16, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 8px', lineHeight: 1.4,
-        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-        {item.title}
-      </h3>
-      <p style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.65, margin: '0 0 12px',
-        display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-        {item.short_description}
-      </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <UserOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
-          {item.first_name} {item.last_name}
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <CalendarOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
-          {moment(item.scheduled_publish_date || item.published_date || item.created_at).format('MMM D, YYYY')}
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <EyeOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
-          {item.view_count || 0}
-        </span>
-        {/* CTA label */}
+    <div style={{
+      display: 'flex', gap: isMobile ? 12 : 20, padding: isMobile ? '16px 0' : '20px 0',
+      borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer',
+      transition: 'background .15s', borderRadius: 6,
+      flexDirection: isMobile ? 'column' : 'row'
+    }}
+      className="cat-list-item"
+      onClick={() => navigateContent(item, navigate)}
+      onMouseEnter={e => e.currentTarget.style.background = darkMode ? '#1e293b' : '#fafbff'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+    >
+      {/* Thumbnail */}
+      <div style={{ 
+        width: isMobile ? '100%' : 220, 
+        height: isMobile ? 180 : 150, 
+        flexShrink: 0, 
+        borderRadius: 10, 
+        overflow: 'hidden', 
+        background: darkMode ? '#1e293b' : '#f0f4ff', 
+        position: 'relative',
+        minHeight: isMobile ? 180 : 150,
+        maxHeight: isMobile ? 180 : 150,
+      }} className="cat-list-item-thumb">
+        {item.banner_image
+          ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="cat-list-item-thumb-img" style={{ transition: 'transform .4s ease', width: '100%', height: '100%', objectFit: 'cover' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+            />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 40 : 32 }}>📄</div>
+        }
         <span style={{
-          marginLeft: isMobile ? 0 : 'auto', fontSize: isMobile ? 11 : 12, fontWeight: 700,
-          color: isLandingPage ? '#6c5ce7' : accent,
-          display: 'flex', alignItems: 'center', gap: 4
+          position: 'absolute', top: 8, left: 8,
+          background: isLandingPage ? '#6c5ce7' : accent,
+          color: '#fff', fontSize: isMobile ? 9 : 10, fontWeight: 700,
+          padding: isMobile ? '2px 7px' : '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase'
         }}>
-          {isLandingPage ? '→ View Landing Page' : '→ Read More'}
+          {isLandingPage ? 'Landing Page' : (item.content_type_name || item.content_type || '')}
         </span>
       </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isMobile ? 6 : 8 }}>
+          {item.category_name && (
+            <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8 }}>
+              {item.category_name}
+            </span>
+          )}
+        </div>
+        <h3 style={{
+          fontWeight: 700, fontSize: isMobile ? 15 : 16, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 8px', lineHeight: 1.4,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+        }}>
+          {item.title}
+        </h3>
+        <p style={{
+          fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.65, margin: '0 0 12px',
+          display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+        }}>
+          {item.short_description}
+        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <UserOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
+            {item.first_name || 'TGS'} {item.last_name || 'Editorial'}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <CalendarOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
+            {moment(item.scheduled_publish_date || item.published_date || item.created_at).format('MMM D, YYYY')}
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <EyeOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
+            {item.view_count || 0}
+          </span>
+          <span style={{
+            marginLeft: isMobile ? 0 : 'auto', fontSize: isMobile ? 11 : 12, fontWeight: 700,
+            color: isLandingPage ? '#6c5ce7' : accent,
+            display: 'flex', alignItems: 'center', gap: 4
+          }}>
+            {isLandingPage ? '→ View Landing Page' : '→ Read Article'}
+          </span>
+        </div>
+      </div>
     </div>
-  </div>
   );
 };
 
-// ── Sidebar recent post ──────────────────────────────────────────
+// ── Sidebar Recent Post Item ─────────────────────────────────────────
 const SidebarPost = ({ item, navigate, accent, darkMode }) => {
   const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
   return (
-  <div style={{ display: 'flex', flexDirection: 'row', gap: isMobile ? 12 : 10, padding: isMobile ? '10px 0' : '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
-    onClick={() => navigateContent(item, navigate)}
-  >
-    {/* Thumbnail */}
-    <div style={{ width: isMobile ? 80 : 64, height: isMobile ? 60 : 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }}>
-      {item.banner_image
-        ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="thumb-img" />
-        : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 24 : 20 }}>📄</div>
-      }
-      {isLandingPage && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(108,92,231,0.15)', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: '2px 4px' }}>
-          <span style={{ fontSize: 8, fontWeight: 700, color: '#fff', background: '#6c5ce7', borderRadius: 3, padding: '1px 4px', textTransform: 'uppercase', letterSpacing: .3 }}>LP</span>
-        </div>
-      )}
+    <div style={{ display: 'flex', flexDirection: 'row', gap: isMobile ? 12 : 10, padding: isMobile ? '10px 0' : '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
+      onClick={() => navigateContent(item, navigate)}
+    >
+      <div style={{ width: isMobile ? 80 : 64, height: isMobile ? 60 : 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }}>
+        {item.banner_image
+          ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 24 : 20 }}>📄</div>
+        }
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <h4 style={{
+          fontWeight: 700, fontSize: isMobile ? 14 : 13, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 3px', lineHeight: 1.4,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          transition: 'color .2s'
+        }}
+          onMouseEnter={e => e.currentTarget.style.color = isLandingPage ? '#6c5ce7' : accent}
+          onMouseLeave={e => e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#0f172a'}
+        >
+          {item.title}
+        </h4>
+        <p style={{
+          fontSize: isMobile ? 12 : 11.5, color: '#94a3b8', margin: 0, lineHeight: 1.5,
+          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+        }}>
+          {item.short_description}
+        </p>
+      </div>
     </div>
-    {/* Title + Description */}
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <h4 style={{ fontWeight: 700, fontSize: isMobile ? 14 : 13, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 3px', lineHeight: 1.4,
-        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-        transition: 'color .2s'
-      }}
-        onMouseEnter={e => e.currentTarget.style.color = isLandingPage ? '#6c5ce7' : accent}
-        onMouseLeave={e => e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#0f172a'}
-      >
-        {item.title}
-      </h4>
-      <p style={{ fontSize: isMobile ? 12 : 11.5, color: '#94a3b8', margin: 0, lineHeight: 1.5,
-        display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-        {item.short_description}
-      </p>
-    </div>
-  </div>
   );
 };
 
-// ── Main Component ───────────────────────────────────────────────
+// ── Main CategoryList Component ─────────────────────────────────────
 const CategoryList = () => {
   const { slug: paramSlug } = useParams();
   const pathSlug = window.location.pathname.replace('/', '');
@@ -261,6 +486,7 @@ const CategoryList = () => {
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -269,15 +495,13 @@ const CategoryList = () => {
   }, []);
 
   const typeInfo = TYPE_MAP[slug];
-  const catImgInfo = !typeInfo ? (CATEGORY_IMG_MAP[slug] || {}) : {};
-  const accent = typeInfo?.accent || catImgInfo.accent || '#4a7cff';
-  const pageTitle = typeInfo?.title || (slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) || 'Content';
-  const leftImg = typeInfo?.leftImg || catImgInfo.leftImg || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
-  const rightImg = typeInfo?.rightImg || catImgInfo.rightImg || 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80';
+  const accent = typeInfo?.accent || CATEGORY_ACCENT_MAP[slug] || '#0AAEEF';
+  const pageTitle = typeInfo?.title || (slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) || 'Articles';
 
   useEffect(() => {
     setCurrentPage(1);
     setVisibleCount(INITIAL_SHOW);
+    setSearchTerm('');
     fetchSidebar();
   }, [slug]);
 
@@ -316,264 +540,131 @@ const CategoryList = () => {
     }
   };
 
+  // Filter contents by inline search term
+  const safeContents = Array.isArray(contents) ? contents : [];
+  const filteredContents = safeContents.filter(item => {
+    if (!searchTerm) return true;
+    const q = searchTerm.toLowerCase();
+    return (
+      (item.title && item.title.toLowerCase().includes(q)) ||
+      (item.short_description && item.short_description.toLowerCase().includes(q)) ||
+      (item.category_name && item.category_name.toLowerCase().includes(q))
+    );
+  });
+
+  const featuredPost = safeContents[0];
+
   return (
     <div style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
 
-      {/* ── Hero Banner ── */}
-      <HeroBanner
+      {/* ── Redesigned Modern Executive Publishing Hero Header ── */}
+      <PublishingHeroHeader
         title={pageTitle}
         accent={accent}
-        leftImg={leftImg}
-        rightImg={rightImg}
+        totalCount={total}
+        featuredPost={featuredPost}
+        navigate={navigate}
+        darkMode={darkMode}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
       />
-
-      {/* ── Newsletter Section (Mobile Only - After Hero) ── */}
-      {isMobile && (
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
-          <div style={{ 
-            background: 'linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #8b5cf6 100%)',
-            borderRadius: 16, 
-            padding: '20px', 
-            boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
-            position: 'relative',
-            overflow: 'hidden',
-            marginBottom: 24
-          }}>
-            {/* Background dots pattern */}
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
-              backgroundSize: '20px 20px',
-              opacity: 0.5
-            }} />
-            
-            {/* Wave pattern at bottom */}
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: '60px',
-              background: 'linear-gradient(180deg, transparent 0%, rgba(236, 72, 153, 0.2) 100%)',
-              clipPath: 'polygon(0 40%, 25% 60%, 50% 40%, 75% 60%, 100% 40%, 100% 100%, 0 100%)'
-            }} />
-
-            {/* Logo and header */}
-            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <div style={{
-                width: 24,
-                height: 24,
-                background: 'rgba(255,255,255,0.2)',
-                clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-              }} />
-              <span style={{ 
-                fontWeight: 800, 
-                fontSize: 14, 
-                color: '#fff', 
-                letterSpacing: 2,
-                textTransform: 'uppercase'
-              }}>
-                Newsletter
-              </span>
-            </div>
-
-            {/* Main text */}
-            <div style={{ 
-              position: 'relative', 
-              zIndex: 1, 
-              fontSize: 15, 
-              color: '#fff', 
-              fontWeight: 600,
-              marginBottom: 16,
-              lineHeight: 1.4,
-              textAlign: 'center'
-            }}>
-              Stay Updated with Our Latest News!
-            </div>
-
-            {/* Form */}
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              const email = e.target.email.value;
-              if (!email || !email.includes('@')) {
-                alert('Please enter a valid email address');
-                return;
-              }
-              try {
-                await axios.post('/api/public/newsletter', { email });
-                alert('Successfully subscribed!');
-                e.target.email.value = '';
-              } catch (error) {
-                alert('Failed to subscribe. Please try again.');
-              }
-            }} style={{ 
-              position: 'relative',
-              zIndex: 1, 
-              display: 'flex', 
-              gap: 8,
-              alignItems: 'center',
-              flexDirection: 'column'
-            }}>
-              <input
-                type="email"
-                name="email"
-                placeholder="Email Address"
-                required
-                style={{
-                  flex: 1,
-                  padding: '12px 16px',
-                  borderRadius: 25,
-                  border: 'none',
-                  background: 'rgba(255,255,255,0.9)',
-                  color: '#1f2937',
-                  fontSize: 14,
-                  outline: 'none',
-                  fontWeight: 500,
-                  width: '100%'
-                }}
-              />
-              <button
-                type="submit"
-                style={{
-                  width: '100%',
-                  height: 44,
-                  background: '#9ca3af',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 25,
-                  cursor: 'pointer',
-                  transition: 'all .3s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  padding: '12px 20px'
-                }}
-                onMouseEnter={e => { 
-                  e.currentTarget.style.background = '#6b7280';
-                  e.currentTarget.style.transform = 'scale(1.1)';
-                }}
-                onMouseLeave={e => { 
-                  e.currentTarget.style.background = '#9ca3af';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-              >
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* ── Content Area ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
         <div style={{ display: 'flex', gap: isMobile ? 24 : 40, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }} className="cat-layout">
 
-          {/* ── Main List ── */}
+          {/* ── Main List Column ── */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', width: isMobile ? '100%' : 'auto' }}>
+
             {/* Horizontal Categories */}
             <div style={{ marginBottom: isMobile ? 16 : 24 }}>
               <div style={{ fontWeight: 700, fontSize: isMobile ? 13 : 14, color: darkMode ? '#94a3b8' : '#64748b', marginBottom: isMobile ? 10 : 12, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Browse Categories
+                Explore Topics & Categories
               </div>
-              <div style={{ display: 'flex', gap: isMobile ? 8 : 10, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'thin', scrollbarColor: `${accent}33 transparent` }}
-                css={{
-                  '&::-webkit-scrollbar': { height: '6px' },
-                  '&::-webkit-scrollbar-track': { background: 'transparent', borderRadius: '3px' },
-                  '&::-webkit-scrollbar-thumb': { background: `${accent}33`, borderRadius: '3px' },
-                  '&::-webkit-scrollbar-thumb:hover': { background: `${accent}66` }
-                }}>
+              <div style={{ display: 'flex', gap: isMobile ? 8 : 10, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'thin' }}>
                 {loading
                   ? <Skeleton active paragraph={{ rows: 1 }} />
                   : categoriesTree.filter(parent => parent.count > 0).length === 0
                     ? <div style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>No categories found.</div>
                     : categoriesTree.filter(parent => parent.count > 0).map(parent => (
-                        <button
-                          key={parent.id}
-                          onClick={() => navigate(`/category/${parent.slug}`)}
-                          style={{
-                            padding: isMobile ? '6px 12px' : '8px 16px',
-                            background: darkMode ? '#1e293b' : '#fff',
-                            border: `1.5px solid ${accent}33`,
-                            borderRadius: 20,
-                            fontSize: isMobile ? 12 : 13,
-                            fontWeight: 600,
-                            color: darkMode ? '#f1f5f9' : '#0f172a',
-                            cursor: 'pointer',
-                            transition: 'all .2s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            flexShrink: 0
-                          }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.background = accent;
-                            e.currentTarget.style.color = '#fff';
-                            e.currentTarget.style.borderColor = accent;
-                            // Update count span color on hover
-                            const countSpan = e.currentTarget.querySelector('span');
-                            if (countSpan) {
-                              countSpan.style.background = 'rgba(255,255,255,0.2)';
-                              countSpan.style.color = '#fff';
-                            }
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.background = darkMode ? '#1e293b' : '#fff';
-                            e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#0f172a';
-                            e.currentTarget.style.borderColor = `${accent}33`;
-                            // Restore count span color on mouse leave
-                            const countSpan = e.currentTarget.querySelector('span');
-                            if (countSpan) {
-                              countSpan.style.background = `${accent}18`;
-                              countSpan.style.color = accent;
-                            }
-                          }}
-                        >
-                          {parent.name}
-                          <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, background: `${accent}18`, color: accent, borderRadius: 12, padding: '1px 6px', minWidth: 20, textAlign: 'center' }}>
-                            {parent.count}
-                          </span>
-                        </button>
-                      ))
+                      <button
+                        key={parent.id}
+                        onClick={() => navigate(`/category/${parent.slug}`)}
+                        style={{
+                          padding: isMobile ? '6px 12px' : '8px 16px',
+                          background: darkMode ? '#1e293b' : '#fff',
+                          border: `1.5px solid ${accent}33`,
+                          borderRadius: 20,
+                          fontSize: isMobile ? 12 : 13,
+                          fontWeight: 600,
+                          color: darkMode ? '#f1f5f9' : '#0f172a',
+                          cursor: 'pointer',
+                          transition: 'all .2s',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          flexShrink: 0
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.background = accent;
+                          e.currentTarget.style.color = '#fff';
+                          e.currentTarget.style.borderColor = accent;
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = darkMode ? '#1e293b' : '#fff';
+                          e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#0f172a';
+                          e.currentTarget.style.borderColor = `${accent}33`;
+                        }}
+                      >
+                        {parent.name}
+                        <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, background: `${accent}18`, color: accent, borderRadius: 12, padding: '1px 6px', minWidth: 20, textAlign: 'center' }}>
+                          {parent.count}
+                        </span>
+                      </button>
+                    ))
                 }
               </div>
             </div>
 
-            {/* Count bar */}
+            {/* Title & Count bar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: isMobile ? 12 : 16, borderBottom: `3px solid ${accent}`, flexShrink: 0 }}>
-              <span style={{ fontWeight: 800, fontSize: isMobile ? 16 : 18, color: darkMode ? '#f1f5f9' : '#0f172a' }}>{pageTitle}</span>
-              <span style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>{total} posts found</span>
+              <span style={{ fontWeight: 800, fontSize: isMobile ? 16 : 18, color: darkMode ? '#f1f5f9' : '#0f172a' }}>
+                {searchTerm ? `Search Results for "${searchTerm}"` : `Latest ${pageTitle}`}
+              </span>
+              <span style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>
+                {filteredContents.length} articles found
+              </span>
             </div>
 
+            {/* Articles List */}
             <div>
               {loading
                 ? <Skeleton active paragraph={{ rows: 6 }} />
-                : contents.length === 0
-                  ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>No content found.</div>
-                  : contents.slice(0, visibleCount).map(item => (
-                      <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
-                    ))
+                : filteredContents.length === 0
+                  ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>No articles matched your search query.</div>
+                  : filteredContents.slice(0, visibleCount).map(item => (
+                    <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
+                  ))
               }
             </div>
 
             {/* See More button */}
-            {!loading && contents.length > 0 && visibleCount < contents.length && (
+            {!loading && filteredContents.length > 0 && visibleCount < filteredContents.length && (
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: isMobile ? 20 : 24 }}>
                 <button
-                  onClick={() => setVisibleCount(v => Math.min(v + SEE_MORE_STEP, contents.length))}
+                  onClick={() => setVisibleCount(v => Math.min(v + SEE_MORE_STEP, filteredContents.length))}
                   style={{ padding: isMobile ? '10px 28px' : '11px 36px', background: darkMode ? '#1e293b' : '#fff', color: accent, border: `2px solid ${accent}`, borderRadius: 30, fontWeight: 700, fontSize: isMobile ? 13 : 14, cursor: 'pointer', transition: 'all .2s', display: 'flex', alignItems: 'center', gap: 8 }}
                   onMouseEnter={e => { e.currentTarget.style.background = accent; e.currentTarget.style.color = '#fff'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = darkMode ? '#1e293b' : '#fff'; e.currentTarget.style.color = accent; }}
                 >
-                  See More
-                 </button>
+                  Load More Articles
+                </button>
               </div>
             )}
 
-            {/* Pagination — only shown after all items on this page are visible */}
-            {!loading && total > PAGE_SIZE && visibleCount >= contents.length && (
-              <div style={{ marginTop: isMobile ? 16 : 16, display: 'flex', justifyContent: 'center' }}>
+            {/* Pagination */}
+            {!loading && total > PAGE_SIZE && visibleCount >= filteredContents.length && (
+              <div style={{ marginTop: isMobile ? 16 : 24, display: 'flex', justifyContent: 'center' }}>
                 <Pagination
                   current={currentPage}
                   total={total}
@@ -583,7 +674,7 @@ const CategoryList = () => {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   showSizeChanger={false}
-                  showTotal={isMobile ? false : t => `Total ${t} items`}
+                  showTotal={isMobile ? false : t => `Total ${t} articles`}
                   simple={isMobile}
                   size={isMobile ? 'small' : 'default'}
                 />
@@ -594,70 +685,27 @@ const CategoryList = () => {
           {/* ── Sidebar (Desktop Only) ── */}
           {!isMobile && (
             <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
-              {/* Newsletter Section */}
-              <div style={{ 
-                background: 'linear-gradient(135deg, #6b21a8 0%, #7c3aed 50%, #8b5cf6 100%)',
-                borderRadius: 16, 
-                padding: '24px', 
-                boxShadow: '0 4px 20px rgba(124, 58, 237, 0.3)',
+              {/* Newsletter Box */}
+              <div style={{
+                background: 'linear-gradient(135deg, #0AAEEF 0%, #0284C7 50%, #0369A1 100%)',
+                borderRadius: 16,
+                padding: '24px',
+                boxShadow: '0 4px 20px rgba(10, 174, 239, 0.3)',
                 position: 'relative',
                 overflow: 'hidden',
                 marginBottom: 24
               }}>
-                {/* Background dots pattern */}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                  backgroundSize: '20px 20px',
-                  opacity: 0.5
-                }} />
-                
-                {/* Wave pattern at bottom */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: '60px',
-                  background: 'linear-gradient(180deg, transparent 0%, rgba(236, 72, 153, 0.2) 100%)',
-                  clipPath: 'polygon(0 40%, 25% 60%, 50% 40%, 75% 60%, 100% 40%, 100% 100%, 0 100%)'
-                }} />
-
-                {/* Logo and header */}
-                <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <div style={{
-                    width: 24,
-                    height: 24,
-                    background: 'rgba(255,255,255,0.2)',
-                    clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-                  }} />
-                  <span style={{ 
-                    fontWeight: 800, 
-                    fontSize: 14, 
-                    color: '#fff', 
-                    letterSpacing: 2,
-                    textTransform: 'uppercase'
-                  }}>
-                    Newsletter
+                <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <ReadOutlined style={{ color: '#fff', fontSize: 18 }} />
+                  <span style={{ fontWeight: 800, fontSize: 13, color: '#fff', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                    Executive Digest
                   </span>
                 </div>
 
-                {/* Main text */}
-                <div style={{ 
-                  position: 'relative', 
-                  zIndex: 1, 
-                  fontSize: 16, 
-                  color: '#fff', 
-                  fontWeight: 600,
-                  marginBottom: 20,
-                  lineHeight: 1.4,
-                  textAlign: 'center'
-                }}>
-                  Stay Updated with Our Latest News!
+                <div style={{ position: 'relative', zIndex: 1, fontSize: 15, color: '#fff', fontWeight: 700, marginBottom: 16, lineHeight: 1.4 }}>
+                  Subscribe to Weekly Tech Intelligence
                 </div>
 
-                {/* Form */}
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   const email = e.target.email.value;
@@ -672,73 +720,52 @@ const CategoryList = () => {
                   } catch (error) {
                     alert('Failed to subscribe. Please try again.');
                   }
-                }} style={{ 
-                  position: 'relative',
-                  zIndex: 1, 
-                  display: 'flex', 
-                  gap: 10,
-                  alignItems: 'center',
-                  flexDirection: 'row'
-                }}>
+                }} style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8 }}>
                   <input
                     type="email"
                     name="email"
-                    placeholder="Email Address"
+                    placeholder="Enter corporate email..."
                     required
                     style={{
                       flex: 1,
-                      padding: '12px 16px',
-                      borderRadius: 25,
+                      padding: '10px 14px',
+                      borderRadius: 8,
                       border: 'none',
-                      background: 'rgba(255,255,255,0.9)',
+                      background: 'rgba(255,255,255,0.95)',
                       color: '#1f2937',
-                      fontSize: 13,
+                      fontSize: 12,
                       outline: 'none',
-                      fontWeight: 500,
-                      width: 'auto'
+                      fontWeight: 500
                     }}
                   />
                   <button
                     type="submit"
                     style={{
-                      width: 44,
-                      height: 44,
-                      background: '#9ca3af',
+                      padding: '10px 16px',
+                      background: '#0F172A',
                       color: '#fff',
                       border: 'none',
-                      borderRadius: '50%',
+                      borderRadius: 8,
                       cursor: 'pointer',
-                      transition: 'all .3s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 16,
-                      padding: '0'
-                    }}
-                    onMouseEnter={e => { 
-                      e.currentTarget.style.background = '#6b7280';
-                      e.currentTarget.style.transform = 'scale(1.1)';
-                    }}
-                    onMouseLeave={e => { 
-                      e.currentTarget.style.background = '#9ca3af';
-                      e.currentTarget.style.transform = 'scale(1)';
+                      fontWeight: 700,
+                      fontSize: 12
                     }}
                   >
-                    ➤
+                    Join
                   </button>
                 </form>
               </div>
 
-              {/* Recent Posts */}
-              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5', marginBottom: 24 }}>
-                <div style={{ fontWeight: 800, fontSize: 16, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22` }}>
-                  Recent Posts
+              {/* Recent Posts Card */}
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5' }}>
+                <div style={{ fontWeight: 800, fontSize: 15, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22`, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <FireOutlined /> Trending Articles
                 </div>
                 {loading
                   ? <Skeleton active paragraph={{ rows: 6 }} />
                   : recentPosts.map(item => (
-                      <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
-                    ))
+                    <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
+                  ))
                 }
               </div>
             </div>
@@ -747,22 +774,6 @@ const CategoryList = () => {
         </div>
       </div>
 
-      {/* ── Recent Posts (Mobile Only - After Content List) ── */}
-      {isMobile && (
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 16px 24px' }}>
-          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '16px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5' }}>
-            <div style={{ fontWeight: 800, fontSize: 15, color: accent, marginBottom: 4, paddingBottom: 10, borderBottom: `2px solid ${accent}22` }}>
-              Recent Posts
-            </div>
-            {loading
-              ? <Skeleton active paragraph={{ rows: 6 }} />
-              : recentPosts.map(item => (
-                  <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
-                ))
-            }
-          </div>
-        </div>
-      )}
     </div>
   );
 };

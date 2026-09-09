@@ -38,6 +38,7 @@ import {
   RocketOutlined,
   CompassOutlined,
   DatabaseOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -381,6 +382,7 @@ const DashboardLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [draftCount, setDraftCount] = useState(0);
   const [unreadLeads, setUnreadLeads] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -391,7 +393,7 @@ const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
   // const { cmsLogo, mainLogo } = useSiteSettings();
-    const { settings, navbarLogo, mainLogo, cmsLogo, cmsLogo1, cmsLogo2, favicon, logoSizes } = useSiteSettings();
+  const { settings, navbarLogo, mainLogo, cmsLogo, cmsLogo1, cmsLogo2, favicon, logoSizes } = useSiteSettings();
 
   const D = darkMode;
 
@@ -415,13 +417,21 @@ const DashboardLayout = () => {
         if (res.data) {
           const p = res.data.find(s => s.status === 'pending');
           if (p) setPendingCount(p.count || 0);
+          const d = res.data.find(s => s.status === 'draft');
+          if (d) setDraftCount(d.count || 0);
         }
-      } catch {}
+      } catch { }
+      try {
+        const resStats = await axios.get('/api/admin/stats');
+        if (resStats.data?.totalDrafts !== undefined) {
+          setDraftCount(resStats.data.totalDrafts);
+        }
+      } catch { }
       try {
         const res = await axios.get('/api/admin/submissions?limit=1');
         const total = res.data?.total || 0;
         if (total > 0) setUnreadLeads(total);
-      } catch {}
+      } catch { }
     };
     fetchBadges();
   }, []);
@@ -467,6 +477,7 @@ const DashboardLayout = () => {
       /* ── 2. CONTENT STUDIO (Royal Indigo & Purple) ── */
       navGroup('g-content', '✍️ Content Studio', [
         navItem('/dashboard/content', <FileTextOutlined style={{ color: D ? '#818CF8' : '#4F46E5' }} />, 'All Content'),
+        navItem('/dashboard/drafts', <UnorderedListOutlined style={{ color: D ? '#FBBF24' : '#D97706' }} />, 'Draft Articles'),
         navItem('/dashboard/pending-review', <CheckCircleOutlined style={{ color: D ? '#34D399' : '#059669' }} />, 'Review Queue', pendingCount > 0 ? pendingCount : null, '#10B981'),
         navItem('/dashboard/create-post', <EditOutlined style={{ color: D ? '#A78BFA' : '#7C3AED' }} />, 'Create Article'),
         navItem('/dashboard/categories', <FolderOutlined style={{ color: D ? '#C084FC' : '#9333EA' }} />, 'Categories'),
@@ -477,8 +488,8 @@ const DashboardLayout = () => {
 
       /* ── 3. LEAD GEN & INBOUND (Solar Flame & Amber) ── */
       navGroup('g-leads', '🎯 Lead Gen & Inbound', [
-        navItem('/admin/submissions', <SendOutlined style={{ color: D ? '#FB923C' : '#EA580C' }} />, 'Form Submissions', unreadLeads > 0 ? unreadLeads : null, '#EA580C'),
-        navItem('/dashboard/forms', <FormOutlined style={{ color: D ? '#FBBF24' : '#D97706' }} />, 'Forms Builder'),
+        navItem('/admin/submissions', <SendOutlined style={{ color: D ? '#FB923C' : '#EA580C' }} />, 'Form Submissions'),
+        // navItem('/dashboard/forms', <FormOutlined style={{ color: D ? '#FBBF24' : '#D97706' }} />, 'Forms Builder'),
         navItem('/dashboard/email-templates', <MailOutlined style={{ color: D ? '#F59E0B' : '#B45309' }} />, 'Email Templates'),
       ]),
 
@@ -500,8 +511,8 @@ const DashboardLayout = () => {
       const adminChildren = [];
       if (user?.role === 'admin' || user?.permissions?.includes('user.read')) {
         adminChildren.push(navItem('/dashboard/users', <TeamOutlined style={{ color: D ? '#93C5FD' : '#3B82F6' }} />, 'Team Users'));
-        adminChildren.push(navItem('/dashboard/roles', <CrownOutlined style={{ color: D ? '#FCD34D' : '#D97706' }} />, 'Roles & Access'));
-        adminChildren.push(navItem('/dashboard/permissions', <ApartmentOutlined style={{ color: D ? '#CBD5E1' : '#475569' }} />, 'RBAC Permissions'));
+        // adminChildren.push(navItem('/dashboard/roles', <CrownOutlined style={{ color: D ? '#FCD34D' : '#D97706' }} />, 'Roles & Access'));
+        // adminChildren.push(navItem('/dashboard/permissions', <ApartmentOutlined style={{ color: D ? '#CBD5E1' : '#475569' }} />, 'RBAC Permissions'));
         adminChildren.push(navItem('/dashboard/sessions', <LockOutlined style={{ color: D ? '#F87171' : '#DC2626' }} />, 'Session Control'));
       }
       if (user?.role === 'admin' || user?.permissions?.includes('settings.manage')) {
@@ -748,7 +759,7 @@ const DashboardLayout = () => {
                   {(!collapsed || isMobile) && (
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '0.9rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.02em', lineHeight: 1.15 }}>
-                      {settings?.site_name || 'TgsTechInfo'}
+                        {settings?.site_name || 'TgsTechInfo'}
                       </div>
                       <div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#2563EB', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         Enterprise Control
@@ -944,10 +955,10 @@ const DashboardLayout = () => {
               </Popover>
 
               {/* User Dropdown */}
-              <Dropdown 
-                menu={{ items: userMenuItems }} 
-                placement="bottomRight" 
-                arrow 
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                arrow
                 trigger={['click']}
                 getPopupContainer={(triggerNode) => document.body}
               >

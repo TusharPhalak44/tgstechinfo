@@ -22,14 +22,14 @@ export default function GeographicAnalyticsSummary({
   const countryInfo = selectedCountry ? (COUNTRY_REGISTRY[selectedCountry] || { name: selectedCountry, flag: '🌐' }) : null;
 
   // Extract totals based on active level
-  const visitors = data.uniqueVisitors || data.totalVisitors || data.trafficCount || 0;
-  const sessions = data.totalSessions || data.trafficCount || 0;
-  const pageviews = data.totalPageviews || data.pageviews || sessions * 2.5;
-  const conversions = data.totalConversions || data.conversions || data.conversionCount || 0;
-  const avgDuration = data.avgDuration || 180;
-  const bounceRate = data.bounceRate || 28;
+  const visitors = Number(data.uniqueVisitors || data.totalVisitors || data.trafficCount || 0);
+  const sessions = Number(data.totalSessions || data.trafficCount || 0);
+  const pageviews = Number(data.totalPageviews || data.pageviews || 0);
+  const conversions = Number(data.totalConversions || data.conversions || data.conversionCount || 0);
+  const avgDuration = Number(data.avgDuration || 0);
+  const bounceRate = Number(data.bounceRate || 0);
 
-  const durationStr = `${Math.floor(avgDuration / 60)}m ${String(Math.round(avgDuration % 60)).padStart(2, '0')}s`;
+  const durationStr = avgDuration > 0 ? `${Math.floor(avgDuration / 60)}m ${String(Math.round(avgDuration % 60)).padStart(2, '0')}s` : '0m 0s';
 
   return (
     <div

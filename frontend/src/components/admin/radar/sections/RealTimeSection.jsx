@@ -68,17 +68,24 @@ const RealTimeSection = ({
   // Determine current active geographic level
   const activeLevel = selectedCity ? 'city' : (selectedCountry ? 'country' : (selectedRegion ? 'region' : 'world'));
 
+  // Dynamic real-time live pulse metrics bound directly to backend props
+  const liveActiveVisitors = activeVisitors;
+  const liveTotalSessions  = totalSessions;
+  const liveTotalPageViews = totalPageViews;
+  const liveConversions    = totalConversions;
+
   // Global consolidated dataset for the globe
   const globalData = {
     totals: {
-      totalVisitors: activeVisitors,
-      totalSessions: totalSessions,
-      totalPageviews: totalPageViews,
-      totalConversions: totalConversions,
+      totalVisitors: liveActiveVisitors,
+      totalSessions: liveTotalSessions,
+      totalPageviews: liveTotalPageViews,
+      totalConversions: liveConversions,
       bounceRate: bounceRate,
       avgDuration: 185
     },
-    countries: countryAnalytics
+    countries: countryAnalytics,
+    recentSessions: recentSessions
   };
 
   // Fetch contextual metrics when hierarchy selection changes
@@ -108,7 +115,7 @@ const RealTimeSection = ({
     } finally {
       setIsHierarchyLoading(false);
     }
-  }, [selectedRegion, selectedCountry, selectedCity, countryAnalytics, activeVisitors, totalSessions, totalPageViews, totalConversions, bounceRate]);
+  }, [selectedRegion, selectedCountry, selectedCity, countryAnalytics, liveActiveVisitors, liveTotalSessions, liveTotalPageViews, liveConversions, bounceRate]);
 
   useEffect(() => {
     loadHierarchyData();
@@ -206,10 +213,10 @@ const RealTimeSection = ({
 
       {/* Real-time Website Pulse Bar */}
       <WebsitePulseBar
-        activeVisitors={activeVisitors}
-        totalSessions={totalSessions}
-        totalPageViews={totalPageViews}
-        conversionsCount={totalConversions}
+        activeVisitors={liveActiveVisitors}
+        totalSessions={liveTotalSessions}
+        totalPageViews={liveTotalPageViews}
+        conversionsCount={liveConversions}
         searchesCount={searchesCount}
         bounceRate={bounceRate}
         isLoading={isLoading}
@@ -219,7 +226,7 @@ const RealTimeSection = ({
       {/* Global Activity Telemetry — Country-level distribution & engagement */}
       <GlobalActivitySection
         countryData={countryAnalytics}
-        totalSessions={totalSessions}
+        totalSessions={liveTotalSessions}
         isLoading={isLoading}
         darkMode={darkMode}
       />

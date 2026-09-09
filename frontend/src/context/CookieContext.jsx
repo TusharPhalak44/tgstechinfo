@@ -46,20 +46,15 @@ export const CookieProvider = ({ children }) => {
       }
       setSessionId(currentSessionId);
 
-      console.log('Initialize Cookie Consent - Session ID:', currentSessionId);
-
       // Load consent from localStorage first
       const storedConsent = getStoredConsent(CONSENT_STORAGE_KEY);
-      console.log('Initialize Cookie Consent - Stored Consent:', storedConsent);
 
       if (storedConsent) {
         // Check if consent has expired
         if (isConsentExpired(storedConsent.expires_at)) {
-          console.log('Initialize Cookie Consent - Consent expired, showing banner');
           clearStoredConsent(CONSENT_STORAGE_KEY);
           setShowBanner(true);
         } else {
-          console.log('Initialize Cookie Consent - Valid consent found, hiding banner');
           setConsent(storedConsent);
           // Load scripts based on consent
           loadScriptsByConsent(storedConsent, SCRIPT_IDS);
@@ -69,7 +64,6 @@ export const CookieProvider = ({ children }) => {
           setShowBanner(false);
         }
       } else {
-        console.log('Initialize Cookie Consent - No consent found, showing banner');
         // No consent exists, show banner
         setShowBanner(true);
       }
@@ -98,11 +92,6 @@ export const CookieProvider = ({ children }) => {
       }
     } catch (error) {
       // If backend fails (including 404), keep local consent
-      console.warn('Backend sync failed, using local consent:', error);
-      // Don't break the user experience if backend is unavailable
-      if (error.response?.status === 404) {
-        console.log('No existing consent on backend (404), using local consent');
-      }
     }
   };
 
@@ -113,12 +102,8 @@ export const CookieProvider = ({ children }) => {
         session_id: sessionId
       };
 
-      console.log('Accept All - Sending consent data:', consentData);
       const response = await cookieConsentApi.createConsent(consentData);
-      console.log('Accept All - Full response:', response);
       const newConsent = response.data.consent;
-
-      console.log('Accept All - New Consent:', newConsent);
 
       if (!newConsent) {
         console.error('Accept All - No consent data in response');
@@ -131,8 +116,6 @@ export const CookieProvider = ({ children }) => {
       localStorage.setItem(POLICY_VERSION_KEY, CURRENT_POLICY_VERSION);
       localStorage.setItem(BANNER_VERSION_KEY, CURRENT_BANNER_VERSION);
       setShowBanner(false);
-
-      console.log('Accept All - Banner hidden, consent stored');
 
       // Load all scripts for accept all
       loadScriptsByConsent(newConsent, SCRIPT_IDS);

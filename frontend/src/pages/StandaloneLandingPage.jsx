@@ -52,7 +52,7 @@ const StandaloneLandingPage = () => {
       const isLandingPageType = ['landing-page', 'landing page'].includes(
         (data.content_type || data.content_type_name || '').toLowerCase().trim()
       );
-      
+
       console.log('🔍 Landing Page Debug:', {
         slug: data.slug,
         contentId: data.id,
@@ -65,7 +65,7 @@ const StandaloneLandingPage = () => {
         hasBuilderPageData: !!data.builder_page_data,
         builderPageDataType: typeof data.builder_page_data
       });
-      
+
       // Allow ANY Visual Builder or HTML Builder content regardless of content type
       // Also allow dedicated landing page content types
       if (!isHtmlBuilder && !isVisualBuilder && !isLandingPageType) {
@@ -75,33 +75,37 @@ const StandaloneLandingPage = () => {
         navigate(`/article/${data.slug}`, { replace: true });
         return;
       }
-      
+
       console.log('✅ Rendering as landing page');
 
       setContent(data);
       setError(null);
-      
+
+      if (data?.id) {
+        axios.post(`/api/public/content/${data.id}/view`).catch(() => { });
+      }
+
       console.log('Landing page loaded with consent:', consent, 'hasAnalyticsConsent:', hasAnalyticsConsent);
-      
+
       // Set consent UUID globally if available
       if (consent?.uuid) {
         window.__CONSENT_UUID = consent.uuid;
         console.log('Set CONSENT_UUID:', consent.uuid);
       }
-      
+
       // Initialize tracking session if analytics consent is granted and session doesn't exist
       if (hasAnalyticsConsent && consent && !window.__SESSION_UUID) {
         console.log('Initializing tracking session on landing page...');
         try {
           const { trackingApi, generateSessionUuid, getDeviceInfo } = require('../lib/trackingUtils');
-          
+
           const sessionData = {
             consent_uuid: consent.uuid,
             landing_page: window.location.href,
             referrer: document.referrer,
             ...getDeviceInfo()
           };
-          
+
           trackingApi.startSession(sessionData)
             .then(response => {
               window.__SESSION_UUID = response.session.session_uuid;
@@ -153,51 +157,137 @@ const StandaloneLandingPage = () => {
         CONSENT_UUID: window.__CONSENT_UUID
       });
 
+      // Automatic Form Submission Interceptor for HTML Builder pages
+      (function() {
+        document.addEventListener('submit', function(e) {
+          const form = e.target;
+          if (!form || form.tagName !== 'FORM') return;
+          
+          // Prevent standard browser GET/POST page navigation
+          e.preventDefault();
+          e.stopPropagation();
+
+          console.log('🚀 Form submission intercepted on HTML Builder page');
+          const formData = new FormData(form);
+          const payload = {
+            content_id: window.__CONTENT_ID || ${content.id},
+            session_uuid: window.__SESSION_UUID || null,
+            consent_uuid: window.__CONSENT_UUID || null
+          };
+
+          // Add FormData entries
+          for (let [key, value] of formData.entries()) {
+            if (key) {
+              payload[key] = value;
+            }
+          }
+
+          // Harvest input elements directly in case any input lacked name attribute or used id
+          const inputs = form.querySelectorAll('input, select, textarea');
+          inputs.forEach(input => {
+            const key = input.name || input.id;
+            if (key && input.value !== undefined && !payload[key]) {
+              payload[key] = input.value;
+            }
+          });
+
+          console.log('Sending lead submission payload to /api/public/landing-page:', payload);
+
+          // Disable submit button during request
+          const submitBtn = form.querySelector('button[type="submit"], input[type="submit"], button:not([type="button"])');
+          const originalBtnText = submitBtn ? (submitBtn.innerText || submitBtn.value) : '';
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            if (submitBtn.tagName === 'BUTTON') submitBtn.innerText = 'Submitting...';
+            else submitBtn.value = 'Submitting...';
+          }
+
+          // Send POST request to backend API
+          fetch('/api/public/landing-page', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          })
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP status ' + res.status);
+            return res.json();
+          })
+          .then(data => {
+            console.log('✅ Lead form submit success:', data);
+            
+            // Display success message inside or below the form
+            let alertBox = form.querySelector('.form-success-alert');
+            if (!alertBox) {
+              alertBox = document.createElement('div');
+              alertBox.className = 'form-success-alert';
+              alertBox.style.cssText = 'padding: 12px 16px; margin-top: 16px; background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center;';
+              form.appendChild(alertBox);
+            }
+            alertBox.style.display = 'block';
+            alertBox.innerText = data.message || 'Thank you! Your details have been submitted successfully.';
+            
+            // Hide error alert if previously shown
+            const errBox = form.querySelector('.form-error-alert');
+            if (errBox) errBox.style.display = 'none';
+
+            form.reset();
+          })
+          .catch(err => {
+            console.error('❌ Lead form submit error:', err);
+            let alertBox = form.querySelector('.form-error-alert');
+            if (!alertBox) {
+              alertBox = document.createElement('div');
+              alertBox.className = 'form-error-alert';
+              alertBox.style.cssText = 'padding: 12px 16px; margin-top: 16px; background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center;';
+              form.appendChild(alertBox);
+            }
+            alertBox.style.display = 'block';
+            alertBox.innerText = 'Failed to submit details. Please try again.';
+          })
+          .finally(() => {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              if (submitBtn.tagName === 'BUTTON') submitBtn.innerText = originalBtnText;
+              else submitBtn.value = originalBtnText;
+            }
+          });
+        }, true);
+      })();
+
       // Auto-patch fetch so ANY call to /api/public/landing-page automatically
       // includes content_id, session_uuid, and consent_uuid in the JSON body
-      // Also patch incorrect /api/users endpoint to correct /api/public/landing-page
-      // works even if the client's HTML doesn't include it explicitly.
       (function() {
         const _originalFetch = window.fetch;
         window.fetch = function(url, options) {
           try {
             const urlStr = (typeof url === 'string') ? url : (url.url || String(url));
-            
-            // Patch incorrect /api/users endpoint to correct /api/public/landing-page
             if (urlStr.includes('/api/users')) {
-              console.log('Patching incorrect /api/users endpoint to /api/public/landing-page');
               url = urlStr.replace('/api/users', '/api/public/landing-page');
-              if (typeof url === 'string' && options) {
-                options = { ...options, ...(typeof url === 'object' ? {} : {}) };
-              }
             }
-            
             if (urlStr.includes('/api/public/landing-page') && options && options.body) {
               let body;
               try { body = JSON.parse(options.body); } catch(e) { body = null; }
               if (body && typeof body === 'object') {
-                console.log('Before patch:', body);
                 if (!body.content_id) body.content_id = window.__CONTENT_ID;
                 if (!body.session_uuid) body.session_uuid = window.__SESSION_UUID;
                 if (!body.consent_uuid) body.consent_uuid = window.__CONSENT_UUID;
-                console.log('After patch:', body);
                 options = { ...options, body: JSON.stringify(body) };
               }
             }
-          } catch(e) { /* never break the original fetch */ }
+          } catch(e) { /* keep original */ }
           return _originalFetch.call(this, url, options);
         };
       })();
 
-      // Also patch XMLHttpRequest (used by axios and some native HTML forms)
+      // Also patch XMLHttpRequest
       (function() {
         const _XHROpen = XMLHttpRequest.prototype.open;
         const _XHRSend = XMLHttpRequest.prototype.send;
         XMLHttpRequest.prototype.open = function(method, url) {
           this._patchUrl = (typeof url === 'string') ? url : String(url);
-          // Patch incorrect /api/users endpoint to correct /api/public/landing-page
           if (this._patchUrl.includes('/api/users')) {
-            console.log('Patching incorrect /api/users XHR endpoint to /api/public/landing-page');
             this._patchUrl = this._patchUrl.replace('/api/users', '/api/public/landing-page');
             arguments[1] = this._patchUrl;
           }
@@ -213,11 +303,10 @@ const StandaloneLandingPage = () => {
                 if (!parsed.session_uuid) parsed.session_uuid = window.__SESSION_UUID;
                 if (!parsed.consent_uuid) parsed.consent_uuid = window.__CONSENT_UUID;
                 body = JSON.stringify(parsed);
-                // Ensure Content-Type is set for JSON
                 this.setRequestHeader('Content-Type', 'application/json');
               }
             }
-          } catch(e) { /* never break XHR */ }
+          } catch(e) { /* keep original */ }
           return _XHRSend.call(this, body);
         };
       })();
@@ -242,10 +331,8 @@ const StandaloneLandingPage = () => {
     const executedScriptHashes = new Set();
 
     scripts.forEach((script, index) => {
-      // Create a simple hash of the script content to detect duplicates
       const scriptHash = script.src || script.textContent.substring(0, 100);
       if (executedScriptHashes.has(scriptHash)) {
-        console.log('Skipping duplicate script:', scriptHash.substring(0, 50));
         return; // Skip duplicate scripts
       }
       executedScriptHashes.add(scriptHash);
@@ -255,31 +342,35 @@ const StandaloneLandingPage = () => {
       newScript.setAttribute('data-script-index', index);
       newScript.setAttribute('data-script-hash', scriptHash);
 
-      // Copy all attributes (like src, type, etc.)
       Array.from(script.attributes).forEach(attr => {
         if (attr.name !== 'data-html-builder-script' && attr.name !== 'data-script-index' && attr.name !== 'data-script-hash') {
           newScript.setAttribute(attr.name, attr.value);
         }
       });
 
-      // If it's an inline script, process the code
       if (!script.src) {
         let code = script.textContent;
-        // Replace legacy placeholder API URLs with our actual endpoint
         code = code.replace(/https:\/\/your-api-url\.com\/api\/leads/g, '/api/public/landing-page');
         code = code.replace(/\/api\/users/g, '/api/public/landing-page');
-        // Wrap in IIFE to prevent variable redeclaration issues
-        // The IIFE creates a new scope, so const/let/var declarations won't conflict
-        // Add additional null checks for common DOM operations
+
+        // Wrap in IIFE with DOM element null-checking safeguards
         code = `(function() { try { 
-          // Override addEventListener to handle null targets gracefully
-          const originalAddEventListener = EventTarget.prototype.addEventListener;
-          EventTarget.prototype.addEventListener = function(type, listener, options) {
-            if (this === null || this === undefined) {
-              console.warn('Attempted to addEventListener to null/undefined target');
-              return;
+          const _safeGetId = document.getElementById.bind(document);
+          document.getElementById = function(id) {
+            const res = _safeGetId(id);
+            if (!res) {
+              return { addEventListener: function(){}, style: {}, setAttribute: function(){}, value: '' };
             }
-            return originalAddEventListener.call(this, type, listener, options);
+            return res;
+          };
+          
+          const _safeQuery = document.querySelector.bind(document);
+          document.querySelector = function(sel) {
+            const res = _safeQuery(sel);
+            if (!res && (sel.includes('form') || sel.includes('btn') || sel.includes('button') || sel.includes('submit'))) {
+              return { addEventListener: function(){}, style: {}, setAttribute: function(){}, value: '' };
+            }
+            return res;
           };
           
           ${code} 
@@ -310,10 +401,10 @@ const StandaloneLandingPage = () => {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         minHeight: '100vh',
         background: darkMode ? '#0f172a' : '#f5f5f5'
       }}>
@@ -324,10 +415,10 @@ const StandaloneLandingPage = () => {
 
   if (error || !content) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         minHeight: '100vh',
         background: darkMode ? '#0f172a' : '#f5f5f5'
       }}>
@@ -362,7 +453,7 @@ const StandaloneLandingPage = () => {
     console.log('🖼️ Rendering as Visual Builder page');
     return <StandaloneBuilderPage content={content} />;
   }
-  
+
   console.log('📝 Rendering as HTML Builder page');
 
   return (
@@ -371,7 +462,7 @@ const StandaloneLandingPage = () => {
         <title>{content.seo_meta_title || content.title}</title>
         <meta name="description" content={content.seo_meta_description || content.short_description} />
         <meta name="keywords" content={content.seo_meta_keywords || ''} />
-        
+
         {/* Open Graph */}
         <meta property="og:title" content={content.seo_meta_title || content.title} />
         <meta property="og:description" content={content.seo_meta_description || content.short_description} />
@@ -379,7 +470,7 @@ const StandaloneLandingPage = () => {
         {content.banner_image && (
           <meta property="og:image" content={`${window.location.origin}/uploads/${content.banner_image}`} />
         )}
-        
+
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={content.seo_meta_title || content.title} />
@@ -387,11 +478,11 @@ const StandaloneLandingPage = () => {
         {content.banner_image && (
           <meta name="twitter:image" content={`${window.location.origin}/uploads/${content.banner_image}`} />
         )}
-        
+
         {/* Canonical URL */}
         <link rel="canonical" href={`${window.location.origin}/content/${content.slug}`} />
       </Helmet>
-      
+
       <div style={{
         width: '100%',
         minHeight: '100vh',
@@ -408,79 +499,6 @@ const StandaloneLandingPage = () => {
         />
         {/* Hidden content_id field for HTML forms */}
         <input type="hidden" id="html-content-id" data-content-id={content.id} />
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            // HTML Builder Form Submission Enhancement
-            (function() {
-              console.log('HTML Builder page loaded with content_id:', ${content.id});
-              console.log('Webhook URL:', '${content.webhook_url || 'none'}');
-              console.log('Custom fields:', ${JSON.stringify(content.custom_fields || [])});
-
-              // Ensure window.__CONTENT_ID is set
-              if (!window.__CONTENT_ID) {
-                window.__CONTENT_ID = ${content.id};
-                console.log('Set window.__CONTENT_ID to:', window.__CONTENT_ID);
-              }
-
-              // Monitor form submissions
-              document.addEventListener('submit', function(e) {
-                const form = e.target;
-                if (form.action && form.action.includes('/api/public/landing-page')) {
-                  console.log('Form submission detected to:', form.action);
-                  console.log('Form data before submission:');
-                  const formData = new FormData(form);
-                  for (let [key, value] of formData.entries()) {
-                    console.log(key, ':', value);
-                  }
-
-                  // Ensure content_id is included
-                  if (!formData.has('content_id')) {
-                    const contentId = ${content.id};
-                    console.log('Adding content_id to form:', contentId);
-                    const hiddenField = document.createElement('input');
-                    hiddenField.type = 'hidden';
-                    hiddenField.name = 'content_id';
-                    hiddenField.value = contentId;
-                    form.appendChild(hiddenField);
-                  }
-                }
-              }, true);
-
-              // Monitor fetch calls and inject content_id
-              // Also patch incorrect /api/users endpoint to correct /api/public/landing-page
-              const originalFetch = window.fetch;
-              window.fetch = function(...args) {
-                if (args[0] && typeof args[0] === 'string') {
-                  // Patch incorrect /api/users endpoint
-                  if (args[0].includes('/api/users')) {
-                    console.log('Patching incorrect /api/users fetch endpoint to /api/public/landing-page');
-                    args[0] = args[0].replace('/api/users', '/api/public/landing-page');
-                  }
-                  
-                  if (args[0].includes('/api/public/landing-page')) {
-                    console.log('Fetch call to /api/public/landing-page detected');
-                    if (args[1] && args[1].body) {
-                      try {
-                        const body = typeof args[1].body === 'string' ? JSON.parse(args[1].body) : args[1].body;
-                        console.log('Fetch body before injection:', body);
-
-                        // Inject content_id if missing
-                        if (body && typeof body === 'object' && !body.content_id) {
-                          body.content_id = ${content.id};
-                          args[1] = { ...args[1], body: JSON.stringify(body) };
-                          console.log('Fetch body after injection:', body);
-                        }
-                      } catch(e) {
-                        console.log('Fetch body (raw):', args[1].body);
-                      }
-                    }
-                  }
-                }
-                return originalFetch.apply(this, args);
-              };
-            })();
-          `
-        }} />
       </div>
     </>
   );

@@ -49,11 +49,19 @@ const RegionalTrafficGlobe = ({ countryData = [], darkMode = true }) => {
   }, []);
 
   const handleWheel = useCallback((e) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const delta = Math.sign(e.deltaY);
     const nz = clampZoom(stateRef.current.zoom * (delta > 0 ? 0.92 : 1.08));
     stateRef.current.zoom = nz; setZoom(nz);
   }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (e) => handleWheel(e);
+    canvas.addEventListener('wheel', onWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', onWheel);
+  }, [handleWheel]);
 
   // ── drag ─────────────────────────────────────────────────────────────────
   const handlePointerDown = useCallback((e) => {
@@ -447,7 +455,6 @@ const RegionalTrafficGlobe = ({ countryData = [], darkMode = true }) => {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          onWheel={handleWheel}
           className="globe-canvas"
           style={{ width: '100%', height: '100%', touchAction: 'none', cursor: isDragging ? 'grabbing' : 'grab', display: 'block' }}
         />

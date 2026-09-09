@@ -285,8 +285,16 @@ const AdminContent = () => {
       }
 
       // 2. Status Filter
-      if (statusFilter !== 'all' && item.status !== statusFilter) {
-        return false;
+      if (statusFilter !== 'all') {
+        const itemStatus = (item.status || 'draft').toLowerCase().trim();
+        const filterStatus = statusFilter.toLowerCase().trim();
+        if (filterStatus === 'draft') {
+          if (itemStatus !== 'draft' && itemStatus !== 'changes_requested' && itemStatus !== '') return false;
+        } else if (filterStatus === 'pending') {
+          if (itemStatus !== 'pending' && itemStatus !== 'review') return false;
+        } else if (itemStatus !== filterStatus) {
+          return false;
+        }
       }
 
       // 3. Category Filter

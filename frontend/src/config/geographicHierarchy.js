@@ -23,7 +23,7 @@ export const BUSINESS_REGIONS = {
     center: { lat: 38.0, lon: 20.0 },
     color: '#A855F7',
     glowColor: 'rgba(168, 85, 247, 0.45)',
-    countries: ['GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'SE', 'CH', 'IE', 'PL', 'ZA', 'EG', 'NG', 'SA', 'AE', 'IL', 'TR'],
+    countries: ['GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'SE', 'CH', 'IE', 'PL', 'IS', 'NO', 'FI', 'DK', 'AT', 'PT', 'ZA', 'EG', 'NG', 'SA', 'AE', 'IL', 'TR'],
     description: 'European Single Market, Gulf States & African tech hubs'
   },
   APAC: {
@@ -96,6 +96,17 @@ export const COUNTRY_REGISTRY = {
   },
 
   // ── EMEA ──
+  IS: {
+    name: 'Iceland',
+    iso2: 'IS',
+    iso3: 'ISL',
+    region: 'EMEA',
+    flag: '🇮🇸',
+    center: { lat: 64.9631, lon: -19.0208 },
+    cities: [
+      { name: 'Reykjavik', state: 'Capital', lat: 64.1466, lon: -21.9426 }
+    ]
+  },
   GB: {
     name: 'United Kingdom',
     iso2: 'GB',

@@ -27,6 +27,14 @@ router.put('/statistics/:id', adminAudienceController.updateStatisticRecord);
 router.post('/import', adminAudienceController.importAudienceData);
 router.get('/imports', adminAudienceController.getImportHistory);
 
+// Proportional Regional / Scope Volume Adjustment
+router.post('/preview-adjustment', adminAudienceController.previewAudienceAdjustment);
+router.post('/adjust-volume', adminAudienceController.adjustAudienceVolume);
+router.get('/adjustment-history', adminAudienceController.getAdjustmentHistory);
+
+// Data Quality & Coverage Matrix Report
+router.get('/quality-report', adminAudienceController.getDataQualityReport);
+
 // Audit Logs
 router.get('/audit-logs', adminAudienceController.getAuditLogs);
 

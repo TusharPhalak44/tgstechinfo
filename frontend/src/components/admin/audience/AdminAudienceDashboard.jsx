@@ -15,7 +15,12 @@ import {
   ReloadOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
-  SearchOutlined
+  SearchOutlined,
+  ThunderboltOutlined,
+  BarChartOutlined,
+  SlidersOutlined,
+  ArrowUpOutlined,
+  SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { audienceService } from '../../../services/audienceService';
 
@@ -53,6 +58,21 @@ export default function AdminAudienceDashboard() {
   const [editStatModalVisible, setEditStatModalVisible] = useState(false);
   const [editingStat, setEditingStat] = useState(null);
   const [statEditForm] = Form.useForm();
+
+  // Volume Adjuster state
+  const [adjusterScopeType, setAdjusterScopeType] = useState('REGION');
+  const [adjusterScopeCode, setAdjusterScopeCode] = useState('APAC');
+  const [adjusterMode, setAdjusterMode] = useState('DELTA');
+  const [adjusterDelta, setAdjusterDelta] = useState(100000);
+  const [adjusterTargetTotal, setAdjusterTargetTotal] = useState(20000000);
+  const [adjusterNotes, setAdjusterNotes] = useState('Proportional APAC regional volume expansion');
+  const [adjusterPreview, setAdjusterPreview] = useState(null);
+  const [adjusterHistory, setAdjusterHistory] = useState([]);
+  const [isPreviewingAdjuster, setIsPreviewingAdjuster] = useState(false);
+  const [isApplyingAdjuster, setIsApplyingAdjuster] = useState(false);
+
+  // Data Quality state
+  const [qualityReport, setQualityReport] = useState(null);
 
   // Import state
   const [importCsvText, setImportCsvText] = useState('');
@@ -137,6 +157,68 @@ export default function AdminAudienceDashboard() {
     }
   };
 
+  const loadAdjustmentHistory = async () => {
+    try {
+      const data = await audienceService.getAdjustmentHistory();
+      setAdjusterHistory(data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadQualityReport = async () => {
+    try {
+      setLoading(true);
+      const data = await audienceService.getDataQualityReport();
+      setQualityReport(data);
+    } catch (err) {
+      message.error('Failed to load data quality report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePreviewAdjuster = async () => {
+    try {
+      setIsPreviewingAdjuster(true);
+      const res = await audienceService.previewAudienceAdjustment({
+        scope_type: adjusterScopeType,
+        scope_code: adjusterScopeCode,
+        adjustment_mode: adjusterMode,
+        delta_contacts: adjusterDelta,
+        target_total_contacts: adjusterTargetTotal
+      });
+      setAdjusterPreview(res);
+      message.info(`Calculated proportional breakdown for ${res.scope_name}`);
+    } catch (err) {
+      message.error(err.message || 'Failed to calculate adjustment preview');
+    } finally {
+      setIsPreviewingAdjuster(false);
+    }
+  };
+
+  const handleApplyAdjuster = async () => {
+    try {
+      setIsApplyingAdjuster(true);
+      const res = await audienceService.adjustAudienceVolume({
+        scope_type: adjusterScopeType,
+        scope_code: adjusterScopeCode,
+        adjustment_mode: adjusterMode,
+        delta_contacts: adjusterDelta,
+        target_total_contacts: adjusterTargetTotal,
+        notes: adjusterNotes
+      });
+      message.success(res.message || 'Audience volume adjusted successfully!');
+      setAdjusterPreview(null);
+      loadSettings();
+      loadAdjustmentHistory();
+    } catch (err) {
+      message.error(err.message || 'Failed to apply audience volume adjustment');
+    } finally {
+      setIsApplyingAdjuster(false);
+    }
+  };
+
   // Initial load
   useEffect(() => {
     loadTaxonomies();
@@ -144,11 +226,16 @@ export default function AdminAudienceDashboard() {
 
   useEffect(() => {
     if (activeTab === 'settings') loadSettings();
+    else if (activeTab === 'adjuster') {
+      if (!taxonomies) loadTaxonomies();
+      loadAdjustmentHistory();
+    }
     else if (activeTab === 'taxonomies') loadTaxonomies();
     else if (activeTab === 'statistics') {
       if (!taxonomies) loadTaxonomies();
       loadStatistics(1, statsSearch, statsFilters);
     }
+    else if (activeTab === 'quality') loadQualityReport();
     else if (activeTab === 'import') loadImportsAndAudit();
     else if (activeTab === 'audit') loadImportsAndAudit();
   }, [activeTab]);
@@ -407,20 +494,317 @@ Germany,EMEA,Manufacturing & Process Industries,201_500,Sales,VP_EXEC,3100`;
             </Form>
           </TabPane>
 
-          {/* ── TAB 2: Taxonomies & Geographic Hierarchy ── */}
+          {/* ── TAB 2: Direct Regional Volume & Proportional Scope Adjuster ── */}
+          <TabPane
+            tab={<span><ThunderboltOutlined style={{ color: '#0AAEEF' }} /> Regional Scale Editor</span>}
+            key="adjuster"
+          >
+            <div style={{ marginBottom: 24 }}>
+              <Card
+                title={
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <ThunderboltOutlined style={{ color: '#0AAEEF', fontSize: 20 }} />
+                    <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>Proportional Scope & Region Volume Adjuster</span>
+                  </div>
+                }
+                style={{ borderRadius: 12, borderColor: '#BAE6FD', background: '#F8FAFC' }}
+              >
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Proportional Volume Redistribution"
+                  description="Directly adjust the count of any Region (e.g. APAC +100,000), Commercial Group (DACH, Nordics), or Country. The engine calculates each country's exact percentage share and redistributes the added volume across all underlying demographic cells proportionally, updating the global database total."
+                  style={{ marginBottom: 20, borderRadius: 8 }}
+                />
+
+                <Row gutter={[20, 20]}>
+                  <Col xs={24} md={6}>
+                    <label style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#475569', display: 'block', marginBottom: 6 }}>
+                      1. Scope Type
+                    </label>
+                    <Select value={adjusterScopeType} onChange={(newType) => {
+                      setAdjusterScopeType(newType);
+                      setAdjusterPreview(null);
+                      if (newType === 'REGION') setAdjusterScopeCode('APAC');
+                      else if (newType === 'GEO_GROUP') setAdjusterScopeCode('DACH');
+                      else if (newType === 'COUNTRY') setAdjusterScopeCode(taxonomies?.countries?.[0]?.iso_code || 'IN');
+                      else if (newType === 'GLOBAL') setAdjusterScopeCode('GLOBAL');
+                    }} style={{ width: '100%' }}>
+                      <Option value="REGION">Continent / Region (APAC, EMEA, LATAM)</Option>
+                      <Option value="GEO_GROUP">Commercial Group (DACH, Nordics, UK & Ireland)</Option>
+                      <Option value="COUNTRY">Specific Country (India, USA, Germany)</Option>
+                      <Option value="GLOBAL">Entire Global Database</Option>
+                    </Select>
+                  </Col>
+
+                  <Col xs={24} md={6}>
+                    <label style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#475569', display: 'block', marginBottom: 6 }}>
+                      2. Target Scope
+                    </label>
+                    <Select value={adjusterScopeCode} onChange={setAdjusterScopeCode} style={{ width: '100%' }} showSearch>
+                      {adjusterScopeType === 'REGION' && (
+                        <>
+                          <Option value="APAC">APAC (Asia Pacific)</Option>
+                          <Option value="EMEA">EMEA (Europe, Middle East, Africa)</Option>
+                          <Option value="NORTH_AMERICA">North America (USA & Canada)</Option>
+                          <Option value="LATAM">LATAM (Latin America)</Option>
+                        </>
+                      )}
+                      {adjusterScopeType === 'GEO_GROUP' && (
+                        <>
+                          <Option value="DACH">DACH (Germany, Austria, Switzerland)</Option>
+                          <Option value="NORDICS">Nordics (Sweden, Norway, Denmark, Finland)</Option>
+                          <Option value="UK_IRELAND">UK & Ireland</Option>
+                          <Option value="SEA">Southeast Asia (SG, MY, ID, PH, VN)</Option>
+                          <Option value="ANZ">ANZ (Australia & New Zealand)</Option>
+                          <Option value="MENA">MENA (UAE, Saudi Arabia)</Option>
+                        </>
+                      )}
+                      {adjusterScopeType === 'COUNTRY' && taxonomies?.countries?.map(c => (
+                        <Option key={c.iso_code} value={c.iso_code}>{c.name} ({c.iso_code})</Option>
+                      ))}
+                      {adjusterScopeType === 'GLOBAL' && (
+                        <Option value="GLOBAL">Entire Global Database (78M+)</Option>
+                      )}
+                    </Select>
+                  </Col>
+
+                  <Col xs={24} md={6}>
+                    <label style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#475569', display: 'block', marginBottom: 6 }}>
+                      3. Adjustment Mode
+                    </label>
+                    <Select value={adjusterMode} onChange={setAdjusterMode} style={{ width: '100%' }}>
+                      <Option value="DELTA">Add / Subtract Volume (+ / - Delta)</Option>
+                      <Option value="TARGET">Set Exact Target Total Count</Option>
+                    </Select>
+                  </Col>
+
+                  <Col xs={24} md={6}>
+                    <label style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#475569', display: 'block', marginBottom: 6 }}>
+                      {adjusterMode === 'DELTA' ? '4. Volume Delta to Add (e.g. +100,000)' : '4. Target Scope Total Count'}
+                    </label>
+                    {adjusterMode === 'DELTA' ? (
+                      <InputNumber
+                        value={adjusterDelta}
+                        onChange={val => setAdjusterDelta(val || 0)}
+                        step={10000}
+                        style={{ width: '100%' }}
+                        formatter={val => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={val => val.replace(/\$\s?|(,*)/g, '')}
+                      />
+                    ) : (
+                      <InputNumber
+                        value={adjusterTargetTotal}
+                        onChange={val => setAdjusterTargetTotal(val || 0)}
+                        step={100000}
+                        style={{ width: '100%' }}
+                        formatter={val => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                        parser={val => val.replace(/\$\s?|(,*)/g, '')}
+                      />
+                    )}
+                  </Col>
+                </Row>
+
+                <div style={{ marginTop: 16 }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.8125rem', color: '#475569', display: 'block', marginBottom: 6 }}>
+                    Notes / Reference Reason
+                  </label>
+                  <Input
+                    value={adjusterNotes}
+                    onChange={e => setAdjusterNotes(e.target.value)}
+                    placeholder="e.g. Proportional APAC regional expansion as per Q3 targets"
+                  />
+                </div>
+
+                <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+                  <Button
+                    type="primary"
+                    icon={<SlidersOutlined />}
+                    loading={isPreviewingAdjuster}
+                    onClick={handlePreviewAdjuster}
+                    style={{ background: '#0AAEEF', borderColor: '#0AAEEF', fontWeight: 700, borderRadius: 8 }}
+                  >
+                    Calculate Proportional Preview
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Interactive Preview Result Card */}
+            {adjusterPreview && (
+              <Card
+                style={{ borderRadius: 12, borderColor: '#67E8F9', marginBottom: 24, boxShadow: '0 4px 16px rgba(10, 174, 239, 0.12)' }}
+                title={
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 800, color: '#0F172A' }}>
+                      Proportional Adjustment Simulation: {adjusterPreview.scope_name}
+                    </span>
+                    <Tag color="cyan" style={{ fontSize: '0.85rem', padding: '4px 10px', borderRadius: 6 }}>
+                      Ratio Multiplier: {adjusterPreview.proportional_ratio}x
+                    </Tag>
+                  </div>
+                }
+              >
+                <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#F0F9FF', borderRadius: 8 }}>
+                      <Statistic title="Baseline Scope Contacts" value={adjusterPreview.baseline_scope_contacts} valueStyle={{ fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#ECFDF5', borderRadius: 8 }}>
+                      <Statistic title="Added Volume Delta" value={adjusterPreview.delta_applied} prefix="+" valueStyle={{ color: '#059669', fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#FFFBEB', borderRadius: 8 }}>
+                      <Statistic title="Projected Scope Total" value={adjusterPreview.target_scope_contacts} valueStyle={{ color: '#D97706', fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#FAF5FF', borderRadius: 8 }}>
+                      <Statistic title="Projected Global DB Total" value={adjusterPreview.projected_global_total} valueStyle={{ color: '#7C3AED', fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                </Row>
+
+                <h4 style={{ fontWeight: 700, margin: '16px 0 12px 0', color: '#1E293B' }}>
+                  Country-by-Country Proportional Redistribution Breakdown:
+                </h4>
+                <Table
+                  dataSource={adjusterPreview.country_breakdown}
+                  rowKey="country_id"
+                  pagination={{ pageSize: 10 }}
+                  size="middle"
+                  columns={[
+                    { title: 'ISO', dataIndex: 'iso_code', width: 80, render: val => <Tag color="blue">{val}</Tag> },
+                    { title: 'Country Name', dataIndex: 'country_name', fontWeight: 600 },
+                    { title: 'Current Contacts', dataIndex: 'current_contacts', render: val => val.toLocaleString() },
+                    { title: 'Scope Weight %', dataIndex: 'weight_percentage', render: val => `${val}%` },
+                    { title: 'Added Volume', dataIndex: 'added_delta', render: val => <span style={{ color: '#059669', fontWeight: 700 }}>+{val.toLocaleString()}</span> },
+                    { title: 'Projected Contacts', dataIndex: 'projected_contacts', render: val => <span style={{ fontWeight: 800, color: '#0F172A' }}>{val.toLocaleString()}</span> }
+                  ]}
+                />
+
+                <div style={{ marginTop: 20, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                  <Button onClick={() => setAdjusterPreview(null)}>Dismiss Preview</Button>
+                  <Button
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    loading={isApplyingAdjuster}
+                    onClick={handleApplyAdjuster}
+                    style={{ background: '#10B981', borderColor: '#10B981', fontWeight: 700, borderRadius: 8 }}
+                  >
+                    Apply Scale & Sync System Total
+                  </Button>
+                </div>
+              </Card>
+            )}
+
+            {/* Adjustment Log History */}
+            <Card title={<span style={{ fontWeight: 800 }}>Volume Scale History Log</span>} style={{ borderRadius: 12 }}>
+              <Table
+                dataSource={adjusterHistory}
+                rowKey="id"
+                pagination={{ pageSize: 5 }}
+                size="small"
+                columns={[
+                  { title: 'Date', dataIndex: 'created_at', render: val => new Date(val).toLocaleString() },
+                  { title: 'Target Scope', dataIndex: 'scope_name', fontWeight: 600 },
+                  { title: 'Type', dataIndex: 'adjustment_type', render: val => <Tag color="cyan">{val}</Tag> },
+                  { title: 'Delta', dataIndex: 'delta_applied', render: val => <span style={{ fontWeight: 700, color: val >= 0 ? '#059669' : '#DC2626' }}>{val >= 0 ? `+${val.toLocaleString()}` : val.toLocaleString()}</span> },
+                  { title: 'Previous Scope Total', dataIndex: 'previous_total', render: val => val.toLocaleString() },
+                  { title: 'New Scope Total', dataIndex: 'new_total', render: val => <span style={{ fontWeight: 700 }}>{val.toLocaleString()}</span> },
+                  { title: 'Performed By', dataIndex: 'performed_by_name' }
+                ]}
+              />
+            </Card>
+          </TabPane>
+
+          {/* ── TAB 3: Data Quality & Coverage Matrix Report ── */}
+          <TabPane
+            tab={<span><SafetyCertificateOutlined style={{ color: '#10B981' }} /> Data Quality & Coverage</span>}
+            key="quality"
+          >
+            {qualityReport ? (
+              <div>
+                <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#F0FDF4', borderColor: '#BBF7D0', borderRadius: 10 }}>
+                      <Statistic title="Total Indexed Contacts" value={qualityReport.total_contacts || 0} valueStyle={{ color: '#16A34A', fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#F0F9FF', borderColor: '#BAE6FD', borderRadius: 10 }}>
+                      <Statistic title="Total Demographic Combinations" value={qualityReport.total_indexed_records || 0} valueStyle={{ color: '#0284C7', fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#FAF5FF', borderColor: '#E9D5FF', borderRadius: 10 }}>
+                      <Statistic title="LinkedIn Industry Coverage" value={qualityReport.dimensions?.industry_linkedin_v2?.coverage_percentage || 0} suffix="%" valueStyle={{ color: '#9333EA', fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                  <Col xs={24} sm={12} md={6}>
+                    <Card size="small" style={{ background: '#FFFBEB', borderColor: '#FDE68A', borderRadius: 10 }}>
+                      <Statistic title="LinkedIn Function Coverage" value={qualityReport.dimensions?.linkedin_functions?.coverage_percentage || 0} suffix="%" valueStyle={{ color: '#D97706', fontWeight: 800 }} />
+                    </Card>
+                  </Col>
+                </Row>
+
+                <Card title={<span style={{ fontWeight: 800 }}>LinkedIn Dimension Coverage Metrics</span>} style={{ borderRadius: 12 }}>
+                  <Table
+                    dataSource={[
+                      { dimension: 'Geography & Nations', ...qualityReport.dimensions?.geography },
+                      { dimension: 'LinkedIn Industry V2 Hierarchy', ...qualityReport.dimensions?.industry_linkedin_v2 },
+                      { dimension: 'LinkedIn Standard Functions', ...qualityReport.dimensions?.linkedin_functions },
+                      { dimension: 'LinkedIn Headcount Brackets', ...qualityReport.dimensions?.company_headcount },
+                      { dimension: 'LinkedIn Seniority Levels', ...qualityReport.dimensions?.seniority_levels }
+                    ]}
+                    rowKey="dimension"
+                    pagination={false}
+                    columns={[
+                      { title: 'Taxonomy Dimension', dataIndex: 'dimension', fontWeight: 700 },
+                      { title: 'Classified Contacts', dataIndex: 'classified_contacts', render: val => (val || 0).toLocaleString() },
+                      { title: 'Unclassified Contacts', dataIndex: 'unclassified_contacts', render: val => (val || 0).toLocaleString() },
+                      {
+                        title: 'Coverage Rate',
+                        dataIndex: 'coverage_percentage',
+                        render: val => (
+                          <Tag color={val > 90 ? 'green' : val > 75 ? 'orange' : 'volcano'} style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                            {val}% Classified
+                          </Tag>
+                        )
+                      }
+                    ]}
+                  />
+                </Card>
+              </div>
+            ) : (
+              <div style={{ padding: 40, textAlign: 'center' }}>
+                <Button type="primary" onClick={loadQualityReport} style={{ background: '#0AAEEF', borderColor: '#0AAEEF' }}>
+                  Load Data Quality Report
+                </Button>
+              </div>
+            )}
+          </TabPane>
+
+          {/* ── TAB 4: Taxonomies & Geographic Hierarchy ── */}
           <TabPane
             tab={<span><GlobalOutlined /> Taxonomies & Hierarchy</span>}
             key="taxonomies"
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Space>
-                <Select value={selectedTaxType} onChange={setSelectedTaxType} style={{ width: 220 }}>
-                  <Option value="countries">Countries & Coordinates</Option>
-                  <Option value="regions">Geo Regions (APAC, LATAM, EMEA)</Option>
-                  <Option value="industries">Industry Sectors</Option>
-                  <Option value="employee-sizes">Employee Size Brackets</Option>
+                <Select value={selectedTaxType} onChange={setSelectedTaxType} style={{ width: 260 }}>
+                  <Option value="countries">Countries Master (195+ Nations)</Option>
+                  <Option value="regions">Continents & Macro Regions</Option>
+                  <Option value="geo-groups">Commercial Geo Groups (DACH, Nordics, SEA)</Option>
+                  <Option value="industries">LinkedIn Industry V2 Hierarchy</Option>
+                  <Option value="employee-sizes">LinkedIn Headcount Brackets</Option>
+                  <Option value="functions">LinkedIn Standard Functions</Option>
                   <Option value="departments">Departments</Option>
-                  <Option value="job-levels">Job Levels / Seniority</Option>
+                  <Option value="job-levels">LinkedIn Seniority Levels</Option>
+                  <Option value="job-titles">Searchable Dynamic Job Titles</Option>
                 </Select>
                 <Button icon={<ReloadOutlined />} onClick={loadTaxonomies} />
               </Space>

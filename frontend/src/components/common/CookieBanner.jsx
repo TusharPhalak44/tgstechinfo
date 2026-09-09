@@ -381,31 +381,23 @@ const CookieBanner = () => {
   const { showBanner, acceptAll, rejectAll, hideBanner } = useCookieConsent();
   const [showCustomize, setShowCustomize] = useState(false);
 
-  console.log('CookieBanner - showBanner state:', showBanner);
-
   if (!showBanner) {
-    console.log('CookieBanner - Banner hidden, returning null');
     return null;
   }
 
-  console.log('CookieBanner - Rendering banner');
-
   const handleAcceptAll = async () => {
-    console.log('CookieBanner - handleAcceptAll called');
     // Hide banner immediately for better UX
     hideBanner();
     await acceptAll();
   };
 
   const handleRejectAll = async () => {
-    console.log('CookieBanner - handleRejectAll called');
     // Hide banner immediately for better UX
     hideBanner();
     await rejectAll();
   };
 
   const handleCustomize = () => {
-    console.log('CookieBanner - handleCustomize called');
     setShowCustomize(true);
     hideBanner();
   };

@@ -37,13 +37,64 @@ export const getDeviceInfo = () => {
   };
 };
 
-// Get user's country using timezone and locale
-export const getUserCountry = () => {
+// Get user's country using client IP geolocation API, timezone and locale
+export const getUserCountry = async () => {
+  try {
+    const cached = sessionStorage.getItem('user_detected_country');
+    if (cached) return cached;
+  } catch {}
+
+  // 1. Try client-side IP Geolocation for active VPN detection
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1800);
+    const res = await fetch('https://api.country.is', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.country) {
+        const countryCodeMap = {
+          'IS': 'Iceland',
+          'IN': 'India',
+          'US': 'United States',
+          'GB': 'United Kingdom',
+          'DE': 'Germany',
+          'FR': 'France',
+          'JP': 'Japan',
+          'CN': 'China',
+          'AU': 'Australia',
+          'CA': 'Canada',
+          'NO': 'Norway',
+          'SE': 'Sweden',
+          'FI': 'Finland',
+          'DK': 'Denmark',
+          'NL': 'Netherlands',
+          'ES': 'Spain',
+          'IT': 'Italy',
+          'CH': 'Switzerland',
+          'IE': 'Ireland',
+          'BR': 'Brazil',
+          'MX': 'Mexico',
+          'SG': 'Singapore',
+          'AE': 'United Arab Emirates',
+          'ZA': 'South Africa'
+        };
+        const countryName = countryCodeMap[data.country.toUpperCase()] || data.country;
+        try { sessionStorage.setItem('user_detected_country', countryName); } catch {}
+        return countryName;
+      }
+    }
+  } catch (e) {
+    // Client-side IP lookup failed or timed out, fall back to timezone / locale
+  }
+
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const locale = navigator.language || navigator.userLanguage;
   
   // Map common timezones to countries
   const timezoneCountryMap = {
+    'Atlantic/Reykjavik': 'Iceland',
+    'Europe/Reykjavik': 'Iceland',
     'Asia/Kolkata': 'India',
     'Asia/Calcutta': 'India',
     'Asia/Delhi': 'India',
@@ -78,6 +129,10 @@ export const getUserCountry = () => {
     'Europe/Amsterdam': 'Netherlands',
     'Europe/Zurich': 'Switzerland',
     'Europe/Dublin': 'Ireland',
+    'Europe/Oslo': 'Norway',
+    'Europe/Stockholm': 'Sweden',
+    'Europe/Helsinki': 'Finland',
+    'Europe/Copenhagen': 'Denmark',
     'Australia/Sydney': 'Australia',
     'Australia/Melbourne': 'Australia',
     'Pacific/Auckland': 'New Zealand',
@@ -85,7 +140,9 @@ export const getUserCountry = () => {
   
   // Try to get country from timezone
   if (timezone && timezoneCountryMap[timezone]) {
-    return timezoneCountryMap[timezone];
+    const c = timezoneCountryMap[timezone];
+    try { sessionStorage.setItem('user_detected_country', c); } catch {}
+    return c;
   }
   
   // Fallback to locale
@@ -93,6 +150,7 @@ export const getUserCountry = () => {
     const localeCountry = locale.split('-')[1];
     if (localeCountry) {
       const countryMap = {
+        'IS': 'Iceland',
         'IN': 'India',
         'US': 'United States',
         'GB': 'United Kingdom',
@@ -102,12 +160,18 @@ export const getUserCountry = () => {
         'CN': 'China',
         'AU': 'Australia',
         'CA': 'Canada',
+        'NO': 'Norway',
+        'SE': 'Sweden',
+        'FI': 'Finland',
+        'DK': 'Denmark'
       };
-      return countryMap[localeCountry] || localeCountry;
+      const c = countryMap[localeCountry.toUpperCase()] || localeCountry;
+      try { sessionStorage.setItem('user_detected_country', c); } catch {}
+      return c;
     }
   }
   
-  return null; // Will be detected by backend IP geolocation
+  return null;
 };
 
 // Content type routes map

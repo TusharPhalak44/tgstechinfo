@@ -10,6 +10,10 @@ const API_BASE = import.meta.env.VITE_API_URL || '';
 let cachedMetadata = null;
 
 export const audienceService = {
+  clearMetadataCache() {
+    cachedMetadata = null;
+  },
+
   /**
    * Fetch all active taxonomies, geography hierarchies, and global settings
    */
@@ -17,7 +21,7 @@ export const audienceService = {
     if (cachedMetadata && !forceRefresh) {
       return cachedMetadata;
     }
-    const res = await axios.get(`${API_BASE}/api/audience/metadata`);
+    const res = await axios.get(`${API_BASE}/api/audience/metadata${forceRefresh ? '?refresh=true' : ''}`);
     if (res.data?.success) {
       cachedMetadata = res.data.data;
       return res.data.data;
@@ -105,6 +109,7 @@ export const audienceService = {
 
   async updateStatistic(id, data) {
     const res = await axios.put(`${API_BASE}/api/admin/audience/statistics/${id}`, data, { withCredentials: true });
+    cachedMetadata = null;
     return res.data;
   },
 
@@ -121,6 +126,35 @@ export const audienceService = {
 
   async getAuditLogs(params = {}) {
     const res = await axios.get(`${API_BASE}/api/admin/audience/audit-logs`, { params, withCredentials: true });
+    return res.data?.data;
+  },
+
+  async previewAudienceAdjustment(payload) {
+    try {
+      const res = await axios.post(`${API_BASE}/api/admin/audience/preview-adjustment`, payload, { withCredentials: true });
+      return res.data?.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to preview adjustment');
+    }
+  },
+
+  async adjustAudienceVolume(payload) {
+    try {
+      const res = await axios.post(`${API_BASE}/api/admin/audience/adjust-volume`, payload, { withCredentials: true });
+      cachedMetadata = null;
+      return res.data;
+    } catch (err) {
+      throw new Error(err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to adjust volume');
+    }
+  },
+
+  async getAdjustmentHistory() {
+    const res = await axios.get(`${API_BASE}/api/admin/audience/adjustment-history`, { withCredentials: true });
+    return res.data?.data;
+  },
+
+  async getDataQualityReport() {
+    const res = await axios.get(`${API_BASE}/api/admin/audience/quality-report`, { withCredentials: true });
     return res.data?.data;
   }
 };

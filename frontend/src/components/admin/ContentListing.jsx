@@ -119,9 +119,10 @@ const ContentListing = () => {
     } else if (path.includes('/drafts')) {
       setContentType('all');
       setStatusFilter('draft');
+      setFilters(f => ({ ...f, status: 'draft' }));
     } else {
       setContentType('all');
-      setStatusFilter('published');
+      setStatusFilter('all');
     }
   }, [location.pathname]);
 
@@ -150,26 +151,35 @@ const ContentListing = () => {
         : '/api/user/content';
       
       const response = await axios.get(endpoint, { params });
+      const data = response.data.data || (Array.isArray(response.data) ? response.data : []);
+      const totalCount = response.data.total !== undefined ? response.data.total : data.length;
+
+      setContent(data);
+      setPagination(prev => ({ ...prev, total: totalCount }));
       
+      // Fetch overview stats if admin
       if (user?.role === 'admin') {
-        const data = response.data.data || [];
-        setContent(data);
-        setPagination(prev => ({ ...prev, total: response.data.total || 0 }));
-        
-        const draftCount = data.filter(c => c.status === 'draft').length;
-        const publishedCount = data.filter(c => c.status === 'published').length;
-        const pendingCount = data.filter(c => c.status === 'pending').length;
-        
-        setStats({
-          draft: draftCount,
-          published: publishedCount,
-          pending: pendingCount,
-          total: data.length,
-        });
-      } else {
-        const contentArray = response.data || [];
-        setContent(contentArray);
-        setPagination(prev => ({ ...prev, total: contentArray.length }));
+        try {
+          const statsRes = await axios.get('/api/admin/stats');
+          if (statsRes.data) {
+            setStats({
+              draft: statsRes.data.totalDrafts || data.filter(c => c.status === 'draft').length,
+              published: statsRes.data.totalPublished || data.filter(c => c.status === 'published').length,
+              pending: statsRes.data.pendingReviews || data.filter(c => c.status === 'pending').length,
+              total: statsRes.data.totalContent || totalCount,
+            });
+          }
+        } catch {
+          const draftCount = data.filter(c => c.status === 'draft').length;
+          const publishedCount = data.filter(c => c.status === 'published').length;
+          const pendingCount = data.filter(c => c.status === 'pending').length;
+          setStats({
+            draft: draftCount,
+            published: publishedCount,
+            pending: pendingCount,
+            total: totalCount,
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching content:', error);

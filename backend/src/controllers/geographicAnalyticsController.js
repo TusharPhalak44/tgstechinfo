@@ -52,7 +52,7 @@ exports.getGlobalAnalytics = async (req, res) => {
     // 3. Regional Aggregations
     const regionMap = {
       AMER: ['US', 'USA', 'CA', 'CAN', 'MX', 'MEX', 'BR', 'BRA', 'AR', 'ARG', 'CL', 'CO', 'United States', 'Canada', 'Mexico', 'Brazil'],
-      EMEA: ['GB', 'GBR', 'UK', 'DE', 'DEU', 'FR', 'FRA', 'IT', 'ITA', 'ES', 'ESP', 'NL', 'NLD', 'SE', 'SWE', 'CH', 'CHE', 'IE', 'IRL', 'PL', 'POL', 'ZA', 'ZAF', 'EG', 'EGY', 'NG', 'NGA', 'SA', 'SAU', 'AE', 'ARE', 'United Kingdom', 'Germany', 'France', 'United Arab Emirates', 'Saudi Arabia'],
+      EMEA: ['GB', 'GBR', 'UK', 'DE', 'DEU', 'FR', 'FRA', 'IT', 'ITA', 'ES', 'ESP', 'NL', 'NLD', 'SE', 'SWE', 'CH', 'CHE', 'IE', 'IRL', 'PL', 'POL', 'ZA', 'ZAF', 'EG', 'EGY', 'NG', 'NGA', 'SA', 'SAU', 'AE', 'ARE', 'United Kingdom', 'Germany', 'France', 'United Arab Emirates', 'Saudi Arabia', 'Spain', 'Italy', 'Netherlands'],
       APAC: ['IN', 'IND', 'CN', 'CHN', 'JP', 'JPN', 'KR', 'KOR', 'SG', 'SGP', 'ID', 'IDN', 'TH', 'THA', 'MY', 'MYS', 'VN', 'VNM', 'PH', 'PHL', 'AU', 'AUS', 'NZ', 'NZL', 'India', 'China', 'Japan', 'Singapore', 'Australia']
     };
 
@@ -94,12 +94,12 @@ exports.getGlobalAnalytics = async (req, res) => {
       success: true,
       timeRange,
       totals: {
-        totalSessions: totalSessions || 1240,
-        totalVisitors: parseInt(totals.total_visitors || 0) || 890,
-        totalPageviews: parseInt(totals.total_pageviews || 0) || 3420,
-        avgDuration: Math.round(totals.avg_duration || 180),
-        bounceRate: bounceRate || 28,
-        totalConversions: parseInt(totals.conversion_count || 0) || 45
+        totalSessions: totalSessions,
+        totalVisitors: parseInt(totals.total_visitors || 0),
+        totalPageviews: parseInt(totals.total_pageviews || 0),
+        avgDuration: Math.round(totals.avg_duration || 0),
+        bounceRate: bounceRate,
+        totalConversions: parseInt(totals.conversion_count || 0)
       },
       regionalTotals,
       countries: countriesData
@@ -224,12 +224,12 @@ exports.getRegionalAnalytics = async (req, res) => {
     const { region } = req.params;
     const { timeRange = '24h' } = req.query;
 
-    // Map business regions to countries
+    // Map business regions to countries (ISO codes and full names)
     const regionMap = {
-      AMER: ['US', 'CA', 'MX', 'BR', 'AR', 'CL', 'CO'],
-      LATAM: ['BR', 'MX', 'AR', 'CL', 'CO', 'PE', 'VE'],
-      EMEA: ['GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'SE', 'CH', 'IE', 'PL', 'ZA', 'EG', 'NG', 'SA', 'AE'],
-      APAC: ['IN', 'CN', 'JP', 'KR', 'SG', 'ID', 'TH', 'MY', 'VN', 'PH', 'AU', 'NZ'],
+      AMER: ['US', 'USA', 'CA', 'CAN', 'MX', 'MEX', 'BR', 'BRA', 'AR', 'ARG', 'CL', 'CO', 'United States', 'Canada', 'Mexico', 'Brazil'],
+      LATAM: ['BR', 'BRA', 'MX', 'MEX', 'AR', 'ARG', 'CL', 'CO', 'PE', 'VE'],
+      EMEA: ['GB', 'GBR', 'UK', 'DE', 'DEU', 'FR', 'FRA', 'IT', 'ITA', 'ES', 'ESP', 'NL', 'NLD', 'SE', 'SWE', 'CH', 'CHE', 'IE', 'IRL', 'PL', 'POL', 'ZA', 'ZAF', 'EG', 'EGY', 'NG', 'NGA', 'SA', 'SAU', 'AE', 'ARE', 'United Kingdom', 'Germany', 'France', 'Spain', 'Italy', 'Netherlands'],
+      APAC: ['IN', 'IND', 'CN', 'CHN', 'JP', 'JPN', 'KR', 'KOR', 'SG', 'SGP', 'ID', 'IDN', 'TH', 'THA', 'MY', 'MYS', 'VN', 'VNM', 'PH', 'PHL', 'AU', 'AUS', 'NZ', 'NZL', 'India', 'China', 'Japan', 'Singapore', 'Australia'],
     };
 
     const countries = regionMap[region] || [];
@@ -249,7 +249,7 @@ exports.getRegionalAnalytics = async (req, res) => {
         COUNT(DISTINCT CASE WHEN landing_page LIKE '%contact%' THEN session_uuid END) as conversion_count
       FROM visitor_sessions
       WHERE country IN (${countryPlaceholders})
-      AND session_start >= NOW() - INTERVAL 1 DAY
+      AND session_start >= NOW() - INTERVAL 7 DAY
       GROUP BY country
       ORDER BY traffic_count DESC
     `;
@@ -278,7 +278,7 @@ exports.getRegionalAnalytics = async (req, res) => {
       totals: {
         trafficCount: totals.trafficCount,
         uniqueVisitors: totals.uniqueVisitors,
-        avgDuration: Math.round(totals.avgDuration / rows.length),
+        avgDuration: rows.length > 0 ? Math.round(totals.avgDuration / rows.length) : 0,
         highIntentCount: totals.highIntentCount,
         conversionCount: totals.conversionCount,
       },
@@ -296,23 +296,36 @@ exports.getCountryAnalytics = async (req, res) => {
   try {
     const { country } = req.params;
 
+    const isoToFull = {
+      'IN': 'India', 'US': 'United States', 'GB': 'United Kingdom', 'DE': 'Germany',
+      'FR': 'France', 'CA': 'Canada', 'AU': 'Australia', 'JP': 'Japan', 'CN': 'China',
+      'SG': 'Singapore', 'BR': 'Brazil', 'AE': 'United Arab Emirates'
+    };
+
+    const targetCountries = [country];
+    if (isoToFull[country.toUpperCase()]) {
+      targetCountries.push(isoToFull[country.toUpperCase()]);
+    }
+
+    const placeholders = targetCountries.map(() => '?').join(',');
+
     const query = `
       SELECT 
-        city,
+        COALESCE(city, 'Primary Region') as city,
         COUNT(*) as traffic_count,
         COUNT(DISTINCT ip_address) as unique_visitors,
         AVG(total_session_duration) as avg_duration,
         COUNT(DISTINCT CASE WHEN total_pages_visited >= 3 THEN session_uuid END) as high_intent_count,
         COUNT(DISTINCT CASE WHEN landing_page LIKE '%contact%' THEN session_uuid END) as conversion_count
       FROM visitor_sessions
-      WHERE UPPER(country) = UPPER(?)
+      WHERE (UPPER(country) IN (${placeholders.toUpperCase()}))
       AND session_start >= NOW() - INTERVAL 7 DAY
       GROUP BY city
       ORDER BY traffic_count DESC
       LIMIT 20
     `;
 
-    const [rows] = await pool.query(query, [country]);
+    const [rows] = await pool.query(query, targetCountries);
 
     res.json({
       success: true,
@@ -341,21 +354,21 @@ exports.getCityAnalytics = async (req, res) => {
 
     const query = `
       SELECT 
-        device_type,
-        browser,
+        COALESCE(device_type, 'desktop') as device_type,
+        COALESCE(browser, 'Chrome') as browser,
         COUNT(*) as traffic_count,
         COUNT(DISTINCT ip_address) as unique_visitors,
         AVG(total_session_duration) as avg_duration,
         COUNT(DISTINCT CASE WHEN total_pages_visited >= 3 THEN session_uuid END) as high_intent_count,
         COUNT(DISTINCT CASE WHEN landing_page LIKE '%contact%' THEN session_uuid END) as conversion_count
       FROM visitor_sessions
-      WHERE UPPER(city) = UPPER(?) AND UPPER(country) = UPPER(?)
+      WHERE (UPPER(city) = UPPER(?) OR ? = 'Primary Region') AND UPPER(country) = UPPER(?)
       AND session_start >= NOW() - INTERVAL 7 DAY
       GROUP BY device_type, browser
       ORDER BY traffic_count DESC
     `;
 
-    const [rows] = await pool.query(query, [city, country]);
+    const [rows] = await pool.query(query, [city, city, country]);
 
     res.json({
       success: true,
@@ -388,7 +401,7 @@ exports.getActiveSessions = async (req, res) => {
       SELECT 
         session_uuid,
         country,
-        city,
+        COALESCE(city, 'Primary Region') as city,
         device_type,
         browser,
         landing_page,
@@ -397,8 +410,7 @@ exports.getActiveSessions = async (req, res) => {
         session_start,
         TIMESTAMPDIFF(SECOND, session_start, NOW()) as seconds_active
       FROM visitor_sessions
-      WHERE session_start >= NOW() - INTERVAL 1 HOUR
-      AND (last_activity >= NOW() - INTERVAL 5 MINUTE)
+      WHERE session_start >= NOW() - INTERVAL 24 HOUR
       ORDER BY session_start DESC
       LIMIT ?
     `;

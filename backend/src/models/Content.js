@@ -21,70 +21,92 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
     if (!htmlContent) return { content: htmlContent, webhook_url: existingWebhookUrl, custom_fields: [] };
 
     let processedContent = htmlContent;
-    let detectedWebhookUrl = existingWebhookUrl;
+    let detectedWebhookUrl = existingWebhookUrl || null;
 
     console.log('[processHtmlContent] Starting HTML processing...');
     console.log('[processHtmlContent] Existing webhook URL:', existingWebhookUrl);
 
-    // ── Step 1: Extract any client-defined API_URL from the inline script ────
-    // Matches both:  const API_URL = "...";  and  const API_URL="...";
-    // Also handles strings that mistakenly use backslashes (e.g. ngrok URL pasted from Windows)
-    const apiUrlRegex = /const\s+API_URL\s*=\s*[`"']([^`"']*)[`"']/i;
-    const apiUrlMatch = processedContent.match(apiUrlRegex);
-
-    if (apiUrlMatch) {
-        const rawUrl = apiUrlMatch[1];
-        console.log('[processHtmlContent] Found API_URL in HTML:', rawUrl);
-
-        // Determine if this is already the platform endpoint or a real external URL
-        const isPlatformEndpoint = rawUrl.includes('/api/public/landing-page') ||
-                                   rawUrl.includes('your-api-url.com');
-
-        if (!isPlatformEndpoint) {
-            // Fix backslashes → forward slashes  (common copy-paste mistake: "https://x.ngrok.io\api\users")
-            const cleanedUrl = rawUrl.replace(/\\/g, '/');
-            detectedWebhookUrl = cleanedUrl;
-            console.log(`[processHtmlContent] Detected client API URL: ${cleanedUrl} — saving as webhook_url`);
-        } else {
-            console.log(`[processHtmlContent] API_URL is a platform endpoint or placeholder, skipping webhook detection`);
+    // Helper: validate and clean extracted API URL
+    const cleanExtractedUrl = (rawUrl) => {
+        if (!rawUrl || typeof rawUrl !== 'string') return null;
+        let trimmed = rawUrl.trim();
+        // Fix backslashes -> forward slashes (common copy-paste mistake on Windows: "https://x.ngrok.io\api\users")
+        trimmed = trimmed.replace(/\\/g, '/');
+        // Ignore platform endpoint or placeholders
+        if (
+            trimmed.includes('/api/public/landing-page') ||
+            trimmed.includes('your-api-url.com') ||
+            trimmed.includes('example.com') ||
+            trimmed === '#' ||
+            trimmed.startsWith('javascript:')
+        ) {
+            return null;
         }
+        return trimmed;
+    };
 
-        // ── Step 2: Rewrite the API_URL in the HTML to always hit the platform ──
-        // Don't inject const CONTENT_ID because StandaloneLandingPage.jsx already sets window.__CONTENT_ID
-        processedContent = processedContent.replace(
-            apiUrlRegex,
-            `const API_URL = "/api/public/landing-page"`
-        );
-        console.log('[processHtmlContent] Rewrote API_URL to /api/public/landing-page in HTML content');
-
-        // ── Step 2b: Patch the fetch body to wrap form data with content_id + extra_fields ──
-        // Replace:  body: JSON.stringify(leadData)
-        // With:     body: JSON.stringify({ content_id: window.__CONTENT_ID, extra_fields: leadData })
-        // This ensures the backend can resolve the correct content record and
-        // insert the submission into the right form_submissions_<id> table.
-        // We use window.__CONTENT_ID because StandaloneLandingPage.jsx sets it automatically.
-        const bodyPatterns = [
-            // Pattern 1: body: JSON.stringify(leadData)
-            /body\s*:\s*JSON\.stringify\(\s*(\w+)\s*\)/g,
-            // Pattern 2: body: JSON.stringify({...leadData})
-            /body\s*:\s*JSON\.stringify\(\s*\{\s*\.\.\.(\w+)\s*\}\s*\)/g
-        ];
-
-        bodyPatterns.forEach(pattern => {
-            processedContent = processedContent.replace(
-                pattern,
-                (match, varName) => {
-                    console.log('[processHtmlContent] Patching fetch body pattern:', match);
-                    return `body: JSON.stringify({ content_id: window.__CONTENT_ID, extra_fields: ${varName} })`;
-                }
-            );
-        });
-    } else {
-        console.log('[processHtmlContent] No API_URL found in HTML content');
+    // ── Step 1a: Extract action from HTML <form action="..."> ────────────────
+    const formActionRegex = /<form(\b[^>]*)\baction=["']([^"']+)["']/gi;
+    let formActionMatch;
+    while ((formActionMatch = formActionRegex.exec(processedContent)) !== null) {
+        const rawAction = formActionMatch[2];
+        const cleanedAction = cleanExtractedUrl(rawAction);
+        if (cleanedAction) {
+            detectedWebhookUrl = cleanedAction;
+            console.log(`[processHtmlContent] Detected form action API URL: ${cleanedAction}`);
+            break;
+        }
     }
 
-    // ── Step 3: Also rewrite any HTML <form action="..."> pointing to external URLs ──
-    // Some clients set action= on the form tag directly instead of using JS
+    // ── Step 1b: Extract client API URL from JS scripts (const/let/var API_URL = "...", fetch("..."), axios.post("...")) ────
+    const scriptApiPatterns = [
+        /(?:const|let|var)\s+(?:API_URL|apiUrl|API_ENDPOINT|endpoint|clientApi|webhookUrl|webhook_url)\s*=\s*[`"']([^`"']+)[`"']/gi,
+        /fetch\(\s*[`"'](https?:\/\/[^`"']+)[`"']/gi,
+        /axios(?:\.post|\.put|\.get)?\(\s*[`"'](https?:\/\/[^`"']+)[`"']/gi,
+        /url\s*:\s*[`"'](https?:\/\/[^`"']+)[`"']/gi,
+        /xhr\.open\(\s*[`"'](?:POST|GET|PUT)[`"']\s*,\s*[`"'](https?:\/\/[^`"']+)[`"']/gi
+    ];
+
+    for (const pattern of scriptApiPatterns) {
+        let match;
+        while ((match = pattern.exec(processedContent)) !== null) {
+            const rawUrl = match[1];
+            const cleaned = cleanExtractedUrl(rawUrl);
+            if (cleaned) {
+                detectedWebhookUrl = cleaned;
+                console.log(`[processHtmlContent] Detected JS script API URL: ${cleaned}`);
+                break;
+            }
+        }
+        if (detectedWebhookUrl && detectedWebhookUrl !== existingWebhookUrl) break;
+    }
+
+    // ── Step 2: Rewrite JS API_URL variables in the HTML to point to platform endpoint ──
+    const apiUrlRegex = /(?:const|let|var)\s+(?:API_URL|apiUrl|API_ENDPOINT|endpoint|clientApi|webhookUrl|webhook_url)\s*=\s*[`"']([^`"']*)[`"']/gi;
+    processedContent = processedContent.replace(
+        apiUrlRegex,
+        `const API_URL = "/api/public/landing-page"`
+    );
+
+    // ── Step 2b: Patch fetch / axios body to send { content_id: window.__CONTENT_ID, extra_fields: ... } ──
+    const bodyPatterns = [
+        /body\s*:\s*JSON\.stringify\(\s*(\w+)\s*\)/g,
+        /body\s*:\s*JSON\.stringify\(\s*\{\s*\.\.\.(\w+)\s*\}\s*\)/g,
+        /data\s*:\s*JSON\.stringify\(\s*(\w+)\s*\)/g
+    ];
+
+    bodyPatterns.forEach(pattern => {
+        processedContent = processedContent.replace(
+            pattern,
+            (match, varName) => {
+                if (varName === 'content_id' || varName.includes('extra_fields')) return match;
+                console.log('[processHtmlContent] Patching fetch body pattern:', match);
+                return `body: JSON.stringify({ content_id: window.__CONTENT_ID, extra_fields: ${varName} })`;
+            }
+        );
+    });
+
+    // ── Step 3: Rewrite HTML <form action="..."> to point to /api/public/landing-page ──
     processedContent = processedContent.replace(
         /<form(\b[^>]*)\baction=["'](?!(?:\/api\/public\/landing-page|#|javascript:))[^"']*["']/gi,
         (match, attrs) => {
@@ -93,24 +115,18 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
         }
     );
 
-    // ── Step 3b: Add hidden content_id field to HTML forms that submit to /api/public/landing-page
-    // This ensures HTML forms (without JS) also include the content_id
+    // ── Step 3b: Add hidden content_id field to HTML forms ──
     processedContent = processedContent.replace(
         /<form([^>]*action=["']\/api\/public\/landing-page["'][^>]*)>/gi,
         (match, attrs) => {
-            // Check if content_id hidden field already exists
-            if (match.includes('name="content_id"')) {
-                return match; // Already has content_id field
-            }
-            // Insert hidden content_id field right after the form tag
+            if (match.includes('name="content_id"')) return match;
             console.log('[processHtmlContent] Adding hidden content_id field to form');
             return `<form${attrs}>
     <input type="hidden" name="content_id" value="" id="form-content-id" />`;
         }
     );
 
-    // ── Step 3c: Add script to populate content_id hidden field from window.__CONTENT_ID
-    // This script runs after the page loads to set the correct content_id
+    // ── Step 3c: Add script to populate content_id hidden field from window.__CONTENT_ID ──
     const contentIdScript = `
     <script>
     (function() {
@@ -126,7 +142,6 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
         }, 100);
     })();
     </script>`;
-    // Only add the script if it doesn't already exist and if there's a form
     if (processedContent.includes('action="/api/public/landing-page"') && !processedContent.includes('HTML Builder: Setting up content_id injection')) {
         processedContent = processedContent.replace(/<\/body>/gi, `${contentIdScript}</body>`);
         console.log('[processHtmlContent] Added content_id injection script');
@@ -143,9 +158,9 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
         const tagName = match[1].toLowerCase();
         const attrsText = match[2];
 
-        const nameMatch  = attrsText.match(/name=["']([^"']*)["']/i) || attrsText.match(/id=["']([^"']*)["']/i);
-        const typeMatch  = attrsText.match(/type=["']([^"']*)["']/i);
-        const phMatch    = attrsText.match(/placeholder=["']([^"']*)["']/i);
+        const nameMatch = attrsText.match(/name=["']([^"']*)["']/i) || attrsText.match(/id=["']([^"']*)["']/i);
+        const typeMatch = attrsText.match(/type=["']([^"']*)["']/i);
+        const phMatch = attrsText.match(/placeholder=["']([^"']*)["']/i);
         const isRequired = /\brequired\b/i.test(attrsText);
 
         const rawName = nameMatch ? nameMatch[1] : null;
@@ -165,8 +180,6 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
             type: fieldType,
             placeholder: phMatch ? phMatch[1] : '',
             required: isRequired,
-            // Preserve the original field name as webhook_key so the platform
-            // can forward it with the exact key the client's API expects
             webhook_key: rawName
         });
         fieldIndex++;
@@ -182,14 +195,48 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
     };
 }
 
+/**
+ * Extract webhook URL (apiUrl) from Visual Builder JSON trees (builder_page_data or builder_layout)
+ */
+function extractWebhookUrlFromBuilder(pageDataRaw) {
+    if (!pageDataRaw) return null;
+    try {
+        const pageData = typeof pageDataRaw === 'string' ? JSON.parse(pageDataRaw) : pageDataRaw;
+        let found = null;
+        const walk = (node) => {
+            if (found || !node) return;
+            if (node.type === 'form') {
+                try {
+                    const fc = typeof node.content === 'string' ? JSON.parse(node.content) : (node.content || {});
+                    if (fc.apiUrl && typeof fc.apiUrl === 'string' && fc.apiUrl.trim()) {
+                        found = fc.apiUrl.trim();
+                    }
+                } catch (e) { /* skip */ }
+            }
+            if (!found && Array.isArray(node.children)) {
+                node.children.forEach(walk);
+            }
+        };
+        const root = pageData?.layout || pageData?.root || pageData;
+        if (Array.isArray(root)) {
+            root.forEach(walk);
+        } else {
+            walk(root);
+        }
+        return found;
+    } catch {
+        return null;
+    }
+}
+
 class Content {
     static async create(contentData) {
         let {
             user_id, content_type_id, category_id, title, short_description,
-            tags, banner_image, pdf_file, custom_fields, content, webhook_url,
+            tags, banner_image, pdf_file, video_file, custom_fields, content, webhook_url,
             webhook_field_mapping, builder_layout, builder_content_elements, builder_page_data,
-            seo_meta_title, seo_meta_description, seo_meta_keywords,         
-            scheduled_publish_date, status = 'draft',
+            seo_meta_title, seo_meta_description, seo_meta_keywords,
+            scheduled_publish_date, webinar_date, status = 'draft',
             email_subject, email_template, case_study_headline, case_study_summary,
             is_visible_on_site = true
         } = contentData;
@@ -212,7 +259,7 @@ class Content {
             console.log('[Content.create] Processing HTML content...');
             const processed = processHtmlContent(content, manualWebhookUrl);
             content = processed.content;
-            
+
             // Priority: manual webhook_url > HTML-extracted webhook_url
             // If manual webhook_url is explicitly provided (not null/undefined), use it
             // Otherwise, use the HTML-extracted webhook_url
@@ -223,13 +270,24 @@ class Content {
                 webhook_url = processed.webhook_url;
                 console.log('[Content.create] Using HTML-extracted webhook_url:', webhook_url);
             }
-            
+
             console.log('[Content.create] Final webhook_url:', webhook_url);
-            
+
             // Auto-fill custom_fields from HTML form inputs if not already set by the user
             if ((!custom_fields || (Array.isArray(custom_fields) && custom_fields.length === 0)) && processed.custom_fields.length > 0) {
                 custom_fields = processed.custom_fields;
                 console.log('[Content.create] Auto-filled custom_fields from HTML:', custom_fields.length, 'fields');
+            }
+        }
+
+        // Auto-extract webhook_url for Visual Drag & Drop Builder pages if not set manually
+        if (!webhook_url) {
+            const builderWebhook = extractWebhookUrlFromBuilder(builder_page_data) ||
+                extractWebhookUrlFromBuilder(builder_layout) ||
+                extractWebhookUrlFromBuilder(builder_content_elements);
+            if (builderWebhook) {
+                webhook_url = builderWebhook;
+                console.log('[Content.create] Auto-extracted webhook_url from Visual Builder:', webhook_url);
             }
         }
 
@@ -250,10 +308,10 @@ class Content {
 
         const insertColumns = [
             'user_id', 'content_type_id', 'category_id', 'title', 'slug', 'short_description',
-            'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content', 'webhook_url',
+            'tags', 'banner_image', 'pdf_file', 'video_file', 'custom_fields', 'content', 'webhook_url',
             'webhook_field_mapping', 'builder_layout', 'builder_content_elements',
             'builder_page_data', 'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
-            'scheduled_publish_date', 'reading_time', 'status', 'is_visible_on_site',
+            'scheduled_publish_date', 'webinar_date', 'reading_time', 'status', 'is_visible_on_site',
             'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];
 
@@ -267,6 +325,7 @@ class Content {
             tags,
             banner_image,
             pdf_file || null,
+            video_file || null,
             custom_fields,
             content,
             webhook_url || null,
@@ -278,6 +337,7 @@ class Content {
             seo_meta_description,
             seo_meta_keywords,
             scheduled_publish_date,
+            webinar_date || null,
             reading_time,
             status,
             is_visible_on_site,
@@ -302,7 +362,7 @@ class Content {
         // No need to replace placeholder anymore since we're using window.__CONTENT_ID
 
         const newContent = await Content.findById(result.insertId);
-        
+
         // Create dynamic table for form submissions if custom_fields exist
         if (custom_fields && Array.isArray(custom_fields) && custom_fields.length > 0) {
             try {
@@ -312,7 +372,7 @@ class Content {
                 // Don't fail content creation if table creation fails
             }
         }
-        
+
         return newContent;
     }
 
@@ -380,22 +440,22 @@ class Content {
         if (filters.user_id) { baseWhere += ' AND c.user_id = ?'; values.push(filters.user_id); }
         if (filters.category_id) { baseWhere += ' AND c.category_id = ?'; values.push(filters.category_id); }
         if (filters.content_type_id) { baseWhere += ' AND c.content_type_id = ?'; values.push(filters.content_type_id); }
-        
+
         // Filter by is_visible_on_site if explicitly provided (for public listings)
         // Admin queries don't set this filter, so they see all content
-        if (filters.is_visible_on_site !== undefined) { 
-            baseWhere += ' AND c.is_visible_on_site = ?'; 
-            values.push(filters.is_visible_on_site); 
+        if (filters.is_visible_on_site !== undefined) {
+            baseWhere += ' AND c.is_visible_on_site = ?';
+            values.push(filters.is_visible_on_site);
         }
 
         // Add date filtering support
-        if (filters.start_date) { 
-            baseWhere += ' AND c.created_at >= ?'; 
-            values.push(filters.start_date); 
+        if (filters.start_date) {
+            baseWhere += ' AND c.created_at >= ?';
+            values.push(filters.start_date);
         }
-        if (filters.end_date) { 
-            baseWhere += ' AND c.created_at <= ?'; 
-            values.push(filters.end_date); 
+        if (filters.end_date) {
+            baseWhere += ' AND c.created_at <= ?';
+            values.push(filters.end_date);
         }
 
         // total count
@@ -427,7 +487,7 @@ class Content {
     static async update(id, contentData) {
         console.log('[Content.update] Starting update for content ID:', id);
         console.log('[Content.update] contentData.webhook_url:', contentData.webhook_url);
-        
+
         // ── Auto-process HTML builder content on update ───────────────────────
         const isHtmlBuilder = (() => {
             try {
@@ -442,7 +502,7 @@ class Content {
 
         if (isHtmlBuilder && contentData.content) {
             console.log('[Content.update] Processing HTML builder content');
-            
+
             // Fetch existing webhook_url from database
             let existingWebhookUrl = null;
             try {
@@ -454,30 +514,32 @@ class Content {
             }
 
             // Determine which webhook URL to use as the base for processing
-            const manualWebhookUrl = contentData.webhook_url;
-            const baseWebhookUrl = manualWebhookUrl !== undefined ? manualWebhookUrl : existingWebhookUrl;
-            
+            const manualWebhookUrl = (contentData.webhook_url && typeof contentData.webhook_url === 'string' && contentData.webhook_url.trim())
+                ? contentData.webhook_url.trim()
+                : null;
+            const baseWebhookUrl = manualWebhookUrl || existingWebhookUrl;
+
             console.log('[Content.update] Manual webhook_url:', manualWebhookUrl);
             console.log('[Content.update] Base webhook_url for processing:', baseWebhookUrl);
 
             const processed = processHtmlContent(contentData.content, baseWebhookUrl);
             contentData.content = processed.content;
-            
+
             // Priority logic:
-            // 1. If webhook_url is explicitly provided in contentData (even if empty string), use it
+            // 1. If manual non-empty webhook_url is explicitly provided, use it
             // 2. Otherwise, use HTML-extracted webhook_url if found
-            // 3. Otherwise, preserve existing webhook_url
-            if (contentData.webhook_url !== undefined) {
-                // Explicitly provided (could be null, empty string, or a URL) - use as-is
-                console.log('[Content.update] Using explicitly provided webhook_url:', contentData.webhook_url);
+            // 3. Otherwise, preserve existing webhook_url from DB
+            if (manualWebhookUrl) {
+                contentData.webhook_url = manualWebhookUrl;
+                console.log('[Content.update] Using non-empty manual webhook_url:', contentData.webhook_url);
             } else if (processed.webhook_url) {
-                // HTML-extracted webhook URL found
                 contentData.webhook_url = processed.webhook_url;
                 console.log('[Content.update] Using HTML-extracted webhook_url:', processed.webhook_url);
-            } else {
-                // Preserve existing webhook URL
+            } else if (existingWebhookUrl) {
                 contentData.webhook_url = existingWebhookUrl;
-                console.log('[Content.update] Preserving existing webhook_url:', existingWebhookUrl);
+                console.log('[Content.update] Preserving existing webhook_url from DB:', existingWebhookUrl);
+            } else {
+                contentData.webhook_url = null;
             }
 
             console.log('[Content.update] Final webhook_url:', contentData.webhook_url);
@@ -486,6 +548,15 @@ class Content {
             if (!contentData.custom_fields && processed.custom_fields.length > 0) {
                 contentData.custom_fields = JSON.stringify(processed.custom_fields);
                 console.log('[Content.update] Auto-filled custom_fields from HTML:', processed.custom_fields.length, 'fields');
+            }
+        } else if (!contentData.webhook_url) {
+            // Visual Builder page update: auto-extract webhook_url from builder tree if not set manually
+            const builderWebhook = extractWebhookUrlFromBuilder(contentData.builder_page_data) ||
+                extractWebhookUrlFromBuilder(contentData.builder_layout) ||
+                extractWebhookUrlFromBuilder(contentData.builder_content_elements);
+            if (builderWebhook) {
+                contentData.webhook_url = builderWebhook;
+                console.log('[Content.update] Auto-extracted webhook_url from Visual Builder:', contentData.webhook_url);
             }
         }
 
@@ -497,11 +568,11 @@ class Content {
         };
 
         const allowedFields = [
-            'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'custom_fields', 'content',
+            'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'video_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
             'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data',
-            'is_visible_on_site'
+            'is_visible_on_site', 'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];
 
         const updates = [];
@@ -539,14 +610,14 @@ class Content {
 
         await pool.query(`UPDATE contents SET ${updates.join(', ')} WHERE id = ?`, values);
         const updatedContent = await Content.findById(id);
-        
+
         // Update dynamic table if custom_fields changed
         if (contentData.custom_fields !== undefined) {
             try {
-                const customFields = typeof contentData.custom_fields === 'string' 
-                    ? JSON.parse(contentData.custom_fields) 
+                const customFields = typeof contentData.custom_fields === 'string'
+                    ? JSON.parse(contentData.custom_fields)
                     : contentData.custom_fields;
-                
+
                 if (customFields && Array.isArray(customFields) && customFields.length > 0) {
                     await updateDynamicTable(`form_submissions_${id}`, customFields);
                 }
@@ -555,7 +626,7 @@ class Content {
                 // Don't fail content update if table update fails
             }
         }
-        
+
         return updatedContent;
     }
 
@@ -602,7 +673,7 @@ class Content {
             console.error('Error dropping dynamic table for content:', tableError);
             // Don't fail content deletion if table drop fails
         }
-        
+
         await pool.query('DELETE FROM contents WHERE id = ?', [id]);
     }
 

@@ -41,6 +41,24 @@ export const COUNTRY_COORDINATES = {
   'MX': { lat: 23.6345, lon: -102.5528, code: 'MX', region: 'North America', city: 'Mexico City' },
 
   // Europe
+  'Iceland': { lat: 64.9631, lon: -19.0208, code: 'IS', region: 'Europe', city: 'Reykjavik' },
+  'IS': { lat: 64.9631, lon: -19.0208, code: 'IS', region: 'Europe', city: 'Reykjavik' },
+  'Norway': { lat: 60.4720, lon: 8.4689, code: 'NO', region: 'Europe', city: 'Oslo' },
+  'NO': { lat: 60.4720, lon: 8.4689, code: 'NO', region: 'Europe', city: 'Oslo' },
+  'Finland': { lat: 61.9241, lon: 25.7482, code: 'FI', region: 'Europe', city: 'Helsinki' },
+  'FI': { lat: 61.9241, lon: 25.7482, code: 'FI', region: 'Europe', city: 'Helsinki' },
+  'Denmark': { lat: 56.2639, lon: 9.5018, code: 'DK', region: 'Europe', city: 'Copenhagen' },
+  'DK': { lat: 56.2639, lon: 9.5018, code: 'DK', region: 'Europe', city: 'Copenhagen' },
+  'Austria': { lat: 47.5162, lon: 14.5501, code: 'AT', region: 'Europe', city: 'Vienna' },
+  'AT': { lat: 47.5162, lon: 14.5501, code: 'AT', region: 'Europe', city: 'Vienna' },
+  'Portugal': { lat: 39.3999, lon: -8.2245, code: 'PT', region: 'Europe', city: 'Lisbon' },
+  'PT': { lat: 39.3999, lon: -8.2245, code: 'PT', region: 'Europe', city: 'Lisbon' },
+  'Belgium': { lat: 50.5039, lon: 4.4699, code: 'BE', region: 'Europe', city: 'Brussels' },
+  'BE': { lat: 50.5039, lon: 4.4699, code: 'BE', region: 'Europe', city: 'Brussels' },
+  'Greece': { lat: 39.0742, lon: 21.8243, code: 'GR', region: 'Europe', city: 'Athens' },
+  'GR': { lat: 39.0742, lon: 21.8243, code: 'GR', region: 'Europe', city: 'Athens' },
+  'Turkey': { lat: 38.9637, lon: 35.2433, code: 'TR', region: 'Europe', city: 'Istanbul' },
+  'TR': { lat: 38.9637, lon: 35.2433, code: 'TR', region: 'Europe', city: 'Istanbul' },
   'United Kingdom': { lat: 55.3781, lon: -3.4360, code: 'GB', region: 'Europe', city: 'London' },
   'UK': { lat: 55.3781, lon: -3.4360, code: 'GB', region: 'Europe', city: 'London' },
   'GB': { lat: 55.3781, lon: -3.4360, code: 'GB', region: 'Europe', city: 'London' },
@@ -106,8 +124,15 @@ export function getCountryGeo(countryNameOrCode) {
   if (foundKey) {
     return { ...COUNTRY_COORDINATES[foundKey], country: foundKey };
   }
-  // Default fallback
-  return { lat: 28.6139, lon: 77.2090, code: 'INTL', country: clean, city: 'Global Location', region: 'Worldwide' };
+  // Deterministic fallback hash to avoid overlapping India
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) {
+    hash = (hash << 5) - hash + clean.charCodeAt(i);
+    hash |= 0;
+  }
+  const fallbackLat = ((Math.abs(hash) % 80) - 40); // -40 to +40
+  const fallbackLon = ((Math.abs(hash >> 3) % 340) - 170); // -170 to +170
+  return { lat: fallbackLat, lon: fallbackLon, code: upper.substring(0, 4), country: clean, city: clean, region: 'Worldwide' };
 }
 
 /**

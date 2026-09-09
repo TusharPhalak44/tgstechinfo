@@ -198,9 +198,12 @@ const MyContent = () => {
     setLoading(true);
     try {
       const res = await axios.get('/api/user/content');
-      setContents(res.data || []);
+      const rawData = res.data;
+      const data = Array.isArray(rawData) ? rawData : (rawData?.data || []);
+      setContents(data);
     } catch {
       message.error('Failed to load your publications');
+      setContents([]);
     } finally {
       setLoading(false);
     }
@@ -240,7 +243,8 @@ const MyContent = () => {
     });
   };
 
-  const filteredContents = contents.filter(c => {
+  const safeContents = Array.isArray(contents) ? contents : [];
+  const filteredContents = safeContents.filter(c => {
     const matchesStatus = statusFilter === 'all' ||
       (statusFilter === 'published' ? (c.status === 'published' || c.status === 'approved') : c.status === statusFilter);
     const matchesType = activeTypeTab === 'all' || (c.content_type || 'article').toLowerCase() === activeTypeTab;
@@ -370,8 +374,8 @@ const MyContent = () => {
           {STATUS_FILTERS.map(st => {
             const isSelected = statusFilter === st.key;
             const count = st.key === 'all'
-              ? contents.length
-              : contents.filter(c => st.key === 'published' ? (c.status === 'published' || c.status === 'approved') : c.status === st.key).length;
+              ? safeContents.length
+              : safeContents.filter(c => st.key === 'published' ? (c.status === 'published' || c.status === 'approved') : c.status === st.key).length;
 
             return (
               <button

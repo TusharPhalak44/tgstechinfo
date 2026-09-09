@@ -470,7 +470,9 @@ const CreateContent = () => {
         formData.append(key, values[key]);
       }
     });
-    if (values.webhook_url !== undefined) formData.set('webhook_url', values.webhook_url || '');
+    if (values.webhook_url && typeof values.webhook_url === 'string' && values.webhook_url.trim()) {
+      formData.set('webhook_url', values.webhook_url.trim());
+    }
     if (values.tags?.length) formData.append('tags', values.tags.join(','));
     if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
     if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
@@ -1783,18 +1785,16 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                   </Form.Item>
                 </div>
  
-                {/* Webhook URL for Visual Builder */}
-                {showLandingFields && (
-                  <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
-                    <div style={{ marginBottom: 16 }}>
-                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
-                      <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Form data will be forwarded to this URL after submission</div>
-                    </div>
-                    <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
-                      <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                    </Form.Item>
+                {/* Webhook URL for Visual Builder — Always visible like HTML Builder */}
+                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                    <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Form data will be forwarded to this URL after submission</div>
                   </div>
-                )}
+                  <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                    <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                  </Form.Item>
+                </div>
 
                 {/* BuilderIntegration — always Visual Builder */}
                 <BuilderIntegration

@@ -51,7 +51,7 @@ export const TrackingProvider = ({ children }) => {
     try {
       const deviceInfo = getDeviceInfo();
       const utmParams = parseUtmParams();
-      const country = getUserCountry();
+      const country = await getUserCountry();
       
       const sessionData = {
         consent_uuid: consent.uuid,

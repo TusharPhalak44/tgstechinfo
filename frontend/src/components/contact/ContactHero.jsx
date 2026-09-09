@@ -30,13 +30,13 @@ export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
           initial={{ opacity: 0, y: -20, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="inline-flex items-center gap-2.5 px-4.5 py-2 rounded-full text-xs font-bold bg-black/45 backdrop-blur-md text-amber-300 border border-white/20 mb-6 shadow-xl"
+          className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full text-xs font-bold bg-black/60 backdrop-blur-md text-amber-300 border border-white/20 mb-6 shadow-xl"
         >
-          <span className="relative flex h-2.5 w-2.5">
+          <span className="relative flex h-2.5 w-2.5 shrink-0 ml-0.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
-          <span className="font-extrabold tracking-wide">EDITORIAL DESK ACTIVE</span>
+          <span className="font-extrabold tracking-wide text-amber-400">EDITORIAL DESK ACTIVE</span>
           <span className="text-white/40">•</span>
           <span className="text-slate-100">24–48 Hr Response Guarantee</span>
         </motion.div>

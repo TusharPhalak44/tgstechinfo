@@ -75,12 +75,16 @@ exports.register = async (req, res) => {
             const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
             const frontendUrl = rawFrontend.split(',')[0].trim();
 
-            await sendTemplatedEmail('registration', user.email, {
+            const emailResult = await sendTemplatedEmail('registration', user.email, {
                 first_name: user.first_name,
                 last_name: user.last_name,
+                name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
                 email: user.email,
                 login_url: `${frontendUrl}/login`
             });
+            if (emailResult?.skipped) {
+                console.warn('[authController.register] Registration email was skipped:', emailResult.reason || emailResult.error);
+            }
         } catch (emailError) {
             console.error('Registration email error:', emailError);
         }
@@ -497,11 +501,15 @@ exports.forgotPassword = async (req, res) => {
         const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
         try {
-            await sendTemplatedEmail('password_reset', user.email, {
+            const emailResult = await sendTemplatedEmail('password_reset', user.email, {
                 first_name: user.first_name,
                 last_name: user.last_name,
+                name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
                 reset_url: resetUrl
             });
+            if (emailResult?.skipped) {
+                console.warn('[authController.forgotPassword] Password reset email was skipped:', emailResult.reason || emailResult.error);
+            }
         } catch (emailError) {
             console.error('Forgot password email error:', emailError);
         }

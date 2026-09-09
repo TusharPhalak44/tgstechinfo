@@ -396,7 +396,8 @@ const UserDashboardLayout = () => {
     const fetchCounts = async () => {
       try {
         const res = await axios.get('/api/user/content');
-        const items = res.data || [];
+        const rawData = res.data;
+        const items = Array.isArray(rawData) ? rawData : (rawData?.data || []);
         const drafts = items.filter(i => i.status === 'draft').length;
         const pending = items.filter(i => i.status === 'pending').length;
         const published = items.filter(i => i.status === 'published' || i.status === 'approved').length;
