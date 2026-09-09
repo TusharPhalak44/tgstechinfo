@@ -7,7 +7,7 @@ import {
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
   EyeInvisibleOutlined, ThunderboltOutlined, ArrowLeftOutlined,
-  CheckOutlined, CloseOutlined
+  CheckOutlined, CloseOutlined, PlayCircleOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -68,6 +68,15 @@ const getContentImage = (item) => {
         if (imgEl) return formatImageUrl(imgEl.src || imgEl.url);
       }
     } catch {}
+  }
+  return null;
+};
+
+const getContentVideo = (item) => {
+  if (!item) return null;
+  const raw = item.video_file;
+  if (raw && typeof raw === 'string' && raw.trim()) {
+    return formatImageUrl(raw);
   }
   return null;
 };
@@ -269,6 +278,7 @@ const ContentDetail = () => {
   }
 
   const contentImg = getContentImage(content);
+  const contentVideo = getContentVideo(content);
   const statusConfig = STATUS_CONFIG[content.status] || STATUS_CONFIG.draft;
 
   return (
@@ -311,10 +321,28 @@ const ContentDetail = () => {
           <Col xs={24} lg={18}>
             {/* Main Content Card */}
             <Card className="radar-glass-panel" style={{ background: bgCard, borderColor, marginBottom: 24 }}>
-              {/* Banner Image */}
-              {contentImg && (
+              {/* Banner Image - Hide for webinars (only show in card views) */}
+              {contentImg && (content.content_type_name || content.content_type || '').toLowerCase() !== 'webinar' && (
                 <div style={{ width: '100%', height: 300, borderRadius: 12, overflow: 'hidden', marginBottom: 20, border: `1px solid ${borderColor}` }}>
                   <img src={contentImg} alt={content.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+
+              {/* Video */}
+              {contentVideo && (
+                <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', marginBottom: 20, border: `1px solid ${borderColor}`, background: darkMode ? '#0f172a' : '#000' }}>
+                  <div style={{ padding: '8px 12px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderBottom: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 14 }} />
+                    <Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', fontWeight: 600 }}>Video Content</Text>
+                  </div>
+                  <video
+                    controls
+                    style={{ width: '100%', display: 'block' }}
+                    preload="metadata"
+                  >
+                    <source src={contentVideo} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
               )}
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Input, Select, Button, Image, Row, Col, Typography, Space, Tooltip, App, Spin } from 'antd';
-import { SearchOutlined, PictureOutlined, CopyOutlined, CheckOutlined, ReloadOutlined } from '@ant-design/icons';
+import { SearchOutlined, PictureOutlined, CopyOutlined, CheckOutlined, ReloadOutlined, VideoCameraOutlined, FileOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -159,7 +159,8 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
 
   const getFileIcon = (fileType) => {
     if (fileType?.includes('image')) return <PictureOutlined />;
-    return <PictureOutlined />;
+    if (fileType?.includes('video')) return <VideoCameraOutlined />;
+    return <FileOutlined />;
   };
 
   const filteredMedia = media;

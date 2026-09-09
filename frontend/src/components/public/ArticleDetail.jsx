@@ -15,6 +15,7 @@ import ContentRenderer from '../common/ContentRenderer';
 import { useTheme } from '../../context/ThemeContext';
 import { useTracking } from '../../context/TrackingContext';
 import useEngagementTracking from '../../hooks/useEngagementTracking';
+import WebinarCountdown from '../common/WebinarCountdown';
 
 const { Title, Text } = Typography;
 
@@ -69,10 +70,10 @@ const BannerImage = ({ src, alt, darkMode }) => {
         <img
           src={src}
           alt={alt}
-          style={{ 
-            width: '100%', 
-            height: '100%', 
-            display: 'block', 
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'block',
             objectFit: 'cover',
             objectPosition: 'top center'
           }}
@@ -354,7 +355,7 @@ const ArticleDetail = () => {
     </div>
   );
 
-  const LANDING_TYPES = ['webinar', 'whitepaper', 'white paper', 'white-paper', 'event', 'ebook', 'e-book'];
+  const LANDING_TYPES = ['whitepaper', 'white paper', 'white-paper', 'event', 'e-book'];
   const contentTypeName = (content?.content_type_name || content?.content_type || '').toLowerCase().trim();
   const requiresLanding = LANDING_TYPES.includes(contentTypeName);
 
@@ -447,6 +448,71 @@ const ArticleDetail = () => {
                 </div>
               }
             />
+
+            {/* Video Section - Show countdown for future webinars, video for past webinars */}
+            {content.video_file && (
+              <>
+                {/* Show countdown for future webinars - NO VIDEO */}
+                {content.webinar_date && moment(content.webinar_date).isAfter(moment()) ? (
+                  <>
+                    <WebinarCountdown webinarDate={content.webinar_date} darkMode={darkMode} />
+                    <div style={{ 
+                      margin: '24px 0 16px', 
+                      borderRadius: 8, 
+                      padding: '40px 20px', 
+                      textAlign: 'center',
+                      background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#eff6ff',
+                      border: darkMode ? '2px solid #3b82f6' : '2px solid #bfdbfe'
+                    }}>
+                      <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
+                      <div style={{ 
+                        fontSize: 18, 
+                        fontWeight: 600, 
+                        color: darkMode ? '#f1f5f9' : '#1a1a2e',
+                        marginBottom: 8 
+                      }}>
+                        Video Available After Webinar
+                      </div>
+                      <div style={{ 
+                        fontSize: 14, 
+                        color: darkMode ? '#94a3b8' : '#6b7280' 
+                      }}>
+                        The webinar video will be available to watch after the scheduled date and time.
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* Show video for past webinars or if no webinar date */
+                  <div style={{ margin: '24px 0 16px', borderRadius: 8, overflow: 'hidden', background: darkMode ? '#0f172a' : '#000' }}>
+                    <video
+                      controls
+                      style={{ width: '100%', display: 'block' }}
+                      preload="metadata"
+                      onError={(e) => {
+                        console.error('Video error:', e);
+                        e.target.style.display = 'none';
+                        const errorDiv = document.createElement('div');
+                        errorDiv.style.cssText = `
+                          padding: 40px 20px;
+                          text-align: center;
+                          color: ${darkMode ? '#cbd5e1' : '#666'};
+                          background: ${darkMode ? '#1e293b' : '#f8fafc'};
+                        `;
+                        errorDiv.innerHTML = `
+                          <div style="font-size: 48px; margin-bottom: 16px;">🎬</div>
+                          <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">Video Not Available</div>
+                          <div style="font-size: 14px;">The video file is missing from the server. Please contact the administrator to re-upload this video.</div>
+                        `;
+                        e.target.parentNode.appendChild(errorDiv);
+                      }}
+                    >
+                      <source src={`/uploads/${content.video_file}`} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Comments */}

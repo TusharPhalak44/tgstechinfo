@@ -6,7 +6,7 @@ import {
   CalendarOutlined, EyeOutlined, ArrowRightOutlined,
   SearchOutlined, CloseOutlined, FireOutlined,
   ReadOutlined, GlobalOutlined, TeamOutlined,
-  FileTextOutlined, FolderOpenOutlined, LineChartOutlined
+  FileTextOutlined, FolderOpenOutlined, LineChartOutlined, PlayCircleOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -1639,6 +1639,7 @@ const HeroCard = ({ article, navigate, onImgClick, accent = 'var(--color-primary
         : <div style={{ height: 'clamp(140px, 15vw, 180px)', background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 32, color: 'var(--color-primary)' }} /></div>
       }
       {article.content_type_name && <span style={{ position: 'absolute', top: 10, left: 10, background: accent, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase' }}>{article.content_type_name}</span>}
+      {article.video_file && <span style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}><PlayCircleOutlined /> Video</span>}
     </div>
     <div style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)', flex: 1, display: 'flex', flexDirection: 'column' }}>
       {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 11px)', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
@@ -1669,12 +1670,13 @@ const ListCard = ({ article, navigate, onImgClick, isLast }) => (
     onMouseLeave={e => e.currentTarget.style.paddingLeft = '0'}
     onClick={() => navigateArticle(article, navigate)}
   >
-    <div style={{ width: 76, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', lineHeight: 0 }}
+    <div style={{ width: 76, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', lineHeight: 0, position: 'relative' }}
       onClick={e => { e.stopPropagation(); if (article.banner_image) onImgClick(`/uploads/${article.banner_image}`, article.title); }}>
       {article.banner_image
         ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         : <div style={{ width: 76, height: 56, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ color: 'var(--color-primary)', fontSize: 16 }} /></div>
       }
+      {article.video_file && <span style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 10, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 2 }}><PlayCircleOutlined /></span>}
     </div>
     <div style={{ flex: 1, minWidth: 0 }}>
       {article.category_name && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .6 }}>{article.category_name} · </span>}

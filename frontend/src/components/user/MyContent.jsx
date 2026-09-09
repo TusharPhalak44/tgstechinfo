@@ -17,6 +17,8 @@ import {
   FilterOutlined,
   FolderOpenOutlined,
   RocketOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -159,8 +161,10 @@ const CONTENT_TABS = [
   { key: 'event',      label: 'Events' },
 ];
 
-const INITIAL_SHOW = 12;
-const LOAD_MORE_COUNT = 6;
+const INITIAL_SHOW = 20;
+const LOAD_MORE_COUNT = 4;
+const SHOW_MORE_THRESHOLD = 28;
+const ITEMS_PER_PAGE = 20;
 
 const MyContent = () => {
   const { darkMode } = useTheme();
@@ -175,6 +179,7 @@ const MyContent = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const path = location.pathname;
@@ -245,8 +250,20 @@ const MyContent = () => {
     return matchesStatus && matchesType && matchesSearch;
   });
 
-  const visibleItems = filteredContents.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredContents.length;
+  const totalItems = filteredContents.length;
+
+  useEffect(() => {
+    setVisibleCount(INITIAL_SHOW);
+    setCurrentPage(1);
+  }, [activeTypeTab, statusFilter, searchQuery, totalItems]);
+
+  const showPagination = visibleCount >= SHOW_MORE_THRESHOLD && totalItems > SHOW_MORE_THRESHOLD;
+  const visibleItems = showPagination
+    ? filteredContents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    : filteredContents.slice(0, visibleCount);
+  const nextVisibleCount = Math.min(visibleCount + LOAD_MORE_COUNT, SHOW_MORE_THRESHOLD, totalItems);
+  const hasMore = !showPagination && visibleCount < nextVisibleCount;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   return (
     <div className="content-root">
@@ -727,7 +744,73 @@ const MyContent = () => {
                 }}
               >
                 <DownOutlined />
-                <span>Show More ({visibleItems.length} of {filteredContents.length})</span>
+                <span>Show More ({nextVisibleCount} of {totalItems})</span>
+              </button>
+            </div>
+          )}
+
+          {showPagination && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 28, marginBottom: 16 }}>
+              <button
+                onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+                disabled={currentPage === 1}
+                style={{
+                  background: currentPage === 1 ? (D ? 'rgba(255,255,255,0.04)' : '#F8FAFC') : '#0B1F4D',
+                  border: `1px solid ${D ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+                  color: currentPage === 1 ? (D ? '#64748B' : '#94A3B8') : '#FFFFFF',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                <LeftOutlined />
+                <span>Previous</span>
+              </button>
+
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  style={{
+                    minWidth: 34,
+                    height: 34,
+                    borderRadius: 8,
+                    border: `1px solid ${currentPage === page ? '#0B1F4D' : (D ? 'rgba(255,255,255,0.1)' : '#E2E8F0')}`,
+                    background: currentPage === page ? '#0B1F4D' : (D ? 'rgba(255,255,255,0.04)' : '#FFFFFF'),
+                    color: currentPage === page ? '#F7941D' : (D ? '#CBD5E1' : '#475569'),
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button
+                onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+                disabled={currentPage === totalPages}
+                style={{
+                  background: currentPage === totalPages ? (D ? 'rgba(255,255,255,0.04)' : '#F8FAFC') : '#0B1F4D',
+                  border: `1px solid ${D ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}`,
+                  color: currentPage === totalPages ? (D ? '#64748B' : '#94A3B8') : '#FFFFFF',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                }}
+              >
+                <span>Next</span>
+                <RightOutlined />
               </button>
             </div>
           )}

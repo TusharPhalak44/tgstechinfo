@@ -72,6 +72,15 @@ const getContentImage = (item) => {
   return null;
 };
 
+const getContentVideo = (item) => {
+  if (!item) return null;
+  const raw = item.video_file;
+  if (raw && typeof raw === 'string' && raw.trim()) {
+    return formatImageUrl(raw);
+  }
+  return null;
+};
+
 // Add custom styles for content display
 const contentDisplayStyles = `
   .admin-content-display p {
@@ -236,6 +245,7 @@ const ContentReviewDetail = () => {
   }
 
   const contentImg = getContentImage(content);
+  const contentVideo = getContentVideo(content);
   const statusConfig = STATUS_CONFIG[content.status] || STATUS_CONFIG.draft;
 
   return (
@@ -272,6 +282,20 @@ const ContentReviewDetail = () => {
               {contentImg && (
                 <div style={{ width: '100%', height: 300, borderRadius: 12, overflow: 'hidden', marginBottom: 20, border: `1px solid ${borderColor}` }}>
                   <img src={contentImg} alt={content.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+              )}
+
+              {/* Video */}
+              {contentVideo && (
+                <div style={{ width: '100%', borderRadius: 12, overflow: 'hidden', marginBottom: 20, border: `1px solid ${borderColor}`, background: darkMode ? '#0f172a' : '#000' }}>
+                  <video
+                    controls
+                    style={{ width: '100%', display: 'block' }}
+                    preload="metadata"
+                  >
+                    <source src={contentVideo} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
               )}
 

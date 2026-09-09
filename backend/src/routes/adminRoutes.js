@@ -25,15 +25,16 @@ router.get('/content/:id', adminController.getContentDetails);
 
 // Admin content creation and submission
 router.post('/content',
-    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]),
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }, { name: 'video_file', maxCount: 1 }]),
     contentController.createContent
 );
 router.post('/content/:id/submit', hasPermission('content.publish'), contentController.submitForReview);
-router.put('/content/:id', 
-    hasPermission('content.update'), 
-    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), 
+router.put('/content/:id',
+    hasPermission('content.update'),
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }, { name: 'video_file', maxCount: 1 }]),
     contentController.updateContent
 );
+router.put('/content/:id/webhook', hasPermission('content.update'), contentController.updateWebhookSettings);
 
 // User management
 router.get('/users', hasPermission('user.read'), adminController.getAllUsers);
@@ -64,9 +65,9 @@ router.get('/data-requests', hasPermission('user.read'), adminController.getData
 router.put('/data-requests/:id/status', hasPermission('user.update'), adminController.updateDataRequestStatus);
 
 // Content editing and deletion
-router.put('/content/:id/edit', 
-    hasPermission('content.update'), 
-    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), 
+router.put('/content/:id/edit',
+    hasPermission('content.update'),
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }, { name: 'video_file', maxCount: 1 }]),
     adminController.adminEditContent
 );
 router.delete('/content/:id', hasPermission('content.delete'), adminController.deleteContent);

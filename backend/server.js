@@ -225,15 +225,34 @@ app.use('/uploads/:filename', async (req, res, next) => {
 
         if (rows[0] && rows[0].file_data) {
 
-            res.setHeader('Content-Type', rows[0].mime_type || 'application/octet-stream');
-
-            res.setHeader('Cache-Control', 'public, max-age=31536000');
-
+            // Set proper content type for videos
+            const mimeType = rows[0].mime_type || 'application/octet-stream';
+            res.setHeader('Content-Type', mimeType);
+            
+            // For videos, enable streaming and range requests
+            if (mimeType.startsWith('video/')) {
+                res.setHeader('Accept-Ranges', 'bytes');
+                res.setHeader('Cache-Control', 'public, max-age=31536000');
+                // Enable CORS for video elements
+                res.setHeader('Access-Control-Allow-Origin', '*');
+            } else {
+                res.setHeader('Cache-Control', 'public, max-age=31536000');
+            }
+            
             return res.send(rows[0].file_data);
 
         }
 
 
+
+        // Check if this is a video file request
+        if (filename.startsWith('video_file-') || filename.endsWith('.mp4') || filename.endsWith('.mov') || filename.endsWith('.avi')) {
+            res.status(404).json({ 
+                error: 'Video file not found',
+                message: 'The video file is missing from the server. Please re-upload the video.'
+            });
+            return;
+        }
 
         const placeholder = Buffer.from(
 

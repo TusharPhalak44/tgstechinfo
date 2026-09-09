@@ -24,15 +24,14 @@ const stripEmDash = (val) => {
 
 exports.createContent = async (req, res) => {
     try {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-
         const contentData = stripEmDash({
             ...req.body,
             user_id: req.user.id,
             status: String(req.body.status || 'draft').trim(),
             banner_image: req.files?.banner_image?.[0]?.filename || null,
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
+            video_file: req.files?.video_file?.[0]?.filename || null,
+            webinar_date: req.body.webinar_date || null,
             tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
             custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null,
             webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null,
@@ -128,6 +127,45 @@ exports.createContent = async (req, res) => {
                 console.error('Error adding PDF to media_files:', mediaError);
             }
         }
+
+        // Add video file to media_files table if present and not already exists
+        if (req.files?.video_file?.[0]) {
+            try {
+                const videoFile = req.files.video_file[0];
+                // Check if file with same original name already exists in media_files table
+                const existingMedia = await Media.findByOriginalName(videoFile.originalname);
+                if (!existingMedia) {
+                    // Store video file data in database (no size limit for videos)
+                    const fileData = require('fs').readFileSync(videoFile.path);
+                    await Media.create({
+                        filename: videoFile.filename,
+                        original_name: videoFile.originalname,
+                        file_path: `/uploads/${videoFile.filename}`,
+                        file_type: 'video',
+                        file_size: videoFile.size,
+                        mime_type: videoFile.mimetype,
+                        folder: 'Videos',
+                        uploaded_by: req.user.id,
+                        file_data: fileData // Store video directly in database like images
+                    });
+                    console.log('✓ Video file added to media_files table with database storage:', videoFile.filename);
+                    
+                    // Clean up the uploaded file from filesystem since it's now in database
+                    try {
+                        require('fs').unlinkSync(videoFile.path);
+                        console.log('✓ Cleaned up video file from filesystem:', videoFile.path);
+                    } catch (cleanupError) {
+                        console.warn('Could not clean up video file from filesystem:', cleanupError.message);
+                    }
+                } else {
+                    console.log('Video file with same original name already exists in media_files table:', videoFile.originalname);
+                    // Use the existing file's filename for the content
+                    req.body.video_file = existingMedia.filename;
+                }
+            } catch (mediaError) {
+                console.error('Error adding video to media_files:', mediaError);
+            }
+        }
         
         // Update tag usage counts
         if (contentData.tags && contentData.tags.length > 0) {
@@ -140,10 +178,23 @@ exports.createContent = async (req, res) => {
         res.status(201).json({ message: 'Content created successfully', content });
     } catch (error) {
         console.error('Create content error:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
         console.error('Request body keys:', Object.keys(req.body));
+        console.error('Request body:', req.body);
+        console.error('Files:', req.files);
         console.error('builder_content_elements value:', req.body.builder_content_elements);
-        res.status(500).json({ message: error.message || 'Server error' });
+        console.error('SQL Error code:', error.code);
+        console.error('SQL Error state:', error.sqlState);
+        res.status(500).json({ 
+            message: error.message || 'Server error',
+            ...(process.env.NODE_ENV === 'development' && { 
+                stack: error.stack,
+                code: error.code,
+                sqlState: error.sqlState
+            })
+        });
     }
 };
 
@@ -187,6 +238,16 @@ exports.updateContent = async (req, res) => {
         if (content.status === 'published')
             return res.status(400).json({ message: 'Published content cannot be edited' });
 
+        // Check if this is a webinar content type
+        const ContentType = require('../models/ContentType');
+        const contentType = await ContentType.findById(content.content_type_id);
+        const isWebinar = contentType && contentType.name.toLowerCase() === 'webinar';
+
+        // For webinar type, validate that video file is present (either existing or new upload)
+        if (isWebinar && !req.files?.video_file?.[0] && !content.video_file) {
+            return res.status(400).json({ message: 'Video file is required for webinar content type' });
+        }
+
         let updateData = {};
         Object.keys(req.body).forEach(key => {
             updateData[key] = req.body[key];
@@ -199,6 +260,8 @@ exports.updateContent = async (req, res) => {
         
         if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
+        if (req.files?.video_file?.[0]) updateData.video_file = req.files.video_file[0].filename;
+        if (req.body.webinar_date !== undefined) updateData.webinar_date = req.body.webinar_date;
         if (req.body.custom_fields) {
             try {
                 updateData.custom_fields = typeof req.body.custom_fields === 'string'
@@ -315,6 +378,45 @@ exports.updateContent = async (req, res) => {
                 }
             } catch (mediaError) {
                 console.error('Error adding PDF to media_files on update:', mediaError);
+            }
+        }
+
+        // Add new video file to media_files table if present and not already exists
+        if (req.files?.video_file?.[0]) {
+            try {
+                const videoFile = req.files.video_file[0];
+                // Check if file with same original name already exists in media_files table
+                const existingMedia = await Media.findByOriginalName(videoFile.originalname);
+                if (!existingMedia) {
+                    // Store video file data in database (no size limit for videos)
+                    const fileData = require('fs').readFileSync(videoFile.path);
+                    await Media.create({
+                        filename: videoFile.filename,
+                        original_name: videoFile.originalname,
+                        file_path: `/uploads/${videoFile.filename}`,
+                        file_type: 'video',
+                        file_size: videoFile.size,
+                        mime_type: videoFile.mimetype,
+                        folder: 'Videos',
+                        uploaded_by: req.user.id,
+                        file_data: fileData // Store video directly in database like images
+                    });
+                    console.log('✓ Video file added to media_files table on update with database storage:', videoFile.filename);
+                    
+                    // Clean up the uploaded file from filesystem since it's now in database
+                    try {
+                        require('fs').unlinkSync(videoFile.path);
+                        console.log('✓ Cleaned up video file from filesystem on update:', videoFile.path);
+                    } catch (cleanupError) {
+                        console.warn('Could not clean up video file from filesystem on update:', cleanupError.message);
+                    }
+                } else {
+                    console.log('Video file with same original name already exists in media_files table on update:', videoFile.originalname);
+                    // Use the existing file's filename for the content
+                    updateData.video_file = existingMedia.filename;
+                }
+            } catch (mediaError) {
+                console.error('Error adding video to media_files on update:', mediaError);
             }
         }
         

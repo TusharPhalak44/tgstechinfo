@@ -8,7 +8,7 @@ import {
   CalendarOutlined, ClockCircleOutlined, UserOutlined, TagOutlined,
   PictureOutlined, SettingOutlined, InfoCircleOutlined, ArrowLeftOutlined,
   FilePdfOutlined, PlusOutlined, DeleteOutlined, HolderOutlined, MenuOutlined, ApiOutlined, CodeOutlined,
-  BookOutlined, QuestionCircleOutlined, FileTextOutlined
+  BookOutlined, QuestionCircleOutlined, FileTextOutlined, PlayCircleOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -47,6 +47,7 @@ const STANDARD_SECTIONS = [
   { key: 'title',   label: 'Title & Description'},
   { key: 'banner',  label: 'Banner Image'     },
   { key: 'content', label: 'Content' },
+  { key: 'video',   label: 'Video Upload'    },
 ];
 
 const SECTION_TYPES = [
@@ -89,6 +90,7 @@ const CreateContent = () => {
   const [editorReady, setEditorReady] = useState(!isEditMode);
   const [fileList, setFileList] = useState([]);
   const [pdfList, setPdfList] = useState([]);
+  const [videoList, setVideoList] = useState([]);
   const [customFields, setCustomFields] = useState([]);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewData, setPreviewData] = useState(null);
@@ -251,6 +253,9 @@ const CreateContent = () => {
       }
       if (data.pdf_file) {
         setPdfList([{ uid: '-1', name: data.pdf_file, status: 'done', url: `/uploads/${data.pdf_file}` }]);
+      }
+      if (data.video_file) {
+        setVideoList([{ uid: '-1', name: data.video_file, status: 'done', url: `/uploads/${data.video_file}` }]);
       }
       if (data.custom_fields) {
           try {
@@ -430,7 +435,36 @@ const CreateContent = () => {
 
   const buildFormData = (values) => {
     const formData = new FormData();
-    const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file', 'status'];
+    
+    // For webinar type, only include essential fields
+    if (isWebinarType) {
+      formData.append('content_type_id', values.content_type_id);
+      formData.append('category_id', values.category_id);
+      formData.append('title', values.title);
+      formData.append('short_description', values.short_description || '');
+      formData.append('status', values.status || 'draft');
+      formData.append('content', ''); // Ensure content is not null
+      
+      // Webinar date
+      if (values.webinar_date) {
+        formData.append('webinar_date', values.webinar_date.format('YYYY-MM-DD HH:mm:ss'));
+      }
+      
+      // Banner image for webinar
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        formData.append('banner_image', fileList[0].originFileObj);
+      }
+      
+      // Video is required for webinar
+      if (videoList.length > 0 && videoList[0].originFileObj) {
+        formData.append('video_file', videoList[0].originFileObj);
+      }
+      
+      return formData;
+    }
+    
+    // Standard form processing for other content types
+    const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file', 'video_file', 'status', 'webinar_date'];
     Object.keys(values).forEach(key => {
       if (!skip.includes(key) && values[key] !== undefined && values[key] !== null) {
         formData.append(key, values[key]);
@@ -466,6 +500,7 @@ const CreateContent = () => {
     }
     if (fileList.length > 0 && fileList[0].originFileObj) formData.append('banner_image', fileList[0].originFileObj);
     if (pdfList.length > 0 && pdfList[0].originFileObj) formData.append('pdf_file', pdfList[0].originFileObj);
+    if (videoList.length > 0 && videoList[0].originFileObj) formData.append('video_file', videoList[0].originFileObj);
     
     // Determine custom fields
     let finalCustomFields = customFields;
@@ -530,8 +565,7 @@ const CreateContent = () => {
           message.success(`${typeName} updated! Edit anytime before submitting.`);
         }
       } else {
-        // Creating new content - explicitly set status to 'draft'
-        formData.append('status', 'draft');
+        // Creating new content - status is already set in buildFormData
         const response = await axios.post(`${apiBase}/content`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         setSavedContentId(response.data.content.id);
         setContentStatus('draft');
@@ -568,9 +602,16 @@ const CreateContent = () => {
     }
   };
 
-const handleSubmit = async () => {
+  const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      
+      // Additional validation for webinar type
+      if (isWebinarType && videoList.length === 0) {
+        message.error('Video is required for webinar content type');
+        return;
+      }
+      
       setSubmitLoading(true);
       const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
@@ -732,6 +773,7 @@ const handleSubmit = async () => {
         description: values.short_description,
         content: finalContent,
         banner_image: values.banner_image,
+        video_file: videoList.length > 0 ? videoList[0].name : null,
         content_type_id: values.content_type_id,
         category_id: values.category_id,
         seoScore
@@ -818,6 +860,7 @@ const handleSubmit = async () => {
   const showLandingFields = LANDING_TYPES.includes(selectedTypeName.toLowerCase());
   const isCaseStudy = ['case study', 'case-study'].includes(selectedTypeName.toLowerCase());
 const isLandingPageType = ['landing page', 'landing-page'].includes(selectedTypeName.toLowerCase());
+const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
  
   // Auto-switch to HTML Builder tab when Landing Page type is selected (new content only)
   useEffect(() => {
@@ -1258,6 +1301,138 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
 
             {/* ── STANDARD FORM TAB ── */}
             {activeTab === 'standard' && (() => {
+              // Webinar-specific simplified form
+              if (isWebinarType) {
+                return (
+                  <>
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Webinar Details</Text>
+                      <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                        <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                          <Select placeholder="Select type" size="large" onChange={val => {
+                            const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                            setSelectedTypeName(name);
+                          }}>
+                            {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+                          </Select>
+                        </Form.Item>
+                        <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                          <Select placeholder="Select category" size="large">
+                            {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                          </Select>
+                        </Form.Item>
+                      </div>
+                      {duplicateWarning && duplicateWarning.found && duplicateWarning.isExact && (
+                        <div style={{ 
+                           background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                          border: darkMode ? '1px solid #ef4444' : '1px solid #fecaca',
+                          borderRadius: 8, 
+                          padding: '12px 16px', 
+                          marginBottom: 16 
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <InfoCircleOutlined style={{ color: '#ef4444', fontSize: 16, marginTop: 2 }} />
+                            <div>
+                               <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: 4 }}>
+                                Duplicate content detected
+                              </div>
+                              <div style={{ fontSize: 13, color: '#991b1b' }}>
+                                Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
+                        <Input placeholder="Webinar title..." size="large"
+                          onChange={(e) => {
+                            const title = e.target.value;
+                            const shortDesc = form.getFieldValue('short_description');
+                            const tags = form.getFieldValue('tags');
+                            checkDuplicateContent(title, shortDesc, tags);
+                          }}
+                          style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
+                      </Form.Item>
+                    </div>
+
+                    {/* Banner Image Section - Optional for webinar */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <div>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image <span style={{ fontWeight: 400, fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginLeft: 8 }}>(Optional)</span></Text>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px for video thumbnail</div>
+                        </div>
+                        <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                          <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                        </Upload>
+                      </div>
+                      {fileList.length > 0 && fileList[0].originFileObj ? (
+                        <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
+                        </div>
+                      ) : (
+                        <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                          <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                          <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner image (optional)</Text>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Video Upload Section - Only for webinar */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <div>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload</Text>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload webinar video (MP4, WebM, etc.)</div>
+                        </div>
+                        <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
+                          <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
+                        </Upload>
+                      </div>
+                      {videoList.length > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
+                          <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
+                          <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
+                          <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
+                        </div>
+                      ) : (
+                        <div style={{ border: darkMode ? '2px dashed #3b82f6' : '2px dashed #bfdbfe', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff' }}>
+                          <PlayCircleOutlined style={{ fontSize: 24, color: '#3b82f6', marginBottom: 4, display: 'block' }} />
+                          <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded</Text>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Webinar Date Section - Only for webinar */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><CalendarOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Webinar Date & Time</Text>
+                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Set the scheduled date and time for this webinar</div>
+                      </div>
+                      <Form.Item 
+                        name="webinar_date"
+                        rules={[{ 
+                          required: true, 
+                          message: 'Webinar date is required' 
+                        }]}
+                      >
+                        <DatePicker 
+                          showTime 
+                          style={{ width: '100%' }}
+                          placeholder="Select webinar date and time"
+                          format="YYYY-MM-DD HH:mm:ss"
+                          disabledDate={(current) => {
+                            // Disable past dates
+                            return current && current < moment().startOf('day');
+                          }}
+                        />
+                      </Form.Item>
+                    </div>
+                  </>
+                );
+              }
+
+              // Standard form for other content types
               const sectionMap = {
                 meta: (
                   <div key="meta" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
@@ -1362,11 +1537,45 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
                     </div>
                   </div>
                 ),
+                video: (
+                  <div key="video" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                      <div>
+                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload</Text>
+                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload video files (MP4, WebM, etc.)</div>
+                      </div>
+                      <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
+                        <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
+                      </Upload>
+                    </div>
+                    {videoList.length > 0 ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
+                        <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
+                        <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
+                        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
+                      </div>
+                    ) : (
+                      <div style={{ border: darkMode ? '2px dashed #3b82f6' : '2px dashed #bfdbfe', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff' }}>
+                        <PlayCircleOutlined style={{ fontSize: 24, color: '#3b82f6', marginBottom: 4, display: 'block' }} />
+                        <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded</Text>
+                      </div>
+                    )}
+                  </div>
+                ),
               };
 
               return (
                 <>
-                  {standardLayout.map(key => sectionMap[key] || null)}
+                  {standardLayout.map(key => {
+                    // For webinar type, show meta (content-type, category, title), banner image, and video sections
+                    if (isWebinarType) {
+                      if (key === 'meta' || key === 'banner' || key === 'video') {
+                        return sectionMap[key] || null;
+                      }
+                      return null;
+                    }
+                    return sectionMap[key] || null;
+                  })}
 
                   {/* Fixed: PDF Attachment — always below reorderable sections */}
                   <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
@@ -2090,6 +2299,18 @@ const isLandingPageType = ['landing page', 'landing-page'].includes(selectedType
             {previewData.banner_image && (
               <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden' }}>
                 <img src={previewData.banner_image} alt={previewData.title} style={{ width: '100%', maxHeight: 'clamp(280px, 35vw, 420px)', objectFit: 'contain', display: 'block' }} />
+              </div>
+            )}
+            {previewData.video_file && (
+              <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden', background: darkMode ? '#0f172a' : '#000' }}>
+                <video
+                  controls
+                  style={{ width: '100%', maxHeight: 'clamp(320px, 40vw, 480px)', display: 'block' }}
+                  preload="metadata"
+                >
+                  <source src={`/uploads/${previewData.video_file}`} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               </div>
             )}
             {previewData.short_description && (

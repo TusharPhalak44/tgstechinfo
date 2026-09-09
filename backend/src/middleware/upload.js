@@ -26,18 +26,18 @@ const imageFilter = (req, file, cb) => {
 };
 
 const anyFileFilter = (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp|pdf/;
+    const allowed = /jpeg|jpg|png|gif|webp|pdf|mp4|webm|mov|avi|mkv/;
     if (allowed.test(path.extname(file.originalname).toLowerCase()))
         return cb(null, true);
-    cb(new Error('Only image or PDF files are allowed'));
+    cb(new Error('Only image, PDF, or video files are allowed'));
 };
 
-// ── Combined upload: banner_image + pdf_file ──────────────────────────────────
+// ── Combined upload: banner_image + pdf_file + video_file ──────────────────────────────────
 // Uses disk storage directly — no sharp processing to avoid native crashes.
-// Both files are saved to /uploads as-is.
+// All files are saved to /uploads as-is.
 const uploadWithPdfBase = multer({
     storage: diskStorage,
-    limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB for videos
     fileFilter: anyFileFilter
 });
 

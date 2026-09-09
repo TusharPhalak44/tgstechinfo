@@ -261,9 +261,10 @@ const CONTENT_TABS = [
   { key: 'event',      label: 'Events' },
 ];
 
+const INITIAL_SHOW = 20;
+const LOAD_MORE_COUNT = 4;
+const SHOW_MORE_THRESHOLD = 28; // After 28 items, switch to traditional pagination
 const ITEMS_PER_PAGE = 20;
-const INITIAL_SHOW = 12;
-const LOAD_MORE_COUNT = 6;
 
 const Dashboard = () => {
   const { darkMode } = useTheme();
@@ -277,6 +278,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [usePagination, setUsePagination] = useState(false);
   const [stats, setStats] = useState({
     total: 0,
     published: 0,
@@ -354,8 +357,33 @@ const Dashboard = () => {
     return matchesTab && matchesSearch;
   });
 
-  const visibleItems = filteredContents.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredContents.length;
+  // Progressive pagination logic
+  const totalItems = filteredContents.length;
+  
+  // Reset state when tab or search changes
+  useEffect(() => {
+    setVisibleCount(INITIAL_SHOW);
+    setCurrentPage(1);
+  }, [activeTab, searchQuery, totalItems]);
+
+  let visibleItems;
+  let hasMore;
+  let showPagination;
+
+  // Always use progressive pagination until 28 items are shown
+  if (visibleCount >= SHOW_MORE_THRESHOLD && totalItems > SHOW_MORE_THRESHOLD) {
+    // Traditional pagination after showing 28 items
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    visibleItems = filteredContents.slice(startIndex, endIndex);
+    hasMore = false;
+    showPagination = true;
+  } else {
+    // Progressive pagination (20+4+4 pattern until 28 items)
+    visibleItems = filteredContents.slice(0, visibleCount);
+    hasMore = visibleCount < SHOW_MORE_THRESHOLD && visibleCount < totalItems;
+    showPagination = false;
+  }
 
   return (
     <div className="user-dash-root">
@@ -1011,8 +1039,8 @@ const Dashboard = () => {
             })}
           </Row>
 
-          {/* Show More Button */}
-          {hasMore && (
+          {/* Show More Button - Progressive Phase (20+4+4 pattern) */}
+          {hasMore && !showPagination && (
             <div style={{ textAlign: 'center', marginTop: 28, marginBottom: 16 }}>
               <button
                 onClick={() => setVisibleCount(prev => prev + LOAD_MORE_COUNT)}
@@ -1033,7 +1061,218 @@ const Dashboard = () => {
                 }}
               >
                 <DownOutlined />
-                <span>Show More ({visibleItems.length} of {filteredContents.length})</span>
+                <span>Show More ({Math.min(visibleCount + LOAD_MORE_COUNT, SHOW_MORE_THRESHOLD)}/{Math.min(totalItems, SHOW_MORE_THRESHOLD)})</span>
+              </button>
+            </div>
+          )}
+
+          {/* Traditional Pagination - After Threshold */}
+          {showPagination && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              gap: 12, 
+              marginTop: 32, 
+              marginBottom: 20,
+              padding: '16px 24px',
+              background: D ? 'rgba(15, 23, 42, 0.6)' : 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: 16,
+              border: `1px solid ${D ? 'rgba(255, 255, 255, 0.1)' : 'rgba(11, 31, 77, 0.08)'}`,
+              boxShadow: D ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 4px 20px rgba(11, 31, 77, 0.08)',
+            }}>
+              <button
+                onClick={() => {
+                  setCurrentPage(prev => Math.max(1, prev - 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage === 1}
+                style={{
+                  background: currentPage === 1 
+                    ? (D ? 'rgba(255,255,255,0.05)' : '#F1F5F9') 
+                    : 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)',
+                  border: currentPage === 1 
+                    ? `1px solid ${D ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}` 
+                    : '1px solid rgba(247, 148, 29, 0.3)',
+                  color: currentPage === 1 ? (D ? '#64748B' : '#94A3B8') : '#FFFFFF',
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  opacity: currentPage === 1 ? 0.5 : 1,
+                  transition: 'all 0.3s ease',
+                  boxShadow: currentPage === 1 ? 'none' : '0 4px 12px rgba(11, 31, 77, 0.25)',
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage !== 1) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(11, 31, 77, 0.35)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage !== 1) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(11, 31, 77, 0.25)';
+                  }
+                }}
+              >
+                <ArrowRightOutlined style={{ transform: 'rotate(180deg)', fontSize: '14px' }} />
+                <span>Previous</span>
+              </button>
+
+              <div style={{ 
+                display: 'flex', 
+                gap: 6,
+                background: D ? 'rgba(30, 41, 59, 0.5)' : 'rgba(241, 245, 249, 0.8)',
+                padding: '6px',
+                borderRadius: 12,
+                border: `1px solid ${D ? 'rgba(255,255,255,0.08)' : 'rgba(11, 31, 77, 0.06)'}`
+              }}>
+                {(() => {
+                  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+                  const pages = [];
+                  
+                  // Always show first page
+                  pages.push(1);
+                  
+                  // Show pages around current page
+                  const startPage = Math.max(2, currentPage - 2);
+                  const endPage = Math.min(totalPages - 1, currentPage + 2);
+                  
+                  // Add ellipsis and middle pages
+                  if (startPage > 2) {
+                    pages.push('...');
+                  }
+                  
+                  for (let i = startPage; i <= endPage; i++) {
+                    if (i !== 1 && i !== totalPages) {
+                      pages.push(i);
+                    }
+                  }
+                  
+                  if (endPage < totalPages - 1) {
+                    pages.push('...');
+                  }
+                  
+                  // Always show last page if it's different from first
+                  if (totalPages > 1) {
+                    pages.push(totalPages);
+                  }
+                  
+                  // Remove duplicates
+                  const uniquePages = [...new Set(pages)];
+                  
+                  return uniquePages.map((page, index) => {
+                    if (page === '...') {
+                      return (
+                        <span 
+                          key={`ellipsis-${index}`}
+                          style={{
+                            padding: '8px 14px',
+                            color: D ? '#64748B' : '#94A3B8',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                          }}
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => {
+                          setCurrentPage(page);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        style={{
+                          background: currentPage === page 
+                            ? '#E3F2FD' 
+                            : (D ? '#1E293B' : '#E2E8F0'),
+                          color: currentPage === page 
+                            ? '#1976D2' 
+                            : (D ? '#F8FAFC' : '#0B1F4D'),
+                          border: currentPage === page 
+                            ? '2px solid #1976D2' 
+                            : '1px solid transparent',
+                          padding: '8px 14px',
+                          borderRadius: 8,
+                          fontSize: '0.85rem',
+                          fontWeight: currentPage === page ? 700 : 600,
+                          cursor: 'pointer',
+                          minWidth: '40px',
+                          transition: 'all 0.3s ease',
+                          boxShadow: currentPage === page ? '0 2px 8px rgba(25, 118, 210, 0.2)' : 'none',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (currentPage !== page) {
+                            e.currentTarget.style.background = D ? '#334155' : '#CBD5E1';
+                            e.currentTarget.style.transform = 'scale(1.05)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (currentPage !== page) {
+                            e.currentTarget.style.background = D ? '#1E293B' : '#E2E8F0';
+                            e.currentTarget.style.transform = 'scale(1)';
+                          }
+                        }}
+                      >
+                        {page}
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+
+              <button
+                onClick={() => {
+                  setCurrentPage(prev => Math.min(Math.ceil(totalItems / ITEMS_PER_PAGE), prev + 1));
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                disabled={currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE)}
+                style={{
+                  background: currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE) 
+                    ? (D ? 'rgba(255,255,255,0.05)' : '#F1F5F9') 
+                    : 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)',
+                  border: currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE) 
+                    ? `1px solid ${D ? 'rgba(255,255,255,0.1)' : '#E2E8F0'}` 
+                    : '1px solid rgba(247, 148, 29, 0.3)',
+                  color: currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE) 
+                    ? (D ? '#64748B' : '#94A3B8') 
+                    : '#FFFFFF',
+                  padding: '10px 18px',
+                  borderRadius: 10,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE) ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  opacity: currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE) ? 0.5 : 1,
+                  transition: 'all 0.3s ease',
+                  boxShadow: currentPage === Math.ceil(totalItems / ITEMS_PER_PAGE) ? 'none' : '0 4px 12px rgba(11, 31, 77, 0.25)',
+                }}
+                onMouseEnter={(e) => {
+                  if (currentPage !== Math.ceil(totalItems / ITEMS_PER_PAGE)) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(11, 31, 77, 0.35)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (currentPage !== Math.ceil(totalItems / ITEMS_PER_PAGE)) {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(11, 31, 77, 0.25)';
+                  }
+                }}
+              >
+                <span>Next</span>
+                <ArrowRightOutlined style={{ fontSize: '14px' }} />
               </button>
             </div>
           )}

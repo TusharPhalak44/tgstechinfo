@@ -29,6 +29,7 @@ const getSectionOrder = (builderLayout) => {
       content_type_category: 'meta',
       title_description: 'title',
       banner_image: 'banner',
+      video_upload: 'video',
       content: 'content',
       tags: 'tags',
     };
@@ -141,12 +142,12 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkM
   }
 
   // Default order if no layout saved
-  const defaultOrder = ['meta', 'title', 'banner', 'tags', 'content'];
+  const defaultOrder = ['meta', 'title', 'banner', 'video', 'tags', 'content'];
   const sectionOrder = order || defaultOrder;
 
-  // Ensure tags are always included in the order (after banner, before content)
-  const finalSectionOrder = sectionOrder.includes('tags') 
-    ? sectionOrder 
+  // Ensure tags are always included in the order (after banner/video, before content)
+  const finalSectionOrder = sectionOrder.includes('tags')
+    ? sectionOrder
     : [...sectionOrder.slice(0, sectionOrder.indexOf('content') !== -1 ? sectionOrder.indexOf('content') : sectionOrder.length), 'tags', ...sectionOrder.slice(sectionOrder.indexOf('content') !== -1 ? sectionOrder.indexOf('content') : sectionOrder.length)];
 
   const sections = {
@@ -165,7 +166,7 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkM
       </div>
     ),
 
-    banner: content.banner_image ? (
+    banner: content.banner_image && (content.content_type_name || content.content_type || '').toLowerCase() !== 'webinar' ? (
       <div key="banner" style={{ marginBottom: 24 }}>
         {renderBanner
           ? renderBanner(`/uploads/${content.banner_image}`, content.title, darkMode)
@@ -179,6 +180,19 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkM
             </div>
           )
         }
+      </div>
+    ) : null,
+
+    video: content.video_file ? (
+      <div key="video" style={{ marginBottom: 24, borderRadius: 10, overflow: 'hidden', background: darkMode ? '#0f172a' : '#000' }}>
+        <video
+          controls
+          style={{ width: '100%', display: 'block' }}
+          preload="metadata"
+        >
+          <source src={`/uploads/${content.video_file}`} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
       </div>
     ) : null,
 

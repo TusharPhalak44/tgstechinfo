@@ -69,18 +69,18 @@ router.put('/notifications/:id/read', notificationController.markAsRead);
 
 // Content creation — any authenticated user can create content
 router.post('/content',
-    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]),
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }, { name: 'video_file', maxCount: 1 }]),
     contentController.createContent
 );
 
 // Content update - owner or has permission
-router.put('/content/:id', 
+router.put('/content/:id',
     isOwnerOrHasPermission('content.update', async (req) => {
         const Content = require('../models/Content');
         const content = await Content.findById(req.params.id);
         return content ? content.user_id : null;
     }),
-    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }]), 
+    uploadWithPdf.fields([{ name: 'banner_image', maxCount: 1 }, { name: 'pdf_file', maxCount: 1 }, { name: 'video_file', maxCount: 1 }]),
     contentController.updateContent
 );
 
