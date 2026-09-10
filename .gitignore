@@ -41,8 +41,8 @@ Thumbs.db
 *.sw?
 # Ignore all .webp files
 
-*.webp
-*.pdf
-*.png
-*.jpg
-*.jpeg
+# *.webp
+# *.pdf
+# *.png
+# *.jpg
+# *.jpeg

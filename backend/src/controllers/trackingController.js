@@ -131,6 +131,7 @@ const getValidConsentUuid = async (consent_uuid, ip = '127.0.0.1', ua = 'Unknown
         // Auto-create consent record to satisfy NOT NULL foreign key constraints
         await CookieConsent.create({
             consent_uuid: targetUuid,
+            consent_type: 'implicit',
             ip_address: ip,
             user_agent: ua,
             analytics_cookies: true,

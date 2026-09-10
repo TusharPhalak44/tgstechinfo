@@ -1300,3 +1300,110 @@ exports.submitCaseStudyGate = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+exports.registerWebinar = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { first_name, last_name, email, job_title, company_name, contact_number } = req.body;
+
+        if (!first_name || !last_name || !email) {
+            return res.status(400).json({ message: 'First name, last name, and email are required.' });
+        }
+
+        const Content = require('../models/Content');
+        const webinar = await Content.findById(id);
+        if (!webinar) {
+            return res.status(404).json({ message: 'Webinar not found' });
+        }
+
+        const [result] = await pool.query(
+            `INSERT INTO webinar_registrations 
+            (webinar_id, first_name, last_name, email, job_title, company_name, contact_number) 
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+                id,
+                first_name.trim(),
+                last_name.trim(),
+                email.trim().toLowerCase(),
+                job_title ? job_title.trim() : null,
+                company_name ? company_name.trim() : null,
+                contact_number ? contact_number.trim() : null
+            ]
+        );
+
+        console.log(`[registerWebinar] Registration saved with ID ${result.insertId} for webinar ${id}`);
+
+        // Send webinar registration confirmation email
+        const attendeeEmail = email.trim().toLowerCase();
+        const webinarTitle = webinar.title || 'Webinar';
+        const joinLink = webinar.join_link || '';
+        const webinarDateStr = webinar.webinar_date ? new Date(webinar.webinar_date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' }) : 'Scheduled Date & Time';
+
+        const emailHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #334155; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 20px auto; padding: 0; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+                    .header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #ffffff; padding: 32px 24px; text-align: center; }
+                    .content { padding: 32px 24px; background: #ffffff; }
+                    .info-box { background: #f8fafc; padding: 20px; border-left: 4px solid #3b82f6; margin: 24px 0; border-radius: 6px; }
+                    .button { display: inline-block; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff !important; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px; box-shadow: 0 4px 14px rgba(37,99,235,0.4); }
+                    .footer { padding: 24px; text-align: center; color: #94a3b8; font-size: 12px; background: #f1f5f9; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2 style="margin:0;font-size:22px;">🎉 Registration Confirmed</h2>
+                        <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">TGS Tech Info Live Series</p>
+                    </div>
+                    <div class="content">
+                        <h3 style="color:#0f172a;margin-top:0;">Hi ${first_name.trim()},</h3>
+                        <p>Thank you for registering! Your complimentary virtual pass for our live technical webinar has been reserved.</p>
+                        
+                        <div class="info-box">
+                            <h4 style="margin:0 0 12px;color:#0f172a;font-size:16px;">${webinarTitle}</h4>
+                            <p style="margin:6px 0;font-size:14px;"><strong>📅 Date & Time:</strong> ${webinarDateStr}</p>
+                            ${webinar.hosted_by ? `<p style="margin:6px 0;font-size:14px;"><strong>👤 Hosted By:</strong> ${webinar.hosted_by}</p>` : ''}
+                            ${webinar.platform ? `<p style="margin:6px 0;font-size:14px;"><strong>💻 Platform:</strong> ${webinar.platform}</p>` : ''}
+                        </div>
+
+                        ${joinLink ? `
+                            <p>You can join the webinar session directly using the link below at the scheduled time:</p>
+                            <div style="text-align: center; margin: 28px 0;">
+                                <a href="${joinLink.startsWith('http') ? joinLink : 'https://' + joinLink}" class="button" target="_blank">🚀 JOIN LIVE WEBINAR NOW</a>
+                            </div>
+                        ` : '<p>The direct join link will be activated closer to the event time.</p>'}
+
+                        <p style="margin-top:28px;">If you have any questions, feel free to contact us at support@tgstechinfo.com.</p>
+                        
+                        <p style="margin-top:24px;margin-bottom:0;">Best regards,<br><strong>TGS Tech Info Team</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        try {
+            await sendEmail(attendeeEmail, `Webinar Confirmation: ${webinarTitle}`, emailHtml);
+            console.log(`[registerWebinar] Confirmation email sent to ${attendeeEmail}`);
+        } catch (emailErr) {
+            console.warn('[registerWebinar] Email send skipped/failed:', emailErr.message);
+        }
+
+        res.json({
+            success: true,
+            message: 'Registration successful!',
+            registration_id: result.insertId,
+            join_link: webinar.join_link || null
+        });
+    } catch (error) {
+        console.error('[registerWebinar] Error:', error);
+        res.status(500).json({ message: 'Server error registering for webinar.' });
+    }
+};

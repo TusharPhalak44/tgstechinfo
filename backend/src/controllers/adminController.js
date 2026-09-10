@@ -456,54 +456,65 @@ exports.getSubmissionTables = async (req, res) => {
             return res.json({ success: true, tables: [] });
         }
 
-        const sampleObj = tablesResult[0];
-        const tableKey = Object.keys(sampleObj)[0];
         const tablesInfo = [];
 
         for (const row of tablesResult) {
-            const tableName = row[tableKey];
-            const contentIdStr = tableName.replace('form_submissions_', '');
-            const contentId = parseInt(contentIdStr, 10);
-            if (isNaN(contentId)) continue;
-
-            const [contentRows] = await pool.query(
-                `SELECT c.id, c.title, c.slug, c.custom_fields, c.builder_page_data, c.status, c.created_at as content_created_at,
-                        u.id as user_id, CONCAT(u.first_name, ' ', COALESCE(u.last_name, '')) as author_name, u.email as author_email
-                 FROM contents c
-                 LEFT JOIN users u ON c.user_id = u.id
-                 WHERE c.id = ?`,
-                [contentId]
-            );
-
-            const contentInfo = contentRows[0] || null;
-
-            let totalRecords = 0;
-            let lastSubmission = null;
             try {
-                const [[countRes]] = await pool.query(`SELECT COUNT(*) as total, MAX(created_at) as last_sub FROM \`${tableName}\``);
-                totalRecords = countRes?.total || 0;
-                lastSubmission = countRes?.last_sub || null;
-            } catch (cntErr) {
-                console.warn(`Could not count records for table ${tableName}:`, cntErr.message);
+                const tableKey = Object.keys(row)[0];
+                const tableName = row[tableKey];
+                if (!tableName || typeof tableName !== 'string') continue;
+
+                const contentIdStr = tableName.replace('form_submissions_', '');
+                const contentId = parseInt(contentIdStr, 10);
+                if (isNaN(contentId)) continue;
+
+                const [contentRows] = await pool.query(
+                    `SELECT c.id, c.title, c.slug, c.custom_fields, c.builder_page_data, c.status, c.created_at as content_created_at,
+                            u.id as user_id, CONCAT(u.first_name, ' ', COALESCE(u.last_name, '')) as author_name, u.email as author_email
+                     FROM contents c
+                     LEFT JOIN users u ON c.user_id = u.id
+                     WHERE c.id = ?`,
+                    [contentId]
+                );
+
+                const contentInfo = contentRows[0] || null;
+
+                let totalRecords = 0;
+                let lastSubmission = null;
+                try {
+                    const [cols] = await pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+                    const colNames = cols.map(c => c.Field);
+                    const hasCreatedAt = colNames.includes('created_at');
+                    const selectQuery = hasCreatedAt
+                        ? `SELECT COUNT(*) as total, MAX(created_at) as last_sub FROM \`${tableName}\``
+                        : `SELECT COUNT(*) as total, NULL as last_sub FROM \`${tableName}\``;
+                    const [[countRes]] = await pool.query(selectQuery);
+                    totalRecords = countRes?.total || 0;
+                    lastSubmission = countRes?.last_sub || null;
+                } catch (cntErr) {
+                    console.warn(`Could not count records for table ${tableName}:`, cntErr.message);
+                }
+
+                let builderType = 'standard';
+                if (contentInfo?.builder_page_data) builderType = 'drag_drop';
+
+                tablesInfo.push({
+                    table_name: tableName,
+                    content_id: contentId,
+                    content_title: contentInfo ? contentInfo.title : `Content #${contentId}`,
+                    content_slug: contentInfo ? contentInfo.slug : null,
+                    builder_type: builderType,
+                    status: contentInfo ? contentInfo.status : 'published',
+                    user_id: contentInfo ? contentInfo.user_id : null,
+                    author_name: contentInfo && contentInfo.author_name ? String(contentInfo.author_name).trim() : 'System / Unknown',
+                    author_email: contentInfo ? contentInfo.author_email : null,
+                    total_records: totalRecords,
+                    last_submission: lastSubmission,
+                    content_created_at: contentInfo ? contentInfo.content_created_at : null
+                });
+            } catch (tableErr) {
+                console.warn(`Error processing admin submission table row:`, tableErr.message);
             }
-
-            let builderType = 'standard';
-            if (contentInfo?.builder_page_data) builderType = 'drag_drop';
-
-            tablesInfo.push({
-                table_name: tableName,
-                content_id: contentId,
-                content_title: contentInfo ? contentInfo.title : `Content #${contentId}`,
-                content_slug: contentInfo ? contentInfo.slug : null,
-                builder_type: builderType,
-                status: contentInfo ? contentInfo.status : 'published',
-                user_id: contentInfo ? contentInfo.user_id : null,
-                author_name: contentInfo && contentInfo.author_name ? String(contentInfo.author_name).trim() : 'System / Unknown',
-                author_email: contentInfo ? contentInfo.author_email : null,
-                total_records: totalRecords,
-                last_submission: lastSubmission,
-                content_created_at: contentInfo ? contentInfo.content_created_at : null
-            });
         }
 
         tablesInfo.sort((a, b) => (new Date(b.last_submission || 0) - new Date(a.last_submission || 0)) || (b.content_id - a.content_id));
@@ -557,7 +568,9 @@ exports.getSubmissionTableDetails = async (req, res) => {
             };
         }
 
-        const [rows] = await pool.query(`SELECT * FROM \`${tableName}\` ORDER BY id DESC`);
+        const hasId = columnsResult.some(c => c.Field === 'id');
+        const orderByClause = hasId ? 'ORDER BY id DESC' : '';
+        const [rows] = await pool.query(`SELECT * FROM \`${tableName}\` ${orderByClause}`);
 
         res.json({
             success: true,
@@ -1213,5 +1226,53 @@ exports.getUserContent = async (req, res) => {
     } catch (error) {
         console.error('Admin get user content error:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.getWebinarRegistrations = async (req, res) => {
+    try {
+        const { webinar_id, search } = req.query;
+        let query = `
+            SELECT wr.*, 
+                   c.title as webinar_title, 
+                   c.webinar_date, 
+                   c.platform, 
+                   c.hosted_by, 
+                   c.join_link,
+                   c.webinar_type,
+                   u.first_name as author_first_name, 
+                   u.last_name as author_last_name
+            FROM webinar_registrations wr
+            LEFT JOIN contents c ON wr.webinar_id = c.id
+            LEFT JOIN users u ON c.user_id = u.id
+            WHERE 1=1
+        `;
+        const values = [];
+
+        if (webinar_id) {
+            query += ` AND wr.webinar_id = ?`;
+            values.push(webinar_id);
+        }
+
+        if (search) {
+            query += ` AND (
+                wr.first_name LIKE ? OR 
+                wr.last_name LIKE ? OR 
+                wr.email LIKE ? OR 
+                wr.company_name LIKE ? OR 
+                wr.job_title LIKE ? OR 
+                c.title LIKE ?
+            )`;
+            const q = `%${search}%`;
+            values.push(q, q, q, q, q, q);
+        }
+
+        query += ` ORDER BY wr.registered_at DESC`;
+
+        const [rows] = await pool.query(query, values);
+        res.json({ success: true, registrations: rows, total: rows.length });
+    } catch (error) {
+        console.error('[getWebinarRegistrations] Error:', error);
+        res.status(500).json({ message: 'Failed to fetch webinar registrations.' });
     }
 };

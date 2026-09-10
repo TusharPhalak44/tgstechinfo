@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Skeleton, Pagination } from 'antd';
-import { CalendarOutlined, EyeOutlined, UserOutlined, SearchOutlined, CompassOutlined, ReadOutlined, FireOutlined } from '@ant-design/icons';
+import { Skeleton, Pagination, Tag } from 'antd';
+import { CalendarOutlined, EyeOutlined, UserOutlined, SearchOutlined, CompassOutlined, ReadOutlined, FireOutlined, PlayCircleOutlined, VideoCameraOutlined, ClockCircleOutlined, LinkOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem } from '../../lib/contentRoute';
+import WebinarCountdown from '../common/WebinarCountdown';
 
 // Detect HTML builder (landing page) content by builder_layout OR content type
 const isHtmlBuilderContent = (item) => {
@@ -252,21 +253,24 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
             </div>
           </div>
 
-          {/* Right Column: Featured Spotlight Article */}
+          {/* Right Column: Featured Spotlight Article / Webinar Hero Story */}
           {featuredPost && !isMobile && (
             <div
               onClick={() => navigateContentItem(featuredPost, navigate)}
               style={{
-                width: 430,
+                width: 440,
                 flexShrink: 0,
-                background: darkMode ? 'rgba(15, 23, 42, 0.8)' : '#FFFFFF',
-                border: darkMode ? '1px solid rgba(10, 174, 239, 0.3)' : '1px solid rgba(0, 0, 0, 0.08)',
+                background: darkMode ? 'rgba(15, 23, 42, 0.9)' : '#FFFFFF',
+                border: featuredPost.webinar_type === 'live' || (featuredPost.content_type || '').toLowerCase() === 'webinar'
+                  ? (darkMode ? '2px solid #ef4444' : '2px solid #3b82f6')
+                  : (darkMode ? '1px solid rgba(10, 174, 239, 0.3)' : '1px solid rgba(0, 0, 0, 0.08)'),
                 backdropFilter: 'blur(16px)',
                 borderRadius: 16,
-                padding: 16,
+                padding: 18,
                 cursor: 'pointer',
                 transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)'
+                boxShadow: darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)',
+                position: 'relative'
               }}
               onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
@@ -277,7 +281,7 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
                 e.currentTarget.style.boxShadow = darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)';
               }}
             >
-              <div style={{ height: 175, borderRadius: 10, overflow: 'hidden', position: 'relative', marginBottom: 14, background: '#1E293B' }}>
+              <div style={{ height: 185, borderRadius: 12, overflow: 'hidden', position: 'relative', marginBottom: 14, background: '#1E293B' }}>
                 {featuredPost.banner_image ? (
                   <img
                     src={`/uploads/${featuredPost.banner_image}`}
@@ -287,30 +291,63 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
                 ) : (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>⚡</div>
                 )}
-                <span style={{
-                  position: 'absolute',
-                  top: 10,
-                  left: 10,
-                  background: accent,
-                  color: '#FFF',
-                  fontSize: '0.68rem',
-                  fontWeight: 800,
-                  padding: '3px 10px',
-                  borderRadius: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                }}>
-                  Spotlight Story
-                </span>
+
+                {/* Hero Badge */}
+                {(featuredPost.webinar_type === 'live' || (featuredPost.content_type || '').toLowerCase() === 'webinar') ? (
+                  <span style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    background: featuredPost.webinar_type === 'on_demand' ? '#3b82f6' : '#ef4444',
+                    color: '#FFF',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    padding: '4px 12px',
+                    borderRadius: 14,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    {featuredPost.webinar_type === 'on_demand' ? (
+                      <><PlayCircleOutlined /> On-Demand Video</>
+                    ) : (
+                      <><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', animation: 'badgePulse 1.5s infinite' }} /> Upcoming Live Webinar</>
+                    )}
+                  </span>
+                ) : (
+                  <span style={{
+                    position: 'absolute',
+                    top: 10,
+                    left: 10,
+                    background: accent,
+                    color: '#FFF',
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    padding: '3px 10px',
+                    borderRadius: 12,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                  }}>
+                    Spotlight Story
+                  </span>
+                )}
               </div>
 
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: accent, textTransform: 'uppercase', marginBottom: 4, letterSpacing: '0.05em' }}>
-                {featuredPost.category_name || title}
-              </div>
+              {/* Host & Platform Info if Webinar */}
+              {featuredPost.hosted_by && (
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>Hosted by {featuredPost.hosted_by}</span>
+                  {featuredPost.platform && <Tag color="blue" style={{ fontSize: 10 }}>{featuredPost.platform}</Tag>}
+                </div>
+              )}
+
               <h3 style={{
                 margin: '0 0 8px 0',
-                fontSize: '1.05rem',
+                fontSize: '1.08rem',
                 fontWeight: 800,
                 color: darkMode ? '#F8FAFC' : '#0F172A',
                 lineHeight: 1.35,
@@ -321,6 +358,14 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
               }}>
                 {featuredPost.title}
               </h3>
+
+              {/* Countdown for Live Webinar in Hero */}
+              {featuredPost.webinar_date && (featuredPost.webinar_type === 'live' || !featuredPost.webinar_type) && (
+                <div style={{ marginBottom: 12 }}>
+                  <WebinarCountdown webinarDate={featuredPost.webinar_date} darkMode={darkMode} />
+                </div>
+              )}
+
               <p style={{
                 margin: 0,
                 fontSize: '0.8125rem',
@@ -346,6 +391,10 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
 const ListItem = ({ item, navigate, accent, darkMode }) => {
   const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
+  const isWebinar = (item.content_type_name || item.content_type || '').toLowerCase() === 'webinar';
+  const isLive = isWebinar && (item.webinar_type === 'live' || (!item.webinar_type && item.webinar_date));
+  const isOnDemand = isWebinar && (item.webinar_type === 'on_demand' || item.video_file);
+
   return (
     <div style={{
       display: 'flex', gap: isMobile ? 12 : 20, padding: isMobile ? '16px 0' : '20px 0',
@@ -360,15 +409,15 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
     >
       {/* Thumbnail */}
       <div style={{ 
-        width: isMobile ? '100%' : 220, 
-        height: isMobile ? 180 : 150, 
+        width: isMobile ? '100%' : 240, 
+        height: isMobile ? 180 : 155, 
         flexShrink: 0, 
         borderRadius: 10, 
         overflow: 'hidden', 
         background: darkMode ? '#1e293b' : '#f0f4ff', 
         position: 'relative',
-        minHeight: isMobile ? 180 : 150,
-        maxHeight: isMobile ? 180 : 150,
+        minHeight: isMobile ? 180 : 155,
+        maxHeight: isMobile ? 180 : 155,
       }} className="cat-list-item-thumb">
         {item.banner_image
           ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="cat-list-item-thumb-img" style={{ transition: 'transform .4s ease', width: '100%', height: '100%', objectFit: 'cover' }}
@@ -377,37 +426,75 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
             />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 40 : 32 }}>📄</div>
         }
+
+        {/* Play Icon Overlay for On-Demand Video Webinars */}
+        {isOnDemand && (
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.4)' }}>
+              <PlayCircleOutlined style={{ fontSize: 24, color: '#fff' }} />
+            </div>
+          </div>
+        )}
+
+        {/* Badge Overlay */}
         <span style={{
           position: 'absolute', top: 8, left: 8,
-          background: isLandingPage ? '#6c5ce7' : accent,
-          color: '#fff', fontSize: isMobile ? 9 : 10, fontWeight: 700,
-          padding: isMobile ? '2px 7px' : '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase'
+          background: isLive ? '#ef4444' : (isOnDemand ? '#3b82f6' : (isLandingPage ? '#6c5ce7' : accent)),
+          color: '#fff', fontSize: isMobile ? 9 : 10, fontWeight: 800,
+          padding: isMobile ? '2px 8px' : '3px 10px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase',
+          display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
         }}>
-          {isLandingPage ? 'Landing Page' : (item.content_type_name || item.content_type || '')}
+          {isLive ? (
+            <><span style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} /> LIVE WEBINAR</>
+          ) : isOnDemand ? (
+            <><PlayCircleOutlined /> ON-DEMAND</>
+          ) : isLandingPage ? (
+            'Landing Page'
+          ) : (
+            item.content_type_name || item.content_type || ''
+          )}
         </span>
       </div>
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isMobile ? 6 : 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isMobile ? 6 : 8, flexWrap: 'wrap' }}>
           {item.category_name && (
             <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8 }}>
               {item.category_name}
             </span>
           )}
+          {item.hosted_by && (
+            <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#475569' }}>
+              • Hosted by <strong style={{ color: darkMode ? '#f1f5f9' : '#0f172a' }}>{item.hosted_by}</strong>
+            </span>
+          )}
+          {item.platform && (
+            <Tag color="blue" style={{ fontSize: 10, margin: 0 }}>{item.platform}</Tag>
+          )}
         </div>
+
         <h3 style={{
           fontWeight: 700, fontSize: isMobile ? 15 : 16, color: darkMode ? '#f1f5f9' : '#0f172a', margin: '0 0 8px', lineHeight: 1.4,
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
         }}>
           {item.title}
         </h3>
+
         <p style={{
           fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.65, margin: '0 0 12px',
           display: '-webkit-box', WebkitLineClamp: isMobile ? 2 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
         }}>
           {item.short_description}
         </p>
+
+        {/* Live Webinar Countdown preview line */}
+        {isLive && item.webinar_date && (
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#ef4444', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <ClockCircleOutlined /> Live Event: {moment(item.webinar_date).format('MMMM D, YYYY [at] h:mm A')}
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <UserOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
@@ -423,10 +510,10 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
           </span>
           <span style={{
             marginLeft: isMobile ? 0 : 'auto', fontSize: isMobile ? 11 : 12, fontWeight: 700,
-            color: isLandingPage ? '#6c5ce7' : accent,
+            color: isLive ? '#ef4444' : (isOnDemand ? '#3b82f6' : (isLandingPage ? '#6c5ce7' : accent)),
             display: 'flex', alignItems: 'center', gap: 4
           }}>
-            {isLandingPage ? '→ View Landing Page' : '→ Read Article'}
+            {isLive ? '🔴 Register for Live Webinar →' : (isOnDemand ? '📹 Watch Video Recording →' : (isLandingPage ? '→ View Landing Page' : '→ Read Article'))}
           </span>
         </div>
       </div>

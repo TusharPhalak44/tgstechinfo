@@ -55,4 +55,7 @@ router.get('/submission/:id', strictLimiter, adminController.getSubmissionById);
 // Dynamic form submissions (requires authentication)
 router.get('/dynamic-form-submissions/:content_id', authenticate, publicController.getDynamicFormSubmissions);
 
+// Webinar Registration
+router.post('/content/:id/register-webinar', strictLimiter, publicController.registerWebinar);
+
 module.exports = router;

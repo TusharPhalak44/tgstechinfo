@@ -236,7 +236,7 @@ class Content {
             tags, banner_image, pdf_file, video_file, custom_fields, content, webhook_url,
             webhook_field_mapping, builder_layout, builder_content_elements, builder_page_data,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
-            scheduled_publish_date, webinar_date, status = 'draft',
+            scheduled_publish_date, webinar_date, hosted_by, platform, webinar_type = 'live', join_link, status = 'draft',
             email_subject, email_template, case_study_headline, case_study_summary,
             is_visible_on_site = true
         } = contentData;
@@ -311,7 +311,8 @@ class Content {
             'tags', 'banner_image', 'pdf_file', 'video_file', 'custom_fields', 'content', 'webhook_url',
             'webhook_field_mapping', 'builder_layout', 'builder_content_elements',
             'builder_page_data', 'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
-            'scheduled_publish_date', 'webinar_date', 'reading_time', 'status', 'is_visible_on_site',
+            'scheduled_publish_date', 'webinar_date', 'hosted_by', 'platform', 'webinar_type', 'join_link',
+            'reading_time', 'status', 'is_visible_on_site',
             'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];
 
@@ -338,6 +339,10 @@ class Content {
             seo_meta_keywords,
             scheduled_publish_date,
             webinar_date || null,
+            hosted_by || null,
+            platform || null,
+            webinar_type || 'live',
+            join_link || null,
             reading_time,
             status,
             is_visible_on_site,
@@ -570,7 +575,8 @@ class Content {
         const allowedFields = [
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'video_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
-            'scheduled_publish_date', 'status', 'category_id', 'content_type_id', 'webhook_url',
+            'scheduled_publish_date', 'webinar_date', 'hosted_by', 'platform', 'webinar_type', 'join_link',
+            'status', 'category_id', 'content_type_id', 'webhook_url',
             'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data',
             'is_visible_on_site', 'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];

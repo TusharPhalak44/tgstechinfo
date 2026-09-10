@@ -138,4 +138,8 @@ router.get('/submissions', async (req, res) => {
     }
 });
 
+// Dynamic form submission tables for user
+router.get('/submission-tables', contentController.getUserSubmissionTables);
+router.get('/submission-tables/:contentId', contentController.getUserSubmissionTableDetails);
+
 module.exports = router;

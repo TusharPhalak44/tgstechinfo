@@ -4,9 +4,10 @@ const { v4: uuidv4 } = require('uuid');
 class CookieConsent {
     static async create(consentData) {
         const {
+            consent_uuid = null,
             user_id = null,
             session_id = null,
-            consent_type,
+            consent_type = 'necessary',
             necessary_cookies = true,
             functional_cookies = false,
             analytics_cookies = false,
@@ -17,7 +18,7 @@ class CookieConsent {
             user_agent = null
         } = consentData;
 
-        const uuid = uuidv4();
+        const uuid = consent_uuid || uuidv4();
         
         // Set default expiry to 1 year if not provided
         const expiryDate = expires_at || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);

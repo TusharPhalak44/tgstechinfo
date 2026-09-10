@@ -6,6 +6,74 @@ const { pool } = require('./database');
 
 dotenv.config();
 
+// Email rate limiting tracker (in-memory, for production use Redis)
+const emailRateLimiter = new Map();
+
+/**
+ * Check if an email address has exceeded rate limit
+ * @param {string} to - Recipient email
+ * @param {number} maxPerHour - Max emails per hour (default: 5)
+ * @returns {boolean} - True if rate limit exceeded
+ */
+const isRateLimited = (to, maxPerHour = 5) => {
+    const now = Date.now();
+    const hourAgo = now - (60 * 60 * 1000);
+    
+    if (!emailRateLimiter.has(to)) {
+        emailRateLimiter.set(to, []);
+    }
+    
+    const timestamps = emailRateLimiter.get(to).filter(t => t > hourAgo);
+    emailRateLimiter.set(to, timestamps);
+    
+    if (timestamps.length >= maxPerHour) {
+        console.warn(`[Rate Limit] Email to ${to} exceeds limit (${maxPerHour}/hour)`);
+        return true;
+    }
+    
+    timestamps.push(now);
+    emailRateLimiter.set(to, timestamps);
+    return false;
+};
+
+/**
+ * Get the appropriate email transporter (SendGrid or Hostinger)
+ * @returns {object} - Nodemailer transporter or SendGrid transport
+ */
+const getEmailTransporter = () => {
+    // Try SendGrid first if API key is configured
+    if (process.env.SENDGRID_API_KEY && !process.env.SENDGRID_API_KEY.includes('placeholder')) {
+        console.log('[Email] Using SendGrid as email service');
+        return nodemailer.createTransport({
+            host: 'smtp.sendgrid.net',
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'apikey',
+                pass: process.env.SENDGRID_API_KEY
+            }
+        });
+    }
+    
+    // Fall back to Hostinger
+    console.log('[Email] Using Hostinger SMTP as email service');
+    const user = process.env.EMAIL_USER;
+    const rawPass = process.env.EMAIL_PASSWORD;
+    const pass = rawPass ? rawPass.replace(/^['"](.*)['"]$/g, '$1') : rawPass;
+    const host = process.env.EMAIL_HOST || 'smtp.hostinger.com';
+    const port = Number(process.env.EMAIL_PORT || 465);
+    
+    return nodemailer.createTransport({
+        host,
+        port,
+        secure: port === 465,
+        auth: { user, pass },
+        tls: { rejectUnauthorized: false },
+        debug: true,
+        logger: true
+    });
+};
+
 /**
  * Get the public URL for the website
  * Uses FRONTEND_URL from environment or constructs from API_URL
@@ -147,38 +215,38 @@ const buildLogoHtml = (logoData) => {
 };
 
 const sendEmail = async (to, subject, html, options = {}) => {
-    const user = process.env.EMAIL_USER;
-    const rawPass = process.env.EMAIL_PASSWORD;
-    const pass = rawPass ? rawPass.replace(/^['"]|['"]$/g, '') : rawPass;
-    const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
-    const port = Number(process.env.EMAIL_PORT || 587);
-    const fromAddress = process.env.EMAIL_FROM || 'noreply@tgstechinfo.com';
-    const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
-    const organization = process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
-
-    console.log('Email config:', { host, port, user, fromAddress });
+    // Check rate limit
+    if (isRateLimited(to, 5)) {
+        console.warn(`[sendEmail] Rate limit exceeded for ${to}`);
+        return { 
+            skipped: true, 
+            reason: 'rate_limit_exceeded',
+            message: 'Too many emails sent to this address. Please try again later.'
+        };
+    }
 
     if (!to) {
         console.warn('Email skipped: no recipient address provided.');
         return { skipped: true, reason: 'no_recipient' };
     }
 
+    const fromAddress = process.env.EMAIL_FROM || 'noreply@tgstechinfo.com';
+    const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
+    const organization = process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
+
+    // Validate email configuration
+    const user = process.env.EMAIL_USER;
+    const rawPass = process.env.EMAIL_PASSWORD;
+    const pass = rawPass ? rawPass.replace(/^['"](.*)['"]$/g, '$1') : rawPass;
+    
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
-        console.warn('Email skipped: credentials not configured. Expected EMAIL_USER and EMAIL_PASSWORD in the environment.');
-        return { skipped: true, reason: 'credentials_not_configured', from: fromAddress };
+        if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY.includes('placeholder')) {
+            console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD or SENDGRID_API_KEY.');
+            return { skipped: true, reason: 'credentials_not_configured', from: fromAddress };
+        }
     }
 
-    const transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: { user, pass },
-        tls: { rejectUnauthorized: false },
-        debug: true,
-        logger: true
-    });
-
-    // Generate message ID for better tracking
+    const transporter = getEmailTransporter();
     const messageId = `<${Date.now()}@${fromAddress.split('@')[1]}>`;
 
     const mailOptions = {
@@ -197,7 +265,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
         }
     };
 
-    // Add custom attachments if provided (but NOT the logo)
+    // Add custom attachments if provided
     if (options.attachments && options.attachments.length > 0) {
         mailOptions.attachments = options.attachments;
     }
@@ -207,10 +275,27 @@ const sendEmail = async (to, subject, html, options = {}) => {
         console.log(`[sendEmail] Email successfully sent to ${to}. MessageId: ${info.messageId || info.id}`);
         return info;
     } catch (sendErr) {
-        console.error(`[sendEmail] SMTP Send Error for recipient ${to}:`, sendErr.message);
-        if (sendErr.responseCode === 554 || (sendErr.message && sendErr.message.includes('554'))) {
-            console.warn(`[sendEmail] CRITICAL: Outbound sending is disabled on SMTP host (${host}:${port}) for user ${user}. Please verify SMTP user credentials / outbound email status with your mail provider.`);
+        console.error(`[sendEmail] Email Send Error for recipient ${to}:`, sendErr.message);
+        
+        // Check for Hostinger suspension
+        if (sendErr.message && sendErr.message.includes('suspended')) {
+            console.error(`[sendEmail] CRITICAL: Email account appears suspended on Hostinger`);
+            console.error(`[sendEmail] ACTION REQUIRED: Log into Hostinger hPanel and reactivate the email account.`);
         }
+        
+        // Check for SMTP outbound blocking
+        if (sendErr.responseCode === 554 || (sendErr.message && sendErr.message.includes('554'))) {
+            console.warn(`[sendEmail] CRITICAL: Outbound sending is disabled on SMTP host`);
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`\n============================ EMAIL PREVIEW (${to}) ============================`);
+            console.log(`Subject: ${subject}`);
+            console.log(`To: ${to}`);
+            console.log(`From: ${fromAddress}`);
+            console.log(`=================================================================================\n`);
+        }
+        
         return {
             error: sendErr.message,
             responseCode: sendErr.responseCode || 500,

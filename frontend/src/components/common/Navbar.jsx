@@ -670,6 +670,33 @@ const Navbar = () => {
                 </div>
               </div>
 
+              {/* Contact Us Button - Visible on desktop for all users */}
+              {!isMobile && (
+                <button
+                  onClick={() => navigate('/contact')}
+                  className={`group relative rounded-full font-bold transition-all duration-300 inline-flex items-center cursor-pointer select-none ${
+                    isLaptop ? 'h-9 pl-1.5 pr-4 text-xs gap-2' : 'h-10 pl-1.5 pr-5 text-[13px] gap-2.5'
+                  } ${
+                    darkMode
+                      ? 'bg-[rgba(59,130,246,0.1)] border-[1.5px] border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6] hover:text-white hover:shadow-[0_6px_18px_rgba(59,130,246,0.35)]'
+                      : 'bg-[#EAF2FF] border-[1.5px] border-[#0B1F4D] text-[#0B1F4D] hover:bg-[#0B1F4D] hover:text-white hover:shadow-[0_6px_18px_rgba(11,31,77,0.25)]'
+                  } hover:-translate-y-0.5 active:translate-y-0 shadow-sm`}
+                >
+                  <div
+                    className={`rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${
+                      isLaptop ? 'w-6 h-6' : 'w-7 h-7'
+                    } ${
+                      darkMode
+                        ? 'bg-blue-500/20 text-[#38BDF8] group-hover:bg-white group-hover:text-[#3B82F6]'
+                        : 'bg-white text-[#0B1F4D] shadow-xs group-hover:bg-white group-hover:text-[#0B1F4D]'
+                    }`}
+                  >
+                    <PhoneCall className={`${isLaptop ? 'w-3 h-3' : 'w-3.5 h-3.5'} transition-transform duration-300 group-hover:scale-110 shrink-0`} />
+                  </div>
+                  <span className="tracking-wide font-extrabold whitespace-nowrap">Contact Us</span>
+                </button>
+              )}
+
               {/* Notifications */}
               {isAuthenticated && (
                 <Dropdown
@@ -725,41 +752,13 @@ const Navbar = () => {
                   </div>
                 </Dropdown>
               ) : !isMobile ? (
-                <div style={{ display: 'flex', gap: isLaptop ? 6 : 10, alignItems: 'center' }}>
-                  {/* Contact Us Button - Brand Navy #0B1F4D with Balanced Icon Circle */}
-                  <button
-                    onClick={() => navigate('/contact')}
-                    className={`group relative rounded-full font-bold transition-all duration-300 inline-flex items-center cursor-pointer select-none ${
-                      isLaptop ? 'h-9 pl-1.5 pr-4 text-xs gap-2' : 'h-10 pl-1.5 pr-5 text-[13px] gap-2.5'
-                    } ${
-                      darkMode
-                        ? 'bg-[rgba(59,130,246,0.1)] border-[1.5px] border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6] hover:text-white hover:shadow-[0_6px_18px_rgba(59,130,246,0.35)]'
-                        : 'bg-[#EAF2FF] border-[1.5px] border-[#0B1F4D] text-[#0B1F4D] hover:bg-[#0B1F4D] hover:text-white hover:shadow-[0_6px_18px_rgba(11,31,77,0.25)]'
-                    } hover:-translate-y-0.5 active:translate-y-0 shadow-sm`}
-                  >
-                    <div
-                      className={`rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${
-                        isLaptop ? 'w-6 h-6' : 'w-7 h-7'
-                      } ${
-                        darkMode
-                          ? 'bg-blue-500/20 text-[#38BDF8] group-hover:bg-white group-hover:text-[#3B82F6]'
-                          : 'bg-white text-[#0B1F4D] shadow-xs group-hover:bg-white group-hover:text-[#0B1F4D]'
-                      }`}
-                    >
-                      <PhoneCall className={`${isLaptop ? 'w-3 h-3' : 'w-3.5 h-3.5'} transition-transform duration-300 group-hover:scale-110 shrink-0`} />
-                    </div>
-                    <span className="tracking-wide font-extrabold whitespace-nowrap">Contact Us</span>
-                  </button>
-
-                  {/* Join Our Community Button - button-witn-icon design */}
-                  <ButtonWithIcon
-                    onClick={() => navigate('/login')}
-                    size={isLaptop ? 'sm' : 'default'}
-                    className={isLaptop ? 'h-9 text-xs' : 'h-10 text-[13px]'}
-                  >
-                    Join Our Community
-                  </ButtonWithIcon>
-                </div>
+                <ButtonWithIcon
+                  onClick={() => navigate('/login')}
+                  size={isLaptop ? 'sm' : 'default'}
+                  className={isLaptop ? 'h-9 text-xs' : 'h-10 text-[13px]'}
+                >
+                  Join Our Community
+                </ButtonWithIcon>
               ) : null}
 
               {/* Dark Mode Theme Toggle - Placed RIGHT of Join Our Community / User Profile */}
@@ -860,32 +859,32 @@ const Navbar = () => {
           ))}
 
           {/* Action Buttons for Mobile */}
-          {!isAuthenticated && (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-              marginTop: 24,
-              paddingTop: 20,
-              borderTop: '1px solid var(--color-border)'
-            }}>
-              <button
-                onClick={() => {
-                  navigate('/contact');
-                  setMobileOpen(false);
-                }}
-                className={`w-full rounded-full py-2.5 px-4 font-bold text-sm inline-flex items-center justify-center gap-2.5 transition-all duration-300 ${
-                  darkMode
-                    ? 'bg-slate-900/90 border border-slate-700 text-slate-200 hover:border-[#0AAEEF] hover:text-white shadow-sm'
-                    : 'bg-white border border-slate-200 text-slate-800 hover:border-[#0AAEEF] hover:text-[#0AAEEF] shadow-sm'
-                }`}
-              >
-                <div className="w-7 h-7 rounded-full bg-sky-500/10 text-[#0AAEEF] flex items-center justify-center shrink-0">
-                  <PhoneCall className="w-3.5 h-3.5" />
-                </div>
-                <span className="font-extrabold whitespace-nowrap">Contact Us</span>
-              </button>
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            marginTop: 24,
+            paddingTop: 20,
+            borderTop: '1px solid var(--color-border)'
+          }}>
+            <button
+              onClick={() => {
+                navigate('/contact');
+                setMobileOpen(false);
+              }}
+              className={`w-full rounded-full py-2.5 px-4 font-bold text-sm inline-flex items-center justify-center gap-2.5 transition-all duration-300 ${
+                darkMode
+                  ? 'bg-slate-900/90 border border-slate-700 text-slate-200 hover:border-[#0AAEEF] hover:text-white shadow-sm'
+                  : 'bg-white border border-slate-200 text-slate-800 hover:border-[#0AAEEF] hover:text-[#0AAEEF] shadow-sm'
+              }`}
+            >
+              <div className="w-7 h-7 rounded-full bg-sky-500/10 text-[#0AAEEF] flex items-center justify-center shrink-0">
+                <PhoneCall className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-extrabold whitespace-nowrap">Contact Us</span>
+            </button>
 
+            {!isAuthenticated && (
               <ButtonWithIcon
                 onClick={() => {
                   navigate('/login');
@@ -896,8 +895,8 @@ const Navbar = () => {
               >
                 Join Our Community
               </ButtonWithIcon>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Authenticated User Banner */}
           {isAuthenticated && (

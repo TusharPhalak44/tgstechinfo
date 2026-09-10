@@ -3,6 +3,7 @@ const ContentType = require('../models/ContentType');
 const Category = require('../models/Category');
 const Media = require('../models/Media');
 
+const { pool } = require('../config/database');
 const User = require('../models/User');
 
 const { validationResult } = require('express-validator');
@@ -32,6 +33,10 @@ exports.createContent = async (req, res) => {
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
             video_file: req.files?.video_file?.[0]?.filename || null,
             webinar_date: req.body.webinar_date || null,
+            hosted_by: req.body.hosted_by || null,
+            platform: req.body.platform || null,
+            webinar_type: req.body.webinar_type || 'live',
+            join_link: req.body.join_link || null,
             tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
             custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null,
             webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null,
@@ -243,9 +248,10 @@ exports.updateContent = async (req, res) => {
         const contentType = await ContentType.findById(content.content_type_id);
         const isWebinar = contentType && contentType.name.toLowerCase() === 'webinar';
 
-        // For webinar type, validate that video file is present (either existing or new upload)
-        if (isWebinar && !req.files?.video_file?.[0] && !content.video_file) {
-            return res.status(400).json({ message: 'Video file is required for webinar content type' });
+        // For on-demand webinar type, validate that video file is present (either existing or new upload)
+        const webinarType = req.body.webinar_type || content.webinar_type || 'live';
+        if (isWebinar && webinarType === 'on_demand' && !req.files?.video_file?.[0] && !content.video_file) {
+            return res.status(400).json({ message: 'Video file is required for on-demand webinar' });
         }
 
         let updateData = {};
@@ -262,6 +268,10 @@ exports.updateContent = async (req, res) => {
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.files?.video_file?.[0]) updateData.video_file = req.files.video_file[0].filename;
         if (req.body.webinar_date !== undefined) updateData.webinar_date = req.body.webinar_date;
+        if (req.body.hosted_by !== undefined) updateData.hosted_by = req.body.hosted_by;
+        if (req.body.platform !== undefined) updateData.platform = req.body.platform;
+        if (req.body.webinar_type !== undefined) updateData.webinar_type = req.body.webinar_type;
+        if (req.body.join_link !== undefined) updateData.join_link = req.body.join_link;
         if (req.body.custom_fields) {
             try {
                 updateData.custom_fields = typeof req.body.custom_fields === 'string'
@@ -598,5 +608,155 @@ exports.incrementContentView = async (req, res) => {
     } catch (error) {
         console.error('Increment view count error:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// ✅ Get all dynamic form submission tables created in the database for the logged-in user
+exports.getUserSubmissionTables = async (req, res) => {
+    try {
+        const userId = req.user?.id;
+        const userRole = req.user?.role || 'user';
+        const isAdmin = userRole === 'admin';
+
+        const [tablesResult] = await pool.query("SHOW TABLES LIKE 'form_submissions_%'");
+        if (!tablesResult || tablesResult.length === 0) {
+            return res.json({ success: true, tables: [] });
+        }
+
+        const tablesInfo = [];
+
+        for (const row of tablesResult) {
+            try {
+                const tableKey = Object.keys(row)[0];
+                const tableName = row[tableKey];
+                if (!tableName || typeof tableName !== 'string') continue;
+
+                const contentIdStr = tableName.replace('form_submissions_', '');
+                const contentId = parseInt(contentIdStr, 10);
+                if (isNaN(contentId)) continue;
+
+                let contentRows = [];
+                if (isAdmin) {
+                    [contentRows] = await pool.query(
+                        `SELECT c.id, c.title, c.slug, c.custom_fields, c.builder_page_data, c.status, c.created_at as content_created_at, c.user_id
+                         FROM contents c
+                         WHERE c.id = ?`,
+                        [contentId]
+                    );
+                } else if (userId) {
+                    [contentRows] = await pool.query(
+                        `SELECT c.id, c.title, c.slug, c.custom_fields, c.builder_page_data, c.status, c.created_at as content_created_at, c.user_id
+                         FROM contents c
+                         WHERE c.id = ? AND c.user_id = ?`,
+                        [contentId, userId]
+                    );
+                }
+
+                if (!contentRows.length) continue; // Skip tables that don't belong to this user
+
+                const contentInfo = contentRows[0];
+
+                let totalRecords = 0;
+                let lastSubmission = null;
+                try {
+                    const [cols] = await pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+                    const colNames = cols.map(c => c.Field);
+                    const hasCreatedAt = colNames.includes('created_at');
+                    const selectQuery = hasCreatedAt
+                        ? `SELECT COUNT(*) as total, MAX(created_at) as last_sub FROM \`${tableName}\``
+                        : `SELECT COUNT(*) as total, NULL as last_sub FROM \`${tableName}\``;
+                    const [[countRes]] = await pool.query(selectQuery);
+                    totalRecords = countRes?.total || 0;
+                    lastSubmission = countRes?.last_sub || null;
+                } catch (cntErr) {
+                    console.warn(`Could not count records for table ${tableName}:`, cntErr.message);
+                }
+
+                let builderType = 'standard';
+                if (contentInfo?.builder_page_data) builderType = 'drag_drop';
+
+                tablesInfo.push({
+                    table_name: tableName,
+                    content_id: contentId,
+                    content_title: contentInfo ? contentInfo.title : `Content #${contentId}`,
+                    content_slug: contentInfo ? contentInfo.slug : null,
+                    builder_type: builderType,
+                    status: contentInfo ? contentInfo.status : 'published',
+                    user_id: contentInfo ? contentInfo.user_id : null,
+                    total_records: totalRecords,
+                    last_submission: lastSubmission,
+                    content_created_at: contentInfo ? contentInfo.content_created_at : null
+                });
+            } catch (tableErr) {
+                console.warn(`Error processing submission table row:`, tableErr.message);
+            }
+        }
+
+        tablesInfo.sort((a, b) => (new Date(b.last_submission || 0) - new Date(a.last_submission || 0)) || (b.content_id - a.content_id));
+
+        res.json({ success: true, tables: tablesInfo });
+    } catch (error) {
+        console.error('Get user submission tables error:', error);
+        res.status(500).json({ message: 'Server error fetching user submission tables' });
+    }
+};
+
+// ✅ Get data rows and schema columns for a specific submission table (User view)
+exports.getUserSubmissionTableDetails = async (req, res) => {
+    try {
+        const { contentId } = req.params;
+        const userId = req.user?.id;
+        const userRole = req.user?.role || 'user';
+        const tableName = `form_submissions_${contentId}`;
+
+        // Verify content ownership
+        const [contentRows] = await pool.query(
+            `SELECT id, title, slug, builder_page_data, user_id FROM contents WHERE id = ?`,
+            [contentId]
+        );
+
+        if (!contentRows.length) {
+            return res.status(404).json({ message: 'Content not found' });
+        }
+
+        const content = contentRows[0];
+        if (content.user_id !== userId && userRole !== 'admin') {
+            return res.status(403).json({ message: 'Access denied to this submission table' });
+        }
+
+        const [tableCheck] = await pool.query(`SHOW TABLES LIKE ?`, [tableName]);
+        if (tableCheck.length === 0) {
+            return res.status(404).json({ message: `Submission table for content #${contentId} does not exist.` });
+        }
+
+        const [columnsResult] = await pool.query(`SHOW COLUMNS FROM \`${tableName}\``);
+        const columns = columnsResult.map(col => ({
+            field: col.Field,
+            type: col.Type,
+            label: col.Field
+                .replace(/_/g, ' ')
+                .replace(/\b\w/g, c => c.toUpperCase())
+        }));
+
+        const hasId = columnsResult.some(c => c.Field === 'id');
+        const orderByClause = hasId ? 'ORDER BY id DESC' : '';
+        const [rows] = await pool.query(`SELECT * FROM \`${tableName}\` ${orderByClause}`);
+
+        res.json({
+            success: true,
+            table_name: tableName,
+            content: {
+                id: content.id,
+                title: content.title,
+                slug: content.slug,
+                builder_type: content.builder_page_data ? 'drag_drop' : 'standard'
+            },
+            columns,
+            rows,
+            total: rows.length
+        });
+    } catch (error) {
+        console.error('Get user submission table details error:', error);
+        res.status(500).json({ message: 'Server error fetching user table details' });
     }
 };

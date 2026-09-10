@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Input, Select, Button, message, DatePicker,
-  Upload, Space, Divider, Typography, Tooltip, Tag, Modal, ConfigProvider, Checkbox
+  Upload, Space, Divider, Typography, Tooltip, Tag, Modal, ConfigProvider, Checkbox, Radio
 } from 'antd';
 import {
   UploadOutlined, SaveOutlined, SendOutlined, EyeOutlined,
   CalendarOutlined, ClockCircleOutlined, UserOutlined, TagOutlined,
   PictureOutlined, SettingOutlined, InfoCircleOutlined, ArrowLeftOutlined,
   FilePdfOutlined, PlusOutlined, DeleteOutlined, HolderOutlined, MenuOutlined, ApiOutlined, CodeOutlined,
-  BookOutlined, QuestionCircleOutlined, FileTextOutlined, PlayCircleOutlined
+  BookOutlined, QuestionCircleOutlined, FileTextOutlined, PlayCircleOutlined, LinkOutlined, VideoCameraOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -113,6 +113,7 @@ const CreateContent = () => {
   const [selectedTypeName, setSelectedTypeName] = useState('');
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [webinarTypeMode, setWebinarTypeMode] = useState('live'); // 'live' | 'on_demand'
   
   // Guidelines modals state
   const [guidelinesVisible, setGuidelinesVisible] = useState(false);
@@ -185,8 +186,16 @@ const CreateContent = () => {
         seo_meta_keywords: data.seo_meta_keywords
           ? data.seo_meta_keywords.split(',').map(k => k.trim()).filter(Boolean)
           : [],
-        scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null
+        scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null,
+        hosted_by: data.hosted_by || '',
+        platform: data.platform || 'Zoom',
+        webinar_type: data.webinar_type || 'live',
+        join_link: data.join_link || '',
+        webinar_date: data.webinar_date ? moment(data.webinar_date) : null
       });
+      if (data.webinar_type) {
+        setWebinarTypeMode(data.webinar_type);
+      }
       setContentStatus(data.status || 'draft');
       
       // Restore layout first to determine which tab to use
@@ -436,7 +445,7 @@ const CreateContent = () => {
   const buildFormData = (values) => {
     const formData = new FormData();
     
-    // For webinar type, only include essential fields
+    // For webinar type, include essential fields and webinar metadata
     if (isWebinarType) {
       formData.append('content_type_id', values.content_type_id);
       formData.append('category_id', values.category_id);
@@ -444,6 +453,12 @@ const CreateContent = () => {
       formData.append('short_description', values.short_description || '');
       formData.append('status', values.status || 'draft');
       formData.append('content', ''); // Ensure content is not null
+      
+      // Webinar specific fields
+      formData.append('hosted_by', values.hosted_by || '');
+      formData.append('platform', values.platform || 'Zoom');
+      formData.append('webinar_type', values.webinar_type || webinarTypeMode || 'live');
+      formData.append('join_link', values.join_link || '');
       
       // Webinar date
       if (values.webinar_date) {
@@ -455,7 +470,7 @@ const CreateContent = () => {
         formData.append('banner_image', fileList[0].originFileObj);
       }
       
-      // Video is required for webinar
+      // Video for webinar
       if (videoList.length > 0 && videoList[0].originFileObj) {
         formData.append('video_file', videoList[0].originFileObj);
       }
@@ -608,10 +623,17 @@ const CreateContent = () => {
     try {
       const values = await form.validateFields();
       
-      // Additional validation for webinar type
-      if (isWebinarType && videoList.length === 0) {
-        message.error('Video is required for webinar content type');
-        return;
+      // Validation for webinar type based on mode (live vs on_demand)
+      if (isWebinarType) {
+        const currentMode = form.getFieldValue('webinar_type') || webinarTypeMode || 'live';
+        if (currentMode === 'on_demand' && videoList.length === 0) {
+          message.error('Video file is required for on-demand webinar');
+          return;
+        }
+        if (currentMode === 'live' && !form.getFieldValue('webinar_date')) {
+          message.error('Webinar date & time is required for live webinar');
+          return;
+        }
       }
       
       setSubmitLoading(true);
@@ -1307,9 +1329,10 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
               if (isWebinarType) {
                 return (
                   <>
-                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Webinar Details</Text>
-                      <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                    {/* Webinar Core Info Section */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text style={{ fontSize: 11, fontWeight: 700, color: '#4a7cff', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>Webinar Overview & Host Details</Text>
+                      <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
                         <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
                           <Select placeholder="Select type" size="large" onChange={val => {
                             const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
@@ -1324,6 +1347,7 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                           </Select>
                         </Form.Item>
                       </div>
+
                       {duplicateWarning && duplicateWarning.found && duplicateWarning.isExact && (
                         <div style={{ 
                            background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
@@ -1345,7 +1369,8 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                           </div>
                         </div>
                       )}
-                      <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
+
+                      <Form.Item name="title" rules={[{ required: true, message: 'Please enter a webinar title' }]} style={{ marginBottom: 16 }}>
                         <Input placeholder="Webinar title..." size="large"
                           onChange={(e) => {
                             const title = e.target.value;
@@ -1353,83 +1378,194 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                             const tags = form.getFieldValue('tags');
                             checkDuplicateContent(title, shortDesc, tags);
                           }}
-                          style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
+                          style={{ fontSize: 24, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
                       </Form.Item>
+
+                      <Form.Item name="short_description" label="Short Description" style={{ marginBottom: 20 }}>
+                        <TextArea rows={2} placeholder="Write a brief overview of what attendees will learn in this webinar..." style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+
+                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                        <Form.Item name="hosted_by" label="Hosted By" rules={[{ required: true, message: 'Please specify who is hosting this webinar' }]} style={{ flex: 1, minWidth: 240, marginBottom: 0 }}>
+                          <Input prefix={<UserOutlined style={{ color: '#4a7cff' }} />} placeholder="e.g. Dr. Alex Morgan & TGS Tech Team" size="large" />
+                        </Form.Item>
+
+                        <Form.Item name="platform" label="Platform" rules={[{ required: true, message: 'Select platform' }]} style={{ flex: 1, minWidth: 200, marginBottom: 0 }}>
+                          <Select placeholder="Select platform" size="large" dropdownMatchSelectWidth={false}>
+                            <Option value="Zoom">Zoom Meeting / Webinar</Option>
+                            <Option value="Google Meet">Google Meet</Option>
+                            <Option value="Microsoft Teams">Microsoft Teams</Option>
+                            <Option value="Webex">Cisco Webex</Option>
+                            <Option value="YouTube Live">YouTube Live</Option>
+                            <Option value="Custom Platform">Custom Platform</Option>
+                          </Select>
+                        </Form.Item>
+                      </div>
                     </div>
 
-                    {/* Banner Image Section - Optional for webinar */}
-                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                        <div>
-                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image <span style={{ fontWeight: 400, fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginLeft: 8 }}>(Optional)</span></Text>
-                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px for video thumbnail</div>
-                        </div>
-                        <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
-                          <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
-                        </Upload>
-                      </div>
-                      {fileList.length > 0 && fileList[0].originFileObj ? (
-                        <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                          <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
-                        </div>
-                      ) : (
-                        <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
-                          <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
-                          <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner image (optional)</Text>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Video Upload Section - Only for webinar */}
-                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                        <div>
-                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload</Text>
-                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload webinar video (MP4, WebM, etc.)</div>
-                        </div>
-                        <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
-                          <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
-                        </Upload>
-                      </div>
-                      {videoList.length > 0 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
-                          <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
-                          <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
-                          <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
-                        </div>
-                      ) : (
-                        <div style={{ border: darkMode ? '2px dashed #3b82f6' : '2px dashed #bfdbfe', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff' }}>
-                          <PlayCircleOutlined style={{ fontSize: 24, color: '#3b82f6', marginBottom: 4, display: 'block' }} />
-                          <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded</Text>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Webinar Date Section - Only for webinar */}
-                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><CalendarOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Webinar Date & Time</Text>
-                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Set the scheduled date and time for this webinar</div>
-                      </div>
-                      <Form.Item 
-                        name="webinar_date"
-                        rules={[{ 
-                          required: true, 
-                          message: 'Webinar date is required' 
-                        }]}
-                      >
-                        <DatePicker 
-                          showTime 
-                          style={{ width: '100%' }}
-                          placeholder="Select webinar date and time"
-                          format="YYYY-MM-DD HH:mm:ss"
-                          disabledDate={(current) => {
-                            // Disable past dates
-                            return current && current < moment().startOf('day');
+                    {/* Webinar Mode Selection (Live vs On-Demand) */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 12 }}>
+                        Webinar Format / Type
+                      </Text>
+                      <Form.Item name="webinar_type" initialValue={webinarTypeMode} style={{ marginBottom: 0 }}>
+                        <Radio.Group 
+                          size="large" 
+                          buttonStyle="solid"
+                          onChange={e => {
+                            setWebinarTypeMode(e.target.value);
                           }}
-                        />
+                        >
+                          <Radio.Button value="live" style={{ padding: '0 24px', borderRadius: '8px 0 0 8px' }}>
+                            🔴 Live Webinar (Upcoming / Scheduled)
+                          </Radio.Button>
+                          <Radio.Button value="on_demand" style={{ padding: '0 24px', borderRadius: '0 8px 8px 0' }}>
+                            📹 On-Demand Webinar (Pre-recorded Video)
+                          </Radio.Button>
+                        </Radio.Group>
                       </Form.Item>
                     </div>
+
+                    {/* Mode Specific Fields */}
+                    {webinarTypeMode === 'live' ? (
+                      <>
+                        {/* Live Webinar Date & Join Link Section */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 16 }}>
+                            <CalendarOutlined style={{ marginRight: 8, color: '#ef4444' }} />Live Event Details & Access
+                          </Text>
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                            <Form.Item 
+                              name="webinar_date" 
+                              label="Scheduled Date & Time"
+                              rules={[{ required: true, message: 'Webinar date is required for live events' }]}
+                              style={{ flex: 1, minWidth: 260, marginBottom: 0 }}
+                            >
+                              <DatePicker 
+                                showTime 
+                                style={{ width: '100%' }}
+                                size="large"
+                                placeholder="Select webinar date and time"
+                                format="YYYY-MM-DD HH:mm:ss"
+                                disabledDate={(current) => current && current < moment().startOf('day')}
+                              />
+                            </Form.Item>
+
+                            <Form.Item 
+                              name="join_link" 
+                              label="Join Link / Meeting URL"
+                              rules={[{ required: true, message: 'Join link is required for live webinar' }]}
+                              style={{ flex: 1.5, minWidth: 280, marginBottom: 0 }}
+                            >
+                              <Input 
+                                prefix={<LinkOutlined style={{ color: '#10b981' }} />} 
+                                placeholder="https://zoom.us/j/123456789 or https://meet.google.com/..." 
+                                size="large" 
+                              />
+                            </Form.Item>
+                          </div>
+                        </div>
+
+                        {/* Banner Image for Live Webinar */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <div>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Webinar Banner Image <Tag color="blue" style={{ marginLeft: 8 }}>Required for Live</Tag></Text>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Displayed on webinar page cards & hero story countdown</div>
+                            </div>
+                            <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                              <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                            </Upload>
+                          </div>
+                          {fileList.length > 0 && fileList[0].originFileObj ? (
+                            <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
+                            </div>
+                          ) : (
+                            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '30px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                              <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>Upload banner image for live webinar</Text>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Video Upload - Optional for Live Webinar */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <div>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload <span style={{ fontWeight: 400, fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginLeft: 8 }}>(Optional for Live Webinar)</span></Text>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optionally upload a teaser or recording video</div>
+                            </div>
+                            <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
+                              <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
+                            </Upload>
+                          </div>
+                          {videoList.length > 0 ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
+                              <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
+                              <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
+                              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
+                            </div>
+                          ) : (
+                            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded (optional for live webinar)</Text>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Video Upload - Mandatory for On-Demand Webinar */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <div>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                                <PlayCircleOutlined style={{ marginRight: 8, color: '#3b82f6' }} />Add a Video <Tag color="red" style={{ marginLeft: 8 }}>Required for On-Demand</Tag>
+                              </Text>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload full webinar recording (MP4, WebM, etc.)</div>
+                            </div>
+                            <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
+                              <Button icon={<UploadOutlined />} type="primary" size="small">{videoList.length > 0 ? 'Change Video' : 'Add Video'}</Button>
+                            </Upload>
+                          </div>
+                          {videoList.length > 0 ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: darkMode ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff', borderRadius: 8, border: '1px solid #3b82f6' }}>
+                              <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 22 }} />
+                              <Text style={{ flex: 1, fontSize: 14, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
+                              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
+                            </div>
+                          ) : (
+                            <div style={{ border: '2px dashed #ef4444', borderRadius: 8, padding: '28px 20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.05)' : '#fef2f2' }}>
+                              <PlayCircleOutlined style={{ fontSize: 32, color: '#ef4444', marginBottom: 8, display: 'block' }} />
+                              <Text style={{ color: '#991b1b', fontWeight: 600, fontSize: 14 }}>Please upload a video file for this on-demand webinar</Text>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Banner Image for On-Demand Webinar */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <div>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image / Poster Thumbnail</Text>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Thumbnail displayed before video playback</div>
+                            </div>
+                            <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                              <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                            </Upload>
+                          </div>
+                          {fileList.length > 0 && fileList[0].originFileObj ? (
+                            <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
+                            </div>
+                          ) : (
+                            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '30px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                              <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner thumbnail uploaded</Text>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </>
                 );
               }

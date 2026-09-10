@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, message, Tag, Badge } from 'antd';
+import { Table, Button, Input, message, Tag, Badge, Segmented, Select } from 'antd';
 import {
   SearchOutlined, ReloadOutlined,
   FileTextOutlined, UserOutlined,
   TableOutlined, ArrowLeftOutlined, DatabaseOutlined,
-  FileExcelOutlined
+  FileExcelOutlined, VideoCameraOutlined, UsergroupAddOutlined, CalendarOutlined, PhoneOutlined, BankOutlined, IdcardOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -69,10 +69,17 @@ const exportToExcel = (columns, rows, fileNamePrefix = 'form_submissions') => {
 };
 
 const AdminSubmissions = () => {
+  const [activeTab, setActiveTab] = useState('forms'); // 'forms' | 'webinars'
   const [tables, setTables] = useState([]);
   const [loadingTables, setLoadingTables] = useState(true);
   const [searchTable, setSearchTable] = useState('');
   
+  // Webinar Registrations state
+  const [webinarRegistrations, setWebinarRegistrations] = useState([]);
+  const [loadingWebinarRegs, setLoadingWebinarRegs] = useState(false);
+  const [webinarSearch, setWebinarSearch] = useState('');
+  const [webinarFilterId, setWebinarFilterId] = useState(null);
+
   // Table details view state
   const [selectedTable, setSelectedTable] = useState(null);
   const [tableDetails, setTableDetails] = useState({ columns: [], rows: [], total: 0, content: null });
@@ -82,6 +89,7 @@ const AdminSubmissions = () => {
 
   useEffect(() => {
     fetchTables();
+    fetchWebinarRegistrations();
   }, []);
 
   const fetchTables = async () => {
@@ -98,6 +106,20 @@ const AdminSubmissions = () => {
       message.error('Failed to fetch submission tables from database');
     } finally {
       setLoadingTables(false);
+    }
+  };
+
+  const fetchWebinarRegistrations = async () => {
+    setLoadingWebinarRegs(true);
+    try {
+      const res = await axios.get('/api/admin/webinar-registrations');
+      if (res.data?.success) {
+        setWebinarRegistrations(res.data.registrations || []);
+      }
+    } catch (err) {
+      console.error('Error loading webinar registrations:', err);
+    } finally {
+      setLoadingWebinarRegs(false);
     }
   };
 
@@ -203,69 +225,55 @@ const AdminSubmissions = () => {
       )
     },
     {
-      title: 'Form Builder',
+      title: 'Form Builder Type',
       dataIndex: 'builder_type',
       key: 'builder_type',
-      width: 150,
+      width: 160,
       render: (v) => {
-        let color = 'blue';
-        let label = 'Standard Form';
-        if (v === 'drag_drop') { color = 'purple'; label = 'Drag & Drop'; }
-        else if (v === 'html') { color = 'orange'; label = 'HTML Builder'; }
-        return <Tag color={color} style={{ borderRadius: 4, textTransform: 'capitalize' }}>{label}</Tag>;
+        let tagColor = 'blue';
+        if (v === 'HTML Builder') tagColor = 'purple';
+        if (v === 'Visual Drag-and-Drop Builder') tagColor = 'cyan';
+        return <Tag color={tagColor}>{v}</Tag>;
       }
     },
     {
-      title: 'Created By',
-      key: 'author',
-      width: 180,
-      render: (_, r) => (
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a2e' }}>{r.author_name}</div>
-          {r.author_email && <div style={{ fontSize: 11, color: '#8c8c8c' }}>{r.author_email}</div>}
-        </div>
+      title: 'Author',
+      dataIndex: 'author_name',
+      key: 'author_name',
+      width: 160,
+      render: (v) => (
+        <span style={{ fontSize: 13, color: '#475569' }}>
+          <UserOutlined style={{ marginRight: 6, color: '#94a3b8' }} />
+          {v}
+        </span>
       )
     },
     {
-      title: 'Submissions',
+      title: 'Total Submissions',
       dataIndex: 'total_records',
       key: 'total_records',
-      width: 120,
-      align: 'center',
-      render: (count) => (
+      width: 150,
+      render: (v) => (
         <Badge
-          count={count}
+          count={v}
+          showZero
           overflowCount={99999}
-          style={{ backgroundColor: count > 0 ? '#10b981' : '#d1d5db', color: '#fff', fontWeight: 700 }}
+          style={{ background: v > 0 ? '#10b981' : '#94a3b8', fontSize: 12, fontWeight: 700 }}
         />
       )
-    },
-    {
-      title: 'Last Submission',
-      dataIndex: 'last_submission',
-      key: 'last_submission',
-      width: 160,
-      render: (v) => v ? (
-        <div style={{ fontSize: 12, color: '#475569' }}>
-          <div>{moment(v).format('MMM D, YYYY')}</div>
-          <div style={{ fontSize: 11, color: '#94a3b8' }}>{moment(v).format('h:mm A')}</div>
-        </div>
-      ) : <span style={{ color: '#cbd5e1', fontSize: 12 }}>No submissions</span>
     },
     {
       title: 'Action',
       key: 'action',
       width: 140,
-      align: 'right',
       render: (_, r) => (
         <Button
           type="primary"
           size="small"
-          icon={<TableOutlined />}
           onClick={() => openTableDetails(r)}
-          style={{ borderRadius: 6, background: '#4a7cff' }}
+          style={{ borderRadius: 6, background: '#4f46e5', borderColor: '#4f46e5', fontWeight: 600 }}
         >
-          View Data
+          View Records
         </Button>
       )
     }
@@ -301,8 +309,39 @@ const AdminSubmissions = () => {
   return (
     <div style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh' }}>
 
+      {/* Top Tab Switcher */}
+      {!selectedTable && (
+        <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <Segmented
+            size="large"
+            value={activeTab}
+            onChange={setActiveTab}
+            options={[
+              {
+                label: (
+                  <div style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                    <DatabaseOutlined style={{ color: '#4f46e5' }} />
+                    Form Submission Tables ({totalTables})
+                  </div>
+                ),
+                value: 'forms'
+              },
+              {
+                label: (
+                  <div style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                    <VideoCameraOutlined style={{ color: '#ef4444' }} />
+                    Webinar Registrations ({webinarRegistrations.length})
+                  </div>
+                ),
+                value: 'webinars'
+              }
+            ]}
+          />
+        </div>
+      )}
+
       {/* VIEW 1: TABLES LIST VIEW */}
-      {!selectedTable ? (
+      {!selectedTable && activeTab === 'forms' && (
         <>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
@@ -371,9 +410,10 @@ const AdminSubmissions = () => {
             />
           </div>
         </>
-      ) : (
+      )}
 
-        /* VIEW 2: TABLE DETAIL VIEW */
+      {/* VIEW 2: TABLE DETAIL VIEW */}
+      {selectedTable && (
         <>
           {/* Top Bar with Back Button */}
           <div style={{ marginBottom: 16 }}>
@@ -478,6 +518,193 @@ const AdminSubmissions = () => {
           </div>
         </>
       )}
+
+      {/* VIEW 3: WEBINAR REGISTRATIONS TAB VIEW */}
+      {!selectedTable && activeTab === 'webinars' && (() => {
+        const filteredWebinarRegs = webinarRegistrations.filter(r => {
+          if (webinarFilterId && r.webinar_id !== webinarFilterId) return false;
+          if (!webinarSearch) return true;
+          const q = webinarSearch.toLowerCase();
+          return (
+            (r.first_name && r.first_name.toLowerCase().includes(q)) ||
+            (r.last_name && r.last_name.toLowerCase().includes(q)) ||
+            (r.email && r.email.toLowerCase().includes(q)) ||
+            (r.company_name && r.company_name.toLowerCase().includes(q)) ||
+            (r.job_title && r.job_title.toLowerCase().includes(q)) ||
+            (r.webinar_title && r.webinar_title.toLowerCase().includes(q))
+          );
+        });
+
+        const uniqueWebinars = Array.from(new Set(webinarRegistrations.map(r => r.webinar_id))).map(id => {
+          const match = webinarRegistrations.find(r => r.webinar_id === id);
+          return { id, title: match?.webinar_title || `Webinar #${id}` };
+        });
+
+        const webinarColumns = [
+          {
+            title: 'Webinar Title',
+            dataIndex: 'webinar_title',
+            key: 'webinar_title',
+            width: 240,
+            render: (v, r) => (
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{v || 'Untitled Webinar'}</div>
+                <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                  {r.platform && <Tag color="blue" style={{ fontSize: 10 }}>{r.platform}</Tag>}
+                  {r.webinar_date && (
+                    <span style={{ fontSize: 11, color: '#64748b' }}>
+                      <CalendarOutlined style={{ marginRight: 4 }} />
+                      {moment(r.webinar_date).format('MMM D, YYYY h:mm A')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          },
+          {
+            title: 'Attendee Name',
+            key: 'name',
+            width: 180,
+            render: (_, r) => (
+              <div style={{ fontWeight: 600, color: '#1e293b' }}>
+                <UserOutlined style={{ marginRight: 6, color: '#3b82f6' }} />
+                {r.first_name} {r.last_name}
+              </div>
+            )
+          },
+          {
+            title: 'Work Email',
+            dataIndex: 'email',
+            key: 'email',
+            width: 220,
+            render: (v) => <a href={`mailto:${v}`} style={{ color: '#2563eb', fontWeight: 500 }}>{v}</a>
+          },
+          {
+            title: 'Job Title',
+            dataIndex: 'job_title',
+            key: 'job_title',
+            width: 160,
+            render: (v) => v ? <span><IdcardOutlined style={{ color: '#8b5cf6', marginRight: 4 }} />{v}</span> : <span style={{ color: '#cbd5e1' }}>—</span>
+          },
+          {
+            title: 'Company',
+            dataIndex: 'company_name',
+            key: 'company_name',
+            width: 160,
+            render: (v) => v ? <span><BankOutlined style={{ color: '#059669', marginRight: 4 }} />{v}</span> : <span style={{ color: '#cbd5e1' }}>—</span>
+          },
+          {
+            title: 'Contact Phone',
+            dataIndex: 'contact_number',
+            key: 'contact_number',
+            width: 150,
+            render: (v) => v ? <span><PhoneOutlined style={{ color: '#d97706', marginRight: 4 }} />{v}</span> : <span style={{ color: '#cbd5e1' }}>—</span>
+          },
+          {
+            title: 'Registered At',
+            dataIndex: 'registered_at',
+            key: 'registered_at',
+            width: 160,
+            render: (v) => <span style={{ fontSize: 12, color: '#64748b' }}>{moment(v).format('YYYY-MM-DD HH:mm')}</span>
+          }
+        ];
+
+        return (
+          <>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <UsergroupAddOutlined style={{ color: '#ef4444' }} />
+                  Live Webinar Registrations Database
+                </h1>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+                  All attendee registrations recorded across live webinars in database table (<code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>webinar_registrations</code>)
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button
+                  icon={<FileExcelOutlined />}
+                  type="primary"
+                  onClick={() => exportToExcel([
+                    { field: 'webinar_title', title: 'Webinar Title' },
+                    { field: 'first_name', title: 'First Name' },
+                    { field: 'last_name', title: 'Surname / Last Name' },
+                    { field: 'email', title: 'Email' },
+                    { field: 'job_title', title: 'Job Title' },
+                    { field: 'company_name', title: 'Company Name' },
+                    { field: 'contact_number', title: 'Contact Phone' },
+                    { field: 'registered_at', title: 'Registered Date' }
+                  ], filteredWebinarRegs, 'webinar_registrations')}
+                  style={{ background: '#10b981', borderColor: '#10b981', borderRadius: 8 }}
+                >
+                  Export Registrations to Excel
+                </Button>
+                <Button icon={<ReloadOutlined />} onClick={fetchWebinarRegistrations} loading={loadingWebinarRegs} style={{ borderRadius: 8 }}>
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            {/* Stat Cards */}
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+              <StatCard icon={<UsergroupAddOutlined />} label="Total Attendee Registrations" value={webinarRegistrations.length} color="#ef4444" />
+              <StatCard icon={<VideoCameraOutlined />} label="Unique Webinars Registered" value={uniqueWebinars.length} color="#3b82f6" />
+              <StatCard icon={<CalendarOutlined />} label="Registrations Today" value={webinarRegistrations.filter(r => moment(r.registered_at).isSame(moment(), 'day')).length} color="#10b981" />
+            </div>
+
+            {/* Search & Filter Bar */}
+            <div style={{
+              background: '#fff', borderRadius: 12, padding: '16px 20px',
+              border: '1px solid #e2e8f0', marginBottom: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: 1 }}>
+                <Input
+                  placeholder="Search registrant name, email, company, job title..."
+                  prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                  value={webinarSearch}
+                  onChange={e => setWebinarSearch(e.target.value)}
+                  allowClear
+                  style={{ width: 340, borderRadius: 8 }}
+                />
+                <Select
+                  placeholder="Filter by Webinar"
+                  allowClear
+                  style={{ width: 260 }}
+                  value={webinarFilterId}
+                  onChange={setWebinarFilterId}
+                >
+                  {uniqueWebinars.map(w => (
+                    <Select.Option key={w.id} value={w.id}>{w.title}</Select.Option>
+                  ))}
+                </Select>
+              </div>
+              <div style={{ fontSize: 13, color: '#64748b' }}>
+                Showing <strong style={{ color: '#0f172a' }}>{filteredWebinarRegs.length}</strong> of <strong style={{ color: '#0f172a' }}>{webinarRegistrations.length}</strong> registrations
+              </div>
+            </div>
+
+            {/* Registrations Table */}
+            <div style={{
+              background: '#fff', borderRadius: 12,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              overflow: 'hidden'
+            }}>
+              <Table
+                dataSource={filteredWebinarRegs}
+                columns={webinarColumns}
+                rowKey="id"
+                loading={loadingWebinarRegs}
+                pagination={{ pageSize: 15, showSizeChanger: true }}
+                scroll={{ x: 1100 }}
+              />
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };

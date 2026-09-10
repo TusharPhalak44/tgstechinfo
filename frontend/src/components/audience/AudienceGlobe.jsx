@@ -281,28 +281,28 @@ export default function AudienceGlobe({
           (REGION_COUNTRIES[selectedRegion] || []).includes(country.iso2) || country.region === selectedRegion
         );
 
-        // Styling based on state
-        let strokeColor = 'rgba(10, 174, 239, 0.75)';
-        let fillColor = 'rgba(10, 174, 239, 0.05)';
-        let lineWidth = 1.2;
+        // Styling based on state (High contrast for screen & PDF print)
+        let strokeColor = 'rgba(56, 189, 248, 0.85)';
+        let fillColor = 'rgba(14, 165, 233, 0.18)';
+        let lineWidth = 1.4;
 
         if (isSelected) {
           strokeColor = '#F7941D';
-          fillColor = 'rgba(247, 148, 29, 0.35)';
-          lineWidth = 2.4;
+          fillColor = 'rgba(247, 148, 29, 0.45)';
+          lineWidth = 2.6;
         } else if (isHovered) {
           strokeColor = '#38BDF8';
-          fillColor = 'rgba(56, 189, 248, 0.25)';
-          lineWidth = 2.0;
+          fillColor = 'rgba(56, 189, 248, 0.35)';
+          lineWidth = 2.2;
         } else if (isInSelectedRegion) {
           strokeColor = '#10B981';
-          fillColor = 'rgba(16, 185, 129, 0.15)';
-          lineWidth = 1.6;
+          fillColor = 'rgba(16, 185, 129, 0.28)';
+          lineWidth = 1.8;
         } else if (selectedRegion && selectedRegion !== 'GLOBAL') {
           // Dim non-region countries
-          strokeColor = 'rgba(10, 174, 239, 0.2)';
-          fillColor = 'rgba(10, 174, 239, 0.02)';
-          lineWidth = 0.8;
+          strokeColor = 'rgba(14, 165, 233, 0.3)';
+          fillColor = 'rgba(14, 165, 233, 0.05)';
+          lineWidth = 0.9;
         }
 
         // Draw each polygon ring of the country
@@ -330,7 +330,7 @@ export default function AudienceGlobe({
 
             ctx.strokeStyle = strokeColor;
             ctx.lineWidth = lineWidth;
-            if (isSelected || isHovered) {
+            if (isSelected || isHovered || isInSelectedRegion) {
               ctx.shadowColor = strokeColor;
               ctx.shadowBlur = 8;
             }
@@ -352,7 +352,52 @@ export default function AudienceGlobe({
         }
       });
 
-      // ── 5. Clean Globe Polygon Boundaries (Dot highlights removed) ──
+      // ── 5. GLOWING 3D ACTIVE MARKET DATA NODES & PULSING BEACONS ──
+      activeNodesList.forEach((node, idx) => {
+        const pt = project3D(node.lat, node.lon, radius, cx, cy, st.rotY, st.rotX);
+        if (pt.isFront) {
+          const isSelected = selectedCountries.includes(node.iso_code);
+          const isTargetRegion = selectedRegion && selectedRegion !== 'GLOBAL' && (
+            (REGION_COUNTRIES[selectedRegion] || []).includes(node.iso_code) || node.region === selectedRegion
+          );
+
+          // Node size based on audience scale
+          const nodeRadius = isSelected ? 6.5 : isTargetRegion ? 5.5 : 4.2;
+
+          let primaryColor = '#0AAEEF';
+          if (isSelected) {
+            primaryColor = '#F7941D';
+          } else if (isTargetRegion) {
+            primaryColor = '#10B981';
+          }
+
+          // Outer Pulsing Radar Ring
+          const pulseSize = nodeRadius + (Math.sin(st.time * 3.5 + idx) + 1.2) * 2.8;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, pulseSize, 0, Math.PI * 2);
+          ctx.strokeStyle = primaryColor;
+          ctx.lineWidth = 1.4;
+          ctx.globalAlpha = 0.55;
+          ctx.stroke();
+          ctx.globalAlpha = 1.0;
+
+          // Inner Glowing Core
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
+          ctx.fillStyle = primaryColor;
+          ctx.shadowColor = primaryColor;
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Bright White Center Dot
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, nodeRadius * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
+        }
+      });
+
       ctx.restore(); // End globe clip
 
       st.renderedCountryNodes = renderedCountryNodes;
@@ -669,6 +714,7 @@ export default function AudienceGlobe({
 
       {/* ── Control Overlay Badge ── */}
       <div
+        className="no-print"
         style={{
           position: 'absolute',
           bottom: 14,

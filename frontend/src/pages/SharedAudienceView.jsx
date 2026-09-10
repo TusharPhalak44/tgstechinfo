@@ -134,7 +134,7 @@ export default function SharedAudienceView() {
   return (
     <div className="audience-intel-root">
       <div style={{ maxWidth: '1520px', margin: '0 auto', padding: '28px 24px 60px 24px' }}>
-        
+
         {/* ── Top Navigation & Brand Header Bar ── */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--aud-card-border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -160,7 +160,7 @@ export default function SharedAudienceView() {
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Button
               icon={<PrinterOutlined />}
               onClick={handlePrint}
@@ -206,7 +206,7 @@ export default function SharedAudienceView() {
               <h1 style={{ margin: 0, fontSize: 'clamp(1.85rem, 3.5vw, 2.6rem)', fontWeight: 800, color: 'var(--aud-text-title)', letterSpacing: '-0.02em' }}>
                 {title || 'Target B2B Audience Sizing & Market Intelligence Proposal'}
               </h1>
-              
+
               <p style={{ margin: '8px 0 0 0', color: 'var(--aud-text-muted)', fontSize: '0.95rem', maxWidth: 880, lineHeight: 1.5 }}>
                 Verified business-decision maker demographic coverage, firmographic scale analysis, and multichannel campaign reach for targeted B2B content syndication and sales pipeline growth.
               </p>
@@ -252,7 +252,7 @@ export default function SharedAudienceView() {
 
         {/* ── 2-COLUMN SIDE-BY-SIDE SECTION: Targeted ICP Scope (Left 2x2) + 3D Globe (Right) ── */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: 24, marginBottom: 28, alignItems: 'stretch' }}>
-          
+
           {/* Column 1 (Left): Targeted Ideal Customer Profile (ICP) Scope Parameters */}
           <div className="aud-glass-panel" style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18, paddingBottom: 12, borderBottom: '1px solid var(--aud-card-border)' }}>
@@ -271,7 +271,7 @@ export default function SharedAudienceView() {
 
             {/* 2 by 2 Strict Grid for ICP Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, flex: 1 }}>
-              
+
               {/* Geo Scope Card */}
               <div style={{ background: darkMode ? 'rgba(15, 30, 56, 0.65)' : 'rgba(241, 245, 249, 0.85)', padding: '16px 18px', borderRadius: 12, border: '1px solid var(--aud-card-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
@@ -416,7 +416,7 @@ export default function SharedAudienceView() {
             <AudienceChartBreakdown
               breakdowns={statsData}
               selectedFilters={filters}
-              onToggleFilter={() => {}}
+              onToggleFilter={() => { }}
               darkMode={darkMode}
             />
           )}
@@ -489,7 +489,7 @@ export default function SharedAudienceView() {
             Schedule an executive campaign strategy call with your dedicated Account Director to review lead volume quotas, content assets, and deployment timelines.
           </p>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
             <Link to="/contact">
               <Button
                 type="primary"
@@ -530,34 +530,49 @@ export default function SharedAudienceView() {
 
         {/* ── Proposal Deck Author & Attribution Footer Panel at End of Page ── */}
         <div className="aud-glass-panel" style={{
-          padding: '18px 28px',
-          marginTop: 24,
+          padding: '24px 28px 18px 28px',
+          marginTop: 28,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justify: 'space-between',
-          flexWrap: 'wrap',
+          justifyContent: 'center',
+          textAlign: 'center',
           gap: 12,
           border: '1px solid var(--aud-card-border)',
-          borderRadius: 12,
-          background: darkMode ? 'rgba(15, 26, 48, 0.6)' : 'rgba(255, 255, 255, 0.8)'
+          borderRadius: 16,
+          background: darkMode ? 'rgba(15, 26, 48, 0.6)' : 'rgba(255, 255, 255, 0.85)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <SafetyCertificateOutlined style={{ color: '#0AAEEF', fontSize: 18 }} />
-            <div>
-              <div style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--aud-text-title)' }}>
-                Verified B2B Client Proposal & Deck Scope
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--aud-text-muted)', marginTop: 2 }}>
-                Proposal Deck Reference ID: <strong style={{ color: '#0AAEEF', fontFamily: 'JetBrains Mono, monospace' }}>{proposalId}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--aud-text-muted)' }}>Proposal Created:</span>
-            <Tag color="cyan" style={{ borderRadius: 8, fontWeight: 800, padding: '4px 12px', fontSize: '0.8125rem', margin: 0 }}>
+          {/* First Line: Proposal Created by Author */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--aud-text-muted)' }}>
+              Proposal Created:
+            </span>
+            <Tag color="cyan" style={{ borderRadius: 10, fontWeight: 800, padding: '4px 14px', fontSize: '0.875rem', margin: 0 }}>
               {formattedAuthor}
             </Tag>
+          </div>
+
+          {/* Second Line: Verified Scope & Deck Reference ID */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap', fontSize: '0.8125rem', color: 'var(--aud-text-title)' }}>
+            <SafetyCertificateOutlined style={{ color: '#0AAEEF', fontSize: 16 }} />
+            <span style={{ fontWeight: 800 }}>Verified B2B Client Proposal & Deck Scope</span>
+            <span style={{ color: 'var(--aud-text-subtle)' }}>•</span>
+            <span style={{ color: 'var(--aud-text-muted)' }}>
+              Proposal Deck Reference ID: <strong style={{ color: '#0AAEEF', fontFamily: 'JetBrains Mono, monospace' }}>{proposalId}</strong>
+            </span>
+          </div>
+
+          {/* Footer Line: Tarraj Global Rights Reserved */}
+          <div style={{
+            marginTop: 6,
+            paddingTop: 12,
+            borderTop: '1px solid var(--aud-card-border)',
+            width: '100%',
+            fontSize: '0.75rem',
+            color: 'var(--aud-text-muted)',
+            fontWeight: 500
+          }}>
+            © {new Date().getFullYear()} Tgs Tech Info. All Rights Reserved.
           </div>
         </div>
 

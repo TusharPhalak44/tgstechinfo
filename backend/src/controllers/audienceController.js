@@ -105,6 +105,14 @@ exports.getMetadata = async (req, res, next) => {
     }
 };
 
+// In-memory cache for aggregated statistics calculations (5 min TTL)
+const statsCache = new Map();
+const STATS_CACHE_TTL = 5 * 60 * 1000;
+
+exports.clearStatsCache = () => {
+    statsCache.clear();
+};
+
 /**
  * High-performance Dynamic Audience Filtering & Breakdown Calculation (LinkedIn V2 Aligned)
  */
@@ -130,6 +138,29 @@ exports.calculateAudienceStats = async (req, res, next) => {
         const jobTitleQuery = (filters.job_title || filters.title || '').trim();
         const exactIndustry = filters.exact_industry === true || filters.exact_industry === 'true';
         const seniorityPreset = (filters.seniority_preset || '').toUpperCase();
+
+        // ── Fast In-Memory Cache Lookup ──
+        const cacheKey = JSON.stringify({
+            regionCodes, geoGroupCodes, countryIsos, industryCodes, employeeSizeCodes,
+            functionCodes, departmentCodes, jobLevelCodes, jobTitleQuery, exactIndustry, seniorityPreset
+        });
+
+        const cached = statsCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp < STATS_CACHE_TTL)) {
+            return res.json({
+                success: true,
+                cached: true,
+                filters: {
+                    regions: regionCodes,
+                    countries: countryIsos,
+                    industries: industryCodes,
+                    employee_sizes: employeeSizeCodes,
+                    departments: departmentCodes,
+                    job_levels: jobLevelCodes
+                },
+                data: cached.data
+            });
+        }
 
         // Resolve Seniority Presets
         if (seniorityPreset) {
@@ -368,10 +399,31 @@ exports.calculateAudienceStats = async (req, res, next) => {
             }));
         };
 
-        // Privacy threshold check
-        const [[thresholdRow]] = await pool.query("SELECT setting_value FROM audience_global_settings WHERE setting_key = 'privacy_threshold'");
-        const privacyThreshold = parseInt(thresholdRow?.setting_value || '25', 10);
+        const privacyThreshold = 25;
         const isLimitedAudience = matchingContacts > 0 && matchingContacts < privacyThreshold;
+
+        const responsePayload = {
+            matching_contacts: matchingContacts,
+            matching_companies: matchingCompanies,
+            matching_countries_count: parseInt(totalRows[0]?.matching_countries_count || 0, 10),
+            matching_industries_count: parseInt(totalRows[0]?.matching_industries_count || 0, 10),
+            is_limited_audience: isLimitedAudience,
+            privacy_threshold: privacyThreshold,
+            region_breakdown: calculatePct(regionRows),
+            country_breakdown: calculatePct(countryRows),
+            industry_breakdown: calculatePct(industryRows),
+            employee_size_breakdown: calculatePct(sizeRows),
+            department_breakdown: calculatePct(deptRows),
+            job_level_breakdown: calculatePct(levelRows),
+            updated_at: new Date().toISOString()
+        };
+
+        // Cache response payload for fast subsequent queries
+        statsCache.set(cacheKey, { timestamp: Date.now(), data: responsePayload });
+        if (statsCache.size > 200) {
+            const firstKey = statsCache.keys().next().value;
+            statsCache.delete(firstKey);
+        }
 
         res.json({
             success: true,
@@ -383,21 +435,7 @@ exports.calculateAudienceStats = async (req, res, next) => {
                 departments: departmentCodes,
                 job_levels: jobLevelCodes
             },
-            data: {
-                matching_contacts: matchingContacts,
-                matching_companies: matchingCompanies,
-                matching_countries_count: parseInt(totalRows[0]?.matching_countries_count || 0, 10),
-                matching_industries_count: parseInt(totalRows[0]?.matching_industries_count || 0, 10),
-                is_limited_audience: isLimitedAudience,
-                privacy_threshold: privacyThreshold,
-                region_breakdown: calculatePct(regionRows),
-                country_breakdown: calculatePct(countryRows),
-                industry_breakdown: calculatePct(industryRows),
-                employee_size_breakdown: calculatePct(sizeRows),
-                department_breakdown: calculatePct(deptRows),
-                job_level_breakdown: calculatePct(levelRows),
-                updated_at: new Date().toISOString()
-            }
+            data: responsePayload
         });
     } catch (err) {
         next(err);

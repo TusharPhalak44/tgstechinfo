@@ -491,6 +491,62 @@ const ContentDetail = () => {
               </div>
             </Card>
 
+            {/* Webinar Details Card if Webinar */}
+            {(content.hosted_by || content.platform || content.webinar_type) && (
+              <Card className="radar-glass-panel" style={{ background: bgCard, borderColor, marginBottom: 24 }}>
+                <Title level={4} style={{ color: '#3b82f6', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.8rem', marginBottom: 16 }}>
+                  Webinar Metadata
+                </Title>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {content.webinar_type && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Webinar Format</Text>
+                      <Tag color={content.webinar_type === 'live' ? 'red' : 'blue'} style={{ fontSize: '0.85rem', fontWeight: 700 }}>
+                        {content.webinar_type === 'live' ? '🔴 Live Webinar' : '📹 On-Demand Webinar'}
+                      </Tag>
+                    </div>
+                  )}
+
+                  {content.hosted_by && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Hosted By</Text>
+                      <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 700, display: 'block' }}>
+                        {content.hosted_by}
+                      </Text>
+                    </div>
+                  )}
+
+                  {content.platform && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Platform</Text>
+                      <Tag color="cyan" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                        {content.platform}
+                      </Tag>
+                    </div>
+                  )}
+
+                  {content.webinar_date && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Scheduled Date & Time</Text>
+                      <Text style={{ fontSize: '0.9rem', color: '#ef4444', fontWeight: 700, display: 'block' }}>
+                        {moment(content.webinar_date).format('MMMM D, YYYY [at] h:mm A')}
+                      </Text>
+                    </div>
+                  )}
+
+                  {content.join_link && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Meeting / Join Link</Text>
+                      <a href={content.join_link.startsWith('http') ? content.join_link : `https://${content.join_link}`} target="_blank" rel="noreferrer" style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, wordBreak: 'break-all' }}>
+                        {content.join_link}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
+
             {/* Additional Information */}
             <Card className="radar-glass-panel" style={{ background: bgCard, borderColor, marginBottom: 24 }}>
               <Title level={4} style={{ color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.8rem', marginBottom: 16 }}>

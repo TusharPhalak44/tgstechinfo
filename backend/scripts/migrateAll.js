@@ -144,6 +144,11 @@ const migrateAll = async () => {
         await executeSqlFile(path.join(__dirname, '../database/case_studies.sql'));
         console.log('✅ Case studies schema applied');
 
+        // Run add_webinar_fields.sql (adds hosted_by, platform, webinar_type, join_link & webinar_registrations table)
+        console.log('📋 Running add_webinar_fields.sql...');
+        await executeSqlFile(path.join(__dirname, '../database/add_webinar_fields.sql'));
+        console.log('✅ Webinar fields & registrations table created');
+
         // Seed Landing Page content type
         console.log('📋 Running landing_page_content_type.sql...');
         await executeSqlFile(path.join(__dirname, '../database/landing_page_content_type.sql'));

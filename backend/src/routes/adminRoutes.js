@@ -57,8 +57,11 @@ router.get('/dashboard/leads', adminController.getLeadAnalytics);
 router.get('/dashboard/subscribers', adminController.getSubscriberAnalytics);
 router.get('/dashboard/portfolio', adminController.getContentPortfolio);
 
-// Landing page submissions
+// Landing page submissions & Webinar Registrations
 router.get('/submissions', hasPermission('content.read'), adminController.getSubmissions);
+router.get('/submission-tables', hasPermission('content.read'), adminController.getSubmissionTables);
+router.get('/submission-tables/:contentId', hasPermission('content.read'), adminController.getSubmissionTableDetails);
+router.get('/webinar-registrations', hasPermission('content.read'), adminController.getWebinarRegistrations);
 
 // Data requests (DSAR + Do Not Sell)
 router.get('/data-requests', hasPermission('user.read'), adminController.getDataRequests);

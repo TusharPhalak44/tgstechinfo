@@ -6,7 +6,9 @@ import {
 } from 'antd';
 import { 
   CalendarOutlined, ClockCircleOutlined, ShareAltOutlined,
-  UserOutlined, LockOutlined, CloseOutlined
+  UserOutlined, LockOutlined, CloseOutlined, MailOutlined,
+  PhoneOutlined, IdcardOutlined, BankOutlined, SafetyCertificateOutlined,
+  CheckCircleFilled, VideoCameraOutlined, RightOutlined, FireOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -152,6 +154,11 @@ const ArticleDetail = () => {
   const [submittedData, setSubmittedData] = useState(null); // stores {name, email} after form submit
   const [pdfFile, setPdfFile] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  
+  // Webinar Registration state
+  const [webinarRegistered, setWebinarRegistered] = useState(false);
+  const [webinarRegistering, setWebinarRegistering] = useState(false);
+  const [webinarRegForm] = Form.useForm();
 
   // Engagement tracking hook
   const { isTracking, trackEngagement: trackEngagementHook } = useEngagementTracking({
@@ -201,6 +208,10 @@ const ArticleDetail = () => {
 
         setContent(c);
         setRelatedArticles(response.data.relatedArticles || []);
+        if (c?.id) {
+          const isReg = localStorage.getItem(`webinar_registered_${c.id}`);
+          if (isReg) setWebinarRegistered(true);
+        }
         if (c?.custom_fields) {
           try {
             const cf = typeof c.custom_fields === 'string' ? JSON.parse(c.custom_fields) : c.custom_fields;
@@ -285,6 +296,25 @@ const ArticleDetail = () => {
       messageApi.error(error.response?.data?.message || 'Failed to submit');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleWebinarRegisterSubmit = async (values) => {
+    if (!content?.id) return;
+    setWebinarRegistering(true);
+    try {
+      const res = await axios.post(`/api/public/content/${content.id}/register-webinar`, values);
+      if (res.data?.success) {
+        setWebinarRegistered(true);
+        localStorage.setItem(`webinar_registered_${content.id}`, 'true');
+        messageApi.success('Registration successful! Access granted to Live Webinar.');
+      } else {
+        messageApi.error(res.data?.message || 'Registration failed');
+      }
+    } catch (err) {
+      messageApi.error(err.response?.data?.message || 'Failed to register for webinar');
+    } finally {
+      setWebinarRegistering(false);
     }
   };
 
@@ -449,8 +479,372 @@ const ArticleDetail = () => {
               }
             />
 
-            {/* Video Section - Show countdown for future webinars, video for past webinars */}
-            {content.video_file && (
+            {/* ── WEBINAR REGISTRATION & MEDIA SECTION ── */}
+            {contentTypeName === 'webinar' && (() => {
+              const isLive = content.webinar_type === 'live' || (!content.webinar_type && content.webinar_date);
+              const isOnDemand = content.webinar_type === 'on_demand' || (!isLive && content.video_file);
+
+              return (
+                <div style={{ marginTop: 24, marginBottom: 32 }}>
+                  {/* Host & Platform Metadata Banner */}
+                  <div style={{
+                    background: darkMode
+                      ? 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'
+                      : 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                    borderRadius: 16,
+                    padding: '24px 28px',
+                    marginBottom: 24,
+                    border: darkMode ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid #bae6fd',
+                    boxShadow: darkMode ? '0 8px 25px rgba(0,0,0,0.3)' : '0 8px 25px rgba(186, 230, 253, 0.4)',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 16
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <Tag color="blue" style={{ fontSize: 11, fontWeight: 800, padding: '2px 10px', borderRadius: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          WEBINAR EVENT
+                        </Tag>
+                        {content.platform && (
+                          <Tag color="purple" style={{ fontSize: 11, fontWeight: 700, padding: '2px 10px', borderRadius: 12 }}>
+                            Platform: {content.platform}
+                          </Tag>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: darkMode ? '#f8fafc' : '#0f172a', lineHeight: 1.3 }}>
+                        {content.title}
+                      </div>
+                      {content.hosted_by && (
+                        <div style={{ fontSize: 14, color: darkMode ? '#cbd5e1' : '#475569', marginTop: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <UserOutlined style={{ color: '#38bdf8' }} /> Hosted by: <strong style={{ color: darkMode ? '#38bdf8' : '#0284c7' }}>{content.hosted_by}</strong>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <Tag color={isLive ? 'red' : 'green'} style={{ fontSize: 13, padding: '6px 14px', borderRadius: 20, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {isLive ? '🔴 LIVE WEBINAR' : '📹 ON-DEMAND WEBINAR'}
+                      </Tag>
+                    </div>
+                  </div>
+
+                  {/* ── LIVE WEBINAR MODE ── */}
+                  {isLive && (
+                    <>
+                      {/* Countdown Timer */}
+                      {content.webinar_date && (
+                        <WebinarCountdown webinarDate={content.webinar_date} darkMode={darkMode} title={content.title} />
+                      )}
+
+                      {/* Registration Form / Join Link Card */}
+                      <div style={{
+                        background: darkMode
+                          ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+                          : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                        borderRadius: 20,
+                        padding: '32px 36px',
+                        marginTop: 24,
+                        border: darkMode ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid #e2e8f0',
+                        boxShadow: darkMode
+                          ? '0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.1)'
+                          : '0 12px 40px rgba(0, 0, 0, 0.08)'
+                      }}>
+                        {webinarRegistered ? (
+                          /* Registered State: Show Join Link Button */
+                          <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                            <div style={{
+                              width: 72,
+                              height: 72,
+                              borderRadius: '50%',
+                              background: 'rgba(37, 99, 235, 0.15)',
+                              border: '2px solid #2563eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              margin: '0 auto 16px'
+                            }}>
+                              <CheckCircleFilled style={{ fontSize: 40, color: '#2563eb' }} />
+                            </div>
+                            <Title level={3} style={{ color: darkMode ? '#f8fafc' : '#0f172a', marginBottom: 8, fontWeight: 800 }}>
+                              You are Registered for this Live Webinar!
+                            </Title>
+                            <Text style={{ color: darkMode ? '#94a3b8' : '#475569', fontSize: 15, display: 'block', maxWidth: 540, margin: '0 auto 28px', lineHeight: 1.6 }}>
+                              Your seat has been reserved. You can access the session live using the direct link below when the event begins.
+                            </Text>
+
+                            {content.join_link ? (
+                              <Button
+                                type="primary"
+                                size="large"
+                                href={content.join_link.startsWith('http') ? content.join_link : `https://${content.join_link}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                icon={<VideoCameraOutlined />}
+                                style={{
+                                  height: 54,
+                                  padding: '0 44px',
+                                  fontSize: 16,
+                                  fontWeight: 800,
+                                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                  border: 'none',
+                                  borderRadius: 14,
+                                  boxShadow: '0 8px 24px rgba(37, 99, 235, 0.4)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 10
+                                }}
+                              >
+                                JOIN LIVE WEBINAR NOW ({content.platform || 'Meeting Link'})
+                              </Button>
+                            ) : (
+                              <Tag color="orange" style={{ fontSize: 14, padding: '8px 20px', borderRadius: 16, fontWeight: 600 }}>
+                                🔔 Join link will activate closer to the event launch time.
+                              </Tag>
+                            )}
+                          </div>
+                        ) : (
+                          /* Unregistered State: Display Registration Form */
+                          <div>
+                            {/* Form Header */}
+                            <div style={{ marginBottom: 28 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 8 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <span style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: '50%',
+                                    background: '#ef4444',
+                                    boxShadow: '0 0 10px #ef4444',
+                                    display: 'inline-block'
+                                  }} />
+                                  <Title level={4} style={{ color: darkMode ? '#f8fafc' : '#0f172a', margin: 0, fontWeight: 800 }}>
+                                    Reserve Your Spot Now
+                                  </Title>
+                                </div>
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: darkMode ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7',
+                                  border: darkMode ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid #fde68a',
+                                  padding: '4px 12px',
+                                  borderRadius: 12,
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: darkMode ? '#fbbf24' : '#b45309'
+                                }}>
+                                  <FireOutlined /> Free Virtual Pass Included
+                                </div>
+                              </div>
+                              <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 14, display: 'block' }}>
+                                Fill out the form below to secure your complimentary pass and receive instant calendar updates.
+                              </Text>
+                            </div>
+
+                            <Form
+                              form={webinarRegForm}
+                              layout="vertical"
+                              onFinish={handleWebinarRegisterSubmit}
+                              requiredMark={false}
+                            >
+                              <Row gutter={16}>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item
+                                    name="first_name"
+                                    label={<span style={{ color: darkMode ? '#cbd5e1' : '#334155', fontWeight: 700, fontSize: 13 }}>First Name *</span>}
+                                    rules={[{ required: true, message: 'First name is required' }]}
+                                  >
+                                    <Input
+                                      prefix={<UserOutlined style={{ color: '#38bdf8', marginRight: 4 }} />}
+                                      placeholder="First name"
+                                      size="large"
+                                      style={{
+                                        height: 48,
+                                        borderRadius: 10,
+                                        background: darkMode ? 'rgba(15, 23, 42, 0.6)' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item
+                                    name="last_name"
+                                    label={<span style={{ color: darkMode ? '#cbd5e1' : '#334155', fontWeight: 700, fontSize: 13 }}>Last Name *</span>}
+                                    rules={[{ required: true, message: 'Last name is required' }]}
+                                  >
+                                    <Input
+                                      prefix={<IdcardOutlined style={{ color: '#38bdf8', marginRight: 4 }} />}
+                                      placeholder="Last name"
+                                      size="large"
+                                      style={{
+                                        height: 48,
+                                        borderRadius: 10,
+                                        background: darkMode ? 'rgba(15, 23, 42, 0.6)' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+
+                              <Row gutter={16}>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item
+                                    name="email"
+                                    label={<span style={{ color: darkMode ? '#cbd5e1' : '#334155', fontWeight: 700, fontSize: 13 }}>Work Email Address *</span>}
+                                    rules={[
+                                      { required: true, message: 'Email is required' },
+                                      { type: 'email', message: 'Enter a valid email address' }
+                                    ]}
+                                  >
+                                    <Input
+                                      prefix={<MailOutlined style={{ color: '#818cf8', marginRight: 4 }} />}
+                                      placeholder="name@company.com"
+                                      size="large"
+                                      style={{
+                                        height: 48,
+                                        borderRadius: 10,
+                                        background: darkMode ? 'rgba(15, 23, 42, 0.6)' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item
+                                    name="contact_number"
+                                    label={<span style={{ color: darkMode ? '#cbd5e1' : '#334155', fontWeight: 700, fontSize: 13 }}>Contact Number *</span>}
+                                    rules={[{ required: true, message: 'Contact number is required' }]}
+                                  >
+                                    <Input
+                                      prefix={<PhoneOutlined style={{ color: '#c084fc', marginRight: 4 }} />}
+                                      placeholder="+1 (555) 000-0000"
+                                      size="large"
+                                      style={{
+                                        height: 48,
+                                        borderRadius: 10,
+                                        background: darkMode ? 'rgba(15, 23, 42, 0.6)' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+
+                              <Row gutter={16}>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item
+                                    name="job_title"
+                                    label={<span style={{ color: darkMode ? '#cbd5e1' : '#334155', fontWeight: 700, fontSize: 13 }}>Job Title *</span>}
+                                    rules={[{ required: true, message: 'Job title is required' }]}
+                                  >
+                                    <Input
+                                      prefix={<IdcardOutlined style={{ color: '#f472b6', marginRight: 4 }} />}
+                                      placeholder="e.g. CTO, VP of Tech"
+                                      size="large"
+                                      style={{
+                                        height: 48,
+                                        borderRadius: 10,
+                                        background: darkMode ? 'rgba(15, 23, 42, 0.6)' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={24} sm={12}>
+                                  <Form.Item
+                                    name="company_name"
+                                    label={<span style={{ color: darkMode ? '#cbd5e1' : '#334155', fontWeight: 700, fontSize: 13 }}>Company Name *</span>}
+                                    rules={[{ required: true, message: 'Company name is required' }]}
+                                  >
+                                    <Input
+                                      prefix={<BankOutlined style={{ color: '#fbbf24', marginRight: 4 }} />}
+                                      placeholder="e.g. Acme Enterprise"
+                                      size="large"
+                                      style={{
+                                        height: 48,
+                                        borderRadius: 10,
+                                        background: darkMode ? 'rgba(15, 23, 42, 0.6)' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+
+                              <Form.Item style={{ marginBottom: 0, marginTop: 12 }}>
+                                <Button
+                                  type="primary"
+                                  htmlType="submit"
+                                  loading={webinarRegistering}
+                                  size="large"
+                                  icon={<RightOutlined />}
+                                  style={{
+                                    width: '100%',
+                                    height: 52,
+                                    fontSize: 16,
+                                    fontWeight: 800,
+                                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                    border: 'none',
+                                    borderRadius: 12,
+                                    boxShadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.04em'
+                                  }}
+                                >
+                                  Reserve My Seat Now
+                                </Button>
+                              </Form.Item>
+                            </Form>
+
+                            {/* Trust Security Footer */}
+                            <div style={{
+                              marginTop: 20,
+                              textAlign: 'center',
+                              fontSize: 12,
+                              color: darkMode ? '#94a3b8' : '#64748b',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 6
+                            }}>
+                              <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 14 }} />
+                              <span>100% Confidential & Secure. Your information is protected under our Privacy Policy.</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── ON-DEMAND WEBINAR VIDEO PLAYER ── */}
+                  {isOnDemand && content.video_file && (
+                    <div style={{ margin: '24px 0', borderRadius: 12, overflow: 'hidden', background: darkMode ? '#0f172a' : '#000', boxShadow: '0 8px 30px rgba(0,0,0,0.2)' }}>
+                      <video
+                        controls
+                        style={{ width: '100%', display: 'block' }}
+                        preload="metadata"
+                        poster={content.banner_image ? `/uploads/${content.banner_image}` : undefined}
+                      >
+                        <source src={`/uploads/${content.video_file}`} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Video Section for legacy non-webinar video content */}
+            {contentTypeName !== 'webinar' && content.video_file && (
               <>
                 {/* Show countdown for future webinars - NO VIDEO */}
                 {content.webinar_date && moment(content.webinar_date).isAfter(moment()) ? (
