@@ -17,10 +17,37 @@ router.post('/avatar', upload.single('avatar'), async (req, res) => {
         }
 
         const User = require('../models/User');
+        const Media = require('../models/Media');
+        const fs = require('fs');
+        
         const avatarUrl = `/uploads/${req.file.filename}`;
+
+        // Read binary file data and store in media_files database table
+        const fileData = fs.readFileSync(req.file.path);
+        await Media.create({
+            filename: req.file.filename,
+            original_name: req.file.originalname,
+            file_path: avatarUrl,
+            file_type: 'image',
+            file_size: req.file.size,
+            mime_type: req.file.mimetype,
+            folder: 'Images',
+            uploaded_by: req.user.id,
+            file_data: fileData
+        });
         
         // Update user's avatar in database
         await User.update(req.user.id, { avatar: avatarUrl });
+
+        // Clean up temporary disk file since it's saved in database
+        try {
+            if (fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+                console.log('✓ Cleaned up avatar file from filesystem:', req.file.path);
+            }
+        } catch (cleanupErr) {
+            console.warn('Could not clean up avatar file from filesystem:', cleanupErr.message);
+        }
 
         res.json({ 
             message: 'Avatar uploaded successfully',

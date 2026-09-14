@@ -254,132 +254,139 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
           </div>
 
           {/* Right Column: Featured Spotlight Article / Webinar Hero Story */}
-          {featuredPost && !isMobile && (
-            <div
-              onClick={() => navigateContentItem(featuredPost, navigate)}
-              style={{
-                width: 440,
-                flexShrink: 0,
-                background: darkMode ? 'rgba(15, 23, 42, 0.9)' : '#FFFFFF',
-                border: featuredPost.webinar_type === 'live' || (featuredPost.content_type || '').toLowerCase() === 'webinar'
-                  ? (darkMode ? '2px solid #ef4444' : '2px solid #3b82f6')
-                  : (darkMode ? '1px solid rgba(10, 174, 239, 0.3)' : '1px solid rgba(0, 0, 0, 0.08)'),
-                backdropFilter: 'blur(16px)',
-                borderRadius: 16,
-                padding: 18,
-                cursor: 'pointer',
-                transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)',
-                position: 'relative'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
-                e.currentTarget.style.boxShadow = `0 20px 40px ${accent}35`;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.transform = 'translateY(0) scale(1)';
-                e.currentTarget.style.boxShadow = darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)';
-              }}
-            >
-              <div style={{ height: 185, borderRadius: 12, overflow: 'hidden', position: 'relative', marginBottom: 14, background: '#1E293B' }}>
-                {featuredPost.banner_image ? (
-                  <img
-                    src={`/uploads/${featuredPost.banner_image}`}
-                    alt={featuredPost.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>⚡</div>
+          {featuredPost && !isMobile && (() => {
+            const featuredType = (featuredPost.content_type || featuredPost.content_type_name || '').toLowerCase().trim();
+            const isFeaturedWebinar = featuredType === 'webinar';
+            const isFeaturedLiveWebinar = isFeaturedWebinar && (featuredPost.webinar_type === 'live' || (!featuredPost.webinar_type && featuredPost.webinar_date));
+            const isFeaturedOnDemandWebinar = isFeaturedWebinar && (featuredPost.webinar_type === 'on_demand' || (!isFeaturedLiveWebinar && featuredPost.video_file));
+
+            return (
+              <div
+                onClick={() => navigateContentItem(featuredPost, navigate)}
+                style={{
+                  width: 440,
+                  flexShrink: 0,
+                  background: darkMode ? 'rgba(15, 23, 42, 0.9)' : '#FFFFFF',
+                  border: isFeaturedWebinar
+                    ? (darkMode ? '2px solid #ef4444' : '2px solid #3b82f6')
+                    : (darkMode ? '1px solid rgba(10, 174, 239, 0.3)' : '1px solid rgba(0, 0, 0, 0.08)'),
+                  backdropFilter: 'blur(16px)',
+                  borderRadius: 16,
+                  padding: 18,
+                  cursor: 'pointer',
+                  transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)',
+                  position: 'relative'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
+                  e.currentTarget.style.boxShadow = `0 20px 40px ${accent}35`;
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                  e.currentTarget.style.boxShadow = darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)';
+                }}
+              >
+                <div style={{ height: 185, borderRadius: 12, overflow: 'hidden', position: 'relative', marginBottom: 14, background: '#1E293B' }}>
+                  {featuredPost.banner_image ? (
+                    <img
+                      src={`/uploads/${featuredPost.banner_image}`}
+                      alt={featuredPost.title}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>⚡</div>
+                  )}
+
+                  {/* Hero Badge */}
+                  {isFeaturedWebinar ? (
+                    <span style={{
+                      position: 'absolute',
+                      top: 10,
+                      left: 10,
+                      background: isFeaturedOnDemandWebinar ? '#3b82f6' : '#ef4444',
+                      color: '#FFF',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '4px 12px',
+                      borderRadius: 14,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}>
+                      {isFeaturedOnDemandWebinar ? (
+                        <><PlayCircleOutlined /> On-Demand Video</>
+                      ) : (
+                        <><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', animation: 'badgePulse 1.5s infinite' }} /> Upcoming Live Webinar</>
+                      )}
+                    </span>
+                  ) : (
+                    <span style={{
+                      position: 'absolute',
+                      top: 10,
+                      left: 10,
+                      background: accent,
+                      color: '#FFF',
+                      fontSize: '0.68rem',
+                      fontWeight: 800,
+                      padding: '3px 10px',
+                      borderRadius: 12,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                    }}>
+                      Spotlight Story
+                    </span>
+                  )}
+                </div>
+
+                {/* Host & Platform Info if Webinar */}
+                {isFeaturedWebinar && featuredPost.hosted_by && (
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>Hosted by {featuredPost.hosted_by}</span>
+                    {featuredPost.platform && <Tag color="blue" style={{ fontSize: 10 }}>{featuredPost.platform}</Tag>}
+                  </div>
                 )}
 
-                {/* Hero Badge */}
-                {(featuredPost.webinar_type === 'live' || (featuredPost.content_type || '').toLowerCase() === 'webinar') ? (
-                  <span style={{
-                    position: 'absolute',
-                    top: 10,
-                    left: 10,
-                    background: featuredPost.webinar_type === 'on_demand' ? '#3b82f6' : '#ef4444',
-                    color: '#FFF',
-                    fontSize: '0.72rem',
-                    fontWeight: 800,
-                    padding: '4px 12px',
-                    borderRadius: 14,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6
-                  }}>
-                    {featuredPost.webinar_type === 'on_demand' ? (
-                      <><PlayCircleOutlined /> On-Demand Video</>
-                    ) : (
-                      <><span style={{ width: 8, height: 8, borderRadius: '50%', background: '#fff', animation: 'badgePulse 1.5s infinite' }} /> Upcoming Live Webinar</>
-                    )}
-                  </span>
-                ) : (
-                  <span style={{
-                    position: 'absolute',
-                    top: 10,
-                    left: 10,
-                    background: accent,
-                    color: '#FFF',
-                    fontSize: '0.68rem',
-                    fontWeight: 800,
-                    padding: '3px 10px',
-                    borderRadius: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                  }}>
-                    Spotlight Story
-                  </span>
+                <h3 style={{
+                  margin: '0 0 8px 0',
+                  fontSize: '1.08rem',
+                  fontWeight: 800,
+                  color: darkMode ? '#F8FAFC' : '#0F172A',
+                  lineHeight: 1.35,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
+                }}>
+                  {featuredPost.title}
+                </h3>
+
+                {/* Countdown for Live Webinar in Hero */}
+                {isFeaturedLiveWebinar && featuredPost.webinar_date && (
+                  <div style={{ marginBottom: 12 }}>
+                    <WebinarCountdown webinarDate={featuredPost.webinar_date} darkMode={darkMode} />
+                  </div>
                 )}
+
+                <p style={{
+                  margin: 0,
+                  fontSize: '0.8125rem',
+                  color: darkMode ? '#94A3B8' : '#64748B',
+                  lineHeight: 1.5,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden'
+                }}>
+                  {featuredPost.short_description}
+                </p>
               </div>
-
-              {/* Host & Platform Info if Webinar */}
-              {featuredPost.hosted_by && (
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#3b82f6', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>Hosted by {featuredPost.hosted_by}</span>
-                  {featuredPost.platform && <Tag color="blue" style={{ fontSize: 10 }}>{featuredPost.platform}</Tag>}
-                </div>
-              )}
-
-              <h3 style={{
-                margin: '0 0 8px 0',
-                fontSize: '1.08rem',
-                fontWeight: 800,
-                color: darkMode ? '#F8FAFC' : '#0F172A',
-                lineHeight: 1.35,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}>
-                {featuredPost.title}
-              </h3>
-
-              {/* Countdown for Live Webinar in Hero */}
-              {featuredPost.webinar_date && (featuredPost.webinar_type === 'live' || !featuredPost.webinar_type) && (
-                <div style={{ marginBottom: 12 }}>
-                  <WebinarCountdown webinarDate={featuredPost.webinar_date} darkMode={darkMode} />
-                </div>
-              )}
-
-              <p style={{
-                margin: 0,
-                fontSize: '0.8125rem',
-                color: darkMode ? '#94A3B8' : '#64748B',
-                lineHeight: 1.5,
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden'
-              }}>
-                {featuredPost.short_description}
-              </p>
-            </div>
-          )}
+            );
+          })()}
 
         </div>
       </div>
@@ -464,12 +471,12 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
               {item.category_name}
             </span>
           )}
-          {item.hosted_by && (
+          {isWebinar && item.hosted_by && (
             <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#475569' }}>
               • Hosted by <strong style={{ color: darkMode ? '#f1f5f9' : '#0f172a' }}>{item.hosted_by}</strong>
             </span>
           )}
-          {item.platform && (
+          {isWebinar && item.platform && (
             <Tag color="blue" style={{ fontSize: 10, margin: 0 }}>{item.platform}</Tag>
           )}
         </div>

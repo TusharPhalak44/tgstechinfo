@@ -71,18 +71,12 @@ exports.uploadFile = async (req, res) => {
             folder = 'Documents';
         }
         
-        // Only store file binary in DB for small images/PDFs (under 5MB).
-        // For videos and large files, store metadata only — serve from disk.
-        const MAX_BLOB_SIZE = 5 * 1024 * 1024; // 5MB
-        const isVideo = fileType === 'video';
-        const isLarge = req.file.size > MAX_BLOB_SIZE;
+        // Store file binary in database for images, documents, and videos
         let fileData = null;
-        if (!isVideo && !isLarge) {
-            try {
-                fileData = fs.readFileSync(req.file.path);
-            } catch (readErr) {
-                console.warn('Could not read file into DB blob (non-fatal):', readErr.message);
-            }
+        try {
+            fileData = fs.readFileSync(req.file.path);
+        } catch (readErr) {
+            console.warn('Could not read file into DB blob (non-fatal):', readErr.message);
         }
 
         // Save to database
@@ -99,7 +93,17 @@ exports.uploadFile = async (req, res) => {
         };
         
         const savedMedia = await Media.create(mediaData);
-        console.log('Media saved to database:', savedMedia);
+        console.log('Media saved to database:', savedMedia.filename);
+
+        // Clean up physical file from disk filesystem since it's saved directly in database
+        try {
+            if (fs.existsSync(req.file.path)) {
+                fs.unlinkSync(req.file.path);
+                console.log('✓ Cleaned up uploaded file from filesystem:', req.file.path);
+            }
+        } catch (cleanupErr) {
+            console.warn('Could not clean up file from filesystem:', cleanupErr.message);
+        }
         
         res.json({
             message: 'File uploaded successfully',
