@@ -8,7 +8,7 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ── Disk storage for all files ────────────────────────────────────────────────
+// ── Disk storage for files that are not stored in the database ────────────────
 const diskStorage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => {
@@ -16,6 +16,37 @@ const diskStorage = multer.diskStorage({
         cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
     }
 });
+
+// Banner images are persisted in media_files.file_data, so keep them in memory
+// and never create a permanent copy in the uploads directory.
+const contentStorage = {
+    _handleFile: (req, file, cb) => {
+        if (file.fieldname !== 'banner_image') {
+            return diskStorage._handleFile(req, file, cb);
+        }
+
+        const filename = `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+        const chunks = [];
+        let size = 0;
+        file.stream.on('data', chunk => {
+            chunks.push(chunk);
+            size += chunk.length;
+        });
+        file.stream.on('error', cb);
+        file.stream.on('end', () => cb(null, {
+            filename,
+            buffer: Buffer.concat(chunks),
+            size
+        }));
+    },
+    _removeFile: (req, file, cb) => {
+        if (file.fieldname !== 'banner_image') {
+            return diskStorage._removeFile(req, file, cb);
+        }
+        delete file.buffer;
+        cb(null);
+    }
+};
 
 // ── File filters ──────────────────────────────────────────────────────────────
 const imageFilter = (req, file, cb) => {
@@ -33,10 +64,10 @@ const anyFileFilter = (req, file, cb) => {
 };
 
 // ── Combined upload: banner_image + pdf_file + video_file ──────────────────────────────────
-// Uses disk storage directly — no sharp processing to avoid native crashes.
-// All files are saved to /uploads as-is.
+// Uses disk storage for PDFs/videos and memory storage for banners.
+// Banner bytes are persisted by the controllers in media_files.file_data.
 const uploadWithPdfBase = multer({
-    storage: diskStorage,
+    storage: contentStorage,
     limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB for videos
     fileFilter: anyFileFilter
 });

@@ -976,7 +976,7 @@ const Dashboard = () => {
 
                           {canEdit && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/user-dashboard/create-post?edit=${article.id}`); }}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/user-dashboard/create-post/${article.id}`); }}
                               style={{
                                 background: 'rgba(37, 99, 235, 0.08)',
                                 border: '1px solid rgba(37, 99, 235, 0.2)',

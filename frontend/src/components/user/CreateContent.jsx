@@ -148,9 +148,10 @@ const CreateContent = () => {
     fetchCategoriesAndTypes().then(() => {
       if (isEditMode) fetchExistingContent();
     });
-  }, []);
+  }, [id]);
 
   const fetchExistingContent = async () => {
+    setLoading(true);
     try {
       console.log('[CreateContent] fetchExistingContent - id:', id, 'isAdmin:', isAdmin);
       const apiBase = isAdmin ? '/api/admin' : '/api/user';
@@ -284,8 +285,12 @@ const CreateContent = () => {
         localStorage.removeItem(`${storageKey}_timestamp`);
         console.log('[CreateContent] Cleared localStorage after loading content from server');
       }
-    } catch {
-      message.error('Failed to load article');
+    } catch (err) {
+      console.error('[CreateContent] fetchExistingContent error:', err?.response?.data || err?.message);
+      message.error(err?.response?.data?.message || 'Failed to load article');
+      setEditorReady(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -560,21 +565,28 @@ const CreateContent = () => {
         const existing = (await axios.get(`${apiBase}/content/${savedContentId}`)).data;
         
         if (existing.status === 'published') {
-          // For published content, only update webhook settings and custom fields
-          let finalCustomFields = customFields;
-          if (activeTab === 'html') {
-            finalCustomFields = parseFormFieldsFromHtml(htmlContent);
-          } else if (activeTab === 'builder' && builderPageData) {
-            finalCustomFields = extractBuilderFormFields(builderPageData);
+          if (isAdmin) {
+            // Admins can edit published content through the full admin edit endpoint.
+            await axios.put(`${apiBase}/content/${savedContentId}/edit`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            message.success(`${typeName} updated successfully!`);
+          } else {
+            // Non-admin users may only update settings on published content.
+            let finalCustomFields = customFields;
+            if (activeTab === 'html') {
+              finalCustomFields = parseFormFieldsFromHtml(htmlContent);
+            } else if (activeTab === 'builder' && builderPageData) {
+              finalCustomFields = extractBuilderFormFields(builderPageData);
+            }
+
+            await axios.put(`${apiBase}/content/${savedContentId}/webhook`, {
+              webhook_url: values.webhook_url || existing.webhook_url || '',
+              ...(finalCustomFields.length > 0 ? { custom_fields: JSON.stringify(finalCustomFields) } : {})
+            });
+            message.success('Settings updated successfully!');
           }
-          
-          await axios.put(`${apiBase}/content/${savedContentId}/webhook`, {
-            webhook_url: values.webhook_url || existing.webhook_url || '',
-            ...(finalCustomFields.length > 0 ? { custom_fields: JSON.stringify(finalCustomFields) } : {})
-          });
-          message.success('Settings updated successfully!');
         } else {
--          // For draft/pending/changes_requested content, update full content and force status to 'draft'
           formData.append('status', 'draft'); // Explicitly set status to 'draft' on manual save
           await axios.put(`${apiBase}/content/${savedContentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
           setContentStatus('draft'); // Update local state to reflect draft status
@@ -645,6 +657,11 @@ const CreateContent = () => {
 
       let contentId = savedContentId;
       if (contentId) {
+        const existing = (await axios.get(`${apiBase}/content/${contentId}`)).data;
+        if (existing.status === 'published') {
+          message.info('Published content cannot be submitted again. Use Save to update its settings.');
+          return;
+        }
         await axios.put(`${apiBase}/content/${contentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       } else {
         const createRes = await axios.post(`${apiBase}/content`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
@@ -907,6 +924,17 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
 
   const bannerImageUrl = fileList.length > 0 ? getImageUrl(fileList[0]) : null;
 
+  if (isEditMode && loading && !editorReady) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: darkMode ? '#0f172a' : '#f5f5f5' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 16 }}>⏳</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: darkMode ? '#94a3b8' : '#475569' }}>Loading content...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <style>
@@ -1022,18 +1050,21 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
           </Button>
           <Tooltip title={
             !savedContentId ? 'Please save the content first' :
-            contentStatus === 'pending' ? 'Already under review' : ''
+            contentStatus === 'pending' ? 'Already under review' :
+            contentStatus === 'published' ? 'Published content cannot be submitted again' : ''
           }>
             <Button
               type="primary"
               icon={<SendOutlined />}
               loading={submitLoading}
-              disabled={!savedContentId || contentStatus === 'pending'}
+              disabled={!savedContentId || contentStatus === 'pending' || contentStatus === 'published'}
               onClick={handleSubmit}
               size="small"
               style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto', color: darkMode ? '#fff' : undefined }}
             >
-              {window.innerWidth < 768 ? (contentStatus === 'pending' ? 'Review' : 'Submit') : (contentStatus === 'pending' ? 'Under Review' : 'Submit for Review')}
+              {window.innerWidth < 768
+                ? (contentStatus === 'pending' ? 'Review' : contentStatus === 'published' ? 'Published' : 'Submit')
+                : (contentStatus === 'pending' ? 'Under Review' : contentStatus === 'published' ? 'Published' : 'Submit for Review')}
             </Button>
           </Tooltip>
         </Space>
@@ -2001,14 +2032,14 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                         const formData = buildFormData(values);
                         const apiBase = isAdmin ? '/api/admin' : '/api/user';
                         
-                        if (savedContentId) {
+                        if (savedContentId && contentStatus !== 'published') {
                           // Update existing content - keep its current status (draft/published)
                           console.log('[CreateContent] Auto-saving to existing content:', savedContentId);
                           const response = await axios.put(`${apiBase}/content/${savedContentId}`, formData, { 
                             headers: { 'Content-Type': 'multipart/form-data' } 
                           });
                           console.log('[CreateContent] Auto-save SUCCESS');
-                        } else {
+                        } else if (!savedContentId) {
                           // Create new draft automatically
                           console.log('[CreateContent] Auto-creating new draft content');
                           // Explicitly set status to 'draft' for auto-save
@@ -2024,6 +2055,9 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                           
                           // Update URL to edit mode without page reload
                           window.history.replaceState({}, '', isAdmin ? `/admin/edit-content/${newContentId}` : `/edit-content/${newContentId}`);
+                        } else {
+                          console.log('[CreateContent] Auto-save skipped for published content:', savedContentId);
+                          return;
                         }
                         
                         // Clear unsaved changes flag after successful save

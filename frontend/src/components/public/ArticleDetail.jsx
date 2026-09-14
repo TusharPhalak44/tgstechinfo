@@ -72,6 +72,13 @@ const BannerImage = ({ src, alt, darkMode }) => {
         <img
           src={src}
           alt={alt}
+          onError={(event) => {
+            if (event.currentTarget.dataset.fallbackApplied) return;
+            const prefix = '/api/media/file/';
+            if (!src.startsWith(prefix)) return;
+            event.currentTarget.dataset.fallbackApplied = 'true';
+            event.currentTarget.src = `/uploads/${src.slice(prefix.length)}`;
+          }}
           style={{
             width: '100%',
             height: '100%',

@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Button, Tag, message, Divider, Spin, Space, Tooltip,
-  Typography, Row, Col
+  Typography, Row, Col, Modal, Input
 } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
   EyeInvisibleOutlined, ArrowLeftOutlined,
-  CheckOutlined, CloseOutlined
+  CheckOutlined, CloseOutlined, RollbackOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -170,6 +170,8 @@ const ContentReviewDetail = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [reviewActionLoading, setReviewActionLoading] = useState(null);
+  const [requestEditModal, setRequestEditModal] = useState(false);
+  const [editComment, setEditComment] = useState('');
 
   const bgCard = darkMode ? 'rgba(30, 41, 59, 0.75)' : '#ffffff';
   const borderColor = darkMode ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0';
@@ -193,27 +195,24 @@ const ContentReviewDetail = () => {
     }
   };
 
-  const handleReviewAction = async (action) => {
+  const handleReviewAction = async (action, comment = '') => {
     setReviewActionLoading(action);
     try {
       await axios.put(`/api/admin/content/${content.id}/review`, {
         action,
-        comment: ''
+        comment
       });
       
       const actionMessages = {
         approve: 'Content approved successfully',
         publish: 'Content published successfully',
         reject: 'Content rejected',
-        request_changes: 'Changes requested successfully'
+        request_changes: 'Edit request sent to author'
       };
       
       message.success(actionMessages[action] || 'Action completed');
       
-      // Redirect back to review queue after action
-      if (action === 'approve') {
-        navigate('/dashboard/pending-review');
-      } else if (action === 'publish') {
+      if (action === 'approve' || action === 'publish') {
         navigate('/dashboard/pending-review');
       } else {
         fetchContentDetail();
@@ -223,6 +222,17 @@ const ContentReviewDetail = () => {
     } finally {
       setReviewActionLoading(null);
     }
+  };
+
+  const handleRequestEdit = async () => {
+    if (!editComment.trim()) {
+      message.warning('Please provide edit instructions for the author');
+      return;
+    }
+    await handleReviewAction('request_changes', editComment);
+    setRequestEditModal(false);
+    setEditComment('');
+    navigate('/dashboard/pending-review');
   };
 
   if (loading) {
@@ -410,6 +420,14 @@ const ContentReviewDetail = () => {
                       Approve
                     </Button>
                     <Button
+                      icon={<RollbackOutlined />}
+                      block
+                      onClick={() => setRequestEditModal(true)}
+                      style={{ borderRadius: 10, marginBottom: 8, borderColor: '#F59E0B', color: '#F59E0B' }}
+                    >
+                      Request Edit from Author
+                    </Button>
+                    <Button
                       icon={<CloseOutlined />}
                       block
                       loading={reviewActionLoading === 'reject'}
@@ -433,6 +451,12 @@ const ContentReviewDetail = () => {
                   >
                     Publish
                   </Button>
+                )}
+
+                {content.status === 'changes_requested' && (
+                  <div style={{ padding: '10px 12px', borderRadius: 10, background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', fontSize: '0.8rem', color: '#F59E0B', fontWeight: 600 }}>
+                    ⏳ Waiting for author to make edits and resubmit
+                  </div>
                 )}
 
                 <Button
@@ -478,6 +502,33 @@ const ContentReviewDetail = () => {
           </Col>
         </Row>
       </div>
+
+      {/* Request Edit Modal */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#F59E0B' }}>
+            <RollbackOutlined />
+            <span>Request Edit from Author</span>
+          </div>
+        }
+        open={requestEditModal}
+        onCancel={() => { setRequestEditModal(false); setEditComment(''); }}
+        onOk={handleRequestEdit}
+        okText="Send Edit Request"
+        okButtonProps={{ loading: reviewActionLoading === 'request_changes', style: { background: '#F59E0B', border: 'none' } }}
+        cancelText="Cancel"
+      >
+        <p style={{ marginBottom: 12, color: darkMode ? '#CBD5E1' : '#475569', fontSize: '0.88rem' }}>
+          Describe what changes the author needs to make. They will receive a notification and can edit &amp; resubmit the content.
+        </p>
+        <Input.TextArea
+          rows={5}
+          placeholder="e.g. Please update the introduction section, add more references, fix the banner image..."
+          value={editComment}
+          onChange={(e) => setEditComment(e.target.value)}
+          style={{ borderRadius: 8 }}
+        />
+      </Modal>
     </>
   );
 };

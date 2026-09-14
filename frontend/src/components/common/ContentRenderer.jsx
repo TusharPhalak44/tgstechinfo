@@ -169,12 +169,17 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkM
     banner: content.banner_image && (content.content_type_name || content.content_type || '').toLowerCase() !== 'webinar' ? (
       <div key="banner" style={{ marginBottom: 24 }}>
         {renderBanner
-          ? renderBanner(`/uploads/${content.banner_image}`, content.title, darkMode)
+          ? renderBanner(`/api/media/file/${content.banner_image}`, content.title, darkMode)
           : (
             <div style={{ borderRadius: 10, overflow: 'hidden' }}>
               <img
-                src={`/uploads/${content.banner_image}`}
+                src={`/api/media/file/${content.banner_image}`}
                 alt={content.title}
+                onError={(event) => {
+                  if (event.currentTarget.dataset.fallbackApplied) return;
+                  event.currentTarget.dataset.fallbackApplied = 'true';
+                  event.currentTarget.src = `/uploads/${content.banner_image}`;
+                }}
                 style={{ width: '100%', height: 'auto', display: 'block', maxHeight: 420, objectFit: 'contain' }}
               />
             </div>

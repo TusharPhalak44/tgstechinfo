@@ -623,6 +623,23 @@ const MyContent = () => {
                         >
                           {article.title || 'Untitled'}
                         </div>
+
+                        {article.status === 'changes_requested' && article.admin_comment && (
+                          <div style={{
+                            marginTop: 6,
+                            padding: '6px 10px',
+                            borderRadius: 8,
+                            background: 'rgba(249, 115, 22, 0.08)',
+                            border: '1px solid rgba(249, 115, 22, 0.25)',
+                            fontSize: '0.72rem',
+                            color: '#F97316',
+                            fontWeight: 600,
+                            lineHeight: 1.4,
+                          }}>
+                            <span style={{ fontWeight: 800 }}>Admin note: </span>
+                            {article.admin_comment}
+                          </div>
+                        )}
                       </div>
 
                       {/* Actions Footer */}
@@ -663,7 +680,7 @@ const MyContent = () => {
 
                           {canEdit && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); navigate(`/user-dashboard/create-post?edit=${article.id}`); }}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/user-dashboard/create-post/${article.id}`); }}
                               style={{
                                 background: 'rgba(37, 99, 235, 0.08)',
                                 border: '1px solid rgba(37, 99, 235, 0.2)',
@@ -683,26 +700,29 @@ const MyContent = () => {
                             </button>
                           )}
 
-                          {article.status === 'draft' && (
+                          {(article.status === 'draft' || article.status === 'changes_requested') && (
                             <button
                               onClick={(e) => handleSubmitForReview(e, article.id)}
                               disabled={submitting === article.id}
                               style={{
-                                background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)',
+                                background: article.status === 'changes_requested'
+                                  ? 'linear-gradient(135deg, #92400E 0%, #D97706 100%)'
+                                  : 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)',
                                 border: '1px solid rgba(247, 148, 29, 0.35)',
                                 color: '#FFFFFF',
                                 padding: '5px 10px',
                                 borderRadius: 8,
                                 fontSize: '0.72rem',
                                 fontWeight: 700,
-                                cursor: 'pointer',
+                                cursor: submitting === article.id ? 'not-allowed' : 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: 4,
+                                opacity: submitting === article.id ? 0.7 : 1,
                               }}
                             >
                               <SendOutlined />
-                              <span>Submit</span>
+                              <span>{article.status === 'changes_requested' ? 'Resubmit' : 'Submit'}</span>
                             </button>
                           )}
 

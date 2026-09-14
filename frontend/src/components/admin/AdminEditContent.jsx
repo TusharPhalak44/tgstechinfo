@@ -86,6 +86,7 @@ const AdminEditContent = () => {
         seo_meta_keywords: data.seo_meta_keywords,
         scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null
       });
+      setSelectedContentType(data.content_type_id);
       // Visual Builder content — redirect to CreateContent which handles builder_page_data
       if (data.builder_page_data) {
         navigate(`/edit-content/${id}`, { replace: true });
@@ -129,7 +130,10 @@ const AdminEditContent = () => {
       formData.append('content', content || '');
       if (fileList.length > 0 && fileList[0].originFileObj) formData.append('banner_image', fileList[0].originFileObj);
 
-      await axios.put(`/api/admin/content/${id}/edit`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const response = await axios.put(`/api/admin/content/${id}/edit`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      if (!response.data?.content) {
+        throw new Error('The server did not return the updated content');
+      }
       message.success('Content updated successfully!');
       navigate(`/admin/review/${id}`);
     } catch (error) {

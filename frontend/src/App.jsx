@@ -702,6 +702,7 @@ function AppContent() {
                 <Route path="my-submissions" element={<UserSubmissions />} />
 
                 <Route path="create-post" element={<CreateContent />} />
+                <Route path="create-post/:id" element={<CreateContent />} />
 
                 <Route path="media-library" element={<MediaLibrary />} />
 

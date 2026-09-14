@@ -25,11 +25,21 @@ const stripEmDash = (val) => {
 
 exports.createContent = async (req, res) => {
     try {
+        const bannerFile = req.files?.banner_image?.[0];
+        let existingBanner = null;
+        if (bannerFile) {
+            try {
+                existingBanner = await Media.findByOriginalName(bannerFile.originalname);
+            } catch (mediaLookupError) {
+                console.warn('Banner media lookup failed; saving as a new media record:', mediaLookupError.message);
+            }
+        }
+
         const contentData = stripEmDash({
             ...req.body,
             user_id: req.user.id,
             status: String(req.body.status || 'draft').trim(),
-            banner_image: req.files?.banner_image?.[0]?.filename || null,
+            banner_image: existingBanner?.filename || bannerFile?.filename || null,
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
             video_file: req.files?.video_file?.[0]?.filename || null,
             webinar_date: req.body.webinar_date || null,
@@ -70,15 +80,13 @@ exports.createContent = async (req, res) => {
         const content = await Content.create(contentData);
         
         // Add banner image to media_files table if present and not already exists
-        if (req.files?.banner_image?.[0]) {
+        if (bannerFile) {
             try {
-                const bannerFile = req.files.banner_image[0];
                 // Check if file with same original name already exists in media_files table
-                const existingMedia = await Media.findByOriginalName(bannerFile.originalname);
-                if (!existingMedia) {
+                if (!existingBanner) {
                     const ext = bannerFile.filename.split('.').pop().toLowerCase();
                     const fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other';
-                    const fileData = require('fs').readFileSync(bannerFile.path);
+                    const fileData = bannerFile.buffer || require('fs').readFileSync(bannerFile.path);
                     await Media.create({
                         filename: bannerFile.filename,
                         original_name: bannerFile.originalname,
@@ -93,8 +101,6 @@ exports.createContent = async (req, res) => {
                     console.log('✓ Banner image added to media_files table:', bannerFile.filename);
                 } else {
                     console.log('Banner image with same original name already exists in media_files table:', bannerFile.originalname);
-                    // Use the existing file's filename for the content
-                    req.body.banner_image = existingMedia.filename;
                 }
             } catch (mediaError) {
                 console.error('Error adding banner image to media_files:', mediaError);
@@ -258,13 +264,23 @@ exports.updateContent = async (req, res) => {
         Object.keys(req.body).forEach(key => {
             updateData[key] = req.body[key];
         });
+
+        const bannerFile = req.files?.banner_image?.[0];
+        if (bannerFile) {
+            let existingBanner = null;
+            try {
+                existingBanner = await Media.findByOriginalName(bannerFile.originalname);
+            } catch (mediaLookupError) {
+                console.warn('Banner media lookup failed during update; saving as a new media record:', mediaLookupError.message);
+            }
+            updateData.banner_image = existingBanner?.filename || bannerFile.filename;
+        }
         
         // Ensure status is never empty/null - default to 'draft' if provided but empty
         if (updateData.status === '' || updateData.status === null || updateData.status === undefined) {
             updateData.status = 'draft';
         }
         
-        if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.files?.video_file?.[0]) updateData.video_file = req.files.video_file[0].filename;
         if (req.body.webinar_date !== undefined) updateData.webinar_date = req.body.webinar_date;
@@ -328,15 +344,14 @@ exports.updateContent = async (req, res) => {
         await Content.update(id, updateData);
         
         // Add new banner image to media_files table if present and not already exists
-        if (req.files?.banner_image?.[0]) {
+        if (bannerFile) {
             try {
-                const bannerFile = req.files.banner_image[0];
                 // Check if file with same original name already exists in media_files table
                 const existingMedia = await Media.findByOriginalName(bannerFile.originalname);
                 if (!existingMedia) {
                     const ext = bannerFile.filename.split('.').pop().toLowerCase();
                     const fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other';
-                    const fileData = require('fs').readFileSync(bannerFile.path);
+                    const fileData = bannerFile.buffer || require('fs').readFileSync(bannerFile.path);
                     await Media.create({
                         filename: bannerFile.filename,
                         original_name: bannerFile.originalname,

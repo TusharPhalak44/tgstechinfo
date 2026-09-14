@@ -3,6 +3,7 @@ const User = require('../models/User');
 const LandingPage = require('../models/LandingPage');
 const Category = require('../models/Category');
 const DataRequest = require('../models/DataRequest');
+const Media = require('../models/Media');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, sendTemplatedEmail } = require('../config/email');
 const { createNotification } = require('./notificationController');
@@ -352,44 +353,56 @@ exports.adminEditContent = async (req, res) => {
         if (!content) return res.status(404).json({ message: 'Content not found' });
 
         const fields = ['title', 'short_description', 'content', 'category_id', 'content_type_id',
-            'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords', 'scheduled_publish_date', 'webhook_url'];
+            'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords', 'scheduled_publish_date', 'webhook_url',
+            'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data',
+            'custom_fields', 'webinar_date', 'hosted_by', 'platform', 'webinar_type', 'join_link',
+            'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'];
 
         const updateData = {};
         fields.forEach(f => { if (req.body[f] !== undefined) updateData[f] = req.body[f]; });
+
+        const bannerFile = req.files?.banner_image?.[0];
+        if (bannerFile) {
+            let existingBanner = null;
+            try {
+                existingBanner = await Media.findByOriginalName(bannerFile.originalname);
+            } catch (mediaLookupError) {
+                console.warn('Banner media lookup failed; saving as a new media record:', mediaLookupError.message);
+            }
+            updateData.banner_image = existingBanner?.filename || bannerFile.filename;
+        }
 
         if (req.body.tags) {
             const tags = req.body.tags.split(',').map(t => t.trim()).filter(Boolean);
             updateData.tags = JSON.stringify(tags);
         }
-        if (req.files?.banner_image?.[0]) updateData.banner_image = req.files.banner_image[0].filename;
         if (req.files?.pdf_file?.[0]) updateData.pdf_file = req.files.pdf_file[0].filename;
         if (req.files?.video_file?.[0]) updateData.video_file = req.files.video_file[0].filename;
         if (req.body.webinar_date !== undefined) updateData.webinar_date = req.body.webinar_date;
         if (req.body.custom_fields) updateData.custom_fields = req.body.custom_fields;
         if (req.body.webhook_field_mapping) updateData.webhook_field_mapping = req.body.webhook_field_mapping;
 
+        // Persist the banner first so the content can never reference a missing media row.
+        if (bannerFile) {
+            const ext = bannerFile.filename.split('.').pop().toLowerCase();
+            const fileData = bannerFile.buffer || (bannerFile.path ? require('fs').readFileSync(bannerFile.path) : null);
+            if (!fileData) throw new Error('Uploaded banner image data is missing');
+            await Media.create({
+                filename: bannerFile.filename,
+                original_name: bannerFile.originalname,
+                file_path: `/uploads/${bannerFile.filename}`,
+                file_type: ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other',
+                file_size: bannerFile.size,
+                mime_type: bannerFile.mimetype,
+                folder: 'Images',
+                uploaded_by: req.user.id,
+                file_data: fileData
+            });
+            updateData.banner_image = bannerFile.filename;
+        }
+
         const updated = await Content.update(id, stripEmDash(updateData));
 
-        // Save banner image to media_files
-        if (req.files?.banner_image?.[0]) {
-            try {
-                const bannerFile = req.files.banner_image[0];
-                const ext = bannerFile.filename.split('.').pop().toLowerCase();
-                const Media = require('../models/Media');
-                const fileData = require('fs').readFileSync(bannerFile.path);
-                await Media.create({
-                    filename: bannerFile.filename,
-                    original_name: bannerFile.originalname,
-                    file_path: `/uploads/${bannerFile.filename}`,
-                    file_type: ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other',
-                    file_size: bannerFile.size,
-                    mime_type: bannerFile.mimetype,
-                    folder: 'Images',
-                    uploaded_by: req.user.id,
-                    file_data: fileData
-                });
-            } catch (e) { console.error('Media save error:', e.message); }
-        }
         // Save PDF to media_files
         if (req.files?.pdf_file?.[0]) {
             try {
@@ -444,7 +457,11 @@ exports.adminEditContent = async (req, res) => {
         res.json({ message: 'Content updated successfully', content: updated });
     } catch (error) {
         console.error('Admin edit content error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error(error.stack);
+        res.status(500).json({
+            message: error.message || 'Server error',
+            ...(process.env.NODE_ENV === 'development' && { code: error.code, sqlState: error.sqlState })
+        });
     }
 };
 

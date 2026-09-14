@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS media_files (
     mime_type VARCHAR(100),
     folder VARCHAR(50) DEFAULT 'Documents',
     uploaded_by INT,
+    file_data LONGBLOB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_file_type (file_type),
