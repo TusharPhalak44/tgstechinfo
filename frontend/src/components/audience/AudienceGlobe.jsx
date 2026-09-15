@@ -352,51 +352,7 @@ export default function AudienceGlobe({
         }
       });
 
-      // ── 5. GLOWING 3D ACTIVE MARKET DATA NODES & PULSING BEACONS ──
-      activeNodesList.forEach((node, idx) => {
-        const pt = project3D(node.lat, node.lon, radius, cx, cy, st.rotY, st.rotX);
-        if (pt.isFront) {
-          const isSelected = selectedCountries.includes(node.iso_code);
-          const isTargetRegion = selectedRegion && selectedRegion !== 'GLOBAL' && (
-            (REGION_COUNTRIES[selectedRegion] || []).includes(node.iso_code) || node.region === selectedRegion
-          );
 
-          // Node size based on audience scale
-          const nodeRadius = isSelected ? 6.5 : isTargetRegion ? 5.5 : 4.2;
-
-          let primaryColor = '#0AAEEF';
-          if (isSelected) {
-            primaryColor = '#F7941D';
-          } else if (isTargetRegion) {
-            primaryColor = '#10B981';
-          }
-
-          // Outer Pulsing Radar Ring
-          const pulseSize = nodeRadius + (Math.sin(st.time * 3.5 + idx) + 1.2) * 2.8;
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, pulseSize, 0, Math.PI * 2);
-          ctx.strokeStyle = primaryColor;
-          ctx.lineWidth = 1.4;
-          ctx.globalAlpha = 0.55;
-          ctx.stroke();
-          ctx.globalAlpha = 1.0;
-
-          // Inner Glowing Core
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, nodeRadius, 0, Math.PI * 2);
-          ctx.fillStyle = primaryColor;
-          ctx.shadowColor = primaryColor;
-          ctx.shadowBlur = 12;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Bright White Center Dot
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, nodeRadius * 0.4, 0, Math.PI * 2);
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fill();
-        }
-      });
 
       ctx.restore(); // End globe clip
 

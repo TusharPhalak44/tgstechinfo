@@ -961,6 +961,7 @@ const UserDashboardLayout = () => {
                 >
                   <Avatar
                     size={28}
+                    src={user?.avatar || null}
                     style={{
                       background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 100%)',
                       color: '#F7941D',

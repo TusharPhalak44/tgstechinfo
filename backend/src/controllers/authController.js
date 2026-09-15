@@ -291,8 +291,8 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { first_name, last_name, email } = req.body;
-        const user = await User.update(req.user.id, { first_name, last_name, email });
+        const { first_name, last_name, email, avatar } = req.body;
+        const user = await User.update(req.user.id, { first_name, last_name, email, avatar });
         res.json({ message: 'Profile updated successfully', user });
     } catch (error) {
         console.error('Update profile error:', error);
@@ -576,7 +576,7 @@ exports.changePassword = async (req, res) => {
             });
         }
 
-        const user = await User.findById(userId);
+        const user = await User.findByIdWithPassword(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }

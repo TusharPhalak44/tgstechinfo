@@ -740,6 +740,7 @@ const Navbar = () => {
                   }}>
                     <Avatar
                       size={28}
+                      src={user?.avatar || null}
                       icon={<UserOutlined />}
                       style={{ background: '#0B1F4D', flexShrink: 0 }}
                     />

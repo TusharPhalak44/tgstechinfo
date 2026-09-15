@@ -28,6 +28,7 @@ import axios from 'axios';
 import SessionManagement from '../admin/SessionManagement';
 import LoginHistory from './LoginHistory';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 const { Text } = Typography;
 
@@ -124,6 +125,7 @@ const profileStyles = `
 
 const UserProfile = () => {
   const { darkMode } = useTheme();
+  const { fetchUser } = useAuth();
   const D = darkMode;
 
   const [form] = Form.useForm();
@@ -175,6 +177,7 @@ const UserProfile = () => {
       message.success('Profile updated successfully');
       setEditMode(false);
       fetchUserProfile();
+      if (fetchUser) fetchUser();
     } catch (error) {
       message.error('Failed to update profile');
     } finally {
@@ -235,7 +238,9 @@ const UserProfile = () => {
     withCredentials: true,
     onChange: (info) => {
       if (info.file.status === 'done') {
-        setAvatarUrl(info.file.response.url);
+        const newUrl = info.file.response?.url || '';
+        setAvatarUrl(newUrl);
+        if (fetchUser) fetchUser();
         message.success('Avatar uploaded successfully');
       }
     },
@@ -337,7 +342,7 @@ const UserProfile = () => {
                   <div style={{ position: 'relative', cursor: 'pointer' }}>
                     <Avatar
                       size={110}
-                      src={avatarUrl}
+                      src={avatarUrl || null}
                       icon={<UserOutlined />}
                       style={{ background: '#1E293B', color: '#8B5CF6', border: '3px solid #0F172A' }}
                     />
@@ -509,7 +514,7 @@ const UserProfile = () => {
                 children: (
                   <div style={{ maxWidth: 680, marginTop: 12 }}>
                     <Alert
-                      message="Security Guidelines"
+                      title="Security Guidelines"
                       description="To maintain optimal account protection, ensure your password is at least 12 characters and includes numbers, symbols, and uppercase letters."
                       type="info"
                       showIcon

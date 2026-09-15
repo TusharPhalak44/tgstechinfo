@@ -390,7 +390,7 @@ export default function AudienceIntelligence() {
                       Spatial Market Distribution
                     </span>
                     <span style={{ fontSize: '0.75rem', color: 'var(--aud-text-muted)', marginLeft: 8 }}>
-                      (Click any glowing country dot to filter by location)
+                      (Click any country on the globe to filter by location)
                     </span>
                   </div>
                   <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>

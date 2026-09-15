@@ -809,6 +809,7 @@ const DashboardLayout = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Avatar
                   size={34}
+                  src={user?.avatar || null}
                   style={{
                     background: 'linear-gradient(135deg, #0B1F4D 0%, #2563EB 100%)',
                     fontWeight: 800,
@@ -970,6 +971,7 @@ const DashboardLayout = () => {
                 >
                   <Avatar
                     size={30}
+                    src={user?.avatar || null}
                     style={{
                       background: 'linear-gradient(135deg, #0B1F4D 0%, #2563EB 100%)',
                       fontWeight: 800,

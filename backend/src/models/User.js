@@ -30,9 +30,14 @@ class User {
 
     static async findById(id) {
         const [rows] = await pool.query(
-            'SELECT id, first_name, last_name, email, role, is_active, created_at FROM users WHERE id = ?',
+            'SELECT id, first_name, last_name, email, role, is_active, avatar, created_at FROM users WHERE id = ?',
             [id]
         );
+        return rows[0];
+    }
+
+    static async findByIdWithPassword(id) {
+        const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
         return rows[0];
     }
 
