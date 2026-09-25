@@ -231,7 +231,7 @@ exports.getFolderCounts = async (req, res) => {
 
 exports.serveFile = async (req, res) => {
     try {
-        const { filename } = req.params;
+        const filename = path.basename(req.params.filename);
         const { download } = req.query;
 
         // First check disk filesystem (streaming, zero memory buffering)
