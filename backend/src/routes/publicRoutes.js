@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const publicController = require('../controllers/publicController');
-const adminController = require('../controllers/adminController');
 const notificationController = require('../controllers/notificationController');
 const contentController = require('../controllers/contentController');
 const { authenticate } = require('../middleware/auth');
@@ -48,9 +47,6 @@ router.post('/data-request/do-not-sell', passwordResetLimiter, publicController.
 
 // Contact form — 10 per hour per IP
 router.post('/contact', strictLimiter, publicController.submitContact);
-
-// Public submission API — protected by strictLimiter to prevent enumeration
-router.get('/submission/:id', strictLimiter, adminController.getSubmissionById);
 
 // Dynamic form submissions (requires authentication)
 router.get('/dynamic-form-submissions/:content_id', authenticate, publicController.getDynamicFormSubmissions);

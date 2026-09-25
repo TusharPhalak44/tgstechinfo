@@ -21,6 +21,7 @@ router.put('/admin/notifications/:id/read', hasPermission('settings.update'), no
 router.get('/content/all', adminController.getAllContent);
 router.get('/content/pending', adminController.getPendingContent);
 router.put('/content/:id/review', hasPermission('content.publish'), adminController.reviewContent);
+router.post('/content/:id/edit-request', hasPermission('content.publish'), adminController.sendEditRequest);
 router.get('/content/:id', adminController.getContentDetails);
 
 // Admin content creation and submission
@@ -59,6 +60,7 @@ router.get('/dashboard/portfolio', adminController.getContentPortfolio);
 
 // Landing page submissions & Webinar Registrations
 router.get('/submissions', hasPermission('content.read'), adminController.getSubmissions);
+router.get('/submissions/:id', hasPermission('content.read'), adminController.getSubmissionById);
 router.get('/submission-tables', hasPermission('content.read'), adminController.getSubmissionTables);
 router.get('/submission-tables/:contentId', hasPermission('content.read'), adminController.getSubmissionTableDetails);
 router.get('/webinar-registrations', hasPermission('content.read'), adminController.getWebinarRegistrations);

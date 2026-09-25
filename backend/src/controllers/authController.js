@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { first_name, last_name, email, password, role } = req.body;
+        const { first_name, last_name, email, job_title, company_name, country, password } = req.body;
 
         const existingUser = await User.findByEmail(email);
         if (existingUser) {
@@ -24,12 +24,16 @@ exports.register = async (req, res) => {
 
         const password_hash = await hashPassword(password);
 
+        // Public registration always creates a standard user; never trust client-supplied role
         const user = await User.create({
             first_name,
             last_name,
             email,
+            job_title,
+            company_name,
+            country,
             password_hash,
-            role: role || 'user'
+            role: 'user'
         });
 
         const deviceInfo = parseUserAgent(req.headers['user-agent']);
@@ -78,6 +82,9 @@ exports.register = async (req, res) => {
             const emailResult = await sendTemplatedEmail('registration', user.email, {
                 first_name: user.first_name,
                 last_name: user.last_name,
+                job_title: user.job_title,
+                company_name: user.company_name,
+                country: user.country,
                 name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
                 email: user.email,
                 login_url: `${frontendUrl}/login`
@@ -291,8 +298,8 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { first_name, last_name, email, avatar } = req.body;
-        const user = await User.update(req.user.id, { first_name, last_name, email, avatar });
+        const { first_name, last_name, email, job_title, company_name, avatar } = req.body;
+        const user = await User.update(req.user.id, { first_name, last_name, email, job_title, company_name, avatar });
         res.json({ message: 'Profile updated successfully', user });
     } catch (error) {
         console.error('Update profile error:', error);
