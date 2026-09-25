@@ -629,18 +629,26 @@ const Navbar = () => {
                   border: darkMode ? '1px solid #334155' : '1.5px solid #CBD5E1',
                   transition: 'all .25s ease'
                 }}>
-                  <SearchOutlined style={{
-                    color: '#0B1F4D',
-                    fontSize: 13,
-                    flexShrink: 0,
-                    cursor: 'pointer'
-                  }} onClick={() => { if (isMobile) setSearchVisible(!searchVisible); }} />
+                  <SearchOutlined 
+                    aria-label="Search"
+                    role="button"
+                    tabIndex={0}
+                    style={{
+                      color: '#0B1F4D',
+                      fontSize: 13,
+                      flexShrink: 0,
+                      cursor: 'pointer'
+                    }} 
+                    onClick={() => { if (isMobile) setSearchVisible(!searchVisible); else handleSearch(); }} 
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { if (isMobile) setSearchVisible(!searchVisible); else handleSearch(); } }}
+                  />
 
                   <input
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
                     placeholder="Search..."
+                    aria-label="Search articles and publications"
                     style={{
                       border: 'none',
                       background: 'transparent',
@@ -658,6 +666,9 @@ const Navbar = () => {
 
                   {searchQuery && (
                     <CloseOutlined
+                      aria-label="Clear search input"
+                      role="button"
+                      tabIndex={0}
                       style={{
                         color: 'var(--color-muted)',
                         fontSize: 11,
@@ -665,6 +676,7 @@ const Navbar = () => {
                         flexShrink: 0
                       }}
                       onClick={() => { setSearchQuery(''); setSearchVisible(false); }}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { setSearchQuery(''); setSearchVisible(false); } }}
                     />
                   )}
                 </div>
@@ -674,6 +686,7 @@ const Navbar = () => {
               {!isMobile && (
                 <button
                   onClick={() => navigate('/contact')}
+                  aria-label="Contact Us"
                   className={`group relative rounded-full font-bold transition-all duration-300 inline-flex items-center cursor-pointer select-none ${
                     isLaptop ? 'h-9 pl-1.5 pr-4 text-xs gap-2' : 'h-10 pl-1.5 pr-5 text-[13px] gap-2.5'
                   } ${
@@ -705,19 +718,23 @@ const Navbar = () => {
                   trigger={['click']} placement="bottomRight"
                 >
                   <Badge count={notifications.length} size="small" overflowCount={99}>
-                    <button style={{
-                      background: darkMode ? 'rgba(255,255,255,0.06)' : '#EAF2FF',
-                      border: darkMode ? '1px solid #334155' : '1px solid #CBD5E1',
-                      cursor: 'pointer',
-                      width: 34,
-                      height: 34,
-                      borderRadius: 10,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#0B1F4D',
-                      transition: 'all .2s ease'
-                    }}>
+                    <button 
+                      type="button"
+                      aria-label="View notifications"
+                      style={{
+                        background: darkMode ? 'rgba(255,255,255,0.06)' : '#EAF2FF',
+                        border: darkMode ? '1px solid #334155' : '1px solid #CBD5E1',
+                        cursor: 'pointer',
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#0B1F4D',
+                        transition: 'all .2s ease'
+                      }}
+                    >
                       <BellOutlined style={{ fontSize: 16 }} />
                     </button>
                   </Badge>
@@ -727,17 +744,22 @@ const Navbar = () => {
               {/* User Account / Auth Actions */}
               {isAuthenticated ? (
                 <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    cursor: 'pointer',
-                    padding: '4px 12px 4px 4px',
-                    borderRadius: 24,
-                    border: darkMode ? '1.5px solid #334155' : '1.5px solid #0B1F4D',
-                    background: darkMode ? 'rgba(255,255,255,0.08)' : '#EAF2FF',
-                    transition: 'all .2s ease'
-                  }}>
+                  <div 
+                    role="button"
+                    tabIndex={0}
+                    aria-label="User account menu"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      cursor: 'pointer',
+                      padding: '4px 12px 4px 4px',
+                      borderRadius: 24,
+                      border: darkMode ? '1.5px solid #334155' : '1.5px solid #0B1F4D',
+                      background: darkMode ? 'rgba(255,255,255,0.08)' : '#EAF2FF',
+                      transition: 'all .2s ease'
+                    }}
+                  >
                     <Avatar
                       size={28}
                       src={user?.avatar || null}
@@ -764,8 +786,9 @@ const Navbar = () => {
 
               {/* Dark Mode Theme Toggle - Placed RIGHT of Join Our Community / User Profile */}
               <button
+                type="button"
                 onClick={handleThemeToggle}
-                aria-label="Toggle Theme"
+                aria-label={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
                 style={{
                   background: darkMode ? 'rgba(255,255,255,0.08)' : '#EAF2FF',
                   border: darkMode ? '1px solid #334155' : '1px solid #CBD5E1',
@@ -808,8 +831,9 @@ const Navbar = () => {
               {/* Mobile Hamburger Icon */}
               {isMobile && (
                 <button
+                  type="button"
                   onClick={() => setMobileOpen(o => !o)}
-                  aria-label="Toggle Mobile Menu"
+                  aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
                   style={{
                     background: 'none',
                     border: 'none',
