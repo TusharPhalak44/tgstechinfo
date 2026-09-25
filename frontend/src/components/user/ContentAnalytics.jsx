@@ -23,6 +23,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
+import { formatDateForDisplay, DATE_FORMATS, formatTimeForDisplay } from '../../utils/dateHelper';
 
 const { Title, Text } = Typography;
 
@@ -311,11 +312,15 @@ const ContentAnalytics = () => {
           style={{
             background: D ? '#0F172A' : '#FFFFFF',
             borderColor: D ? 'rgba(255, 255, 255, 0.07)' : '#E2E8F0',
+            overflowX: 'auto',
+            width: '100%',
+            WebkitOverflowScrolling: 'touch'
           }}
         >
           <Table
             dataSource={filteredAllContent.length > 0 ? filteredAllContent : (dashboardData?.top_content || [])}
             rowKey={(r) => r.id || r.content_id}
+            scroll={{ x: 'max-content' }}
             pagination={{ pageSize: 10, showSizeChanger: false }}
             locale={{
               emptyText: <Empty description="No publications found. Create content to track analytics!" />
@@ -332,7 +337,7 @@ const ContentAnalytics = () => {
                     </div>
                     {record.published_date && (
                       <div style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', marginTop: 2 }}>
-                        Published {moment(record.published_date).format('MMM D, YYYY')}
+                        Published {formatDateForDisplay(record.published_date)}
                       </div>
                     )}
                   </div>
@@ -617,7 +622,7 @@ const ContentAnalytics = () => {
                   title: 'Timestamp',
                   dataIndex: 'view_time',
                   key: 'view_time',
-                  render: (t) => <span>{t ? moment(t).format('MMM D, YYYY h:mm A') : 'Recent'}</span>
+                  render: (t) => <span>{t ? formatDateForDisplay(t, DATE_FORMATS.DATE_TIME) : 'Recent'}</span>
                 }
               ]}
             />
@@ -818,7 +823,7 @@ const ContentAnalytics = () => {
               Live readership telemetry, scroll depth, and reader location distribution.
               {lastSyncTime && (
                 <span style={{ marginLeft: 6, opacity: 0.8 }}>
-                  • Last synced {moment(lastSyncTime).format('h:mm:ss A')}
+                  • Last synced {formatTimeForDisplay(lastSyncTime)}
                 </span>
               )}
             </p>

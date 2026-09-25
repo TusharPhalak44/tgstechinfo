@@ -9,6 +9,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
+import { formatDateForDisplay, formatDateForCSV, DATE_FORMATS, formatDateTimeForInput, formatTimestampForFilename } from '../../utils/dateHelper';
 
 // Helper for exporting data table to Excel CSV with UTF-8 BOM
 const exportToExcel = (columns, rows, fileNamePrefix = 'my_form_submissions') => {
@@ -41,7 +42,7 @@ const exportToExcel = (columns, rows, fileNamePrefix = 'my_form_submissions') =>
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `${fileNamePrefix}_${moment().format('YYYYMMDD_HHmmss')}.csv`);
+  link.setAttribute('download', `${fileNamePrefix}_${formatTimestampForFilename()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -222,8 +223,8 @@ const UserSubmissions = () => {
       width: 160,
       render: (v) => v ? (
         <div style={{ fontSize: 12, color: D ? '#CBD5E1' : '#475569' }}>
-          <div>{moment(v).format('MMM D, YYYY')}</div>
-          <div style={{ fontSize: 11, color: D ? '#64748B' : '#94A3B8' }}>{moment(v).format('h:mm A')}</div>
+          <div>{formatDateForDisplay(v)}</div>
+          <div style={{ fontSize: 11, color: D ? '#64748B' : '#94A3B8' }}>{formatDateForDisplay(v, 'h:mm A')}</div>
         </div>
       ) : <span style={{ color: D ? '#475569' : '#CBD5E1', fontSize: 12 }}>No submissions</span>
     },
@@ -263,7 +264,7 @@ const UserSubmissions = () => {
         if (col.field === 'created_at' || col.field === 'updated_at') {
           return (
             <span style={{ fontSize: 12, color: D ? '#CBD5E1' : '#475569' }}>
-              {moment(val).format('YYYY-MM-DD HH:mm:ss')}
+              {formatDateForCSV(val)}
             </span>
           );
         }
@@ -394,14 +395,16 @@ const UserSubmissions = () => {
             background: D ? '#0F172A' : '#FFFFFF',
             borderRadius: 14,
             border: `1px solid ${D ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}`,
-            overflow: 'hidden'
+            overflowX: 'auto',
+            width: '100%',
+            WebkitOverflowScrolling: 'touch'
           }}>
             <Table
               dataSource={filteredTables}
               columns={listColumns}
               rowKey="table_name"
               loading={loadingTables}
-              scroll={{ x: 900 }}
+              scroll={{ x: 'max-content' }}
               pagination={{
                 pageSize: 10,
                 showTotal: (t, range) => `${range[0]}–${range[1]} of ${t} tables`,
@@ -496,7 +499,9 @@ const UserSubmissions = () => {
             background: D ? '#0F172A' : '#FFFFFF',
             borderRadius: 14,
             border: `1px solid ${D ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0'}`,
-            overflow: 'hidden'
+            overflowX: 'auto',
+            width: '100%',
+            WebkitOverflowScrolling: 'touch'
           }}>
             <Table
               dataSource={filteredDetailRows}
