@@ -535,6 +535,8 @@ function AppContent() {
 
               <Route path="/case-study/:slug" element={<CaseStudyPage />} />
 
+              <Route path="/case-study" element={<Navigate to="/case-studies" replace />} />
+
               <Route path="/case-studies" element={<CategoryList />} />
 
               {/* Landing pages listing + direct access */}

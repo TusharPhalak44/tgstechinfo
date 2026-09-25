@@ -40,7 +40,7 @@ const STATIC_NAV = [
     key: 'resources', label: 'Resources',
     children: [
       { label: 'Blog', desc: 'Expert insights & opinion pieces', to: '/blogs', icon: <GlobalOutlined /> },
-      { label: 'Whitepapers', desc: 'Research reports & benchmarks', to: '/category/whitepaper', icon: <FolderOpenOutlined /> },
+      { label: 'Whitepapers', desc: 'Research reports & benchmarks', to: '/whitepapers', icon: <FolderOpenOutlined /> },
       { label: 'Webinars', desc: 'Live & on-demand tech webinars', to: '/webinars', icon: <LineChartOutlined /> },
       { label: 'Events', desc: 'Industry summits & conferences', to: '/events', icon: <CalendarOutlined /> },
       { label: 'Case Studies', desc: 'Real-world customer success stories', to: '/case-studies', icon: <CheckOutlined /> },
@@ -734,15 +734,15 @@ const Navbar = () => {
                     cursor: 'pointer',
                     padding: '4px 12px 4px 4px',
                     borderRadius: 24,
-                    border: '1.5px solid #0B1F4D',
-                    background: '#EAF2FF',
+                    border: darkMode ? '1.5px solid #334155' : '1.5px solid #0B1F4D',
+                    background: darkMode ? 'rgba(255,255,255,0.08)' : '#EAF2FF',
                     transition: 'all .2s ease'
                   }}>
                     <Avatar
                       size={28}
                       src={user?.avatar || null}
                       icon={<UserOutlined />}
-                      style={{ background: '#0B1F4D', flexShrink: 0 }}
+                      style={{ background: darkMode ? '#3B82F6' : '#0B1F4D', flexShrink: 0 }}
                     />
                     {!isMobile && (
                       <span style={{ fontSize: 13, fontWeight: 700, color: darkMode ? '#F1F5F9' : '#0B1F4D' }}>
