@@ -71,15 +71,7 @@ exports.uploadFile = async (req, res) => {
             folder = 'Documents';
         }
         
-        // Store file binary in database for images, documents, and videos
-        let fileData = null;
-        try {
-            fileData = fs.readFileSync(req.file.path);
-        } catch (readErr) {
-            console.warn('Could not read file into DB blob (non-fatal):', readErr.message);
-        }
-
-        // Save to database
+        // Save to database with physical disk persistence (avoids memory exhaustion)
         const mediaData = {
             filename: req.file.filename,
             original_name: req.file.originalname,
@@ -89,21 +81,11 @@ exports.uploadFile = async (req, res) => {
             mime_type: req.file.mimetype,
             folder: folder,
             uploaded_by: req.user ? req.user.id : null,
-            file_data: fileData
+            file_data: null
         };
         
         const savedMedia = await Media.create(mediaData);
-        console.log('Media saved to database:', savedMedia.filename);
-
-        // Clean up physical file from disk filesystem since it's saved directly in database
-        try {
-            if (fs.existsSync(req.file.path)) {
-                fs.unlinkSync(req.file.path);
-                console.log('✓ Cleaned up uploaded file from filesystem:', req.file.path);
-            }
-        } catch (cleanupErr) {
-            console.warn('Could not clean up file from filesystem:', cleanupErr.message);
-        }
+        console.log('Media saved to database and persisted to disk:', savedMedia.filename);
         
         res.json({
             message: 'File uploaded successfully',
@@ -251,24 +233,33 @@ exports.serveFile = async (req, res) => {
     try {
         const { filename } = req.params;
         const { download } = req.query;
+
+        // First check disk filesystem (streaming, zero memory buffering)
+        const filePath = path.join(uploadDir, filename);
+        if (fs.existsSync(filePath)) {
+            if (download === '1') {
+                return res.download(filePath, filename);
+            }
+            return res.sendFile(filePath);
+        }
+
+        // Fallback: check database if old file was stored only in DB blob
         const [rows] = await require('../config/database').pool.query(
             'SELECT file_data, mime_type, original_name FROM media_files WHERE filename = ? LIMIT 1',
             [filename]
         );
-        if (!rows[0] || !rows[0].file_data) {
-            // Fallback to filesystem
-            const filePath = path.join(uploadDir, filename);
-            if (fs.existsSync(filePath)) return res.sendFile(filePath);
-            return res.status(404).json({ message: 'File not found' });
+        if (rows[0] && rows[0].file_data) {
+            const mime = rows[0].mime_type || 'application/octet-stream';
+            const originalName = rows[0].original_name || filename;
+            res.setHeader('Content-Type', mime);
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            if (download === '1') {
+                res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
+            }
+            return res.send(rows[0].file_data);
         }
-        const mime = rows[0].mime_type || 'application/octet-stream';
-        const originalName = rows[0].original_name || filename;
-        res.setHeader('Content-Type', mime);
-        res.setHeader('Cache-Control', 'public, max-age=31536000');
-        if (download === '1') {
-            res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
-        }
-        res.send(rows[0].file_data);
+
+        return res.status(404).json({ message: 'File not found' });
     } catch (error) {
         console.error('Serve file error:', error);
         res.status(500).json({ message: 'Failed to serve file' });
