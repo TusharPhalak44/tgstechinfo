@@ -8,6 +8,7 @@ const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, sendTemplatedEmail } = require('../config/email');
 const { createNotification } = require('./notificationController');
 const logAudit = require('../utils/auditLogger');
+const { formatDateForEmail } = require('../utils/dateHelper');
 
 const stripEmDash = (val) => {
     if (typeof val === 'string') return val.replace(/—/g, '-');
@@ -58,72 +59,81 @@ exports.reviewContent = async (req, res) => {
         let responseMessage;
 
         // Get user and category details for email templates
-        const user = await User.findById(content.user_id);
-        const category = await Category.findById(content.category_id);
+        const user = content.user_id ? await User.findById(content.user_id) : null;
+        const category = content.category_id ? await Category.findById(content.category_id) : null;
         const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
         const frontendUrl = rawFrontend.split(',')[0].trim();
+        const userDashboardUrl = `${frontendUrl}/user-dashboard/my-content`;
 
         switch (action) {
             case 'approve':
                 status = 'approved';
                 responseMessage = 'Content approved successfully';
-                try {
-                    await sendTemplatedEmail('content_approved', user.email, {
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        content_title: content.title,
-                        category: category?.name || 'Uncategorized',
-                        approved_date: new Date().toLocaleDateString(),
-                        dashboard_url: `${frontendUrl}/dashboard`
-                    });
-                } catch (e) { console.warn('Email failed:', e.message); }
+                if (user && user.email) {
+                    try {
+                        await sendTemplatedEmail('content_approved', user.email, {
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            content_title: content.title,
+                            category: category?.name || 'Uncategorized',
+                            approved_date: formatDateForEmail(new Date()),
+                            dashboard_url: userDashboardUrl
+                        });
+                    } catch (e) { console.warn('Email failed:', e.message); }
+                }
                 break;
             case 'publish':
                 status = 'published';
                 responseMessage = 'Content published successfully';
-                try {
-                    await sendTemplatedEmail('content_published', user.email, {
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        content_title: content.title,
-                        category: category?.name || 'Uncategorized',
-                        published_date: new Date().toLocaleDateString(),
-                        article_url: `${frontendUrl}/article/${content.slug}`,
-                        dashboard_url: `${frontendUrl}/dashboard`
-                    });
-                } catch (e) { console.warn('Email failed:', e.message); }
+                if (user && user.email) {
+                    try {
+                        await sendTemplatedEmail('content_published', user.email, {
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            content_title: content.title,
+                            category: category?.name || 'Uncategorized',
+                            published_date: formatDateForEmail(new Date()),
+                            article_url: `${frontendUrl}/article/${content.slug}`,
+                            dashboard_url: userDashboardUrl
+                        });
+                    } catch (e) { console.warn('Email failed:', e.message); }
+                }
 
                 break;
             case 'reject':
                 status = 'rejected';
                 responseMessage = 'Content rejected';
-                try {
-                    await sendTemplatedEmail('content_rejected', user.email, {
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        content_title: content.title,
-                        category: category?.name || 'Uncategorized',
-                        reviewed_date: new Date().toLocaleDateString(),
-                        feedback: comment || 'No specific reason provided',
-                        dashboard_url: `${frontendUrl}/dashboard`
-                    });
-                } catch (e) { console.warn('Email failed:', e.message); }
+                if (user && user.email) {
+                    try {
+                        await sendTemplatedEmail('content_rejected', user.email, {
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            content_title: content.title,
+                            category: category?.name || 'Uncategorized',
+                            reviewed_date: formatDateForEmail(new Date()),
+                            feedback: comment || 'No specific reason provided',
+                            dashboard_url: userDashboardUrl
+                        });
+                    } catch (e) { console.warn('Email failed:', e.message); }
+                }
 
                 break;
             case 'request_changes':
                 status = 'changes_requested';
                 responseMessage = 'Changes requested';
-                try {
-                    await sendTemplatedEmail('content_rejected', user.email, {
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        content_title: content.title,
-                        category: category?.name || 'Uncategorized',
-                        reviewed_date: new Date().toLocaleDateString(),
-                        feedback: comment || 'Please review and make necessary changes.',
-                        dashboard_url: `${frontendUrl}/dashboard`
-                    });
-                } catch (e) { console.warn('Email failed:', e.message); }
+                if (user && user.email) {
+                    try {
+                        await sendTemplatedEmail('content_rejected', user.email, {
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            content_title: content.title,
+                            category: category?.name || 'Uncategorized',
+                            reviewed_date: formatDateForEmail(new Date()),
+                            feedback: comment || 'Please review and make necessary changes.',
+                            dashboard_url: userDashboardUrl
+                        });
+                    } catch (e) { console.warn('Email failed:', e.message); }
+                }
                 break;
             default:
                 return res.status(400).json({ message: 'Invalid action' });
@@ -203,7 +213,7 @@ exports.getAllContent = async (req, res) => {
 // ✅ Admin create user
 exports.createUser = async (req, res) => {
     try {
-        const { first_name, last_name, email, password, role } = req.body;
+        const { first_name, last_name, email, job_title, company_name, country, password, role } = req.body;
 
         if (!first_name || !last_name || !email || !password) {
             return res.status(400).json({ message: 'first_name, last_name, email and password are required' });
@@ -221,6 +231,9 @@ exports.createUser = async (req, res) => {
             first_name,
             last_name,
             email,
+            job_title,
+            company_name,
+            country,
             password_hash,
             role: role || 'user'
         });
@@ -241,7 +254,7 @@ exports.createUser = async (req, res) => {
 exports.getAllUsers = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT id, first_name, last_name, email, role, is_active, created_at
+            SELECT id, first_name, last_name, email, job_title, company_name, country, role, is_active, created_at
             FROM users
             WHERE role != 'admin'
             ORDER BY created_at DESC
@@ -257,7 +270,7 @@ exports.getAllUsers = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { first_name, last_name, role } = req.body;
+        const { first_name, last_name, job_title, company_name, role } = req.body;
 
         // Check if user exists
         const existingUser = await User.findById(id);
@@ -268,6 +281,8 @@ exports.updateUser = async (req, res) => {
         const updateData = {};
         if (first_name !== undefined) updateData.first_name = first_name;
         if (last_name !== undefined) updateData.last_name = last_name;
+        if (job_title !== undefined) updateData.job_title = job_title;
+        if (company_name !== undefined) updateData.company_name = company_name;
         if (role !== undefined) updateData.role = role;
 
         const user = await User.update(id, updateData);
@@ -788,9 +803,15 @@ exports.getDashboardKPIs = async (req, res) => {
         const [[{ pending }]] = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending' OR status='review'`);
         const [[{ drafts }]] = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' OR status='changes_requested' OR status='' OR status IS NULL`);
         const [[{ scheduled }]] = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
-        const [[{ totalViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents WHERE ${dateCondition}`, dateParams);
+        // Total views - all-time cumulative view count (not filtered by date to match database and publishing website)
+        const [[{ totalViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents`);
         const [[{ totalUsers }]] = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
-        const [[{ totalSubs }]] = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams).catch(() => [[{ totalSubs: 0 }]]);
+        const [[{ totalSubs }]] = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1`).catch(() => [[{ totalSubs: 0 }]]);
+        
+        // Get Business Professionals count from audience statistics
+        const [[{ businessProfessionals }]] = await pool.query(
+            `SELECT COALESCE(SUM(contact_count), 0) as businessProfessionals FROM audience_statistics WHERE status = 'Published'`
+        ).catch(() => [[{ businessProfessionals: 0 }]]);
 
         const [[{ periodViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as periodViews FROM contents WHERE ${dateCondition}`, dateParams);
         const [[{ avgTime }]] = await pool.query(`SELECT COALESCE(AVG(time_spent_seconds)/60,0) as avgTime FROM page_views WHERE ${pvCondition}`, pvParams).catch(() => [[{ avgTime: 4.2 }]]);
@@ -805,7 +826,7 @@ exports.getDashboardKPIs = async (req, res) => {
             totalScheduled: scheduled || 0,
             totalViews: totalViews || 0,
             totalUsers: totalUsers || 0,
-            totalSubscribers: totalSubs || 0,
+            totalSubscribers: businessProfessionals || 0,
             avgReadTime: Math.round((avgTime || 4.2) * 10) / 10,
             engagementRate: engagementRate || 68,
             viewsDelta: 14.8,
@@ -1245,6 +1266,9 @@ exports.getUserContent = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+// ✅ Send edit request to content author — delegates to editRequestController
+exports.sendEditRequest = require('./editRequestController').sendEditRequest;
 
 exports.getWebinarRegistrations = async (req, res) => {
     try {
