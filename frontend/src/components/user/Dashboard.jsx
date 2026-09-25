@@ -28,6 +28,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
+import { formatContentPublishDateWithFallback, formatContentPublishDate } from '../../utils/dateHelper';
 import { useAuth } from '../../context/AuthContext';
 
 const { Title, Text } = Typography;
@@ -259,6 +260,7 @@ const CONTENT_TABS = [
   { key: 'interview',  label: 'Interviews' },
   { key: 'webinar',    label: 'Webinars' },
   { key: 'event',      label: 'Events' },
+  { key: 'edit_requests', label: 'Edit Requests' },
 ];
 
 const INITIAL_SHOW = 20;
@@ -288,9 +290,11 @@ const Dashboard = () => {
     totalViews: 0,
     totalSubmissions: 0,
   });
+  const [editRequests, setEditRequests] = useState([]);
 
   useEffect(() => {
     fetchDashboardContent();
+    fetchEditRequests();
   }, []);
 
   const fetchDashboardContent = async () => {
@@ -305,7 +309,7 @@ const Dashboard = () => {
       const published = data.filter(c => c.status === 'published' || c.status === 'approved').length;
       const pending = data.filter(c => c.status === 'pending').length;
       const draft = data.filter(c => c.status === 'draft' || c.status === 'changes_requested').length;
-      const totalViews = data.reduce((acc, c) => acc + (Number(c.views_count) || 0), 0);
+      const totalViews = data.reduce((acc, c) => acc + (Number(c.view_count ?? c.views_count) || 0), 0);
 
       setStats({ total, published, pending, draft, totalViews });
     } catch (err) {
@@ -314,6 +318,16 @@ const Dashboard = () => {
       setContents([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEditRequests = async () => {
+    try {
+      const res = await axios.get('/api/user/edit-requests');
+      setEditRequests(res.data || []);
+    } catch (err) {
+      console.error('Failed to load edit requests', err);
+      setEditRequests([]);
     }
   };
 
@@ -360,6 +374,27 @@ const Dashboard = () => {
     return matchesTab && matchesSearch;
   });
 
+  const handleAcceptEditRequest = async (editRequestId) => {
+    try {
+      await axios.put(`/api/user/edit-requests/${editRequestId}/accept`);
+      message.success('Edit request accepted. You can now edit the content.');
+      fetchEditRequests();
+      fetchDashboardContent();
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Failed to accept edit request');
+    }
+  };
+
+  const handleRejectEditRequest = async (editRequestId, comment) => {
+    try {
+      await axios.put(`/api/user/edit-requests/${editRequestId}/reject`, { creator_comment: comment });
+      message.success('Edit request rejected.');
+      fetchEditRequests();
+    } catch (err) {
+      message.error(err.response?.data?.message || 'Failed to reject edit request');
+    }
+  };
+
   // Progressive pagination logic
   const totalItems = filteredContents.length;
   
@@ -399,10 +434,31 @@ const Dashboard = () => {
           background: D
             ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(11, 31, 77, 0.5) 100%)'
             : 'linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%)',
-          border: `1px solid ${D ? 'rgba(255, 255, 255, 0.08)' : 'rgba(11, 31, 77, 0.08)'}`,
-          boxShadow: D ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 4px 20px rgba(11, 31, 77, 0.05)',
+          position: 'relative',
         }}
       >
+        {/* Edit Request Notification Badge */}
+        {editRequests.filter(req => req.status === 'pending').length > 0 && (
+          <div style={{
+            position: 'absolute',
+            top: -8,
+            right: -8,
+            background: '#F59E0B',
+            color: '#fff',
+            borderRadius: '50%',
+            width: 24,
+            height: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            zIndex: 10,
+            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.4)'
+          }}>
+            {editRequests.filter(req => req.status === 'pending').length}
+          </div>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div
             style={{
@@ -455,7 +511,10 @@ const Dashboard = () => {
               color: D ? '#94A3B8' : '#64748B',
               fontWeight: 500,
             }}>
-              Welcome back, <strong>{user?.first_name || 'Creator'}</strong> • Manage your publications, track story review states, and create new content.
+              Welcome back, <strong>{user?.first_name || 'Creator'}</strong>
+              {user?.job_title && <span> • {user.job_title}</span>}
+              {user?.company_name && <span> • {user.company_name}</span>}
+              {!user?.job_title && !user?.company_name && <span> • Manage your publications, track story review states, and create new content.</span>}
             </p>
           </div>
         </div>
@@ -819,6 +878,118 @@ const Dashboard = () => {
             </button>
           </Empty>
         </div>
+      ) : activeTab === 'edit_requests' ? (
+        <div className="u-stagger-5">
+          {editRequests.length === 0 ? (
+            <Empty
+              description={
+                <div>
+                  <div style={{ fontSize: '0.94rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0B1F4D', marginBottom: 4 }}>
+                    No Edit Requests
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: D ? '#94A3B8' : '#64748B' }}>
+                    You don't have any pending edit requests from admin.
+                  </div>
+                </div>
+              }
+            />
+          ) : (
+            <Row gutter={[18, 18]}>
+              {editRequests.map((request) => (
+                <Col xs={24} sm={12} md={8} lg={6} key={request.id}>
+                  <div
+                    className="user-story-card"
+                    style={{
+                      background: D ? '#0F172A' : '#FFFFFF',
+                      borderColor: D ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
+                    }}
+                  >
+                    <div style={{ padding: 16 }}>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B', marginBottom: 8 }}>
+                        EDIT REQUEST
+                      </div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0B1F4D', marginBottom: 8 }}>
+                        {request.content_title}
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: D ? '#94A3B8' : '#64748B', marginBottom: 12 }}>
+                        From: {request.requested_by_first_name} {request.requested_by_last_name}
+                      </div>
+                      {request.admin_comment && (
+                        <div style={{ 
+                          background: D ? 'rgba(251, 146, 60, 0.1)' : 'rgba(251, 146, 60, 0.1)', 
+                          padding: 8, 
+                          borderRadius: 8, 
+                          marginBottom: 12,
+                          fontSize: '0.8rem',
+                          color: D ? '#FBBF24' : '#B45309'
+                        }}>
+                          <strong>Admin Comment:</strong> {request.admin_comment}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        {request.status === 'pending' && (
+                          <>
+                            <button
+                              className="user-btn-primary"
+                              onClick={() => handleAcceptEditRequest(request.id)}
+                              style={{ flex: 1, background: '#10B981', border: 'none' }}
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => {
+                                Modal.confirm({
+                                  title: 'Reject Edit Request',
+                                  content: (
+                                    <div>
+                                      <p>Are you sure you want to reject this edit request?</p>
+                                      <input 
+                                        type="text" 
+                                        placeholder="Optional reason..." 
+                                        id="reject-reason"
+                                        style={{ width: '100%', padding: 8, marginTop: 8 }}
+                                      />
+                                    </div>
+                                  ),
+                                  onOk: () => {
+                                    const reason = document.getElementById('reject-reason')?.value;
+                                    handleRejectEditRequest(request.id, reason);
+                                  }
+                                });
+                              }}
+                              style={{
+                                flex: 1,
+                                padding: '8px 16px',
+                                borderRadius: 8,
+                                border: `1px solid ${D ? 'rgba(239, 68, 68, 0.5)' : '#EF4444'}`,
+                                background: 'transparent',
+                                color: D ? '#EF4444' : '#EF4444',
+                                fontSize: '0.8rem',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {request.status === 'accepted' && (
+                          <Tag color="green">Accepted - You can edit now</Tag>
+                        )}
+                        {request.status === 'rejected' && (
+                          <Tag color="red">Rejected</Tag>
+                        )}
+                        {request.status === 'completed' && (
+                          <Tag color="blue">Completed</Tag>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Col>
+              ))}
+            </Row>
+          )}
+        </div>
       ) : (
         <div className="u-stagger-5">
           <Row gutter={[18, 18]}>
@@ -826,6 +997,9 @@ const Dashboard = () => {
               const status = statusConfig[article.status] || { color: '#64748B', bg: 'rgba(100, 116, 139, 0.12)', text: article.status };
               const tags = parseTags(article.tags);
               const canEdit = article.status === 'draft' || article.status === 'changes_requested';
+              
+              // Check if there's an active edit request for this content
+              const activeEditRequest = editRequests.find(req => req.content_id === article.id && req.status === 'accepted');
 
               return (
                 <Col xs={24} sm={12} md={8} lg={6} key={article.id}>
@@ -942,11 +1116,11 @@ const Dashboard = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                           <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <CalendarOutlined />
-                            {article.created_at ? moment(article.created_at).format('MMM D, YYYY') : 'Recent'}
+                            {article.scheduled_publish_date ? moment(article.scheduled_publish_date).format('MMM D, YYYY') : (article.published_date ? moment(article.published_date).format('MMM D, YYYY') : (article.created_at ? moment(article.created_at).format('MMM D, YYYY') : 'Recent'))}
                           </span>
                           <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <EyeOutlined />
-                            {article.views_count || 0} views
+                            {article.view_count ?? article.views_count ?? 0} views
                           </span>
                         </div>
 
@@ -974,13 +1148,17 @@ const Dashboard = () => {
                             <span>Preview</span>
                           </button>
 
-                          {canEdit && (
+                          {(canEdit || activeEditRequest) && (
                             <button
                               onClick={(e) => { e.stopPropagation(); navigate(`/user-dashboard/create-post/${article.id}`); }}
                               style={{
-                                background: 'rgba(37, 99, 235, 0.08)',
-                                border: '1px solid rgba(37, 99, 235, 0.2)',
-                                color: '#2563EB',
+                                background: activeEditRequest 
+                                  ? 'rgba(16, 185, 129, 0.08)' 
+                                  : 'rgba(37, 99, 235, 0.08)',
+                                border: activeEditRequest 
+                                  ? '1px solid rgba(16, 185, 129, 0.2)' 
+                                  : '1px solid rgba(37, 99, 235, 0.2)',
+                                color: activeEditRequest ? '#10B981' : '#2563EB',
                                 padding: '5px 8px',
                                 borderRadius: 8,
                                 fontSize: '0.72rem',
@@ -992,7 +1170,7 @@ const Dashboard = () => {
                               }}
                             >
                               <EditOutlined />
-                              <span>Edit</span>
+                              <span>{activeEditRequest ? 'Edit (Requested)' : 'Edit'}</span>
                             </button>
                           )}
 

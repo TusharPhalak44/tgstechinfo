@@ -647,11 +647,11 @@ const MyContent = () => {
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                           <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <CalendarOutlined />
-                            {article.created_at ? moment(article.created_at).format('MMM D, YYYY') : 'Recent'}
+                            {article.scheduled_publish_date ? moment(article.scheduled_publish_date).format('MMM D, YYYY') : (article.published_date ? moment(article.published_date).format('MMM D, YYYY') : (article.created_at ? moment(article.created_at).format('MMM D, YYYY') : 'Recent'))}
                           </span>
                           <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <EyeOutlined />
-                            {article.views_count || 0} views
+                            {article.view_count ?? article.views_count ?? 0} views
                           </span>
                         </div>
 

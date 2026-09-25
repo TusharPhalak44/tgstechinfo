@@ -210,8 +210,20 @@ exports.getPublishedContent = async (req, res) => {
         if (start_date) filters.start_date = start_date;
         if (end_date) filters.end_date = end_date;
 
-        if (limit) filters.limit = parseInt(limit, 10);
-        if (offset) filters.offset = parseInt(offset, 10);
+        // Safe pagination: default 10, max 100, min 1
+        let parsedLimit = parseInt(limit, 10);
+        if (isNaN(parsedLimit) || parsedLimit <= 0) {
+            parsedLimit = 10;
+        } else if (parsedLimit > 100) {
+            parsedLimit = 100;
+        }
+        filters.limit = parsedLimit;
+
+        let parsedOffset = parseInt(offset, 10);
+        if (isNaN(parsedOffset) || parsedOffset < 0) {
+            parsedOffset = 0;
+        }
+        filters.offset = parsedOffset;
 
         const { rows, total } = await Content.findAll(filters);
         res.json({ data: rows, total });

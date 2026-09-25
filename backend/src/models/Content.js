@@ -491,8 +491,16 @@ class Content {
         `;
 
         const pageValues = [...values];
-        if (filters.limit) { query += ' LIMIT ?'; pageValues.push(filters.limit); }
-        if (filters.offset !== undefined && filters.offset !== null) { query += ' OFFSET ?'; pageValues.push(filters.offset); }
+        if (filters.limit) {
+            const safeLimit = Math.max(1, Math.min(100, parseInt(filters.limit, 10) || 10));
+            query += ' LIMIT ?';
+            pageValues.push(safeLimit);
+        }
+        if (filters.offset !== undefined && filters.offset !== null) {
+            const safeOffset = Math.max(0, parseInt(filters.offset, 10) || 0);
+            query += ' OFFSET ?';
+            pageValues.push(safeOffset);
+        }
 
         const [rows] = await pool.query(query, pageValues);
         return { rows, total };
@@ -661,7 +669,10 @@ class Content {
 
     static async incrementViewCount(id) {
         console.log('👁️ Incrementing view count for content ID:', id);
-        const [result] = await pool.query('UPDATE contents SET view_count = view_count + 1 WHERE id = ?', [id]);
+        const [result] = await pool.query(
+            'UPDATE contents SET view_count = view_count + 1, views_count = views_count + 1 WHERE id = ?',
+            [id]
+        );
         console.log('👁️ View count increment result:', result.affectedRows > 0 ? 'SUCCESS' : 'FAILED');
         return result.affectedRows > 0;
     }
