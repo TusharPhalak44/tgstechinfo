@@ -18,11 +18,11 @@ router.get('/admin/notifications', hasPermission('settings.read'), notificationC
 router.put('/admin/notifications/:id/read', hasPermission('settings.update'), notificationController.markAdminAsRead);
 
 // Content management
-router.get('/content/all', adminController.getAllContent);
-router.get('/content/pending', adminController.getPendingContent);
+router.get('/content/all', hasPermission('content.publish'), adminController.getAllContent);
+router.get('/content/pending', hasPermission('content.publish'), adminController.getPendingContent);
 router.put('/content/:id/review', hasPermission('content.publish'), adminController.reviewContent);
 router.post('/content/:id/edit-request', hasPermission('content.publish'), adminController.sendEditRequest);
-router.get('/content/:id', adminController.getContentDetails);
+router.get('/content/:id', hasPermission('content.publish'), adminController.getContentDetails);
 
 // Admin content creation and submission
 router.post('/content',
@@ -45,25 +45,25 @@ router.put('/users/:id/status', hasPermission('user.update'), adminController.up
 router.delete('/users/:id', hasPermission('user.delete'), adminController.deleteUser);
 router.get('/users/:id/content', hasPermission('user.read'), adminController.getUserContent);
 
-// Dashboard stats — accessible to any authenticated user
-router.get('/stats', adminController.getDashboardStats);
-router.get('/recent-activity', adminController.getRecentActivity);
-router.get('/content-by-status', adminController.getContentByStatus);
+// Dashboard stats — requires analytics.read permission
+router.get('/stats', hasPermission('analytics.read'), adminController.getDashboardStats);
+router.get('/recent-activity', hasPermission('analytics.read'), adminController.getRecentActivity);
+router.get('/content-by-status', hasPermission('analytics.read'), adminController.getContentByStatus);
 
 // Dashboard real-data analytics endpoints
-router.get('/dashboard/kpis', adminController.getDashboardKPIs);
-router.get('/dashboard/traffic', adminController.getTrafficAnalytics);
-router.get('/dashboard/categories', adminController.getCategoryAnalytics);
-router.get('/dashboard/leads', adminController.getLeadAnalytics);
-router.get('/dashboard/subscribers', adminController.getSubscriberAnalytics);
-router.get('/dashboard/portfolio', adminController.getContentPortfolio);
+router.get('/dashboard/kpis', hasPermission('analytics.read'), adminController.getDashboardKPIs);
+router.get('/dashboard/traffic', hasPermission('analytics.read'), adminController.getTrafficAnalytics);
+router.get('/dashboard/categories', hasPermission('analytics.read'), adminController.getCategoryAnalytics);
+router.get('/dashboard/leads', hasPermission('analytics.read'), adminController.getLeadAnalytics);
+router.get('/dashboard/subscribers', hasPermission('analytics.read'), adminController.getSubscriberAnalytics);
+router.get('/dashboard/portfolio', hasPermission('analytics.read'), adminController.getContentPortfolio);
 
 // Landing page submissions & Webinar Registrations
-router.get('/submissions', hasPermission('content.read'), adminController.getSubmissions);
-router.get('/submissions/:id', hasPermission('content.read'), adminController.getSubmissionById);
-router.get('/submission-tables', hasPermission('content.read'), adminController.getSubmissionTables);
-router.get('/submission-tables/:contentId', hasPermission('content.read'), adminController.getSubmissionTableDetails);
-router.get('/webinar-registrations', hasPermission('content.read'), adminController.getWebinarRegistrations);
+router.get('/submissions', hasPermission('content.publish'), adminController.getSubmissions);
+router.get('/submissions/:id', hasPermission('content.publish'), adminController.getSubmissionById);
+router.get('/submission-tables', hasPermission('content.publish'), adminController.getSubmissionTables);
+router.get('/submission-tables/:contentId', hasPermission('content.publish'), adminController.getSubmissionTableDetails);
+router.get('/webinar-registrations', hasPermission('content.publish'), adminController.getWebinarRegistrations);
 
 // Data requests (DSAR + Do Not Sell)
 router.get('/data-requests', hasPermission('user.read'), adminController.getDataRequests);

@@ -323,17 +323,22 @@ app.use('/api/admin/audience', require('./src/routes/adminAudienceRoutes'));
 
 
 app.use((err, req, res, next) => {
+    console.error('[Error Middleware]', err.stack || err);
 
-    console.error(err.stack);
+    const isDev = process.env.NODE_ENV === 'development';
+    const statusCode = err.status || err.statusCode || 500;
 
-    res.status(err.status || 500).json({
+    // In production, mask internal server / SQL error messages from the client
+    let clientMessage = err.message || 'Internal Server Error';
+    if (!isDev && statusCode >= 500) {
+        clientMessage = 'An internal server error occurred. Please try again later.';
+    }
 
-        message: err.message || 'Internal Server Error',
-
-        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-
+    res.status(statusCode).json({
+        success: false,
+        message: clientMessage,
+        ...(isDev && { stack: err.stack, details: err.message })
     });
-
 });
 
 

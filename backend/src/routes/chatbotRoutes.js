@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const chatbotController = require('../controllers/chatbotController');
 const { body } = require('express-validator');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // Validation rules
 const searchValidation = [
@@ -127,18 +128,18 @@ router.post('/submit-query', submitQueryValidation, chatbotController.submitQuer
  * GET /api/chatbot/queries
  * Get all queries (admin only)
  */
-router.get('/queries', chatbotController.getQueries);
+router.get('/queries', authenticate, requireAdmin, chatbotController.getQueries);
 
 /**
  * GET /api/chatbot/queries/stats
  * Get query statistics (admin only)
  */
-router.get('/queries/stats', chatbotController.getQueryStats);
+router.get('/queries/stats', authenticate, requireAdmin, chatbotController.getQueryStats);
 
 /**
  * PUT /api/chatbot/queries/:id
  * Update query status and add admin response (admin only)
  */
-router.put('/queries/:id', chatbotController.updateQuery);
+router.put('/queries/:id', authenticate, requireAdmin, chatbotController.updateQuery);
 
 module.exports = router;

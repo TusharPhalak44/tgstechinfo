@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tag, Typography } from 'antd';
 import { TagOutlined } from '@ant-design/icons';
+import DOMPurify from 'dompurify';
 
 const { Text } = Typography;
 
@@ -210,14 +211,21 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkM
       </div>
     ) : null,
 
-    content: (
-      <div key="content">
-        <div
-          className="prose-content"
-          dangerouslySetInnerHTML={{ __html: restoreRawHtml(stripLinks(contentHtml || content.content || '<p>No content available</p>')) }}
-        />
-      </div>
-    ),
+    content: (() => {
+      const rawHtml = restoreRawHtml(stripLinks(contentHtml || content.content || '<p>No content available</p>'));
+      const cleanHtml = DOMPurify.sanitize(rawHtml, {
+        ADD_TAGS: ['iframe'],
+        ADD_ATTR: ['target', 'allow', 'allowfullscreen', 'frameborder', 'scrolling', 'data-raw-html']
+      });
+      return (
+        <div key="content">
+          <div
+            className="prose-content"
+            dangerouslySetInnerHTML={{ __html: cleanHtml }}
+          />
+        </div>
+      );
+    })(),
   };
 
   return (

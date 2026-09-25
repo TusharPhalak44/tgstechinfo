@@ -45,6 +45,24 @@ const extractWebhookUrlFromBuilder = (pageDataRaw) => {
 };
 
 // Forward form data to client's external webhook URL
+const isPrivateOrLoopbackHost = (hostname) => {
+    if (!hostname) return true;
+    const lower = hostname.toLowerCase();
+    if (lower === 'localhost' || lower === '127.0.0.1' || lower === '0.0.0.0' || lower === '::1' || lower === '[::1]') return true;
+    if (lower.endsWith('.local') || lower.endsWith('.internal') || lower.endsWith('.localhost')) return true;
+    const ipv4Match = lower.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4Match) {
+        const [_, a, b] = ipv4Match.map(Number);
+        if (a === 127) return true;
+        if (a === 10) return true;
+        if (a === 169 && b === 254) return true;
+        if (a === 172 && b >= 16 && b <= 31) return true;
+        if (a === 192 && b === 168) return true;
+        if (a === 0) return true;
+    }
+    return false;
+};
+
 const forwardToWebhook = async (webhookUrl, payload) => {
     console.log(`[Webhook] Starting webhook call to: ${webhookUrl}`);
     console.log(`[Webhook] Payload size: ${JSON.stringify(payload).length} bytes`);
@@ -61,6 +79,15 @@ const forwardToWebhook = async (webhookUrl, payload) => {
             normalizedUrl = 'https://' + normalizedUrl;
         }
 
+        const parsedUrl = new URL(normalizedUrl);
+        if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            throw new Error('Invalid webhook URL protocol. Only HTTP and HTTPS are allowed.');
+        }
+
+        if (isPrivateOrLoopbackHost(parsedUrl.hostname)) {
+            throw new Error(`Webhook destination '${parsedUrl.hostname}' is prohibited (internal/private host).`);
+        }
+
         console.log(`[Webhook] Normalized URL: ${normalizedUrl}`);
         console.log(`[Webhook] Sending payload:`, JSON.stringify(payload, null, 2));
 
@@ -72,7 +99,7 @@ const forwardToWebhook = async (webhookUrl, payload) => {
                 'X-Webhook-Source': 'TGSTechInfo-Platform'
             },
             timeout: 15000, // 15 second timeout
-            maxRedirects: 5,
+            maxRedirects: 3,
             validateStatus: (status) => status >= 200 && status < 500 // Don't throw on 4xx errors
         });
         
@@ -205,8 +232,18 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
+        // Public content must be published
+        if (content.status !== 'published') {
+            return res.status(404).json({ message: 'Content not found' });
+        }
+
         // Check if content is visible on site
         if (content.is_visible_on_site === false || content.is_visible_on_site === 0) {
+            return res.status(404).json({ message: 'Content not found' });
+        }
+
+        // If scheduled for future, do not expose on public site
+        if (content.scheduled_publish_date && new Date(content.scheduled_publish_date) > new Date()) {
             return res.status(404).json({ message: 'Content not found' });
         }
 
@@ -407,18 +444,6 @@ exports.submitLandingPage = async (req, res) => {
                 // Save back to contents table in background so future lookups are immediate
                 if (normalizedContentId) {
                     pool.query('UPDATE contents SET webhook_url = ? WHERE id = ?', [targetWebhookUrl, normalizedContentId]).catch(err => console.error('[submitLandingPage] Failed to save extracted webhook_url:', err.message));
-                }
-            }
-        }
-
-        // Fallback 2: Check submitted payload / extraData / req.body for apiUrl or webhook_url
-        if (!targetWebhookUrl) {
-            const payloadUrl = extraData.webhook_url || extraData.apiUrl || rest.webhook_url || rest.apiUrl || req.body.webhook_url || req.body.apiUrl;
-            if (payloadUrl && typeof payloadUrl === 'string' && payloadUrl.trim()) {
-                targetWebhookUrl = payloadUrl.trim();
-                console.log('[submitLandingPage] Fallback 2: Extracted webhook_url from submitted request payload:', targetWebhookUrl);
-                if (normalizedContentId) {
-                    pool.query('UPDATE contents SET webhook_url = ? WHERE id = ? AND (webhook_url IS NULL OR webhook_url = "")', [targetWebhookUrl, normalizedContentId]).catch(err => console.error('[submitLandingPage] Failed to save payload webhook_url:', err.message));
                 }
             }
         }
@@ -654,18 +679,57 @@ exports.subscribeNewsletter = async (req, res) => {
             [email, unsubscribeToken]
         );
 
-        // Send confirmation email using template
+        // Send confirmation email (simplified version without template dependency)
         try {
+            const { sendEmail } = require('../config/email');
             const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
             const frontendUrl = rawFrontend.split(',')[0].trim();
             
-            await sendTemplatedEmail('newsletter_subscription', email, {
-                name: email.split('@')[0], // Use email prefix as name fallback
-                site_url: frontendUrl,
-                unsubscribe_url: `${frontendUrl}/unsubscribe?token=${unsubscribeToken}`
-            });
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                        .header { background: #0AAEEF; color: white; padding: 20px; text-align: center; }
+                        .content { padding: 30px; background: #f5f5f5; }
+                        .footer { padding: 20px; text-align: center; background: #e0e0e0; }
+                        .button { display: inline-block; padding: 12px 24px; background: #0AAEEF; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h2>Newsletter Subscription Confirmed</h2>
+                        </div>
+                        <div class="content">
+                            <h3>Hi ${email.split('@')[0]},</h3>
+                            <p>Thank you for subscribing to our newsletter! You'll now receive the latest technology insights and updates.</p>
+                            <p>We'll keep you informed about:</p>
+                            <ul>
+                                <li>Latest technology trends</li>
+                                <li>Industry insights</li>
+                                <li>New content and resources</li>
+                                <li>Expert opinions and analysis</li>
+                            </ul>
+                            <p>Visit our website: <a href="${frontendUrl}">${frontendUrl}</a></p>
+                            <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                                To unsubscribe from our newsletter, click <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}">here</a>
+                            </p>
+                        </div>
+                        <div class="footer">
+                            <p>© 2024 TGS Tech Info. All rights reserved.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            await sendEmail(email, 'Newsletter Subscription Confirmed', htmlContent);
         } catch (emailError) {
             console.warn('Newsletter confirmation email failed:', emailError.message);
+            // Don't fail the subscription if email fails
         }
 
         res.json({ message: 'Subscribed to newsletter successfully' });
