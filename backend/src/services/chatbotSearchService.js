@@ -58,7 +58,9 @@ class ChatbotSearchService {
             FROM contents c
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            WHERE c.status = ?
+            WHERE c.status = ? 
+              AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL) 
+              AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
         `;
 
         const params = [status];
@@ -353,6 +355,8 @@ class ChatbotSearchService {
             LEFT JOIN categories cat ON c.category_id = cat.id
             LEFT JOIN chatbot_trending_cache trend ON c.id = trend.content_id
             WHERE c.status = 'published'
+              AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+              AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
             ORDER BY 
                 COALESCE(trend.trend_score, 0) DESC,
                 c.view_count DESC,
@@ -413,6 +417,8 @@ class ChatbotSearchService {
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
             WHERE c.status = 'published'
+              AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+              AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
             ORDER BY c.published_date DESC
             LIMIT ?
         `;

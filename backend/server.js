@@ -355,6 +355,30 @@ app.listen(PORT, () => {
 
     console.log(`[Startup] CSP connectSrc: ${CSP_CONNECT_SRC.join(', ')}`);
 
+    // Scheduled publishing runner (runs on startup and every 60 seconds)
+    const runScheduledPublisher = async () => {
+        try {
+            const { pool } = require('./src/config/database');
+            const [result] = await pool.query(`
+                UPDATE contents 
+                SET status = 'published', 
+                    published_date = COALESCE(published_date, scheduled_publish_date, CURRENT_TIMESTAMP)
+                WHERE (status = 'scheduled' OR status = 'approved')
+                  AND scheduled_publish_date IS NOT NULL 
+                  AND scheduled_publish_date <= CURRENT_TIMESTAMP
+            `);
+            if (result.affectedRows > 0) {
+                console.log(`[Scheduled Publisher] Automatically published ${result.affectedRows} scheduled content item(s).`);
+            }
+        } catch (err) {
+            console.error('[Scheduled Publisher] Error checking scheduled content:', err.message);
+        }
+    };
+
+    runScheduledPublisher();
+    const scheduledPublisherInterval = setInterval(runScheduledPublisher, 60 * 1000);
+    if (scheduledPublisherInterval.unref) scheduledPublisherInterval.unref();
+
 });
 
 

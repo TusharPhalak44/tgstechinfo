@@ -409,7 +409,7 @@ class Content {
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            WHERE c.slug = ? AND c.status = 'published'
+            WHERE c.slug = ? AND c.status = 'published' AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL) AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
         `;
         const [rows] = await pool.query(query, [slug]);
         return rows[0];
@@ -441,7 +441,13 @@ class Content {
         let baseWhere = ' WHERE 1=1';
         const values = [];
 
-        if (filters.status) { baseWhere += ' AND c.status = ?'; values.push(filters.status); }
+        if (filters.status) {
+            baseWhere += ' AND c.status = ?';
+            values.push(filters.status);
+            if (filters.status === 'published') {
+                baseWhere += ' AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)';
+            }
+        }
         if (filters.user_id) { baseWhere += ' AND c.user_id = ?'; values.push(filters.user_id); }
         if (filters.category_id) { baseWhere += ' AND c.category_id = ?'; values.push(filters.category_id); }
         if (filters.content_type_id) { baseWhere += ' AND c.content_type_id = ?'; values.push(filters.content_type_id); }
@@ -449,8 +455,11 @@ class Content {
         // Filter by is_visible_on_site if explicitly provided (for public listings)
         // Admin queries don't set this filter, so they see all content
         if (filters.is_visible_on_site !== undefined) {
-            baseWhere += ' AND c.is_visible_on_site = ?';
-            values.push(filters.is_visible_on_site);
+            if (filters.is_visible_on_site === true || filters.is_visible_on_site === 1 || filters.is_visible_on_site === '1') {
+                baseWhere += ' AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)';
+            } else {
+                baseWhere += ' AND c.is_visible_on_site = 0';
+            }
         }
 
         // Add date filtering support
@@ -663,7 +672,9 @@ class Content {
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
-            WHERE c.category_id = ? AND c.id != ? AND c.status = 'published' AND c.is_visible_on_site = 1
+            WHERE c.category_id = ? AND c.id != ? AND c.status = 'published' 
+              AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+              AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
             ORDER BY c.published_date DESC
             LIMIT ?
         `;
@@ -697,6 +708,8 @@ class Content {
             AND tags != ''
             AND TRIM(BOTH ',' FROM SUBSTRING_INDEX(SUBSTRING_INDEX(tags, ',', n), ',', -1)) != ''
             AND status = 'published'
+            AND (is_visible_on_site = 1 OR is_visible_on_site IS NULL)
+            AND (scheduled_publish_date IS NULL OR scheduled_publish_date <= CURRENT_TIMESTAMP)
             GROUP BY tag
             ORDER BY count DESC
             LIMIT ?
