@@ -246,16 +246,91 @@ const ArticleDetail = () => {
 
   useEffect(() => {
     if (!content) return;
-    document.title = content.seo_meta_title || content.title || 'Article';
-    const setMeta = (name, val) => {
+    const pageTitle = content.seo_meta_title || content.title || 'Article';
+    document.title = `${pageTitle} | TGS Tech Info`;
+
+    const setMeta = (attr, key, val) => {
       if (!val) return;
-      let el = document.querySelector(`meta[name="${name}"]`);
-      if (!el) { el = document.createElement('meta'); el.setAttribute('name', name); document.head.appendChild(el); }
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
       el.setAttribute('content', val);
     };
-    setMeta('description', content.seo_meta_description);
-    setMeta('keywords', content.seo_meta_keywords);
-    return () => { document.title = 'TGS Tech Info'; };
+
+    const description = content.seo_meta_description || content.short_description || content.title || '';
+    const keywords = content.seo_meta_keywords || (content.tags ? (typeof content.tags === 'string' ? content.tags : content.tags.join(', ')) : '');
+    const currentUrl = window.location.href;
+    const imageUrl = content.banner_image || 'https://tgstechinfo.com/favicon.svg';
+
+    // Standard meta tags
+    setMeta('name', 'description', description);
+    if (keywords) setMeta('name', 'keywords', keywords);
+
+    // OpenGraph tags
+    setMeta('property', 'og:type', 'article');
+    setMeta('property', 'og:title', pageTitle);
+    setMeta('property', 'og:description', description);
+    setMeta('property', 'og:url', currentUrl);
+    setMeta('property', 'og:image', imageUrl);
+
+    // Twitter Card tags
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', pageTitle);
+    setMeta('name', 'twitter:description', description);
+    setMeta('name', 'twitter:image', imageUrl);
+
+    // Canonical link
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', currentUrl);
+
+    // JSON-LD structured schema
+    let scriptTag = document.getElementById('article-json-ld');
+    if (!scriptTag) {
+      scriptTag = document.createElement('script');
+      scriptTag.id = 'article-json-ld';
+      scriptTag.type = 'application/ld+json';
+      document.head.appendChild(scriptTag);
+    }
+    const schemaData = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": content.title,
+      "description": description,
+      "image": [imageUrl],
+      "datePublished": content.published_date || content.created_at,
+      "dateModified": content.updated_at || content.published_date || content.created_at,
+      "author": {
+        "@type": "Person",
+        "name": [content.first_name, content.last_name].filter(Boolean).join(' ') || 'Editorial Team'
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "TGS Tech Info",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://tgstechinfo.com/favicon.svg"
+        }
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": currentUrl
+      }
+    };
+    scriptTag.textContent = JSON.stringify(schemaData);
+
+    return () => {
+      document.title = 'TGS Tech Info';
+      const existingScript = document.getElementById('article-json-ld');
+      if (existingScript) existingScript.remove();
+    };
   }, [content]);
 
   useEffect(() => {
