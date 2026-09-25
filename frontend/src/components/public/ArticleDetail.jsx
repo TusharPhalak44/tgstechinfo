@@ -8,7 +8,8 @@ import {
   CalendarOutlined, ClockCircleOutlined, ShareAltOutlined,
   UserOutlined, LockOutlined, CloseOutlined, MailOutlined,
   PhoneOutlined, IdcardOutlined, BankOutlined, SafetyCertificateOutlined,
-  CheckCircleFilled, VideoCameraOutlined, RightOutlined, FireOutlined
+  CheckCircleFilled, VideoCameraOutlined, RightOutlined, FireOutlined,
+  ReadOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -18,6 +19,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTracking } from '../../context/TrackingContext';
 import useEngagementTracking from '../../hooks/useEngagementTracking';
 import WebinarCountdown from '../common/WebinarCountdown';
+import { formatContentPublishDate, formatDateForLongDisplay, formatDateForDisplay, DATE_FORMATS } from '../../utils/dateHelper';
 
 const { Title, Text } = Typography;
 
@@ -40,17 +42,6 @@ const getPreviewHtml = (html = '') => {
   return `<p>${previewText}${words.length > previewWords ? '...' : ''}</p>`;
 };
 
-// Custom Comment Component
-const CustomComment = ({ author, avatar, content, datetime, darkMode }) => (
-  <div style={{ display: 'flex', gap: 12, padding: '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
-    <div>{avatar || <Avatar icon={<UserOutlined />} />}</div>
-    <div style={{ flex: 1 }}>
-      <div style={{ fontWeight: 500, fontSize: 14, color: darkMode ? '#f1f5f9' : '#000' }}>{author}</div>
-      <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#999', marginTop: 2 }}>{datetime}</div>
-      <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.6, color: darkMode ? '#cbd5e1' : '#000' }}>{content}</div>
-    </div>
-  </div>
-);
 
 const BannerImage = ({ src, alt, darkMode }) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -153,7 +144,6 @@ const ArticleDetail = () => {
   const [relatedArticles, setRelatedArticles] = useState([]);
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
-  const [comments, setComments] = useState([]);
   const [hasAccess, setHasAccess] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const [customFields, setCustomFields] = useState([]);
@@ -166,6 +156,8 @@ const ArticleDetail = () => {
   const [webinarRegistered, setWebinarRegistered] = useState(false);
   const [webinarRegistering, setWebinarRegistering] = useState(false);
   const [webinarRegForm] = Form.useForm();
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubscribing, setNewsletterSubscribing] = useState(false);
 
   // Engagement tracking hook
   const { isTracking, trackEngagement: trackEngagementHook } = useEngagementTracking({
@@ -225,9 +217,6 @@ const ArticleDetail = () => {
             setCustomFields(Array.isArray(cf) ? cf : []);
           } catch { setCustomFields([]); }
         }
-        setComments([
-          { id: 1, author: 'Admin', content: 'Great article! Thanks for sharing.', datetime: moment().format('MMMM D, YYYY') }
-        ]);
       } catch (error) {
         if (cancelled) return;
         console.error('[ArticleDetail] Fetch error:', error);
@@ -365,6 +354,24 @@ const ArticleDetail = () => {
     }
   };
 
+  const handleNewsletterSubscribe = async (e) => {
+    e.preventDefault();
+    if (!newsletterEmail || !newsletterEmail.includes('@')) {
+      messageApi.error('Please enter a valid email address');
+      return;
+    }
+    setNewsletterSubscribing(true);
+    try {
+      await axios.post('/api/public/newsletter', { email: newsletterEmail });
+      messageApi.success('Successfully subscribed to newsletter!');
+      setNewsletterEmail('');
+    } catch (error) {
+      messageApi.error(error.response?.data?.message || 'Failed to subscribe. Please try again.');
+    } finally {
+      setNewsletterSubscribing(false);
+    }
+  };
+
   if (loading) return <Skeleton active paragraph={{ rows: 8 }} style={{ padding: 24 }} />;
   if (!content) return (
     <div style={{ 
@@ -455,7 +462,7 @@ const ArticleDetail = () => {
                 </Space>
                 <Space>
                   <CalendarOutlined style={{ color: darkMode ? '#94a3b8' : '#666' }} />
-                  <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{moment(content.scheduled_publish_date || content.published_date || content.created_at).format('MMMM D, YYYY')}</Text>
+                  <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{content.scheduled_publish_date ? moment(content.scheduled_publish_date).format('MMMM D, YYYY') : (content.published_date ? moment(content.published_date).format('MMMM D, YYYY') : (content.created_at ? moment(content.created_at).format('MMMM D, YYYY') : '—'))}</Text>
                 </Space>
                 <Space>
                   <ClockCircleOutlined style={{ color: darkMode ? '#94a3b8' : '#666' }} />
@@ -916,21 +923,6 @@ const ArticleDetail = () => {
             )}
           </div>
 
-          {/* Comments */}
-          <div style={{ marginTop: 40, background: darkMode ? '#1e293b' : '#fff', padding: 24, borderRadius: 8 }}>
-            <Title level={3} style={{ color: darkMode ? '#f1f5f9' : '#000' }}>Comments</Title>
-            <div>
-              {comments.map((item) => (
-                <CustomComment
-                  key={item.id}
-                  author={item.author}
-                  content={item.content}
-                  datetime={item.datetime}
-                  darkMode={darkMode}
-                />
-              ))}
-            </div>
-          </div>
         </Col>
 
         {/* Sidebar - 30% */}
@@ -1273,6 +1265,63 @@ const ArticleDetail = () => {
               </Card>
             )}
 
+            {/* ── Newsletter Box ── */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0AAEEF 0%, #0284C7 50%, #0369A1 100%)',
+              borderRadius: 16,
+              padding: '24px',
+              boxShadow: '0 4px 20px rgba(10, 174, 239, 0.3)',
+              position: 'relative',
+              overflow: 'hidden',
+              marginBottom: 24
+            }}>
+              <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <ReadOutlined style={{ color: '#fff', fontSize: 18 }} />
+                <span style={{ fontWeight: 800, fontSize: 13, color: '#fff', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                  Subscribe the Newsletter
+                </span>
+              </div>
+
+              <form onSubmit={handleNewsletterSubscribe} style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8 }}>
+                <input
+                  type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="Enter corporate email..."
+                  required
+                  disabled={newsletterSubscribing}
+                  style={{
+                    flex: 1,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'rgba(255,255,255,0.95)',
+                    color: '#1f2937',
+                    fontSize: 12,
+                    outline: 'none',
+                    fontWeight: 500
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={newsletterSubscribing}
+                  style={{
+                    padding: '10px 16px',
+                    background: '#0F172A',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: newsletterSubscribing ? 'not-allowed' : 'pointer',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    opacity: newsletterSubscribing ? 0.6 : 1
+                  }}
+                >
+                  {newsletterSubscribing ? 'Joining...' : 'Join'}
+                </button>
+              </form>
+            </div>
+
             {/* ── Related Articles — below landing card ── */}
             {relatedArticles.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -1316,7 +1365,7 @@ const ArticleDetail = () => {
                       </div>
                       <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#9ca3af', marginTop: 6 }}>
                         <CalendarOutlined style={{ marginRight: 3 }} />
-                        {moment(article.scheduled_publish_date || article.published_date || article.created_at).format('MMM D, YYYY')}
+                        {formatContentPublishDate(article)}
                       </div>
                     </div>
                   </div>

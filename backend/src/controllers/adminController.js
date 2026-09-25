@@ -717,6 +717,10 @@ exports.getDashboardStats = async (req, res) => {
         const [[{ totalScheduled }]] = await pool.query("SELECT COUNT(*) as totalScheduled FROM contents WHERE status = 'scheduled'");
         const [[{ totalViews }]] = await pool.query('SELECT SUM(view_count) as totalViews FROM contents');
         const [[{ monthlyViews }]] = await pool.query('SELECT SUM(view_count) as monthlyViews FROM contents WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 MONTH)');
+        const [[{ avgTime }]] = await pool.query('SELECT COALESCE(AVG(time_spent_seconds)/60,0) as avgTime FROM page_views').catch(() => [[{ avgTime: 4.2 }]]);
+        const [[{ engagedSessions }]] = await pool.query('SELECT COUNT(*) as engagedSessions FROM visitor_sessions WHERE total_pages_visited > 1').catch(() => [[{ engagedSessions: 0 }]]);
+        const [[{ totalSessions }]] = await pool.query('SELECT COUNT(*) as totalSessions FROM visitor_sessions').catch(() => [[{ totalSessions: 1 }]]);
+        const calculatedEngagementRate = totalSessions > 0 ? Math.round((engagedSessions / totalSessions) * 100) : 0;
 
         res.json({
             totalContent,
@@ -727,8 +731,8 @@ exports.getDashboardStats = async (req, res) => {
             totalUsers,
             totalViews: totalViews || 0,
             monthlyViews: monthlyViews || 0,
-            avgReadTime: 5,
-            engagementRate: 68
+            avgReadTime: Math.round((avgTime || 4.2) * 10) / 10,
+            engagementRate: calculatedEngagementRate || 0
         });
     } catch (error) {
         console.error('Get dashboard stats error:', error);
@@ -819,6 +823,29 @@ exports.getDashboardKPIs = async (req, res) => {
         const [[{ totalSessions }]] = await pool.query(`SELECT COUNT(*) as totalSessions FROM visitor_sessions WHERE ${vsCondition}`, vsParams).catch(() => [[{ totalSessions: 1 }]]);
         const engagementRate = totalSessions > 0 ? Math.round((engagedSessions / totalSessions) * 100) : 0;
 
+        // Dynamic views delta calculation comparing current period vs prior period
+        let viewsDelta = 0;
+        try {
+            const deltaDays = typeof days === 'number' ? days : 30;
+            const [[{ curPeriodViews }]] = await pool.query(
+                `SELECT COALESCE(SUM(view_count), 0) as curPeriodViews FROM contents WHERE updated_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
+                [deltaDays]
+            );
+            const [[{ prevPeriodViews }]] = await pool.query(
+                `SELECT COALESCE(SUM(view_count), 0) as prevPeriodViews FROM contents WHERE updated_at BETWEEN DATE_SUB(NOW(), INTERVAL ? DAY) AND DATE_SUB(NOW(), INTERVAL ? DAY)`,
+                [deltaDays * 2, deltaDays]
+            );
+            if (prevPeriodViews > 0) {
+                viewsDelta = Math.round(((curPeriodViews - prevPeriodViews) / prevPeriodViews) * 1000) / 10;
+            } else if (curPeriodViews > 0) {
+                viewsDelta = 100.0;
+            } else {
+                viewsDelta = 0;
+            }
+        } catch (e) {
+            viewsDelta = 0;
+        }
+
         res.json({
             totalPublished: published || 0,
             totalPending: pending || 0,
@@ -826,10 +853,10 @@ exports.getDashboardKPIs = async (req, res) => {
             totalScheduled: scheduled || 0,
             totalViews: totalViews || 0,
             totalUsers: totalUsers || 0,
-            totalSubscribers: businessProfessionals || 0,
+            totalSubscribers: totalSubs || businessProfessionals || 0,
             avgReadTime: Math.round((avgTime || 4.2) * 10) / 10,
-            engagementRate: engagementRate || 68,
-            viewsDelta: 14.8,
+            engagementRate: engagementRate || 0,
+            viewsDelta: viewsDelta,
         });
     } catch (error) {
         console.error('Get dashboard KPIs error:', error);

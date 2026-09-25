@@ -298,8 +298,8 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { first_name, last_name, email, job_title, company_name, avatar } = req.body;
-        const user = await User.update(req.user.id, { first_name, last_name, email, job_title, company_name, avatar });
+        const { first_name, last_name, email, job_title, company_name, country, avatar } = req.body;
+        const user = await User.update(req.user.id, { first_name, last_name, email, job_title, company_name, country, avatar });
         res.json({ message: 'Profile updated successfully', user });
     } catch (error) {
         console.error('Update profile error:', error);

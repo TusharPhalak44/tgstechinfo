@@ -21,6 +21,8 @@ import {
   CheckCircleOutlined,
   SafetyCertificateOutlined,
   IdcardOutlined,
+  BankOutlined,
+  GlobalOutlined,
   FireOutlined,
   SettingOutlined
 } from '@ant-design/icons';
@@ -480,6 +482,23 @@ const UserProfile = () => {
 
                       <Form.Item name="email" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Email Address (Primary User Key)</span>}>
                         <Input prefix={<MailOutlined style={{ color: '#8B5CF6' }} />} disabled style={{ borderRadius: 10, height: 42 }} />
+                      </Form.Item>
+
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item name="job_title" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Job Title</span>}>
+                            <Input prefix={<IdcardOutlined style={{ color: '#8B5CF6' }} />} placeholder="e.g. Marketing Director" style={{ borderRadius: 10, height: 42 }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item name="company_name" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Company Name</span>}>
+                            <Input prefix={<BankOutlined style={{ color: '#8B5CF6' }} />} placeholder="e.g. Acme Corp" style={{ borderRadius: 10, height: 42 }} />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+                      <Form.Item name="country" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Country / Region</span>}>
+                        <Input prefix={<GlobalOutlined style={{ color: '#8B5CF6' }} />} placeholder="e.g. United States" style={{ borderRadius: 10, height: 42 }} />
                       </Form.Item>
 
                       <Form.Item name="phone" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Contact Phone Number</span>}>
