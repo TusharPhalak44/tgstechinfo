@@ -1,7 +1,20 @@
 import React from 'react';
 import Editor from '@monaco-editor/react';
 
-const HtmlEditor = ({ value, onChange, height = '600px' }) => {
+const HtmlEditor = ({ value, onChange, height = '600px', editorRef, onMount }) => {
+  const handleEditorDidMount = (editor, monaco) => {
+    if (editorRef) {
+      if (typeof editorRef === 'function') {
+        editorRef(editor);
+      } else {
+        editorRef.current = editor;
+      }
+    }
+    if (onMount) {
+      onMount(editor, monaco);
+    }
+  };
+
   const handlePaste = (event) => {
     // Remove hyperlinks and clean HTML artifacts from pasted content
     const text = event.clipboardData.getData('text/plain');
@@ -76,6 +89,7 @@ const HtmlEditor = ({ value, onChange, height = '600px' }) => {
         defaultLanguage="html"
         value={value}
         onChange={(val) => onChange(val || '')}
+        onMount={handleEditorDidMount}
         theme="vs-dark"
         options={{
           minimap: { enabled: false },

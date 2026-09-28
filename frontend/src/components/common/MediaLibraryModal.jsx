@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, Select, Button, Image, Row, Col, Typography, Space, Tooltip, App, Spin } from 'antd';
-import { SearchOutlined, PictureOutlined, CopyOutlined, CheckOutlined, ReloadOutlined, VideoCameraOutlined, FileOutlined } from '@ant-design/icons';
+import { Modal, Input, Select, Button, Image, Row, Col, Typography, Space, Tooltip, App, Spin, Upload } from 'antd';
+import { SearchOutlined, PictureOutlined, CopyOutlined, CheckOutlined, ReloadOutlined, VideoCameraOutlined, FileOutlined, UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -8,17 +8,19 @@ const { Text } = Typography;
 const { Option } = Select;
 
 /**
- * MediaLibraryModal - Reusable modal for browsing and copying media URLs
+ * MediaLibraryModal - Reusable modal for browsing, uploading, and inserting media
  * 
  * @param {boolean} visible - Controls modal visibility
  * @param {function} onClose - Callback when modal closes
- * @param {function} onSelect - Optional callback when media is selected (receives media object)
+ * @param {function} onSelect - Callback when media is selected / inserted (receives (url, mediaObject))
  */
 const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
   const { darkMode } = useTheme();
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [media, setMedia] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [filters, setFilters] = useState({
     type: 'all',
     search: '',
@@ -27,9 +29,16 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
 
   useEffect(() => {
     if (visible) {
+      setSelectedItem(null);
       fetchMedia();
     }
-  }, [visible, filters]);
+  }, [visible]);
+
+  useEffect(() => {
+    if (visible) {
+      fetchMedia();
+    }
+  }, [filters]);
 
   const fetchMedia = async () => {
     try {
@@ -38,65 +47,140 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
       if (filters.type && filters.type !== 'all') params.file_type = filters.type;
       if (filters.search) params.search = filters.search;
       
-      const response = await axios.get('/api/media/all', { 
-        params,
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      
-      console.log('[MediaLibraryModal] API Response:', response.data);
-      const mediaData = response.data.data || response.data || [];
-      console.log('[MediaLibraryModal] Media items count:', mediaData.length);
-      if (mediaData.length > 0) {
-        console.log('[MediaLibraryModal] First item structure:', mediaData[0]);
+      let response;
+      try {
+        response = await axios.get('/api/media/all', { 
+          params,
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+      } catch (err) {
+        if (err?.response?.status === 403) {
+          console.warn('[MediaLibraryModal] /api/media/all returned 403, falling back to /api/media/user/all');
+          response = await axios.get('/api/media/user/all', { 
+            params,
+            headers: { 'Cache-Control': 'no-cache' }
+          });
+        } else {
+          throw err;
+        }
       }
       
-      setMedia(mediaData);
+      const mediaData = response?.data?.data || response?.data || [];
+      const list = Array.isArray(mediaData) ? mediaData : [];
+      setMedia(list);
+      return list;
     } catch (error) {
       console.error('[MediaLibraryModal] Error fetching media:', error);
       message.error('Failed to load media library');
       setMedia([]);
+      return [];
     } finally {
       setLoading(false);
     }
   };
 
-  const copyToClipboard = (url, id) => {
-    console.log('[MediaLibraryModal] Attempting to copy URL:', url, 'ID:', id);
+  const beforeUpload = (file) => {
+    const allowedExtensions = /jpeg|jpg|png|gif|webp|pdf|doc|docx|mp4|mov|avi/i;
+    const ext = (file.name || '').split('.').pop().toLowerCase();
     
+    if (!allowedExtensions.test(ext)) {
+      message.error('This file type is not supported.');
+      return Upload.LIST_IGNORE;
+    }
+    
+    const maxSizeBytes = 500 * 1024 * 1024; // 500MB
+    if (file.size > maxSizeBytes) {
+      message.error('File size exceeds the allowed limit.');
+      return Upload.LIST_IGNORE;
+    }
+    
+    return true;
+  };
+
+  const handleUpload = async ({ file, onSuccess, onError }) => {
+    if (uploading) return;
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await axios.post('/api/media/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      if (response.data && (response.data.file || response.data.url || response.data.path)) {
+        message.success(`${file.name} uploaded successfully`);
+        if (onSuccess) onSuccess(response.data);
+        
+        // Refresh media library and auto-select uploaded item
+        const updatedList = await fetchMedia();
+        const uploadedFilename = response.data.file?.filename || response.data.file?.path?.split('/')?.pop();
+        const found = updatedList?.find(m => m.filename === uploadedFilename || m.id === response.data.file?.id);
+        if (found) {
+          setSelectedItem(found);
+        } else if (response.data.file) {
+          const fallbackItem = {
+            id: response.data.file.id,
+            name: response.data.file.originalname,
+            filename: response.data.file.filename,
+            type: response.data.file.mimetype?.startsWith('image') 
+              ? 'image' 
+              : (response.data.file.mimetype?.startsWith('video') ? 'video' : 'document'),
+            url: response.data.file.path,
+            size: response.data.file.size
+          };
+          setSelectedItem(fallbackItem);
+        }
+      } else {
+        throw new Error('Upload response missing file data');
+      }
+    } catch (err) {
+      console.error('[MediaLibraryModal] Upload error:', err);
+      if (onError) onError(err);
+      message.error('Failed to upload media. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleInsert = (item) => {
+    const target = item || selectedItem;
+    if (!target) {
+      message.warning('Please select a media item to insert');
+      return;
+    }
+    if (onSelect) {
+      onSelect(target.url, target);
+    }
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  const copyToClipboard = (url, id) => {
     if (!url) {
-      console.error('[MediaLibraryModal] No URL provided for copying');
       message.error('No URL available to copy');
       return;
     }
     
-    // Try modern clipboard API first
+    // Modern clipboard API
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(() => {
-        console.log('[MediaLibraryModal] Successfully copied URL using Clipboard API');
         setCopiedId(id);
         message.success('URL copied to clipboard!');
         setTimeout(() => setCopiedId(null), 2000);
-        
-        // If onSelect callback provided, call it with the URL string
-        if (onSelect) {
-          onSelect(url);
-        }
       }).catch((err) => {
-        console.warn('[MediaLibraryModal] Clipboard API failed, falling back to legacy method:', err);
-        // Fallback to legacy method
+        console.warn('[MediaLibraryModal] Clipboard API failed, falling back:', err);
         fallbackCopyToClipboard(url, id);
       });
     } else {
-      console.log('[MediaLibraryModal] Clipboard API not available, using legacy method');
-      // Use legacy method for older browsers or non-secure contexts
       fallbackCopyToClipboard(url, id);
     }
   };
 
   const fallbackCopyToClipboard = (url, id) => {
-    console.log('[MediaLibraryModal] Using fallback copy method');
-    
-    // Create a temporary textarea element
     const textArea = document.createElement('textarea');
     textArea.value = url;
     textArea.style.position = 'fixed';
@@ -107,29 +191,18 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
     try {
       textArea.focus();
       textArea.select();
-      
-      // Try to execute copy command
       const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
       
       if (successful) {
-        console.log('[MediaLibraryModal] Successfully copied URL using execCommand');
         setCopiedId(id);
         message.success('URL copied to clipboard!');
         setTimeout(() => setCopiedId(null), 2000);
-        
-        // If onSelect callback provided, call it with the URL string
-        if (onSelect) {
-          onSelect(url);
-        }
       } else {
         throw new Error('execCommand failed');
       }
     } catch (err) {
-      console.error('[MediaLibraryModal] Fallback copy failed:', err);
       document.body.removeChild(textArea);
-      
-      // Final fallback: show the URL in a message for manual copying
       message.info({
         content: (
           <div>
@@ -149,11 +222,6 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
         ),
         duration: 5
       });
-      
-      // Still call onSelect even if copy failed
-      if (onSelect) {
-        onSelect(url);
-      }
     }
   };
 
@@ -175,18 +243,87 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
       }
       open={visible}
       onCancel={onClose}
-      footer={null}
       width={900}
       styles={{
         body: { 
-          maxHeight: '70vh', 
+          maxHeight: '60vh', 
           overflowY: 'auto',
           background: darkMode ? '#0f172a' : '#fafafa',
           padding: 0
+        },
+        footer: {
+          padding: 0,
+          background: darkMode ? '#1e293b' : '#fff'
         }
       }}
+      footer={
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          padding: '12px 24px',
+          background: darkMode ? '#1e293b' : '#fff',
+          borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0',
+          flexWrap: 'wrap',
+          gap: 12
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0, flex: 1 }}>
+            {selectedItem ? (
+              <>
+                <div style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                  background: darkMode ? '#0f172a' : '#f5f5f5',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8'
+                }}>
+                  {selectedItem.type?.startsWith('image') && selectedItem.url ? (
+                    <img src={selectedItem.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    getFileIcon(selectedItem.type)
+                  )}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <Text ellipsis strong style={{ fontSize: 13, display: 'block', color: darkMode ? '#f1f5f9' : '#111827' }}>
+                    {selectedItem.name}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c' }}>
+                    {selectedItem.type?.toUpperCase()} • {selectedItem.file_size ? `${(selectedItem.file_size / 1024).toFixed(1)} KB` : ''}
+                  </Text>
+                </div>
+              </>
+            ) : (
+              <Text style={{ fontSize: 12, color: darkMode ? '#64748b' : '#8c8c8c' }}>
+                Select a media item to insert into your content
+              </Text>
+            )}
+          </div>
+          <Space>
+            <Button onClick={onClose}>
+              Cancel
+            </Button>
+            <Button 
+              type="primary" 
+              disabled={!selectedItem} 
+              onClick={() => handleInsert(selectedItem)}
+              style={{
+                background: selectedItem ? '#4a7cff' : undefined,
+                borderColor: selectedItem ? '#4a7cff' : undefined,
+                fontWeight: 600
+              }}
+            >
+              Insert
+            </Button>
+          </Space>
+        </div>
+      }
     >
-      {/* Filters Section */}
+      {/* Action / Filters Bar */}
       <div style={{ 
         padding: '16px 24px', 
         background: darkMode ? '#1e293b' : '#fff',
@@ -195,19 +332,39 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
         top: 0,
         zIndex: 1
       }}>
-        <Space style={{ width: '100%' }} size="middle">
+        <Space style={{ width: '100%', flexWrap: 'wrap' }} size="middle">
+          <Upload
+            customRequest={handleUpload}
+            beforeUpload={beforeUpload}
+            showUploadList={false}
+            accept="image/*,video/*,.pdf,.doc,.docx"
+            disabled={uploading}
+          >
+            <Button 
+              type="primary" 
+              icon={<UploadOutlined />} 
+              loading={uploading}
+              style={{ 
+                background: '#4a7cff', 
+                borderColor: '#4a7cff',
+                fontWeight: 500
+              }}
+            >
+              {uploading ? 'Uploading...' : 'Upload'}
+            </Button>
+          </Upload>
           <Input
             placeholder="Search media..."
             prefix={<SearchOutlined />}
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            style={{ width: 300 }}
+            style={{ width: 260 }}
             allowClear
           />
           <Select
             value={filters.type}
             onChange={(value) => setFilters({ ...filters, type: value })}
-            style={{ width: 150 }}
+            style={{ width: 140 }}
           >
             <Option value="all">All Types</Option>
             <Option value="image">Images</Option>
@@ -227,7 +384,7 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
           fontSize: 12, 
           color: darkMode ? '#94a3b8' : '#8c8c8c' 
         }}>
-          💡 Click on any image to copy its URL to clipboard
+          💡 Click an item to select and click Insert below, or double-click to insert immediately.
         </div>
       </div>
 
@@ -249,125 +406,167 @@ const MediaLibraryModal = ({ visible, onClose, onSelect }) => {
             <PictureOutlined style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }} />
             <div style={{ fontSize: 14 }}>No media found</div>
             <div style={{ fontSize: 12, marginTop: 8 }}>
-              {filters.search ? 'Try a different search term' : 'Upload some media to get started'}
+              {filters.search ? 'Try a different search term' : 'Click Upload above to add media files'}
             </div>
           </div>
         ) : (
           <Row gutter={[16, 16]}>
-            {filteredMedia.map((item) => (
-              <Col key={item.id} xs={12} sm={8} md={6}>
-                <div
-                  onClick={() => copyToClipboard(item.url, item.id)}
-                  style={{
-                    background: darkMode ? '#1e293b' : '#fff',
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    position: 'relative',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-4px)';
-                    e.currentTarget.style.boxShadow = darkMode 
-                      ? '0 8px 16px rgba(0,0,0,0.3)' 
-                      : '0 8px 16px rgba(0,0,0,0.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  {/* Image Preview */}
-                  <div style={{ 
-                    height: 140, 
-                    background: darkMode ? '#0f172a' : '#f5f5f5',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative'
-                  }}>
-                    {item.type?.startsWith('image') && item.url ? (
-                      <Image
-                        src={item.url}
-                        alt={item.name || 'Media'}
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          objectFit: 'cover' 
-                        }}
-                        preview={false}
-                        fallback="data:image/png;base64,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"
-                      />
-                    ) : (
-                      <div style={{ fontSize: 40, color: darkMode ? '#475569' : '#bfbfbf' }}>
-                        {getFileIcon(item.type)}
-                      </div>
-                    )}
-                    
-                    {/* Copy Indicator */}
-                    {copiedId === item.id && (
+            {filteredMedia.map((item) => {
+              const isSelected = selectedItem?.id === item.id;
+              return (
+                <Col key={item.id} xs={12} sm={8} md={6}>
+                  <div
+                    onClick={() => setSelectedItem(item)}
+                    onDoubleClick={() => handleInsert(item)}
+                    style={{
+                      background: darkMode ? '#1e293b' : '#fff',
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      border: isSelected 
+                        ? '2px solid #4a7cff' 
+                        : (darkMode ? '1px solid #334155' : '1px solid #e8e8e8'),
+                      boxShadow: isSelected 
+                        ? '0 0 0 2px rgba(74, 124, 255, 0.25)' 
+                        : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      position: 'relative',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.transform = 'translateY(-4px)';
+                        e.currentTarget.style.boxShadow = darkMode 
+                          ? '0 8px 16px rgba(0,0,0,0.3)' 
+                          : '0 8px 16px rgba(0,0,0,0.1)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
+                  >
+                    {/* Selected Badge */}
+                    {isSelected && (
                       <div style={{
                         position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'rgba(34, 197, 94, 0.9)',
+                        top: 8,
+                        right: 8,
+                        zIndex: 2,
+                        background: '#4a7cff',
+                        color: '#fff',
+                        borderRadius: '50%',
+                        width: 22,
+                        height: 22,
                         display: 'flex',
-                        flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#fff'
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
                       }}>
-                        <CheckOutlined style={{ fontSize: 32, marginBottom: 8 }} />
-                        <span style={{ fontSize: 12, fontWeight: 600 }}>URL Copied!</span>
+                        <CheckOutlined style={{ fontSize: 12, strokeWidth: 2 }} />
                       </div>
                     )}
-                  </div>
 
-                  {/* File Info */}
-                  <div style={{ padding: 8 }}>
-                    <Tooltip title={item.name}>
-                      <Text 
-                        ellipsis 
-                        style={{ 
-                          fontSize: 11, 
-                          display: 'block',
-                          color: darkMode ? '#cbd5e1' : '#1a1a2e'
-                        }}
-                      >
-                        {item.name}
-                      </Text>
-                    </Tooltip>
+                    {/* Image Preview */}
                     <div style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between',
-                      marginTop: 4
+                      height: 140, 
+                      background: darkMode ? '#0f172a' : '#f5f5f5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      position: 'relative'
                     }}>
-                      <Text 
-                        style={{ 
-                          fontSize: 10, 
-                          color: darkMode ? '#64748b' : '#999' 
-                        }}
-                      >
-                        {item.file_size && !isNaN(item.file_size) 
-                          ? `${(item.file_size / 1024).toFixed(1)} KB`
-                          : 'Size unknown'
-                        }
-                      </Text>
-                      <CopyOutlined 
-                        style={{ 
-                          fontSize: 12, 
-                          color: '#4a7cff' 
-                        }} 
-                      />
+                      {item.type?.startsWith('image') && item.url ? (
+                        <Image
+                          src={item.url}
+                          alt={item.name || 'Media'}
+                          style={{ 
+                            width: '100%', 
+                            height: '100%', 
+                            objectFit: 'cover' 
+                          }}
+                          preview={false}
+                          fallback="data:image/png;base64,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"
+                        />
+                      ) : (
+                        <div style={{ fontSize: 40, color: darkMode ? '#475569' : '#bfbfbf' }}>
+                          {getFileIcon(item.type)}
+                        </div>
+                      )}
+                      
+                      {/* Copy Indicator */}
+                      {copiedId === item.id && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: 'rgba(34, 197, 94, 0.9)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          zIndex: 3
+                        }}>
+                          <CheckOutlined style={{ fontSize: 32, marginBottom: 8 }} />
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>URL Copied!</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* File Info */}
+                    <div style={{ padding: 8 }}>
+                      <Tooltip title={item.name}>
+                        <Text 
+                          ellipsis 
+                          style={{ 
+                            fontSize: 11, 
+                            display: 'block',
+                            color: darkMode ? '#cbd5e1' : '#1a1a2e',
+                            fontWeight: isSelected ? 600 : 400
+                          }}
+                        >
+                          {item.name}
+                        </Text>
+                      </Tooltip>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        marginTop: 4
+                      }}>
+                        <Text 
+                          style={{ 
+                            fontSize: 10, 
+                            color: darkMode ? '#64748b' : '#999' 
+                          }}
+                        >
+                          {item.file_size && !isNaN(item.file_size) 
+                            ? `${(item.file_size / 1024).toFixed(1)} KB`
+                            : 'Size unknown'
+                          }
+                        </Text>
+                        <Tooltip title="Copy URL">
+                          <Button
+                            type="text"
+                            size="small"
+                            icon={<CopyOutlined style={{ color: '#4a7cff', fontSize: 12 }} />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(item.url, item.id);
+                            }}
+                            style={{ width: 22, height: 22, padding: 0 }}
+                          />
+                        </Tooltip>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Col>
-            ))}
+                </Col>
+              );
+            })}
           </Row>
         )}
       </div>

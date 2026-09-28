@@ -101,6 +101,7 @@ const CreateContent = () => {
   const [builderPageData, setBuilderPageData] = useState(null); // v2.0 full page tree from VisualBuilder
   const [builderContent, setBuilderContent] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
+  const htmlEditorRef = useRef(null);
   const [editContentType, setEditContentType] = useState(null); // Store content type for back navigation
   const [builderSections, setBuilderSections] = useState([
     { id: 'sec-1', type: 'content_type_category' },
@@ -445,6 +446,57 @@ const CreateContent = () => {
     const root = pageData?.layout || pageData?.root || pageData;
     walk(root);
     return found;
+  };
+
+  const handleInsertMediaToHtml = (url, item) => {
+    if (!url) return;
+    
+    // Determine media type and alt text
+    const fileType = item?.type || '';
+    const fileName = item?.name || item?.filename || 'Media';
+    
+    let htmlSnippet = '';
+    if (fileType.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
+      htmlSnippet = `<img src="${url}" alt="${fileName}" style="max-width: 100%; height: auto;" />`;
+    } else if (fileType.includes('video') || /\.(mp4|mov|avi)$/i.test(url)) {
+      htmlSnippet = `<video src="${url}" controls style="max-width: 100%; height: auto;"></video>`;
+    } else if (fileType.includes('document') || /\.(pdf|doc|docx)$/i.test(url)) {
+      htmlSnippet = `<a href="${url}" target="_blank" rel="noopener noreferrer">${fileName}</a>`;
+    } else {
+      htmlSnippet = `<a href="${url}" target="_blank" rel="noopener noreferrer">${fileName}</a>`;
+    }
+
+    // Attempt insertion at Monaco cursor position
+    if (htmlEditorRef.current) {
+      const editor = htmlEditorRef.current;
+      const position = editor.getPosition();
+      const selection = editor.getSelection();
+      if (position) {
+        editor.executeEdits('media-insert', [
+          {
+            range: selection || {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column
+            },
+            text: htmlSnippet,
+            forceMoveMarkers: true
+          }
+        ]);
+        editor.pushUndoStop();
+        editor.focus();
+        message.success('Media inserted into HTML Content');
+        return;
+      }
+    }
+
+    // Fallback: append to htmlContent
+    setHtmlContent(prev => {
+      const trimmed = (prev || '').trim();
+      return trimmed ? `${trimmed}\n\n${htmlSnippet}` : htmlSnippet;
+    });
+    message.success('Media inserted into HTML Content');
   };
 
   const buildFormData = (values) => {
@@ -2225,7 +2277,7 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                     </Space>
                   </div>
                   <div style={{ padding: '0 4px 4px' }}>
-                    <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" />
+                    <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" editorRef={htmlEditorRef} />
                   </div>
                 </div>
 
@@ -2554,9 +2606,8 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
       <MediaLibraryModal
         visible={mediaLibraryVisible}
         onClose={() => setMediaLibraryVisible(false)}
-        onSelect={(url) => {
-          // URL is already copied to clipboard by the modal
-          console.log('Selected media URL:', url);
+        onSelect={(url, item) => {
+          handleInsertMediaToHtml(url, item);
         }}
       />
 

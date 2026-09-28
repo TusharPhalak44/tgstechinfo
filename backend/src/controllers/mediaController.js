@@ -276,6 +276,13 @@ exports.deleteFile = async (req, res) => {
             return res.status(404).json({ message: 'Media not found' });
         }
         
+        // Non-admin users can only delete their own uploaded files
+        if (req.user && req.user.role !== 'admin') {
+            if (!media.uploaded_by || Number(media.uploaded_by) !== Number(req.user.id)) {
+                return res.status(403).json({ message: 'Forbidden: You can only delete your own media files' });
+            }
+        }
+        
         // Delete from database
         const deleted = await Media.delete(id);
         
