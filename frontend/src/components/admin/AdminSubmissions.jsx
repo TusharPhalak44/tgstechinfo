@@ -8,6 +8,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
+import { formatDateForCSV, formatDateForDisplay, DATE_FORMATS, formatTimestampForFilename } from '../../utils/dateHelper';
 
 const StatCard = ({ icon, label, value, color }) => (
   <div style={{
@@ -61,7 +62,7 @@ const exportToExcel = (columns, rows, fileNamePrefix = 'form_submissions') => {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
-  link.setAttribute('download', `${fileNamePrefix}_${moment().format('YYYYMMDD_HHmmss')}.csv`);
+  link.setAttribute('download', `${fileNamePrefix}_${formatTimestampForFilename()}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -296,7 +297,7 @@ const AdminSubmissions = () => {
         if (col.field === 'created_at' || col.field === 'updated_at') {
           return (
             <span style={{ fontSize: 12, color: '#475569' }}>
-              {moment(val).format('YYYY-MM-DD HH:mm:ss')}
+              {formatDateForCSV(val)}
             </span>
           );
         }
@@ -554,7 +555,7 @@ const AdminSubmissions = () => {
                   {r.webinar_date && (
                     <span style={{ fontSize: 11, color: '#64748b' }}>
                       <CalendarOutlined style={{ marginRight: 4 }} />
-                      {moment(r.webinar_date).format('MMM D, YYYY h:mm A')}
+                      {formatDateForDisplay(r.webinar_date, DATE_FORMATS.DATE_TIME)}
                     </span>
                   )}
                 </div>
@@ -605,7 +606,7 @@ const AdminSubmissions = () => {
             dataIndex: 'registered_at',
             key: 'registered_at',
             width: 160,
-            render: (v) => <span style={{ fontSize: 12, color: '#64748b' }}>{moment(v).format('YYYY-MM-DD HH:mm')}</span>
+            render: (v) => <span style={{ fontSize: 12, color: '#64748b' }}>{formatDateForDisplay(v, 'YYYY-MM-DD HH:mm')}</span>
           }
         ];
 

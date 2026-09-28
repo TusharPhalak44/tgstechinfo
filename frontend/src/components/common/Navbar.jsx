@@ -13,7 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { Button as EnhancedButton } from '@/components/ui/button';
-import { ButtonWithIcon } from '@/components/ui/button-witn-icon';
+import { ButtonWithIcon } from '@/components/ui/button-with-icon';
 import { PhoneCall } from 'lucide-react';
 import axios from 'axios';
 
@@ -519,10 +519,10 @@ const Navbar = () => {
   };
 
   const userMenuItems = [
-    { key: 'dashboard', icon: <DashboardOutlined />, label: isAdmin ? 'Admin Dashboard' : 'Dashboard', onClick: () => navigate(isAdmin ? '/admin' : '/user-dashboard') },
-    { key: 'my-content', icon: <UserOutlined />, label: 'My Content', onClick: () => navigate(isAdmin ? '/admin/content' : '/user-dashboard/my-content') },
+    { key: 'dashboard', icon: <DashboardOutlined />, label: isAdmin ? 'Admin Dashboard' : 'Dashboard', onClick: () => navigate(isAdmin ? '/dashboard' : '/user-dashboard') },
+    { key: 'my-content', icon: <UserOutlined />, label: 'My Content', onClick: () => navigate(isAdmin ? '/dashboard/content' : '/user-dashboard/my-content') },
     ...(isAdmin
-      ? [{ key: 'submissions', icon: <UserOutlined />, label: 'Submissions', onClick: () => navigate('/admin/submissions') }]
+      ? [{ key: 'submissions', icon: <UserOutlined />, label: 'Submissions', onClick: () => navigate('/dashboard/submissions') }]
       : [
         { key: 'create', icon: <UserOutlined />, label: 'Create Content', onClick: () => navigate('/user-dashboard/create-post') },
         { key: 'my-submissions', icon: <UserOutlined />, label: 'My Submissions', onClick: () => navigate('/user-dashboard/my-submissions') },

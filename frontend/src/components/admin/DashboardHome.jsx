@@ -373,6 +373,18 @@ function useCountUp(target, duration = 1000) {
   return val;
 }
 
+// Format large numbers to readable format (e.g., 78000000 -> "78 M+", 376543 -> "376.5k")
+function formatNumber(num) {
+  if (!num || num === 0) return '0';
+  
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(0).replace(/\.0$/, '') + ' M+';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k';
+  }
+  return num.toString();
+}
+
 const DashboardHome = () => {
   const navigate = useNavigate();
   const { darkMode: D } = useTheme();
@@ -478,6 +490,8 @@ const DashboardHome = () => {
     fetchAllTelemetry();
   }, [period, customRange]);
 
+
+
   // Dark Palette matching Website Design System
   const bgSurface = D ? "#0A1229" : "#F8FAFC";
   const bgCard = D
@@ -504,7 +518,6 @@ const DashboardHome = () => {
   const draftCount = useCountUp(kpis.totalDrafts);
   const viewCount = useCountUp(kpis.totalViews);
   const userCount = useCountUp(kpis.totalUsers);
-  const subCount = useCountUp(kpis.totalSubscribers);
   const leadCount = useCountUp(leadsData.totalSubmissions);
 
   const sessionDates = (trafficData.dailySessions || []).map((d) =>
@@ -966,7 +979,7 @@ const DashboardHome = () => {
               </span>
             </div>
             <div style={{ fontSize: "1.75rem", fontWeight: 700, color: textPrimary, letterSpacing: "-0.02em" }}>
-              {viewCount >= 1000 ? `${(viewCount / 1000).toFixed(1)}k` : viewCount}
+              {formatNumber(kpis.totalViews)}
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${borderColor}`, fontSize: "0.7rem", color: textMuted }}>
@@ -1009,12 +1022,12 @@ const DashboardHome = () => {
               </span>
             </div>
             <div style={{ fontSize: "1.75rem", fontWeight: 700, color: textPrimary, letterSpacing: "-0.02em" }}>
-              {subCount}
+              {formatNumber(kpis.totalSubscribers)}
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, paddingTop: 8, borderTop: `1px solid ${borderColor}`, fontSize: "0.7rem", color: textMuted }}>
-            <span>Newsletter Subscriptions</span>
-            <span style={{ color: brandPurple, fontWeight: 500 }}>Subscribers</span>
+            <span>Business Professionals</span>
+            <span style={{ color: brandPurple, fontWeight: 500 }}>Audience</span>
           </div>
         </div>
 

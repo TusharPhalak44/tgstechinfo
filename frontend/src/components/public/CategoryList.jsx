@@ -7,6 +7,7 @@ import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem } from '../../lib/contentRoute';
 import WebinarCountdown from '../common/WebinarCountdown';
+import { formatContentPublishDate, formatWebinarDate } from '../../utils/dateHelper';
 
 // Detect HTML builder (landing page) content by builder_layout OR content type
 const isHtmlBuilderContent = (item) => {
@@ -498,7 +499,7 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
         {/* Live Webinar Countdown preview line */}
         {isLive && item.webinar_date && (
           <div style={{ fontSize: 12, fontWeight: 600, color: '#ef4444', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <ClockCircleOutlined /> Live Event: {moment(item.webinar_date).format('MMMM D, YYYY [at] h:mm A')}
+            <ClockCircleOutlined /> Live Event: {formatWebinarDate(item.webinar_date)}
           </div>
         )}
 
@@ -509,7 +510,7 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <CalendarOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
-            {moment(item.scheduled_publish_date || item.published_date || item.created_at).format('MMM D, YYYY')}
+            {formatContentPublishDate(item)}
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <EyeOutlined style={{ fontSize: isMobile ? 10 : 11 }} />

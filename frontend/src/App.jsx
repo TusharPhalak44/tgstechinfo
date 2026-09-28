@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 
 import { Routes, Route, useLocation } from 'react-router-dom';
 
@@ -20,78 +20,6 @@ import Home from './components/public/Home';
 
 import CookieBanner from './components/common/CookieBanner';
 
-import Login from './pages/Login';
-
-import Register from './pages/Register';
-
-import ForgotPassword from './pages/ForgotPassword';
-
-import PrivacyPolicy from './pages/PrivacyPolicy';
-
-import TermsOfUse from './pages/TermsOfUse';
-
-import CookiePolicy from './pages/CookiePolicy';
-
-import DataPrivacyNotice from './pages/DataPrivacyNotice';
-
-import DataRequests from './pages/DataRequests';
-
-import Disclaimer from './pages/Disclaimer';
-
-import AccessibilityStatement from './pages/AccessibilityStatement';
-
-import AcceptableUsePolicy from './pages/AcceptableUsePolicy';
-
-import SecurityStatement from './pages/SecurityStatement';
-
-import VendorList from './pages/VendorList';
-
-import ContactPrivacyOfficer from './pages/ContactPrivacyOfficer';
-
-import ArticleDetail from './components/public/ArticleDetail';
-
-import UserAccountPolicy from './pages/UserAccountPolicy';
-
-import About from './pages/About';
-import Audience from './pages/Audience';
-import AudienceIntelligence from './pages/AudienceIntelligence';
-import SharedAudienceView from './pages/SharedAudienceView';
-import AdminAudienceDashboard from './components/admin/audience/AdminAudienceDashboard';
-
- 
-
-
-
-import axios from 'axios';
-
-
-
-import CategoryList from './components/public/CategoryList';
-
-import Newsletter from './components/public/Newsletter';
-
-import Dashboard from './components/user/Dashboard';
-
-import CreateContent from './components/user/CreateContent';
-
-import MyContent from './components/user/MyContent';
-
-import UserSubmissions from './components/user/UserSubmissions';
-
-import ArticlePreview from './components/user/ArticlePreview';
-
-import UserProfile from './components/user/UserProfile';
-
-import AdminDashboard from './components/admin/AdminDashboard';
-
-import UserManagement from './components/admin/UserManagement';
-
-import ArticleReviewPage from './components/admin/ArticleReviewPage';
-
-import AdminEditContent from './components/admin/AdminEditContent';
-
-import AdminSubmissions from './components/admin/AdminSubmissions';
-
 import PrivateRoute from './components/common/PrivateRoute';
 
 import AdminRoute from './components/common/AdminRoute';
@@ -102,59 +30,75 @@ import DashboardLayout from './components/admin/DashboardLayout';
 
 import UserDashboardLayout from './components/user/UserDashboardLayout';
 
-import DashboardHome from './components/admin/DashboardHome';
+import RouteLoadingFallback from './components/common/RouteLoadingFallback';
 
-import Analytics from './components/admin/Analytics';
+import lazyWithRetry from './utils/lazyWithRetry';
 
-import ContentListing from './components/admin/ContentListing';
+import axios from 'axios';
 
-import AdminContent from './components/admin/AdminContent';
+// Lazy-loaded public & auth routes
+const Login = lazyWithRetry(() => import('./pages/Login'));
+const Register = lazyWithRetry(() => import('./pages/Register'));
+const ForgotPassword = lazyWithRetry(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazyWithRetry(() => import('./pages/ResetPassword'));
+const PrivacyPolicy = lazyWithRetry(() => import('./pages/PrivacyPolicy'));
+const TermsOfUse = lazyWithRetry(() => import('./pages/TermsOfUse'));
+const CookiePolicy = lazyWithRetry(() => import('./pages/CookiePolicy'));
+const DataPrivacyNotice = lazyWithRetry(() => import('./pages/DataPrivacyNotice'));
+const DataRequests = lazyWithRetry(() => import('./pages/DataRequests'));
+const Disclaimer = lazyWithRetry(() => import('./pages/Disclaimer'));
+const AccessibilityStatement = lazyWithRetry(() => import('./pages/AccessibilityStatement'));
+const AcceptableUsePolicy = lazyWithRetry(() => import('./pages/AcceptableUsePolicy'));
+const SecurityStatement = lazyWithRetry(() => import('./pages/SecurityStatement'));
+const VendorList = lazyWithRetry(() => import('./pages/VendorList'));
+const ContactPrivacyOfficer = lazyWithRetry(() => import('./pages/ContactPrivacyOfficer'));
+const UserAccountPolicy = lazyWithRetry(() => import('./pages/UserAccountPolicy'));
+const About = lazyWithRetry(() => import('./pages/About'));
+const ContactUs = lazyWithRetry(() => import('./pages/ContactUs'));
+const Audience = lazyWithRetry(() => import('./pages/Audience'));
+const AudienceIntelligence = lazyWithRetry(() => import('./pages/AudienceIntelligence'));
+const SharedAudienceView = lazyWithRetry(() => import('./pages/SharedAudienceView'));
+const StandaloneLandingPage = lazyWithRetry(() => import('./pages/StandaloneLandingPage'));
+const CaseStudyPage = lazyWithRetry(() => import('./pages/CaseStudyPage'));
+const Unsubscribe = lazyWithRetry(() => import('./components/public/Unsubscribe'));
+const ArticleDetail = lazyWithRetry(() => import('./components/public/ArticleDetail'));
+const CategoryList = lazyWithRetry(() => import('./components/public/CategoryList'));
+const SearchResults = lazyWithRetry(() => import('./components/public/SearchResults'));
+const Newsletter = lazyWithRetry(() => import('./components/public/Newsletter'));
 
-import ContentReview from './components/admin/ContentReview';
-
-import ContentReviewDetail from './components/admin/ContentReviewDetail';
-
-import ContentDetail from './components/admin/ContentDetail';
-
-import MediaLibrary from './components/admin/MediaLibrary';
-
-import Uploads from './components/admin/Uploads';
-
-import Categories from './components/admin/Categories';
-
-import ContentAnalytics from './components/user/ContentAnalytics';
-
-// import Integrations from './components/admin/Integrations';
-
-import AuditLogs from './components/admin/AuditLogs';
-
-import Forms from './components/admin/Forms';
-
-import SEO from './components/admin/SEO';
-
-import Roles from './components/admin/Roles';
-
-import Permissions from './components/admin/Permissions';
-
-import SessionManagement from './components/admin/SessionManagement';
-
-import Settings from './components/admin/Settings';
-
-import EmailTemplates from './components/admin/EmailTemplates';
-
-import Tags from './components/admin/Tags';
-
-import SearchResults from './components/public/SearchResults';
-
-import ContactUs from './pages/ContactUs';
-
-import StandaloneLandingPage from './pages/StandaloneLandingPage';
-
-import CaseStudyPage from './pages/CaseStudyPage';
-
-import Unsubscribe from './components/public/Unsubscribe';
-
-import ResetPassword from './pages/ResetPassword';
+// Lazy-loaded dashboard & admin routes
+const Dashboard = lazyWithRetry(() => import('./components/user/Dashboard'));
+const CreateContent = lazyWithRetry(() => import('./components/user/CreateContent'));
+const MyContent = lazyWithRetry(() => import('./components/user/MyContent'));
+const UserSubmissions = lazyWithRetry(() => import('./components/user/UserSubmissions'));
+const ArticlePreview = lazyWithRetry(() => import('./components/user/ArticlePreview'));
+const UserProfile = lazyWithRetry(() => import('./components/user/UserProfile'));
+const AdminDashboard = lazyWithRetry(() => import('./components/admin/AdminDashboard'));
+const AdminAudienceDashboard = lazyWithRetry(() => import('./components/admin/audience/AdminAudienceDashboard'));
+const UserManagement = lazyWithRetry(() => import('./components/admin/UserManagement'));
+const ArticleReviewPage = lazyWithRetry(() => import('./components/admin/ArticleReviewPage'));
+const AdminEditContent = lazyWithRetry(() => import('./components/admin/AdminEditContent'));
+const AdminSubmissions = lazyWithRetry(() => import('./components/admin/AdminSubmissions'));
+const DashboardHome = lazyWithRetry(() => import('./components/admin/DashboardHome'));
+const Analytics = lazyWithRetry(() => import('./components/admin/Analytics'));
+const ContentListing = lazyWithRetry(() => import('./components/admin/ContentListing'));
+const AdminContent = lazyWithRetry(() => import('./components/admin/AdminContent'));
+const ContentReview = lazyWithRetry(() => import('./components/admin/ContentReview'));
+const ContentReviewDetail = lazyWithRetry(() => import('./components/admin/ContentReviewDetail'));
+const ContentDetail = lazyWithRetry(() => import('./components/admin/ContentDetail'));
+const MediaLibrary = lazyWithRetry(() => import('./components/admin/MediaLibrary'));
+const Uploads = lazyWithRetry(() => import('./components/admin/Uploads'));
+const Categories = lazyWithRetry(() => import('./components/admin/Categories'));
+const ContentAnalytics = lazyWithRetry(() => import('./components/user/ContentAnalytics'));
+const AuditLogs = lazyWithRetry(() => import('./components/admin/AuditLogs'));
+const Forms = lazyWithRetry(() => import('./components/admin/Forms'));
+const SEO = lazyWithRetry(() => import('./components/admin/SEO'));
+const Roles = lazyWithRetry(() => import('./components/admin/Roles'));
+const Permissions = lazyWithRetry(() => import('./components/admin/Permissions'));
+const SessionManagement = lazyWithRetry(() => import('./components/admin/SessionManagement'));
+const Settings = lazyWithRetry(() => import('./components/admin/Settings'));
+const EmailTemplates = lazyWithRetry(() => import('./components/admin/EmailTemplates'));
+const Tags = lazyWithRetry(() => import('./components/admin/Tags'));
 
 import { Navigate } from 'react-router-dom';
 
@@ -183,24 +127,32 @@ const ScrollToTop = () => {
 
 
 // Simple 404 page
-
 const NotFound = () => (
-
   <div style={{ textAlign: 'center', padding: '80px 24px', background: '#f8f9fa', minHeight: '100vh' }}>
-
     <h1 style={{ fontSize: 72, fontWeight: 900, color: 'var(--color-primary)', margin: 0 }}>404</h1>
-
     <p style={{ fontSize: 20, color: 'var(--color-muted)', marginBottom: 32 }}>Page not found</p>
-
     <a href="/" style={{ background: 'var(--color-accent)', color: '#fff', padding: '12px 28px', borderRadius: 10, textDecoration: 'none', fontWeight: 600 }}>
-
       Back to Home
-
     </a>
-
   </div>
-
 );
+
+// Backward-compatible redirect from legacy /admin/* to canonical /dashboard/*
+const AdminRedirect = () => {
+  const location = useLocation();
+  const targetPath = (location.pathname === '/admin' || location.pathname === '/admin/')
+    ? '/dashboard'
+    : location.pathname.replace(/^\/admin(\/|$)/, '/dashboard$1');
+
+  return (
+    <Navigate
+      to={`${targetPath}${location.search}`}
+      replace
+      state={location.state}
+    />
+  );
+};
+
 
 
 
@@ -433,21 +385,25 @@ function AppContent() {
 
       {isStandaloneRoute ? (
 
-        <Routes>
+        <Suspense fallback={<RouteLoadingFallback />}>
 
-          <Route path="/content/:slug" element={<StandaloneLandingPage />} />
+          <Routes>
 
-          <Route path="/lp/:slug" element={<StandaloneLandingPage />} />
+            <Route path="/content/:slug" element={<StandaloneLandingPage />} />
 
-          <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
+            <Route path="/lp/:slug" element={<StandaloneLandingPage />} />
 
-          <Route path="/audience-intelligence" element={<AudienceIntelligence />} />
+            <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
 
-          <Route path="/audience/view/:token" element={<SharedAudienceView />} />
+            <Route path="/audience-intelligence" element={<AudienceIntelligence />} />
 
-          <Route path="/audience-intelligence/view/:token" element={<SharedAudienceView />} />
+            <Route path="/audience/view/:token" element={<SharedAudienceView />} />
 
-        </Routes>
+            <Route path="/audience-intelligence/view/:token" element={<SharedAudienceView />} />
+
+          </Routes>
+
+        </Suspense>
 
       ) : (
 
@@ -471,376 +427,318 @@ function AppContent() {
 
           }}>
 
-            <Routes>
+            <Suspense fallback={<RouteLoadingFallback />}>
 
-              {/* Public Routes */}
+              <Routes>
 
-              <Route path="/" element={<Home />} />
+                {/* Public Routes */}
 
-              <Route path="/login" element={<Login />} />
+                <Route path="/" element={<Home />} />
 
-              <Route path="/register" element={<Register />} />
+                <Route path="/login" element={<Login />} />
 
-              <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/register" element={<Register />} />
 
-              <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
 
-              <Route path="/blog/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/news/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/blog/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/interview/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/news/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/webinar/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/interview/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/event/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/webinar/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/ebook/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/event/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/whitepaper/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/ebook/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/report/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/whitepaper/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/whitepapers" element={<CategoryList />} />
+                <Route path="/report/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-              <Route path="/category/:slug" element={<CategoryList />} />
+                <Route path="/whitepapers" element={<CategoryList />} />
 
-              <Route path="/articles" element={<CategoryList />} />
+                <Route path="/category/:slug" element={<CategoryList />} />
 
-              <Route path="/ebooks" element={<CategoryList />} />
+                <Route path="/articles" element={<CategoryList />} />
 
-              <Route path="/blogs" element={<CategoryList />} />
+                <Route path="/ebooks" element={<CategoryList />} />
 
-              <Route path="/news" element={<CategoryList />} />
+                <Route path="/blogs" element={<CategoryList />} />
 
-              <Route path="/interviews" element={<CategoryList />} />
+                <Route path="/news" element={<CategoryList />} />
 
-               <Route path="/user-account-policy" element={<UserAccountPolicy />} />
+                <Route path="/interviews" element={<CategoryList />} />
 
-
-
-              <Route path="/webinars" element={<CategoryList />} />
-
-              <Route path="/events" element={<CategoryList />} />
-
-              <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
-
-              <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
-
-              <Route path="/unsubscribe" element={<Unsubscribe />} />
-
-              <Route path="/contact" element={<ContactUs />} />
-
-              <Route path="/about" element={<About />} />
-
-              <Route path="/case-study/:slug" element={<CaseStudyPage />} />
-
-              <Route path="/case-study" element={<Navigate to="/case-studies" replace />} />
-
-              <Route path="/case-studies" element={<CategoryList />} />
-
-              {/* Landing pages listing + direct access */}
-
-              <Route path="/landing-pages" element={<CategoryList />} />
-
-              <Route path="/lp/:slug" element={<StandaloneLandingPage />} />
-
-              <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
-
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-
-              <Route path="/terms-of-use" element={<TermsOfUse />} />
-
-              <Route path="/cookie-policy" element={<CookiePolicy />} />
-
-              <Route path="/data-privacy-notice" element={<DataPrivacyNotice />} />
-
-              <Route path="/data-requests" element={<DataRequests />} />
-
-              <Route path="/do-not-sell" element={<DataRequests />} />
-
-              <Route path="/disclaimer" element={<Disclaimer />} />
-
-              <Route path="/accessibility" element={<AccessibilityStatement />} />
-
-              <Route path="/acceptable-use" element={<AcceptableUsePolicy />} />
-
-              <Route path="/security" element={<SecurityStatement />} />
-
-              <Route path="/vendor-list" element={<VendorList />} />
-
-              <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
-
-              <Route path="/reset-password" element={<ResetPassword />} />
-
-              <Route path="/audience" element={<Audience />} />
-
-              <Route path="/audience-intelligence" element={<AudienceIntelligence />} />
-
-              <Route path="/audience/view/:token" element={<SharedAudienceView />} />
+                 <Route path="/user-account-policy" element={<UserAccountPolicy />} />
 
 
 
-              {/* Dashboard — Admin gets DashboardLayout */}
+                <Route path="/webinars" element={<CategoryList />} />
 
-              <Route path="/dashboard" element={
+                <Route path="/events" element={<CategoryList />} />
 
-                <PrivateRoute>
+                <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
 
-                  <AdminRoute>
+                <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
+
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
+
+                <Route path="/contact" element={<ContactUs />} />
+
+                <Route path="/about" element={<About />} />
+
+                <Route path="/case-study/:slug" element={<CaseStudyPage />} />
+
+                <Route path="/case-study" element={<Navigate to="/case-studies" replace />} />
+
+                <Route path="/case-studies" element={<CategoryList />} />
+
+                {/* Landing pages listing + direct access */}
+
+                <Route path="/landing-pages" element={<CategoryList />} />
+
+                <Route path="/lp/:slug" element={<StandaloneLandingPage />} />
+
+                <Route path="/landing-page/:slug" element={<StandaloneLandingPage />} />
+
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+
+                <Route path="/terms-of-use" element={<TermsOfUse />} />
+
+                <Route path="/cookie-policy" element={<CookiePolicy />} />
+
+                <Route path="/data-privacy-notice" element={<DataPrivacyNotice />} />
+
+                <Route path="/data-requests" element={<DataRequests />} />
+
+                <Route path="/do-not-sell" element={<DataRequests />} />
+
+                <Route path="/disclaimer" element={<Disclaimer />} />
+
+                <Route path="/accessibility" element={<AccessibilityStatement />} />
+
+                <Route path="/acceptable-use" element={<AcceptableUsePolicy />} />
+
+                <Route path="/security" element={<SecurityStatement />} />
+
+                <Route path="/vendor-list" element={<VendorList />} />
+
+                <Route path="/contact-privacy-officer" element={<ContactPrivacyOfficer />} />
+
+                <Route path="/reset-password" element={<ResetPassword />} />
+
+                <Route path="/audience" element={<Audience />} />
+
+                <Route path="/audience-intelligence" element={<AudienceIntelligence />} />
+
+                <Route path="/audience/view/:token" element={<SharedAudienceView />} />
+
+
+
+                {/* Dashboard — Admin gets DashboardLayout */}
+
+                <Route path="/dashboard" element={
+
+                  <PrivateRoute>
+
+                    <AdminRoute>
+
+                      <ErrorBoundary>
+
+                        <DashboardLayout />
+
+                      </ErrorBoundary>
+
+                    </AdminRoute>
+
+                  </PrivateRoute>
+
+                }>
+
+                  <Route path="analytics" element={<Analytics />} />
+
+                  <Route path="content" element={<AdminContent />} />
+
+                  <Route path="content/:id" element={<ContentDetail />} />
+
+                  <Route path="article/:id" element={<ContentDetail />} />
+                  <Route path="blog/:id" element={<ContentDetail />} />
+                  <Route path="news/:id" element={<ContentDetail />} />
+                  <Route path="interview/:id" element={<ContentDetail />} />
+                  <Route path="webinar/:id" element={<ContentDetail />} />
+                  <Route path="event/:id" element={<ContentDetail />} />
+                  <Route path="ebook/:id" element={<ContentDetail />} />
+                  <Route path="whitepaper/:id" element={<ContentDetail />} />
+                  <Route path="report/:id" element={<ContentDetail />} />
+                  <Route path="case-study/:id" element={<ContentDetail />} />
+
+                  <Route path="pending-review" element={<ContentReview />} />
+
+                  <Route path="content-review/:id" element={<ContentReviewDetail />} />
+                  <Route path="review/:id" element={<ContentReviewDetail />} />
+
+                 <Route path="drafts" element={
+
+                    <AdminRoute fallback={<MyContent />}>
+
+                      <ContentListing />
+
+                    </AdminRoute>
+
+                  } />
+
+                  <Route path="media-library" element={<MediaLibrary />} />
+
+                  <Route path="create-post" element={<CreateContent />} />
+                  <Route path="create-post/:id" element={<CreateContent />} />
+                  <Route path="edit/:id" element={<CreateContent />} />
+
+                  <Route path="tags" element={<Tags />} />
+
+
+                  <Route path="uploads" element={<Uploads />} />
+
+                  <Route path="categories" element={<Categories />} />
+
+                  <Route path="forms" element={<Forms />} />
+
+                  <Route path="seo" element={<SEO />} />
+
+                  <Route path="users" element={<UserManagement />} />
+
+                  <Route path="roles" element={<Roles />} />
+
+                  <Route path="permissions" element={<Permissions />} />
+
+                  <Route path="audit-logs" element={<AuditLogs />} />
+
+                  {/* <Route path="integrations" element={<Integrations />} /> */}
+
+                  <Route path="sessions" element={<SessionManagement />} />
+
+                  <Route path="profile" element={<UserProfile />} />
+
+                  <Route path="settings" element={<Settings />} />
+
+                  <Route path="email-templates" element={<EmailTemplates />} />
+
+                  <Route path="submissions" element={<AdminSubmissions />} />
+
+                  <Route path="audience" element={<AdminAudienceDashboard />} />
+
+                  <Route index element={<DashboardHome />} />
+
+                  <Route path="overview" element={<DashboardHome />} />
+
+                  <Route path="my-content" element={<MyContent />} />
+
+                  <Route path="my-submissions" element={<UserSubmissions />} />
+
+                  <Route path="scheduled" element={<MyContent />} />
+
+                </Route>
+
+
+
+                {/* User Dashboard — Regular users get UserDashboardLayout with sidebar+header */}
+
+                <Route path="/user-dashboard" element={
+
+                  <PrivateRoute>
 
                     <ErrorBoundary>
 
-                      <DashboardLayout />
+                      <UserDashboardLayout />
 
                     </ErrorBoundary>
 
-                  </AdminRoute>
+                  </PrivateRoute>
 
-                </PrivateRoute>
+                }>
 
-              }>
+                  <Route index element={<Dashboard />} />
 
-                <Route path="analytics" element={<Analytics />} />
+                  <Route path="my-content" element={<MyContent />} />
 
-                <Route path="content" element={<AdminContent />} />
+                  <Route path="my-submissions" element={<UserSubmissions />} />
 
-                <Route path="content/:id" element={<ContentDetail />} />
+                  <Route path="create-post" element={<CreateContent />} />
+                  <Route path="create-post/:id" element={<CreateContent />} />
 
-                <Route path="article/:id" element={<ContentDetail />} />
-                <Route path="blog/:id" element={<ContentDetail />} />
-                <Route path="news/:id" element={<ContentDetail />} />
-                <Route path="interview/:id" element={<ContentDetail />} />
-                <Route path="webinar/:id" element={<ContentDetail />} />
-                <Route path="event/:id" element={<ContentDetail />} />
-                <Route path="ebook/:id" element={<ContentDetail />} />
-                <Route path="whitepaper/:id" element={<ContentDetail />} />
-                <Route path="report/:id" element={<ContentDetail />} />
-                <Route path="case-study/:id" element={<ContentDetail />} />
+                  <Route path="media-library" element={<MediaLibrary />} />
 
-                <Route path="pending-review" element={<ContentReview />} />
+                  <Route path="drafts" element={<ContentListing />} />
 
-                <Route path="content-review/:id" element={<ContentReviewDetail />} />
+                  <Route path="analytics" element={<ContentAnalytics />} />
 
-               <Route path="drafts" element={
+                  <Route path="profile" element={<UserProfile />} />
 
-                  <AdminRoute fallback={<MyContent />}>
+                  <Route path="scheduled" element={<MyContent />} />
 
-                    <ContentListing />
+                </Route>
 
-                  </AdminRoute>
+
+
+                {/* Legacy /admin/* routes — Seamlessly redirect to canonical /dashboard/* */}
+                <Route path="/admin" element={
+                  <PrivateRoute>
+                    <AdminRoute>
+                      <AdminRedirect />
+                    </AdminRoute>
+                  </PrivateRoute>
+                } />
+
+                <Route path="/admin/*" element={
+                  <PrivateRoute>
+                    <AdminRoute>
+                      <AdminRedirect />
+                    </AdminRoute>
+                  </PrivateRoute>
+                } />
+
+
+
+                {/* Legacy routes - redirect to user-dashboard */}
+
+                <Route path="/create-content" element={<Navigate to="/user-dashboard/create-post" replace />} />
+
+                <Route path="/my-content" element={<Navigate to="/user-dashboard/my-content" replace />} />
+
+                <Route path="/my-submissions" element={<Navigate to="/user-dashboard/my-submissions" replace />} />
+
+                <Route path="/edit-content/:id" element={
+
+                  <PrivateRoute>
+
+                    <CreateContent />
+
+                  </PrivateRoute>
 
                 } />
 
-                <Route path="media-library" element={<MediaLibrary />} />
+                <Route path="/:type-preview/:id" element={
 
-                <Route path="create-post" element={<CreateContent />} />
-                <Route path="create-post/:id" element={<CreateContent />} />
+                  <PrivateRoute>
 
-                <Route path="tags" element={<Tags />} />
+                    <ArticlePreview />
 
-                <Route path="media-library" element={<MediaLibrary />} />
+                  </PrivateRoute>
 
-                <Route path="uploads" element={<Uploads />} />
+                } />
 
-                <Route path="categories" element={<Categories />} />
 
-                <Route path="forms" element={<Forms />} />
 
-                <Route path="seo" element={<SEO />} />
+                {/* 404 catch-all */}
 
-                <Route path="users" element={<UserManagement />} />
+                <Route path="*" element={<NotFound />} />
 
-                <Route path="roles" element={<Roles />} />
+              </Routes>
 
-                <Route path="permissions" element={<Permissions />} />
-
-                <Route path="audit-logs" element={<AuditLogs />} />
-
-                {/* <Route path="integrations" element={<Integrations />} /> */}
-
-                <Route path="sessions" element={<SessionManagement />} />
-
-                <Route path="profile" element={<UserProfile />} />
-
-                <Route path="settings" element={<Settings />} />
-
-                <Route path="email-templates" element={<EmailTemplates />} />
-
-                <Route index element={<DashboardHome />} />
-
-                <Route path="overview" element={<DashboardHome />} />
-
-                <Route path="my-content" element={<MyContent />} />
-
-                <Route path="my-submissions" element={<UserSubmissions />} />
-
-                <Route path="scheduled" element={<MyContent />} />
-
-              </Route>
-
-
-
-              {/* User Dashboard — Regular users get UserDashboardLayout with sidebar+header */}
-
-              <Route path="/user-dashboard" element={
-
-                <PrivateRoute>
-
-                  <ErrorBoundary>
-
-                    <UserDashboardLayout />
-
-                  </ErrorBoundary>
-
-                </PrivateRoute>
-
-              }>
-
-                <Route index element={<Dashboard />} />
-
-                <Route path="my-content" element={<MyContent />} />
-
-                <Route path="my-submissions" element={<UserSubmissions />} />
-
-                <Route path="create-post" element={<CreateContent />} />
-                <Route path="create-post/:id" element={<CreateContent />} />
-
-                <Route path="media-library" element={<MediaLibrary />} />
-
-                <Route path="drafts" element={<ContentListing />} />
-
-                <Route path="analytics" element={<ContentAnalytics />} />
-
-                <Route path="profile" element={<UserProfile />} />
-
-                <Route path="scheduled" element={<MyContent />} />
-
-              </Route>
-
-
-
-              {/* Admin Routes - dedicated admin dashboard route */}
-
-              <Route path="/admin" element={
-
-                <AdminRoute>
-
-                  <ErrorBoundary>
-
-                    <DashboardLayout />
-
-                  </ErrorBoundary>
-
-                </AdminRoute>
-
-              }>
-
-                <Route index element={<DashboardHome />} />
-
-                <Route path="analytics" element={<Analytics />} />
-
-                <Route path="content" element={<AdminContent />} />
-
-                <Route path="content/:id" element={<ContentDetail />} />
-
-                <Route path="article/:id" element={<ContentDetail />} />
-                <Route path="blog/:id" element={<ContentDetail />} />
-                <Route path="news/:id" element={<ContentDetail />} />
-                <Route path="interview/:id" element={<ContentDetail />} />
-                <Route path="webinar/:id" element={<ContentDetail />} />
-                <Route path="event/:id" element={<ContentDetail />} />
-                <Route path="ebook/:id" element={<ContentDetail />} />
-                <Route path="whitepaper/:id" element={<ContentDetail />} />
-                <Route path="report/:id" element={<ContentDetail />} />
-                <Route path="case-study/:id" element={<ContentDetail />} />
-
-                <Route path="pending-review" element={<ContentReview />} />
-
-                <Route path="content-review/:id" element={<ContentReviewDetail />} />
-
-                <Route path="drafts" element={<ContentListing />} />
-
-                <Route path="create-post" element={<CreateContent />} />
-                <Route path="create-post/:id" element={<CreateContent />} />
-
-                <Route path="tags" element={<Tags />} />
-
-                <Route path="media-library" element={<MediaLibrary />} />
-
-                <Route path="uploads" element={<Uploads />} />
-
-                <Route path="categories" element={<Categories />} />
-
-                <Route path="forms" element={<Forms />} />
-
-                <Route path="seo" element={<SEO />} />
-
-                <Route path="users" element={<UserManagement />} />
-
-                <Route path="roles" element={<Roles />} />
-
-                <Route path="permissions" element={<Permissions />} />
-
-                <Route path="audit-logs" element={<AuditLogs />} />
-
-                {/* <Route path="integrations" element={<Integrations />} /> */}
-
-                <Route path="sessions" element={<SessionManagement />} />
-
-                <Route path="profile" element={<UserProfile />} />
-
-                <Route path="settings" element={<Settings />} />
-
-                <Route path="email-templates" element={<EmailTemplates />} />
-
-                <Route path="submissions" element={<AdminSubmissions />} />
-
-                <Route path="review/:id" element={<ArticleReviewPage />} />
-
-                <Route path="edit/:id" element={<AdminEditContent />} />
-
-                <Route path="audience" element={<AdminAudienceDashboard />} />
-
-              </Route>
-
-
-
-              {/* Legacy routes - redirect to user-dashboard */}
-
-              <Route path="/create-content" element={<Navigate to="/user-dashboard/create-post" replace />} />
-
-              <Route path="/my-content" element={<Navigate to="/user-dashboard/my-content" replace />} />
-
-              <Route path="/my-submissions" element={<Navigate to="/user-dashboard/my-submissions" replace />} />
-
-              <Route path="/edit-content/:id" element={
-
-                <PrivateRoute>
-
-                  <CreateContent />
-
-                </PrivateRoute>
-
-              } />
-
-              <Route path="/:type-preview/:id" element={
-
-                <PrivateRoute>
-
-                  <ArticlePreview />
-
-                </PrivateRoute>
-
-              } />
-
-
-
-              {/* 404 catch-all */}
-
-              <Route path="*" element={<NotFound />} />
-
-            </Routes>
+            </Suspense>
 
           </Content>
 

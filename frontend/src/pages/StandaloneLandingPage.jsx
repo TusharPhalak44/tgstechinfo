@@ -217,22 +217,101 @@ const StandaloneLandingPage = () => {
           .then(data => {
             console.log('✅ Lead form submit success:', data);
             
+            // Determine candidate redirect URL from response, payload, or form attributes
+            const rawRedirectUrl = (data && data.redirect_url) ||
+                                  payload.redirect_url ||
+                                  payload.redirectUrl ||
+                                  payload.redirect ||
+                                  payload.return_url ||
+                                  payload.returnUrl ||
+                                  payload.thank_you_url ||
+                                  payload.thankYouUrl ||
+                                  payload.page_url ||
+                                  payload.pageUrl ||
+                                  payload.target_url ||
+                                  payload.targetUrl ||
+                                  payload.success_url ||
+                                  payload.successUrl ||
+                                  payload.download_url ||
+                                  payload.downloadUrl ||
+                                  form.getAttribute('data-redirect') ||
+                                  form.getAttribute('data-redirect-url') ||
+                                  form.getAttribute('data-target-url') ||
+                                  null;
+
+            let validRedirectUrl = null;
+            if (rawRedirectUrl && typeof rawRedirectUrl === 'string') {
+              const trimmed = rawRedirectUrl.trim();
+              if (
+                trimmed &&
+                trimmed !== '#' &&
+                !trimmed.startsWith('javascript:') &&
+                !trimmed.includes('/api/public/landing-page') &&
+                !trimmed.includes('/api/users')
+              ) {
+                // Ensure redirect doesn't loop into the exact same current page
+                try {
+                  const currentUrl = new URL(window.location.href);
+                  const targetUrl = new URL(trimmed, window.location.origin);
+                  if (currentUrl.origin !== targetUrl.origin || currentUrl.pathname !== targetUrl.pathname) {
+                    validRedirectUrl = targetUrl.href;
+                  }
+                } catch (e) {
+                  if (trimmed !== window.location.pathname && trimmed !== window.location.pathname + window.location.search) {
+                    validRedirectUrl = trimmed;
+                  }
+                }
+              }
+            }
+
             // Display success message inside or below the form
             let alertBox = form.querySelector('.form-success-alert');
             if (!alertBox) {
               alertBox = document.createElement('div');
               alertBox.className = 'form-success-alert';
-              alertBox.style.cssText = 'padding: 12px 16px; margin-top: 16px; background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center;';
+              alertBox.style.cssText = 'padding: 14px 18px; margin-top: 16px; background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center;';
               form.appendChild(alertBox);
             }
             alertBox.style.display = 'block';
-            alertBox.innerText = data.message || 'Thank you! Your details have been submitted successfully.';
+
+            const baseMsg = data.message || 'Access granted successfully.';
+            if (validRedirectUrl) {
+              alertBox.innerHTML = '<div>' + baseMsg + ' Redirecting...</div>' +
+                '<div style="margin-top: 6px; font-size: 13px; font-weight: 500;">' +
+                '<a href="' + validRedirectUrl + '" style="color: #15803d; text-decoration: underline; font-weight: 700;">' +
+                'Click here if you are not redirected automatically &rarr;' +
+                '</a></div>';
+            } else {
+              alertBox.innerText = baseMsg;
+            }
             
             // Hide error alert if previously shown
             const errBox = form.querySelector('.form-error-alert');
             if (errBox) errBox.style.display = 'none';
 
+            // Auto-trigger PDF download if file is returned
+            if (data.pdf_file) {
+              try {
+                const pdfLink = document.createElement('a');
+                pdfLink.href = '/uploads/' + data.pdf_file;
+                pdfLink.download = data.pdf_file;
+                pdfLink.target = '_blank';
+                document.body.appendChild(pdfLink);
+                pdfLink.click();
+                document.body.removeChild(pdfLink);
+              } catch (pdfErr) {
+                console.warn('Auto PDF download trigger failed:', pdfErr);
+              }
+            }
+
             form.reset();
+
+            // Perform redirection if valid destination exists
+            if (validRedirectUrl) {
+              setTimeout(() => {
+                window.location.href = validRedirectUrl;
+              }, 800);
+            }
           })
           .catch(err => {
             console.error('❌ Lead form submit error:', err);

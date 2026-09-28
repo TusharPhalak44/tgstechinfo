@@ -3,12 +3,12 @@ const Role = require('./Role');
 
 class User {
     static async create(userData) {
-        const { first_name, last_name, email, password_hash, role = 'user' } = userData;
+        const { first_name, last_name, email, job_title, company_name, country, password_hash, role = 'user' } = userData;
         const query = `
-            INSERT INTO users (first_name, last_name, email, password_hash, role)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO users (first_name, last_name, email, job_title, company_name, country, password_hash, role)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const [result] = await pool.query(query, [first_name, last_name, email, password_hash, role]);
+        const [result] = await pool.query(query, [first_name, last_name, email, job_title, company_name, country, password_hash, role]);
         
         // Assign default role based on role string
         const user = await User.findById(result.insertId);
@@ -30,7 +30,7 @@ class User {
 
     static async findById(id) {
         const [rows] = await pool.query(
-            'SELECT id, first_name, last_name, email, role, is_active, avatar, created_at FROM users WHERE id = ?',
+            'SELECT id, first_name, last_name, email, job_title, company_name, country, role, is_active, created_at FROM users WHERE id = ?',
             [id]
         );
         return rows[0];
@@ -42,7 +42,7 @@ class User {
     }
 
     static async update(id, userData) {
-        const { first_name, last_name, email, is_active, avatar } = userData;
+        const { first_name, last_name, email, job_title, company_name, country, is_active, avatar } = userData;
         
         // Build dynamic update query with only provided fields
         const updates = [];
@@ -59,6 +59,18 @@ class User {
         if (email !== undefined) {
             updates.push('email = ?');
             values.push(email);
+        }
+        if (job_title !== undefined) {
+            updates.push('job_title = ?');
+            values.push(job_title);
+        }
+        if (company_name !== undefined) {
+            updates.push('company_name = ?');
+            values.push(company_name);
+        }
+        if (country !== undefined) {
+            updates.push('country = ?');
+            values.push(country);
         }
         if (is_active !== undefined) {
             updates.push('is_active = ?');

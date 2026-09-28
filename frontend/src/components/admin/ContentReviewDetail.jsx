@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Card, Button, Tag, message, Divider, Spin, Space, Tooltip,
-  Typography, Row, Col, Modal, Input
+  Typography, Row, Col, Modal, Input, Form
 } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
   EyeInvisibleOutlined, ArrowLeftOutlined,
-  CheckOutlined, CloseOutlined, RollbackOutlined
+  CheckOutlined, CloseOutlined, RollbackOutlined, MessageOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import './radar/RadarStyles.css';
+import { formatContentPublishDate, formatDateForDisplay } from '../../utils/dateHelper';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -229,10 +230,23 @@ const ContentReviewDetail = () => {
       message.warning('Please provide edit instructions for the author');
       return;
     }
-    await handleReviewAction('request_changes', editComment);
-    setRequestEditModal(false);
-    setEditComment('');
-    navigate('/dashboard/pending-review');
+    
+    setReviewActionLoading('request_edit');
+    try {
+      await axios.post(`/api/admin/content/${content.id}/edit-request`, {
+        admin_comment: editComment
+      });
+      
+      message.success('Edit request sent to author successfully');
+      setRequestEditModal(false);
+      setEditComment('');
+      navigate('/dashboard/pending-review');
+    } catch (error) {
+      console.error('Failed to send edit request:', error);
+      message.error('Failed to send edit request');
+    } finally {
+      setReviewActionLoading(null);
+    }
   };
 
   if (loading) {
@@ -478,16 +492,16 @@ const ContentReviewDetail = () => {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Created Date</Text>
+                  <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Scheduled/Published Date</Text>
                   <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 600, display: 'block' }}>
-                    {moment(content.created_at).format('MMM D, YYYY')}
+                    {formatContentPublishDate(content)}
                   </Text>
                 </div>
 
                 <div>
                   <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Updated Date</Text>
                   <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 600, display: 'block' }}>
-                    {moment(content.updated_at).format('MMM D, YYYY')}
+                    {formatDateForDisplay(content.updated_at)}
                   </Text>
                 </div>
 

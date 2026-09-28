@@ -1,0 +1,1212 @@
+[
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "GET",
+    "routePath": "/settings"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "PUT",
+    "routePath": "/settings"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "GET",
+    "routePath": "/taxonomies"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "POST",
+    "routePath": "/taxonomies/:type"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "PUT",
+    "routePath": "/taxonomies/:type"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "GET",
+    "routePath": "/statistics"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "PUT",
+    "routePath": "/statistics/:id"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "POST",
+    "routePath": "/import"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "GET",
+    "routePath": "/imports"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "POST",
+    "routePath": "/preview-adjustment"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "POST",
+    "routePath": "/adjust-volume"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "GET",
+    "routePath": "/adjustment-history"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "GET",
+    "routePath": "/quality-report"
+  },
+  {
+    "file": "adminAudienceRoutes.js",
+    "method": "GET",
+    "routePath": "/audit-logs"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/notifications"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/notifications/:id/read"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/admin/notifications"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/admin/notifications/:id/read"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/content/all"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/content/pending"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/content/:id/review"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "POST",
+    "routePath": "/content/:id/edit-request"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:id"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "POST",
+    "routePath": "/content"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "POST",
+    "routePath": "/content/:id/submit"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/content/:id"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/content/:id/webhook"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/users"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "POST",
+    "routePath": "/users"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/users/:id"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/users/:id/status"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "DELETE",
+    "routePath": "/users/:id"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/users/:id/content"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/stats"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/recent-activity"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/content-by-status"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard/kpis"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard/traffic"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard/categories"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard/leads"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard/subscribers"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard/portfolio"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/submissions"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/submissions/:id"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/submission-tables"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/submission-tables/:contentId"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/webinar-registrations"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/data-requests"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/data-requests/:id/status"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/content/:id/edit"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "DELETE",
+    "routePath": "/content/:id"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/content/:id/visibility"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "GET",
+    "routePath": "/categories"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "POST",
+    "routePath": "/categories"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "PUT",
+    "routePath": "/categories/:id"
+  },
+  {
+    "file": "adminRoutes.js",
+    "method": "DELETE",
+    "routePath": "/categories/:id"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/overview"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/content-type-breakdown"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:content_id"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/top-content-engagement"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/sessions"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/popular-pages"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/popular-downloads"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/search"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/journey"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/cta"
+  },
+  {
+    "file": "analyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/newsletter"
+  },
+  {
+    "file": "audienceRoutes.js",
+    "method": "GET",
+    "routePath": "/metadata"
+  },
+  {
+    "file": "audienceRoutes.js",
+    "method": "GET",
+    "routePath": "/stats"
+  },
+  {
+    "file": "audienceRoutes.js",
+    "method": "POST",
+    "routePath": "/stats"
+  },
+  {
+    "file": "audienceRoutes.js",
+    "method": "POST",
+    "routePath": "/share"
+  },
+  {
+    "file": "audienceRoutes.js",
+    "method": "GET",
+    "routePath": "/view/:token"
+  },
+  {
+    "file": "audienceRoutes.js",
+    "method": "POST",
+    "routePath": "/track-event"
+  },
+  {
+    "file": "auditLogRoutes.js",
+    "method": "GET",
+    "routePath": "/"
+  },
+  {
+    "file": "auditLogRoutes.js",
+    "method": "GET",
+    "routePath": "/:id"
+  },
+  {
+    "file": "auditLogRoutes.js",
+    "method": "POST",
+    "routePath": "/"
+  },
+  {
+    "file": "auditLogRoutes.js",
+    "method": "DELETE",
+    "routePath": "/:id"
+  },
+  {
+    "file": "auditLogRoutes.js",
+    "method": "POST",
+    "routePath": "/cleanup"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "POST",
+    "routePath": "/register"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "POST",
+    "routePath": "/login"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "POST",
+    "routePath": "/logout"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "POST",
+    "routePath": "/refresh"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "POST",
+    "routePath": "/forgot-password"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "POST",
+    "routePath": "/reset-password"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "POST",
+    "routePath": "/change-password"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "GET",
+    "routePath": "/profile"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "PUT",
+    "routePath": "/profile"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "GET",
+    "routePath": "/sessions"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "DELETE",
+    "routePath": "/sessions/:sessionId"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "DELETE",
+    "routePath": "/sessions"
+  },
+  {
+    "file": "authRoutes.js",
+    "method": "GET",
+    "routePath": "/login-history"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/top-searches"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/top-categories"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/most-clicked"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/no-result-searches"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/sessions"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/average-session-time"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/ctr"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/daily"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/monthly"
+  },
+  {
+    "file": "chatbotAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/feedback"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "POST",
+    "routePath": "/search"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "POST",
+    "routePath": "/click"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/trending"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/categories"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/recent"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "POST",
+    "routePath": "/session"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "POST",
+    "routePath": "/message"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "POST",
+    "routePath": "/feedback"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/autocomplete"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/related/:contentId"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/suggestions"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/related-suggestions"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "POST",
+    "routePath": "/detect-intent"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "POST",
+    "routePath": "/submit-query"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/queries"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "GET",
+    "routePath": "/queries/stats"
+  },
+  {
+    "file": "chatbotRoutes.js",
+    "method": "PUT",
+    "routePath": "/queries/:id"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "POST",
+    "routePath": "/"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "GET",
+    "routePath": "/"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "PUT",
+    "routePath": "/:uuid"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "DELETE",
+    "routePath": "/:uuid"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "GET",
+    "routePath": "/:uuid/logs"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "GET",
+    "routePath": "/admin/stats/daily"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "GET",
+    "routePath": "/admin/stats/monthly"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "GET",
+    "routePath": "/admin/stats/country"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "GET",
+    "routePath": "/admin/stats/browser"
+  },
+  {
+    "file": "cookieConsentRoutes.js",
+    "method": "GET",
+    "routePath": "/admin/stats/percentages"
+  },
+  {
+    "file": "emailTemplateRoutes.js",
+    "method": "GET",
+    "routePath": "/"
+  },
+  {
+    "file": "emailTemplateRoutes.js",
+    "method": "GET",
+    "routePath": "/type/:template_type"
+  },
+  {
+    "file": "emailTemplateRoutes.js",
+    "method": "GET",
+    "routePath": "/:id"
+  },
+  {
+    "file": "emailTemplateRoutes.js",
+    "method": "POST",
+    "routePath": "/"
+  },
+  {
+    "file": "emailTemplateRoutes.js",
+    "method": "PUT",
+    "routePath": "/:id"
+  },
+  {
+    "file": "emailTemplateRoutes.js",
+    "method": "DELETE",
+    "routePath": "/:id"
+  },
+  {
+    "file": "emailTemplateRoutes.js",
+    "method": "PATCH",
+    "routePath": "/:id/toggle"
+  },
+  {
+    "file": "geographicAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/global"
+  },
+  {
+    "file": "geographicAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/geographic-traffic"
+  },
+  {
+    "file": "geographicAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/visitor-flow"
+  },
+  {
+    "file": "geographicAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/region/:region"
+  },
+  {
+    "file": "geographicAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/country/:country"
+  },
+  {
+    "file": "geographicAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/city/:city/:country"
+  },
+  {
+    "file": "geographicAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/active-sessions"
+  },
+  {
+    "file": "mediaRoutes.js",
+    "method": "POST",
+    "routePath": "/upload"
+  },
+  {
+    "file": "mediaRoutes.js",
+    "method": "GET",
+    "routePath": "/all"
+  },
+  {
+    "file": "mediaRoutes.js",
+    "method": "GET",
+    "routePath": "/user/all"
+  },
+  {
+    "file": "mediaRoutes.js",
+    "method": "GET",
+    "routePath": "/folder-counts"
+  },
+  {
+    "file": "mediaRoutes.js",
+    "method": "GET",
+    "routePath": "/user/folder-counts"
+  },
+  {
+    "file": "mediaRoutes.js",
+    "method": "GET",
+    "routePath": "/file/:filename"
+  },
+  {
+    "file": "mediaRoutes.js",
+    "method": "DELETE",
+    "routePath": "/:id"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/search"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/content"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:slug"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/content/:id/view"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/lp/:slug"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/landing-page/:slug"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/landing-page"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/subscribe-content"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/newsletter"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/categories"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/categories-with-count"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/top-categories"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/content-types"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/content-type-counts"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/stats"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/case-studies"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/case-study/:slug"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/case-study-gate"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/newsletter/unsubscribe"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/data-request/dsar"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/data-request/do-not-sell"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/contact"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "GET",
+    "routePath": "/dynamic-form-submissions/:content_id"
+  },
+  {
+    "file": "publicRoutes.js",
+    "method": "POST",
+    "routePath": "/content/:id/register-webinar"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/roles"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/roles/:id"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "POST",
+    "routePath": "/roles"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "PUT",
+    "routePath": "/roles/:id"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "DELETE",
+    "routePath": "/roles/:id"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "PUT",
+    "routePath": "/roles/:id/permissions"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/roles/:id/users"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/permissions"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/permissions/:id"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "POST",
+    "routePath": "/permissions"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "PUT",
+    "routePath": "/permissions/:id"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "DELETE",
+    "routePath": "/permissions/:id"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/users/:userId/roles"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/users/:userId/permissions"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "POST",
+    "routePath": "/users/:userId/roles"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "DELETE",
+    "routePath": "/users/:userId/roles/:roleId"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "PUT",
+    "routePath": "/users/:userId/roles"
+  },
+  {
+    "file": "rbacRoutes.js",
+    "method": "GET",
+    "routePath": "/users/:userId/check-permission"
+  },
+  {
+    "file": "seoRoutes.js",
+    "method": "GET",
+    "routePath": "/settings"
+  },
+  {
+    "file": "seoRoutes.js",
+    "method": "PUT",
+    "routePath": "/settings"
+  },
+  {
+    "file": "seoRoutes.js",
+    "method": "GET",
+    "routePath": "/analysis"
+  },
+  {
+    "file": "seoRoutes.js",
+    "method": "GET",
+    "routePath": "/score"
+  },
+  {
+    "file": "seoRoutes.js",
+    "method": "GET",
+    "routePath": "/sitemap"
+  },
+  {
+    "file": "siteSettingsRoutes.js",
+    "method": "GET",
+    "routePath": "/public"
+  },
+  {
+    "file": "siteSettingsRoutes.js",
+    "method": "GET",
+    "routePath": "/"
+  },
+  {
+    "file": "siteSettingsRoutes.js",
+    "method": "PUT",
+    "routePath": "/"
+  },
+  {
+    "file": "siteSettingsRoutes.js",
+    "method": "PUT",
+    "routePath": "/logo/:type"
+  },
+  {
+    "file": "tagsRoutes.js",
+    "method": "GET",
+    "routePath": "/"
+  },
+  {
+    "file": "tagsRoutes.js",
+    "method": "GET",
+    "routePath": "/suggestions"
+  },
+  {
+    "file": "tagsRoutes.js",
+    "method": "GET",
+    "routePath": "/:id"
+  },
+  {
+    "file": "tagsRoutes.js",
+    "method": "POST",
+    "routePath": "/"
+  },
+  {
+    "file": "tagsRoutes.js",
+    "method": "PUT",
+    "routePath": "/:id"
+  },
+  {
+    "file": "tagsRoutes.js",
+    "method": "DELETE",
+    "routePath": "/:id"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/page-view/update"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "PUT",
+    "routePath": "/page-view"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/session/end"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/session/start"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/engagement"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/page-view"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/download"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/search"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/video"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/cta"
+  },
+  {
+    "file": "trackingRoutes.js",
+    "method": "POST",
+    "routePath": "/newsletter"
+  },
+  {
+    "file": "userAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/overview"
+  },
+  {
+    "file": "userAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/dashboard"
+  },
+  {
+    "file": "userAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:content_id"
+  },
+  {
+    "file": "userAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:content_id/locations"
+  },
+  {
+    "file": "userAnalyticsRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:content_id/engagement"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "POST",
+    "routePath": "/avatar"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/stats"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/notifications"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "PUT",
+    "routePath": "/notifications/:id/read"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "POST",
+    "routePath": "/content"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "PUT",
+    "routePath": "/content/:id"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "PUT",
+    "routePath": "/content/:id/webhook"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "POST",
+    "routePath": "/content/:id/submit"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "DELETE",
+    "routePath": "/content/:id"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/content"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:id"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/edit-requests"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "PUT",
+    "routePath": "/edit-requests/:id/accept"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "PUT",
+    "routePath": "/edit-requests/:id/reject"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "PUT",
+    "routePath": "/edit-requests/:id/complete"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/content/:id/can-edit"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/submissions"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/submission-tables"
+  },
+  {
+    "file": "userRoutes.js",
+    "method": "GET",
+    "routePath": "/submission-tables/:contentId"
+  }
+]

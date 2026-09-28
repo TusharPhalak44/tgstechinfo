@@ -381,6 +381,8 @@ exports.getSessionAnalytics = async (req, res) => {
         if (start_date) filters.start_date = start_date;
         if (end_date) filters.end_date = end_date;
 
+        console.log('getSessionAnalytics - Applied filters:', filters);
+
         const analytics = await VisitorSession.getAnalytics(filters);
 
         // Get recent sessions
@@ -404,16 +406,19 @@ exports.getSessionAnalytics = async (req, res) => {
         
         const queryParams = [];
         
-        if (start_date || end_date) {
-            recentSessionsQuery += ` WHERE 1=1`;
-            if (start_date) {
-                recentSessionsQuery += ` AND session_start >= ?`;
-                queryParams.push(start_date);
-            }
-            if (end_date) {
-                recentSessionsQuery += ` AND session_start <= ?`;
-                queryParams.push(end_date.includes(':') ? end_date : `${end_date} 23:59:59`);
-            }
+        // Always apply date filtering to ensure relevant data
+        recentSessionsQuery += ` WHERE 1=1`;
+        if (start_date) {
+            recentSessionsQuery += ` AND session_start >= ?`;
+            queryParams.push(start_date);
+        } else {
+            // Default to last 90 days if no start date specified
+            recentSessionsQuery += ` AND session_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)`;
+        }
+        
+        if (end_date) {
+            recentSessionsQuery += ` AND session_start <= ?`;
+            queryParams.push(end_date.includes(':') ? end_date : `${end_date} 23:59:59`);
         }
         
         recentSessionsQuery += ` ORDER BY session_start DESC LIMIT ?`;
@@ -427,23 +432,8 @@ exports.getSessionAnalytics = async (req, res) => {
             queryParams
         );
 
-        if ((!recentSessions || recentSessions.length === 0) && (start_date || end_date)) {
-            const fallbackQuery = `
-                SELECT 
-                    session_uuid, session_start, session_end,
-                    total_session_duration, total_pages_visited,
-                    country, device_type, browser, operating_system,
-                    screen_resolution, landing_page, exit_page, referrer
-                FROM visitor_sessions
-                ORDER BY session_start DESC LIMIT ?
-            `;
-            const [fallbackSessions] = await require('../config/database').pool.query(
-                fallbackQuery,
-                [parseInt(limit)]
-            );
-            recentSessions = fallbackSessions;
-        }
-
+        // Remove fallback mechanism - if no data for date range, return empty array
+        // This ensures time filtering works correctly
         console.log('getSessionAnalytics - Sessions returned:', recentSessions.length);
 
         // Count active live concurrent visitors (sessions starting or active in last 15 mins)
@@ -547,8 +537,17 @@ exports.getJourneyAnalytics = async (req, res) => {
         const popularJourneys = await UserJourney.getPopularJourneys(parseInt(limit), filters);
         const conversionFunnel = await UserJourney.getConversionFunnel(filters);
 
-        // Calculate total sessions from funnel data
-        const totalSessions = conversionFunnel.length > 0 ? (conversionFunnel[0].count || 0) : 0;
+        // Calculate total sessions from the first funnel step (page_views) as baseline
+        const totalSessions = conversionFunnel.length > 0 
+            ? (conversionFunnel.find(step => step.action_type === 'page_view')?.unique_sessions || 
+               conversionFunnel[0].unique_sessions || 0)
+            : 0;
+
+        console.log('getJourneyAnalytics - Returning (Real User Journey Data):', {
+            funnel: conversionFunnel,
+            totalSessions,
+            popularJourneys
+        });
 
         res.json({
             funnel: conversionFunnel,
@@ -572,8 +571,13 @@ exports.getCtaAnalytics = async (req, res) => {
 
         const ctaAnalytics = await CtaClick.getCtaAnalytics(filters);
 
-        // Calculate total conversions from CTA data
+        // Calculate total conversions from actual conversion actions (form_submit, download)
         const totalConversions = ctaAnalytics.reduce((sum, cta) => sum + (cta.conversions || 0), 0);
+
+        console.log('getCtaAnalytics - Returning (Real User Journey Data):', { 
+            ctaClicks: ctaAnalytics,
+            totalConversions 
+        });
 
         res.json({ 
             ctaClicks: ctaAnalytics,

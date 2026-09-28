@@ -3,6 +3,7 @@ import { Table, Card, Tag, Button, Space, Typography, message, Popconfirm } from
 import { DeleteOutlined, MailOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
+import { formatDateForDisplay } from '../../utils/dateHelper';
 
 const { Title } = Typography;
 
@@ -59,7 +60,7 @@ const NewsletterManagement = () => {
       title: 'Subscribed On',
       dataIndex: 'created_at',
       key: 'created_at',
-      render: (date) => moment(date).format('MMM D, YYYY HH:mm')
+      render: (date) => formatDateForDisplay(date, 'MMM D, YYYY HH:mm')
     },
     {
       title: 'Actions',

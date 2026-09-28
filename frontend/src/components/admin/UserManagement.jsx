@@ -5,6 +5,7 @@ import axios from 'axios';
 import moment from 'moment';
 import PermissionWrapper from '../common/PermissionWrapper';
 import { useTheme } from '../../context/ThemeContext';
+import { formatDateForTable } from '../../utils/dateHelper';
 
 const { Option } = Select;
 
@@ -242,6 +243,36 @@ const UserManagement = () => {
       ),
     },
     {
+      title: 'Job Title',
+      dataIndex: 'job_title',
+      key: 'job_title',
+      render: (jobTitle) => (
+        <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
+          {jobTitle || '—'}
+        </span>
+      ),
+    },
+    {
+      title: 'Company',
+      dataIndex: 'company_name',
+      key: 'company_name',
+      render: (companyName) => (
+        <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
+          {companyName || '—'}
+        </span>
+      ),
+    },
+    {
+      title: 'Country',
+      dataIndex: 'country',
+      key: 'country',
+      render: (country) => (
+        <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
+          {country || '—'}
+        </span>
+      ),
+    },
+    {
       title: 'System Role',
       dataIndex: 'role',
       key: 'role',
@@ -273,7 +304,7 @@ const UserManagement = () => {
       key: 'created_at',
       render: (date) => (
         <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
-          {date ? moment(date).format('MMM DD, YYYY') : '—'}
+          {formatDateForTable(date)}
         </span>
       ),
     },
@@ -508,6 +539,18 @@ const UserManagement = () => {
 
             <Form.Item name="email" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Email Address</span>} rules={[{ required: true, type: 'email' }]}>
               <Input disabled={!!editingUser} placeholder="user@domain.com" style={{ borderRadius: 8, height: 40 }} />
+            </Form.Item>
+
+            <Form.Item name="job_title" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Job Title</span>}>
+              <Input placeholder="Marketing Director" style={{ borderRadius: 8, height: 40 }} />
+            </Form.Item>
+
+            <Form.Item name="company_name" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Company Name</span>}>
+              <Input placeholder="Example Technologies" style={{ borderRadius: 8, height: 40 }} />
+            </Form.Item>
+
+            <Form.Item name="country" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Country</span>}>
+              <Input placeholder="United States" style={{ borderRadius: 8, height: 40 }} />
             </Form.Item>
 
             {!editingUser && (

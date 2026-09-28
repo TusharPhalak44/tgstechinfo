@@ -368,7 +368,7 @@ exports.adminEditContent = async (req, res) => {
         if (!content) return res.status(404).json({ message: 'Content not found' });
 
         const fields = ['title', 'short_description', 'content', 'category_id', 'content_type_id',
-            'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords', 'scheduled_publish_date', 'webhook_url',
+            'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords', 'scheduled_publish_date', 'webhook_url', 'redirect_url',
             'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data',
             'custom_fields', 'webinar_date', 'hosted_by', 'platform', 'webinar_type', 'join_link',
             'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'];

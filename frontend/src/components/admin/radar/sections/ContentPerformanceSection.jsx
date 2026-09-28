@@ -418,56 +418,41 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
   });
   const [dailyAnalytics, setDailyAnalytics] = useState([]);
   const [engagementMetrics, setEngagementMetrics] = useState({});
+  
+  // Pre-fetched data cache for all time ranges
+  const [cachedData, setCachedData] = useState({
+    '7d': null,
+    '30d': null,
+    '90d': null,
+    'all': null
+  });
 
-  useEffect(() => {
-    console.log('=== ContentPerformanceSection useEffect triggered ===');
-    console.log('Current timeRange:', timeRange);
-    console.log('Current contentStats before fetch:', contentStats);
+  // Function to fetch data for a specific time range
+  const fetchTimeRangeData = async (range) => {
+    console.log(`Fetching data for time range: ${range}`);
     
     let dateParams = '';
-    
-    if (timeRange !== 'all') {
+    if (range !== 'all') {
       const endDate = new Date();
       const startDate = new Date();
-      if (timeRange === '7d') startDate.setDate(startDate.getDate() - 7);
-      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
-      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
+      if (range === '7d') startDate.setDate(startDate.getDate() - 7);
+      if (range === '30d') startDate.setDate(startDate.getDate() - 30);
+      if (range === '90d') startDate.setDate(startDate.getDate() - 90);
 
       const s = startDate.toISOString().split('T')[0];
       const e = endDate.toISOString().split('T')[0];
       dateParams = `?start_date=${s}&end_date=${e}`;
-      console.log('Date parameters calculated:', { timeRange, startDate: s, endDate: e, dateParams });
-    } else {
-      console.log('Using "all" time range - no date filters');
     }
 
-    // 1. Fetch analytics data first to get time-based page views
-    axios.get(`/api/analytics/overview${dateParams}`).then(({ data }) => {
-      console.log('Analytics API Response:', data);
-      const dailySessions = data?.sessionAnalytics?.dailySessions || [];
-      const totalPageViews = data?.totalPageViews || 0;
-      setDailyAnalytics(dailySessions);
-      
-      // Store engagement metrics for real read rate calculations
-      setEngagementMetrics({
-        totalEngagements: data?.totalEngagements || 0,
-        avgReadTime: data?.avgReadTime || 0,
-        scrollDepth: data?.scrollDepth || 0,
-      });
-    }).catch((error) => {
-      console.error('Analytics API Error:', error);
-    });
+    try {
+      // Fetch all data in parallel
+      const [overviewRes, contentTypeRes, categoriesRes, engagementRes] = await Promise.all([
+        axios.get(`/api/analytics/overview${dateParams}`),
+        axios.get(`/api/analytics/content-type-breakdown${dateParams}`),
+        axios.get(`/api/public/categories${dateParams}`),
+        axios.get(`/api/analytics/top-content-engagement?limit=10${dateParams ? '&' + dateParams.replace('?', '') : ''}`)
+      ]);
 
-    // 2. Fetch content type breakdown with date filtering
-    console.log('Calling API: /api/analytics/content-type-breakdown' + dateParams);
-    axios.get(`/api/analytics/content-type-breakdown${dateParams}`).then(({ data }) => {
-      console.log('=== Content Type Breakdown API Response ===');
-      console.log('Full response:', data);
-      console.log('insightsTotal:', data.insightsTotal);
-      console.log('resourcesTotal:', data.resourcesTotal);
-      console.log('insightsItems:', data.insightsItems);
-      console.log('resourcesItems:', data.resourcesItems);
-      
       const iconMap = {
         'article': <FileTextOutlined />,
         'news': <RiseOutlined />,
@@ -500,93 +485,97 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
         'podcast': '#8B5CF6',
       };
 
-      const insightsItems = (data.insightsItems || []).map(item => ({
+      const contentTypeData = contentTypeRes.data;
+      const insightsItems = (contentTypeData.insightsItems || []).map(item => ({
         label: item.label,
         views: item.views,
         color: colorMap[item.content_type] || '#64748B',
         icon: iconMap[item.content_type] || <FileTextOutlined />,
       }));
 
-      const resourcesItems = (data.resourcesItems || []).map(item => ({
+      const resourcesItems = (contentTypeData.resourcesItems || []).map(item => ({
         label: item.label,
         views: item.views,
         color: colorMap[item.content_type] || '#64748B',
         icon: iconMap[item.content_type] || <FolderOpenOutlined />,
       }));
 
-      console.log('=== Setting content stats ===');
-      console.log('insightsViews:', data.insightsTotal || 0);
-      console.log('resourcesViews:', data.resourcesTotal || 0);
-      console.log('mapped insightsItems:', insightsItems);
-      console.log('mapped resourcesItems:', resourcesItems);
+      const categoriesData = categoriesRes.data || [];
+      const industries = categoriesData.filter(c => c.type === 'industry');
+      const technology = categoriesData.filter(c => c.type === 'technology' || (!c.type && c.slug));
 
-      setContentStats({
-        insightsViews: data.insightsTotal || 0,
-        resourcesViews: data.resourcesTotal || 0,
-        insightsItems,
-        resourcesItems,
-      });
-    }).catch((error) => {
-      console.error('=== Content Type Breakdown API Error ===');
-      console.error('Error:', error);
-      console.error('Error response:', error.response);
-      console.log('Using fallback data due to API error');
-      // Fallback to proportional distribution
-      const totalPageViews = 1000; // Default fallback
-      const insightsDistribution = Math.round(totalPageViews * 0.85);
-      const resourcesDistribution = Math.round(totalPageViews * 0.15);
+      const overviewData = overviewRes.data;
+      const dailySessions = overviewData?.sessionAnalytics?.dailySessions || [];
+      const topContent = engagementRes.data?.topContent || [];
+
+      return {
+        dailyAnalytics: dailySessions,
+        engagementMetrics: {
+          totalEngagements: overviewData?.totalEngagements || 0,
+          avgReadTime: overviewData?.avgReadTime || 0,
+          scrollDepth: overviewData?.scrollDepth || 0,
+        },
+        contentStats: {
+          insightsViews: contentTypeData.insightsTotal || 0,
+          resourcesViews: contentTypeData.resourcesTotal || 0,
+          insightsItems,
+          resourcesItems,
+        },
+        categories: { industries, technology },
+        realContent: topContent
+      };
+    } catch (error) {
+      console.error(`Error fetching data for ${range}:`, error);
+      return null;
+    }
+  };
+
+  // Pre-fetch all time ranges on mount
+  useEffect(() => {
+    const preloadAllTimeRanges = async () => {
+      console.log('Pre-fetching all time ranges...');
+      const ranges = ['7d', '30d', '90d', 'all'];
       
-      setContentStats({
-        insightsViews: insightsDistribution,
-        resourcesViews: resourcesDistribution,
-        insightsItems: [
-          { label: 'Articles',   views: Math.round(insightsDistribution * 0.45), color: '#0AAEEF', icon: <FileTextOutlined /> },
-          { label: 'News',       views: Math.round(insightsDistribution * 0.20), color: '#F59E0B', icon: <RiseOutlined /> },
-          { label: 'Interviews', views: Math.round(insightsDistribution * 0.10), color: '#8B5CF6', icon: <UserOutlined /> },
-          { label: 'eBooks',     views: Math.round(insightsDistribution * 0.10), color: '#10B981', icon: <FolderOpenOutlined /> },
-        ],
-        resourcesItems: [
-          { label: 'Blog',         views: Math.round(resourcesDistribution * 0.08), color: '#0AAEEF', icon: <GlobalOutlined /> },
-          { label: 'Case Studies', views: Math.round(resourcesDistribution * 0.03), color: '#8B5CF6', icon: <CheckCircleOutlined /> },
-          { label: 'Whitepapers',  views: Math.round(resourcesDistribution * 0.02), color: '#10B981', icon: <FolderOpenOutlined /> },
-          { label: 'Webinars',     views: Math.round(resourcesDistribution * 0.01), color: '#F59E0B', icon: <RiseOutlined /> },
-          { label: 'Events',       views: Math.round(resourcesDistribution * 0.01), color: '#EF4444', icon: <FileTextOutlined /> },
-        ],
-      });
-    });
+      const results = await Promise.all(
+        ranges.map(range => fetchTimeRangeData(range))
+      );
 
-    // 3. Fetch categories with date filtering
-    axios.get(`/api/public/categories${dateParams}`).then(({ data }) => {
-      console.log('Categories API Response:', data);
-      const industries = (data || []).filter(c => c.type === 'industry');
-      const technology = (data || []).filter(c => c.type === 'technology' || (!c.type && c.slug));
-      setCategories({ industries, technology });
-    }).catch((error) => {
-      console.error('Categories API Error:', error);
-    });
-
-    // 4. Fetch top content by engagement with date filtering
-    const engagementSep = dateParams ? '&' : '';
-    const engagementDateStr = dateParams ? dateParams.replace('?', '') : '';
-    axios.get(`/api/analytics/top-content-engagement?limit=10${engagementSep}${engagementDateStr}`).then(({ data }) => {
-      console.log('Top Content by Engagement API Response:', data);
-      const topContent = data?.topContent || [];
-      
-      // Use engagement data regardless of whether it has engagement counts
-      // This allows showing content sorted by views even when engagement data is missing
-      setRealContent(topContent);
-    }).catch((error) => {
-      console.error('Top Content by Engagement API Error:', error);
-      // Fallback to regular content API with date filtering when engagement API fails
-      axios.get(`/api/public/content?limit=50&status=published${dateParams}`).then(({ data }) => {
-        console.log('Fallback Content API Response:', data);
-        const rows = data?.data || data?.rows || data || [];
-        setRealContent(rows);
-      }).catch((fallbackError) => {
-        console.error('Fallback Content API Error:', fallbackError);
+      const newCachedData = {};
+      ranges.forEach((range, index) => {
+        newCachedData[range] = results[index];
       });
-    });
-  }, [timeRange]);
+
+      setCachedData(newCachedData);
+      console.log('All time ranges pre-fetched:', newCachedData);
+    };
+
+    preloadAllTimeRanges();
+  }, []); // Run only on mount
+
+  // Update UI based on current timeRange from cached data
+  useEffect(() => {
+    const data = cachedData[timeRange];
+    if (data) {
+      console.log(`Using cached data for ${timeRange}:`, data);
+      setDailyAnalytics(data.dailyAnalytics);
+      setEngagementMetrics(data.engagementMetrics);
+      setContentStats(data.contentStats);
+      setCategories(data.categories);
+      setRealContent(data.realContent);
+    } else {
+      console.log(`No cached data for ${timeRange}, fetching now...`);
+      fetchTimeRangeData(timeRange).then(data => {
+        if (data) {
+          setDailyAnalytics(data.dailyAnalytics);
+          setEngagementMetrics(data.engagementMetrics);
+          setContentStats(data.contentStats);
+          setCategories(data.categories);
+          setRealContent(data.realContent);
+          setCachedData(prev => ({ ...prev, [timeRange]: data }));
+        }
+      });
+    }
+  }, [timeRange, cachedData]);
 
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   

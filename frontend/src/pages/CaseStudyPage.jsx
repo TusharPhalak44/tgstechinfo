@@ -4,6 +4,7 @@ import axios from 'axios';
 import moment from 'moment';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
+import { formatDateForLongDisplay } from '../utils/dateHelper';
 
 const CaseStudyPage = () => {
   const { slug } = useParams();
@@ -277,7 +278,7 @@ const CaseStudyPage = () => {
               {caseStudy.case_study_summary || caseStudy.short_description}
             </span>
             <span style={styles.summaryDate}>
-              {moment(caseStudy.published_date || caseStudy.created_at).format('MMMM D, YYYY')}
+              {formatDateForLongDisplay(caseStudy.published_date || caseStudy.created_at)}
             </span>
           </div>
         </div>

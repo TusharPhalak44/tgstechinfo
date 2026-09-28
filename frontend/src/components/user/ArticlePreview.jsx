@@ -8,6 +8,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import ContentRenderer from '../common/ContentRenderer';
+import './ArticlePreview.css';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import StandaloneBuilderPage from '../../pages/StandaloneBuilderPage';
@@ -39,7 +40,7 @@ const ArticlePreview = () => {
   const contentType = type ? type.replace('-preview', '') : 'article';
 
   // Determine if user is admin based on role or previous route
-  const isAdmin = user?.role === 'admin' || location.state?.fromAdmin || location.pathname.startsWith('/admin');
+  const isAdmin = user?.role === 'admin' || location.state?.fromAdmin || location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
 
   useEffect(() => { fetchContent(); }, [id]);
 
@@ -50,7 +51,7 @@ const ArticlePreview = () => {
       setContent(res.data);
     } catch {
       message.error('Failed to load article');
-      navigate(isAdmin ? '/admin' : '/user-dashboard');
+      navigate(isAdmin ? '/dashboard' : '/user-dashboard');
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,7 @@ const ArticlePreview = () => {
       <div style={{ minHeight: '100vh' }}>
         {/* Top bar for navigation and actions */}
         <div style={{ padding: '12px 24px', background: darkMode ? '#1e293b' : '#fff', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/admin' : '/dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/dashboard' : '/user-dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
             Back to Dashboard
           </Button>
           {canEdit && (
@@ -99,10 +100,10 @@ const ArticlePreview = () => {
   }
 
   return (
-    <div className="px-4 py-6 md:px-8" style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
+    <div className={`px-4 py-6 md:px-8 ${darkMode ? 'dark-mode' : ''}`} style={{ background: darkMode ? '#0f172a' : '#f8fafc', minHeight: '100vh' }}>
       {/* Top Bar */}
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3 max-w-7xl mx-auto">
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/admin' : '/user-dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(isAdmin ? '/dashboard' : '/user-dashboard')} style={{ color: darkMode ? '#94a3b8' : undefined }}>
           Back to Dashboard
         </Button>
         {canEdit && (
@@ -177,222 +178,7 @@ const ArticlePreview = () => {
         <ContentRenderer content={content} darkMode={darkMode} />
       </div>
 
-      {/* ✅ Additional styles for content display */}
-      <style jsx global>{`
-        /* Article Content Styles */
-        .article-content {
-          font-size: 16px;
-          line-height: 1.9;
-          color: ${darkMode ? '#cbd5e1' : '#333333'};
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
 
-        /* Headings */
-        .article-content h1 {
-          font-size: 32px;
-          font-weight: 700;
-          margin: 24px 0 16px;
-          color: ${darkMode ? '#f1f5f9' : '#1a1a2e'};
-          line-height: 1.3;
-        }
-        .article-content h2 {
-          font-size: 28px;
-          font-weight: 600;
-          margin: 20px 0 14px;
-          color: ${darkMode ? '#f1f5f9' : '#1a1a2e'};
-          line-height: 1.3;
-        }
-        .article-content h3 {
-          font-size: 24px;
-          font-weight: 600;
-          margin: 18px 0 12px;
-          color: ${darkMode ? '#f1f5f9' : '#1a1a2e'};
-          line-height: 1.3;
-        }
-        .article-content h4 {
-          font-size: 20px;
-          font-weight: 500;
-          margin: 16px 0 10px;
-          color: ${darkMode ? '#f1f5f9' : '#1a1a2e'};
-          line-height: 1.3;
-        }
-        .article-content h5 {
-          font-size: 18px;
-          font-weight: 500;
-          margin: 14px 0 8px;
-          color: ${darkMode ? '#f1f5f9' : '#1a1a2e'};
-        }
-        .article-content h6 {
-          font-size: 16px;
-          font-weight: 500;
-          margin: 12px 0 6px;
-          color: ${darkMode ? '#f1f5f9' : '#1a1a2e'};
-        }
-
-        /* Paragraphs */
-        .article-content p {
-          margin: 12px 0;
-          line-height: 1.9;
-        }
-
-        /* ✅ Lists - Bullet Points with Proper Spacing */
-        .article-content ul {
-          padding-left: 32px !important;
-          margin: 12px 0;
-          list-style-type: disc;
-        }
-        .article-content ol {
-          padding-left: 32px !important;
-          margin: 12px 0;
-          list-style-type: decimal;
-        }
-        .article-content li {
-          margin: 6px 0;
-          line-height: 1.9;
-        }
-        .article-content ul ul,
-        .article-content ol ol,
-        .article-content ul ol,
-        .article-content ol ul {
-          padding-left: 32px !important;
-          margin: 4px 0;
-        }
-
-        /* Blockquotes */
-        .article-content blockquote {
-          border-left: 4px solid #4a7cff;
-          padding: 12px 20px;
-          margin: 16px 0;
-          background: ${darkMode ? '#1e293b' : '#f6f8fa'};
-          border-radius: 0 4px 4px 0;
-          font-style: italic;
-          color: ${darkMode ? '#94a3b8' : '#495057'};
-        }
-        .article-content blockquote p {
-          margin: 4px 0;
-        }
-
-        /* Code */
-        .article-content code {
-          background: ${darkMode ? '#1e293b' : '#f0f0f0'};
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-family: 'Courier New', monospace;
-          font-size: 14px;
-          color: ${darkMode ? '#f87171' : '#d63384'};
-        }
-        .article-content pre {
-          background: #1a1a1a;
-          color: #f8f8f8;
-          padding: 16px;
-          border-radius: 8px;
-          overflow-x: auto;
-          margin: 16px 0;
-        }
-        .article-content pre code {
-          background: transparent;
-          color: #f8f8f8;
-          padding: 0;
-          font-size: 14px;
-        }
-
-        /* Links */
-        .article-content a {
-          color: #4a7cff;
-          text-decoration: underline;
-          transition: color 0.3s;
-        }
-        .article-content a:hover {
-          color: #3b5fd9;
-        }
-
-        /* Images */
-        .article-content img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 8px;
-          margin: 16px 0;
-        }
-
-        /* Tables */
-        .article-content table {
-          border-collapse: collapse;
-          width: 100%;
-          margin: 16px 0;
-        }
-        .article-content table th,
-        .article-content table td {
-          border: 1px solid ${darkMode ? '#334155' : '#d9d9d9'};
-          padding: 10px 14px;
-          text-align: left;
-          color: ${darkMode ? '#cbd5e1' : '#1a1a2e'};
-        }
-        .article-content table th {
-          background: ${darkMode ? '#1e293b' : '#fafafa'};
-          font-weight: 600;
-          color: ${darkMode ? '#f1f5f9' : '#1a1a2e'};
-        }
-        .article-content table tr:nth-child(even) {
-          background: ${darkMode ? '#0f172a' : '#f8f9fa'};
-        }
-
-        /* Horizontal Rule */
-        .article-content hr {
-          border: none;
-          border-top: 2px solid ${darkMode ? '#334155' : '#e9ecef'};
-          margin: 24px 0;
-        }
-
-        /* ✅ Gap between lines - preserve spacing */
-        .article-content p + p {
-          margin-top: 16px;
-        }
-
-        .article-content br {
-          display: block;
-          content: "";
-          margin: 8px 0;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .article-content {
-            font-size: 15px;
-          }
-          .article-content ul,
-          .article-content ol {
-            padding-left: 24px !important;
-          }
-          .article-content h1 {
-            font-size: 26px;
-          }
-          .article-content h2 {
-            font-size: 22px;
-          }
-          .article-content h3 {
-            font-size: 20px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .article-content {
-            font-size: 14px;
-          }
-          .article-content ul,
-          .article-content ol {
-            padding-left: 20px !important;
-          }
-          .article-content h1 {
-            font-size: 22px;
-          }
-          .article-content h2 {
-            font-size: 19px;
-          }
-          .article-content h3 {
-            font-size: 17px;
-          }
-        }
-      `}</style>
     </div>
   );
 };

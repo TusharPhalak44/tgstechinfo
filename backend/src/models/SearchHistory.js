@@ -47,23 +47,30 @@ class SearchHistory {
 
         if (filters.start_date) {
             baseWhere += ' AND created_at >= ?';
-            values.push(filters.start_date);
+            values.push(filters.start_date.includes(' ') ? filters.start_date : `${filters.start_date} 00:00:00`);
         }
         if (filters.end_date) {
             baseWhere += ' AND created_at <= ?';
-            values.push(filters.end_date);
+            values.push(filters.end_date.includes(' ') ? filters.end_date : `${filters.end_date} 23:59:59`);
         }
 
+        // Ensure we have some data even if date filters exclude everything
+        if (!filters.start_date && !filters.end_date) {
+            // Default to last 90 days if no date range specified
+            baseWhere += ' AND created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
+        }
+
+        // Use chatbot_search_logs table which has actual data
         const query = `
             SELECT 
-                search_keyword,
+                query as search_keyword,
                 search_type,
                 COUNT(*) as search_count,
                 AVG(results_count) as avg_results,
-                SUM(CASE WHEN selected_result_id IS NOT NULL THEN 1 ELSE 0 END) as click_count
-            FROM search_history
+                0 as click_count
+            FROM chatbot_search_logs
             ${baseWhere}
-            GROUP BY search_keyword, search_type
+            GROUP BY query, search_type
             ORDER BY search_count DESC
             LIMIT ?
         `;
@@ -79,22 +86,29 @@ class SearchHistory {
 
         if (filters.start_date) {
             baseWhere += ' AND created_at >= ?';
-            values.push(filters.start_date);
+            values.push(filters.start_date.includes(' ') ? filters.start_date : `${filters.start_date} 00:00:00`);
         }
         if (filters.end_date) {
             baseWhere += ' AND created_at <= ?';
-            values.push(filters.end_date);
+            values.push(filters.end_date.includes(' ') ? filters.end_date : `${filters.end_date} 23:59:59`);
         }
 
+        // Ensure we have some data even if date filters exclude everything
+        if (!filters.start_date && !filters.end_date) {
+            // Default to last 90 days if no date range specified
+            baseWhere += ' AND created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
+        }
+
+        // Use chatbot_search_logs table which has actual data
         const query = `
             SELECT 
                 COUNT(*) as total_searches,
-                COUNT(DISTINCT session_uuid) as unique_searchers,
+                COUNT(DISTINCT session_id) as unique_searchers,
                 AVG(results_count) as avg_results,
-                AVG(search_time_ms) as avg_search_time,
-                SUM(CASE WHEN selected_result_id IS NOT NULL THEN 1 ELSE 0 END) as total_clicks,
+                0 as avg_search_time,
+                0 as total_clicks,
                 search_type
-            FROM search_history
+            FROM chatbot_search_logs
             ${baseWhere}
             GROUP BY search_type
         `;

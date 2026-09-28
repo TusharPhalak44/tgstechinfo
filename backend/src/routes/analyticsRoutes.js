@@ -3,41 +3,41 @@ const router = express.Router();
 const analyticsController = require('../controllers/analyticsController');
 const { authenticate, isAdmin } = require('../middleware/auth');
 
-// All analytics routes require authentication and admin role
-router.use(authenticate);
-router.use(isAdmin);
+// Middleware applied to specific admin analytics endpoints
+// (Scoped to route handlers to prevent shadowing sibling routers mounted at /api/analytics)
+const adminAuth = [authenticate, isAdmin];
 
 // Overview Analytics
-router.get('/overview', analyticsController.getOverview);
+router.get('/overview', adminAuth, analyticsController.getOverview);
 
 // Content Type Analytics
-router.get('/content-type-breakdown', analyticsController.getContentTypeBreakdown);
+router.get('/content-type-breakdown', adminAuth, analyticsController.getContentTypeBreakdown);
 
 // Content Analytics
-router.get('/content/:content_id', analyticsController.getContentAnalytics);
+router.get('/content/:content_id', adminAuth, analyticsController.getContentAnalytics);
 
 // Top Content by Engagement
-router.get('/top-content-engagement', analyticsController.getTopContentByEngagement);
+router.get('/top-content-engagement', adminAuth, analyticsController.getTopContentByEngagement);
 
 // Session Analytics
-router.get('/sessions', analyticsController.getSessionAnalytics);
+router.get('/sessions', adminAuth, analyticsController.getSessionAnalytics);
 
 // Popular Pages
-router.get('/popular-pages', analyticsController.getPopularPages);
+router.get('/popular-pages', adminAuth, analyticsController.getPopularPages);
 
 // Popular Downloads
-router.get('/popular-downloads', analyticsController.getPopularDownloads);
+router.get('/popular-downloads', adminAuth, analyticsController.getPopularDownloads);
 
 // Search Analytics
-router.get('/search', analyticsController.getSearchAnalytics);
+router.get('/search', adminAuth, analyticsController.getSearchAnalytics);
 
 // User Journey Analytics
-router.get('/journey', analyticsController.getJourneyAnalytics);
+router.get('/journey', adminAuth, analyticsController.getJourneyAnalytics);
 
 // CTA Analytics
-router.get('/cta', analyticsController.getCtaAnalytics);
+router.get('/cta', adminAuth, analyticsController.getCtaAnalytics);
 
 // Newsletter Analytics
-router.get('/newsletter', analyticsController.getNewsletterAnalytics);
+router.get('/newsletter', adminAuth, analyticsController.getNewsletterAnalytics);
 
 module.exports = router;

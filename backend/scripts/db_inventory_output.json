@@ -1,0 +1,8699 @@
+[
+  {
+    "tableName": "audience_adjustment_history",
+    "rows": 0,
+    "columnCount": 13,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "scope_type",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "scope_id",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "scope_name",
+        "type": "varchar(150)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "adjustment_type",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "delta_applied",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "previous_total",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "new_total",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "records_affected",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "performed_by",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "performed_by_name",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "details_json",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_analytics_events",
+    "rows": 0,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "event_type",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "filters_applied",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "result_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "session_id",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_event_type",
+        "column": "event_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_event_created",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_audit_logs",
+    "rows": 1,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "user_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_name",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "action",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "entity",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "entity_id",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "old_value",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "new_value",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_countries",
+    "rows": 41,
+    "columnCount": 15,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(150)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "iso_code",
+        "type": "varchar(10)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "iso_alpha2",
+        "type": "varchar(10)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "iso_alpha3",
+        "type": "varchar(10)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "numeric_code",
+        "type": "varchar(10)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "continent",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "lat",
+        "type": "decimal(10,6)",
+        "null": "NO",
+        "key": "",
+        "default": "0.000000",
+        "extra": ""
+      },
+      {
+        "field": "lon",
+        "type": "decimal(10,6)",
+        "null": "NO",
+        "key": "",
+        "default": "0.000000",
+        "extra": ""
+      },
+      {
+        "field": "linkedin_geo_id",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "linkedin_geo_name",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "iso_code",
+        "column": "iso_code",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_data_imports",
+    "rows": 0,
+    "columnCount": 11,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "version_label",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "filename",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "uploaded_by",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "uploaded_by_name",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "records_processed",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "previous_total_contacts",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "new_total_contacts",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": "Pending",
+        "extra": ""
+      },
+      {
+        "field": "validation_notes",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_departments",
+    "rows": 8,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "code",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "code",
+        "column": "code",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_employee_sizes",
+    "rows": 8,
+    "columnCount": 9,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "code",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "min_employees",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "max_employees",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "code",
+        "column": "code",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_functions",
+    "rows": 12,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "code",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "code",
+        "column": "code",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_geo_group_countries",
+    "rows": 60,
+    "columnCount": 4,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "geo_group_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "uq_group_country",
+        "column": "geo_group_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "uq_group_country",
+        "column": "country_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "country_id",
+        "column": "country_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "audience_geo_group_countries_ibfk_1",
+        "COLUMN_NAME": "geo_group_id",
+        "REFERENCED_TABLE_NAME": "audience_geo_groups",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_geo_group_countries_ibfk_2",
+        "COLUMN_NAME": "country_id",
+        "REFERENCED_TABLE_NAME": "audience_countries",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "audience_geo_groups",
+    "rows": 10,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "code",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "code",
+        "column": "code",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_geo_region_countries",
+    "rows": 41,
+    "columnCount": 4,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "region_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "uq_region_country",
+        "column": "region_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "uq_region_country",
+        "column": "country_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "country_id",
+        "column": "country_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "audience_geo_region_countries_ibfk_1",
+        "COLUMN_NAME": "region_id",
+        "REFERENCED_TABLE_NAME": "audience_geo_regions",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_geo_region_countries_ibfk_2",
+        "COLUMN_NAME": "country_id",
+        "REFERENCED_TABLE_NAME": "audience_countries",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "audience_geo_regions",
+    "rows": 5,
+    "columnCount": 12,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "code",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "region_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": "CONTINENT",
+        "extra": ""
+      },
+      {
+        "field": "parent_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "lat",
+        "type": "decimal(10,6)",
+        "null": "YES",
+        "key": "",
+        "default": "0.000000",
+        "extra": ""
+      },
+      {
+        "field": "lon",
+        "type": "decimal(10,6)",
+        "null": "YES",
+        "key": "",
+        "default": "0.000000",
+        "extra": ""
+      },
+      {
+        "field": "default_zoom",
+        "type": "decimal(4,2)",
+        "null": "YES",
+        "key": "",
+        "default": "1.00",
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "code",
+        "column": "code",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "parent_id",
+        "column": "parent_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "audience_geo_regions_ibfk_1",
+        "COLUMN_NAME": "parent_id",
+        "REFERENCED_TABLE_NAME": "audience_geo_regions",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "audience_global_settings",
+    "rows": 8,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "setting_key",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "setting_value",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "updated_by",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "setting_key",
+        "column": "setting_key",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_industries",
+    "rows": 24,
+    "columnCount": 13,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "linkedin_industry_id",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "name",
+        "type": "varchar(150)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "code",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "parent_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "level",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "hierarchy_path",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": "Active",
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "code",
+        "column": "code",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "parent_id",
+        "column": "parent_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "audience_industries_ibfk_1",
+        "COLUMN_NAME": "parent_id",
+        "REFERENCED_TABLE_NAME": "audience_industries",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "audience_job_levels",
+    "rows": 8,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "code",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "rank_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "display_order",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "code",
+        "column": "code",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_job_titles",
+    "rows": 16,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "title",
+        "type": "varchar(150)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "function_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "seniority_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "title",
+        "column": "title",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "function_id",
+        "column": "function_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "seniority_id",
+        "column": "seniority_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "audience_job_titles_ibfk_1",
+        "COLUMN_NAME": "function_id",
+        "REFERENCED_TABLE_NAME": "audience_functions",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_job_titles_ibfk_2",
+        "COLUMN_NAME": "seniority_id",
+        "REFERENCED_TABLE_NAME": "audience_job_levels",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "audience_share_tokens",
+    "rows": 0,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "token",
+        "type": "varchar(64)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "title",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "client_name",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "filters_json",
+        "type": "longtext",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "total_matching_contacts",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "total_matching_companies",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_by",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "expires_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "token",
+        "column": "token",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_share_token",
+        "column": "token",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "audience_statistics",
+    "rows": 136752,
+    "columnCount": 15,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "region_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "industry_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "employee_size_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "department_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "function_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "job_level_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_count",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "company_count",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "data_source",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": "Internal B2B Intelligence",
+        "extra": ""
+      },
+      {
+        "field": "effective_date",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": "August 2026",
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": "Published",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_aud_geo",
+        "column": "region_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_geo",
+        "column": "country_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_ind",
+        "column": "industry_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_size",
+        "column": "employee_size_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_dept",
+        "column": "department_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_func",
+        "column": "function_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_level",
+        "column": "job_level_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_full_combo",
+        "column": "country_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_full_combo",
+        "column": "industry_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_full_combo",
+        "column": "employee_size_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_full_combo",
+        "column": "department_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_aud_full_combo",
+        "column": "job_level_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "audience_statistics_ibfk_1",
+        "COLUMN_NAME": "region_id",
+        "REFERENCED_TABLE_NAME": "audience_geo_regions",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_statistics_ibfk_2",
+        "COLUMN_NAME": "country_id",
+        "REFERENCED_TABLE_NAME": "audience_countries",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_statistics_ibfk_3",
+        "COLUMN_NAME": "industry_id",
+        "REFERENCED_TABLE_NAME": "audience_industries",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_statistics_ibfk_4",
+        "COLUMN_NAME": "employee_size_id",
+        "REFERENCED_TABLE_NAME": "audience_employee_sizes",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_statistics_ibfk_5",
+        "COLUMN_NAME": "department_id",
+        "REFERENCED_TABLE_NAME": "audience_departments",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_statistics_ibfk_6",
+        "COLUMN_NAME": "function_id",
+        "REFERENCED_TABLE_NAME": "audience_functions",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "audience_statistics_ibfk_7",
+        "COLUMN_NAME": "job_level_id",
+        "REFERENCED_TABLE_NAME": "audience_job_levels",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "audit_logs",
+    "rows": 1066,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "user_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "action",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "entity_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "entity_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "details",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "enum('success','failed','warning')",
+        "null": "YES",
+        "key": "MUL",
+        "default": "success",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_user_id",
+        "column": "user_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_action",
+        "column": "action",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_entity_type",
+        "column": "entity_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_status",
+        "column": "status",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "case_study_submissions",
+    "rows": 0,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_email",
+        "column": "email",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "case_study_submissions_ibfk_1",
+        "COLUMN_NAME": "content_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "categories",
+    "rows": 19,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "slug",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": "technology",
+        "extra": ""
+      },
+      {
+        "field": "parent_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "slug",
+        "column": "slug",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "chatbot_click_logs",
+    "rows": 77,
+    "columnCount": 11,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_id",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_query",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_type",
+        "type": "enum('title','category','tag','keyword','content_type')",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "position_in_results",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "click_metadata",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_id",
+        "column": "session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "chatbot_click_logs_ibfk_1",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "chatbot_sessions",
+        "REFERENCED_COLUMN_NAME": "session_id"
+      }
+    ]
+  },
+  {
+    "tableName": "chatbot_feedback",
+    "rows": 0,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_id",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_query",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "feedback_type",
+        "type": "enum('helpful','not_helpful','irrelevant','inaccurate')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "feedback_text",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "rating",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_id",
+        "column": "session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_feedback_type",
+        "column": "feedback_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "chatbot_feedback_ibfk_1",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "chatbot_sessions",
+        "REFERENCED_COLUMN_NAME": "session_id"
+      }
+    ]
+  },
+  {
+    "tableName": "chatbot_messages",
+    "rows": 371,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_id",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "message_type",
+        "type": "enum('user','bot')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "message",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "metadata",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_id",
+        "column": "session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_message_type",
+        "column": "message_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "chatbot_messages_ibfk_1",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "chatbot_sessions",
+        "REFERENCED_COLUMN_NAME": "session_id"
+      }
+    ]
+  },
+  {
+    "tableName": "chatbot_queries",
+    "rows": 7,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "query",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "enum('pending','answered','closed')",
+        "null": "YES",
+        "key": "MUL",
+        "default": "pending",
+        "extra": ""
+      },
+      {
+        "field": "admin_response",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "datetime",
+        "null": "YES",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "datetime",
+        "null": "YES",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_status",
+        "column": "status",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "chatbot_search_logs",
+    "rows": 398,
+    "columnCount": 11,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_id",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "query",
+        "type": "varchar(500)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_type",
+        "type": "enum('title','category','tag','keyword','content_type')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "results_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "search_metadata",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "browser_info",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_id",
+        "column": "session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_query",
+        "column": "query",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_search_type",
+        "column": "search_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "chatbot_search_logs_ibfk_1",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "chatbot_sessions",
+        "REFERENCED_COLUMN_NAME": "session_id"
+      }
+    ]
+  },
+  {
+    "tableName": "chatbot_sessions",
+    "rows": 29,
+    "columnCount": 15,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_id",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "visitor_session_id",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "browser_info",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "started_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "last_activity",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "message_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "search_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "click_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "session_id",
+        "column": "session_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_id",
+        "column": "session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_user_id",
+        "column": "user_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_visitor_session_id",
+        "column": "visitor_session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_started_at",
+        "column": "started_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "chatbot_trending_cache",
+    "rows": 27,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "click_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "trend_score",
+        "type": "decimal(10,2)",
+        "null": "YES",
+        "key": "MUL",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "category_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_type_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "last_calculated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "uk_content_id",
+        "column": "content_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_trend_score",
+        "column": "trend_score",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_category_id",
+        "column": "category_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_type_id",
+        "column": "content_type_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_last_calculated",
+        "column": "last_calculated",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "comments",
+    "rows": 0,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "parent_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "comment",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_approved",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "contact_submissions",
+    "rows": 0,
+    "columnCount": 13,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "full_name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "company",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "inquiry_category",
+        "type": "enum('general','partnership','media','feedback','issue','other')",
+        "null": "YES",
+        "key": "MUL",
+        "default": "general",
+        "extra": ""
+      },
+      {
+        "field": "subject",
+        "type": "varchar(500)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "message",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_given",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "enum('pending','in_progress','resolved','closed')",
+        "null": "YES",
+        "key": "MUL",
+        "default": "pending",
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_status",
+        "column": "status",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_category",
+        "column": "inquiry_category",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "content_edit_requests",
+    "rows": 1,
+    "columnCount": 9,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "requested_by",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "requested_to",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "enum('pending','accepted','rejected','completed')",
+        "null": "YES",
+        "key": "MUL",
+        "default": "pending",
+        "extra": ""
+      },
+      {
+        "field": "admin_comment",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "creator_comment",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "requested_by",
+        "column": "requested_by",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_requested_to",
+        "column": "requested_to",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_status",
+        "column": "status",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "content_edit_requests_ibfk_1",
+        "COLUMN_NAME": "content_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "content_edit_requests_ibfk_2",
+        "COLUMN_NAME": "requested_by",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "content_edit_requests_ibfk_3",
+        "COLUMN_NAME": "requested_to",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "content_engagement",
+    "rows": 632,
+    "columnCount": 12,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "engagement_type",
+        "type": "enum('view','read','download','share','bookmark','print','copy_link')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "engagement_data",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "reading_time_seconds",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "scroll_depth",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "max_scroll_depth",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "exit_position",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "reading_completed",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_engagement_type",
+        "column": "engagement_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "content_engagement_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "content_engagement_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "content_engagement_ibfk_3",
+        "COLUMN_NAME": "content_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "content_revisions",
+    "rows": 0,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "changes_requested",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "varchar(30)",
+        "null": "YES",
+        "key": "",
+        "default": "requested",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "content_types",
+    "rows": 11,
+    "columnCount": 3,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "slug",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "name",
+        "column": "name",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "slug",
+        "column": "slug",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "contents",
+    "rows": 273,
+    "columnCount": 40,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "user_id",
+        "type": "bigint(20) unsigned",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_type_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "category_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "title",
+        "type": "varchar(500)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "slug",
+        "type": "varchar(500)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "short_description",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "tags",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "banner_image",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "pdf_file",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "video_file",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email_subject",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email_template",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "case_study_headline",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "case_study_summary",
+        "type": "varchar(1000)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "custom_fields",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "webhook_url",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "builder_layout",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "builder_content_elements",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "builder_page_data",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "webhook_field_mapping",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content",
+        "type": "longtext",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "seo_meta_title",
+        "type": "varchar(200)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "seo_meta_description",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "seo_meta_keywords",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "scheduled_publish_date",
+        "type": "datetime",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "webinar_date",
+        "type": "datetime",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "hosted_by",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "platform",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "webinar_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": "live",
+        "extra": ""
+      },
+      {
+        "field": "join_link",
+        "type": "varchar(1000)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "published_date",
+        "type": "datetime",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "enum('draft','pending','review','changes_requested','approved','published','rejected','scheduled','archived')",
+        "null": "YES",
+        "key": "",
+        "default": "draft",
+        "extra": ""
+      },
+      {
+        "field": "view_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "views_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "reading_time",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_visible_on_site",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "admin_comment",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "slug",
+        "column": "slug",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_webinar_date",
+        "column": "webinar_date",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_contents_user_id",
+        "column": "user_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "conversions",
+    "rows": 20,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "conversion_type",
+        "type": "enum('cta_click','download','newsletter_signup','form_submit','contact_submit')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_url",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "conversion_value",
+        "type": "decimal(10,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "metadata",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_conversion_type",
+        "column": "conversion_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "cookie_consent_logs",
+    "rows": 34,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "action",
+        "type": "enum('create','update','withdraw','expire')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "previous_consent",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "new_consent",
+        "type": "longtext",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_action",
+        "column": "action",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "cookie_consent_logs_ibfk_1",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      }
+    ]
+  },
+  {
+    "tableName": "cookie_consents",
+    "rows": 40,
+    "columnCount": 14,
+    "columns": [
+      {
+        "field": "uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_id",
+        "type": "bigint(20) unsigned",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "session_id",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_type",
+        "type": "enum('accept_all','reject_all','custom')",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "necessary_cookies",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "functional_cookies",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "analytics_cookies",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "marketing_cookies",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "consent_version",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "expires_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "uuid",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_user_id",
+        "column": "user_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_session_id",
+        "column": "session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_expires_at",
+        "column": "expires_at",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "cookie_consents_ibfk_1",
+        "COLUMN_NAME": "user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "core_web_vitals",
+    "rows": 27,
+    "columnCount": 18,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "lcp",
+        "type": "decimal(10,2)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "fid",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "cls",
+        "type": "decimal(10,4)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ttfb",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "fcp",
+        "type": "decimal(10,2)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "inp",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "dom_content_loaded_time",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "load_complete_time",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "total_resources",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_url",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_title",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "browser",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "measured_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_measured_at",
+        "column": "measured_at",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_page_url",
+        "column": "page_url",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "cta_clicks",
+    "rows": 0,
+    "columnCount": 9,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "cta_type",
+        "type": "enum('download_whitepaper','request_demo','contact_sales','subscribe','register_webinar','request_quote','other')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "cta_text",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "cta_location",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "clicked_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_cta_type",
+        "column": "cta_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_clicked_at",
+        "column": "clicked_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "cta_clicks_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "cta_clicks_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "cta_clicks_ibfk_3",
+        "COLUMN_NAME": "content_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "data_dashboard_activity",
+    "rows": 5,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "activity_type",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "record_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "region",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "activity_timestamp",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_activity_timestamp",
+        "column": "activity_timestamp",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_activity_type",
+        "column": "activity_type",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_dashboard_company_sizes",
+    "rows": 7,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "size_range",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_count",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "percentage",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "last_updated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "size_range",
+        "column": "size_range",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_dashboard_countries",
+    "rows": 5,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "country_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "region_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_count",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "percentage",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "growth_rate",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "last_updated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_country_region",
+        "column": "region_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_country_name",
+        "column": "country_name",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "data_dashboard_countries_ibfk_1",
+        "COLUMN_NAME": "region_id",
+        "REFERENCED_TABLE_NAME": "data_dashboard_regions",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "data_dashboard_departments",
+    "rows": 7,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "department_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_count",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "percentage",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "last_updated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "department_name",
+        "column": "department_name",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_dashboard_growth",
+    "rows": 6,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "record_date",
+        "type": "date",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "total_contacts",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "new_contacts_added",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "contacts_updated",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "growth_rate",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "record_date",
+        "column": "record_date",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_growth_date",
+        "column": "record_date",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_dashboard_industries",
+    "rows": 13,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "industry_name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_count",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "percentage",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "last_updated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "industry_name",
+        "column": "industry_name",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_dashboard_job_levels",
+    "rows": 5,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "job_level_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_count",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "percentage",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "last_updated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "job_level_name",
+        "column": "job_level_name",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_dashboard_regions",
+    "rows": 4,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "region_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_count",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "percentage",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "last_updated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "region_name",
+        "column": "region_name",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_dashboard_summary",
+    "rows": 1,
+    "columnCount": 8,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "total_contacts",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "total_companies",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "total_countries",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "total_regions",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "decision_makers",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "last_updated",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "data_requests",
+    "rows": 1,
+    "columnCount": 20,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "request_type",
+        "type": "enum('dsar','do_not_sell')",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "first_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "last_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "alt_email",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "phone",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "company",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "job_title",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "state",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "dsar_type",
+        "type": "enum('access','correct','delete','restrict','portability','object','withdraw','other')",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "dns_type",
+        "type": "enum('do_not_sell','do_not_share','both')",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "details",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "status",
+        "type": "enum('pending','in_progress','completed','rejected')",
+        "null": "NO",
+        "key": "",
+        "default": "pending",
+        "extra": ""
+      },
+      {
+        "field": "admin_notes",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "database_growth",
+    "rows": 31,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "snapshot_date",
+        "type": "date",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "total_contacts",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "total_companies",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "records_added",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "records_updated",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "downloads",
+    "rows": 0,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "file_id",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "file_name",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "file_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "file_size",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "downloaded_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_downloaded_at",
+        "column": "downloaded_at",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_file_type",
+        "column": "file_type",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "downloads_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "downloads_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "downloads_ibfk_3",
+        "COLUMN_NAME": "content_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "form_submissions_1",
+    "rows": 3,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "name",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "phone",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "webhook_url",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "form_submissions_153",
+    "rows": 2,
+    "columnCount": 14,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "first_name",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "fname",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "last_name",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "lname",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "phone",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "subscription",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "form_submissions_176",
+    "rows": 2,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "first_name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "last_name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "form_submissions_212",
+    "rows": 0,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "first_name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "last_name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "form_submissions_305",
+    "rows": 0,
+    "columnCount": 13,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "firstname",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "lastname",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "companyname",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "jobtitle",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "landing_page_submissions",
+    "rows": 20,
+    "columnCount": 4,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "extra_fields",
+        "type": "longtext",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "landing_page_submissions_ibfk_1",
+        "COLUMN_NAME": "content_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "login_history",
+    "rows": 570,
+    "columnCount": 12,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "user_id",
+        "type": "bigint(20) unsigned",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "session_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_name",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "browser",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "os",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "login_status",
+        "type": "enum('success','failed','blocked')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "failure_reason",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "datetime",
+        "null": "YES",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "session_id",
+        "column": "session_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_user_id",
+        "column": "user_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_login_status",
+        "column": "login_status",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "login_history_ibfk_1",
+        "COLUMN_NAME": "user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "login_history_ibfk_2",
+        "COLUMN_NAME": "session_id",
+        "REFERENCED_TABLE_NAME": "user_sessions",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "media_files",
+    "rows": 354,
+    "columnCount": 12,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "filename",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "original_name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "file_path",
+        "type": "varchar(500)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "file_type",
+        "type": "enum('image','video','document','other')",
+        "null": "NO",
+        "key": "MUL",
+        "default": "other",
+        "extra": ""
+      },
+      {
+        "field": "file_size",
+        "type": "bigint(20)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "mime_type",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "file_data",
+        "type": "longblob",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "folder",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "MUL",
+        "default": "Documents",
+        "extra": ""
+      },
+      {
+        "field": "uploaded_by",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "uq_filename",
+        "column": "filename",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_file_type",
+        "column": "file_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_folder",
+        "column": "folder",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_uploaded_by",
+        "column": "uploaded_by",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "newsletter_events",
+    "rows": 0,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "event_type",
+        "type": "enum('signup','confirmation','unsubscribe','bounce')",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "event_data",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_event_type",
+        "column": "event_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_email",
+        "column": "email",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "newsletter_events_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "newsletter_events_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      }
+    ]
+  },
+  {
+    "tableName": "newsletter_subscribers",
+    "rows": 0,
+    "columnCount": 4,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "email",
+        "column": "email",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "notifications",
+    "rows": 752,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "user_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "type",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "message",
+        "type": "text",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_read",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "page_views",
+    "rows": 4888,
+    "columnCount": 14,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_url",
+        "type": "varchar(500)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_title",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_type",
+        "type": "enum('home','article','blog','news','interview','ebook','whitepaper','report','case-study','guide','webinar','event','category','search','contact','landing','other')",
+        "null": "YES",
+        "key": "MUL",
+        "default": "other",
+        "extra": ""
+      },
+      {
+        "field": "content_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "entered_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "exited_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "time_spent_seconds",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "scroll_percentage",
+        "type": "decimal(5,2)",
+        "null": "YES",
+        "key": "",
+        "default": "0.00",
+        "extra": ""
+      },
+      {
+        "field": "is_bounce",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_page_url",
+        "column": "page_url",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_entered_at",
+        "column": "entered_at",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_page_type",
+        "column": "page_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_type",
+        "column": "content_type",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "page_views_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "page_views_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      }
+    ]
+  },
+  {
+    "tableName": "permissions",
+    "rows": 37,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "resource",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "action",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "name",
+        "column": "name",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_permissions_resource",
+        "column": "resource",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_permissions_action",
+        "column": "action",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "regional_departments",
+    "rows": 28,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "region_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "department_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "total_contacts",
+        "type": "bigint(20)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "region_id",
+        "column": "region_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "department_id",
+        "column": "department_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "regional_departments_ibfk_1",
+        "COLUMN_NAME": "region_id",
+        "REFERENCED_TABLE_NAME": "regions",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "regional_departments_ibfk_2",
+        "COLUMN_NAME": "department_id",
+        "REFERENCED_TABLE_NAME": "departments",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "role_permissions",
+    "rows": 76,
+    "columnCount": 4,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "role_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "permission_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "unique_role_permission",
+        "column": "role_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "unique_role_permission",
+        "column": "permission_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_role_permissions_role",
+        "column": "role_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_role_permissions_permission",
+        "column": "permission_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "role_permissions_ibfk_1",
+        "COLUMN_NAME": "role_id",
+        "REFERENCED_TABLE_NAME": "roles",
+        "REFERENCED_COLUMN_NAME": "id"
+      },
+      {
+        "CONSTRAINT_NAME": "role_permissions_ibfk_2",
+        "COLUMN_NAME": "permission_id",
+        "REFERENCED_TABLE_NAME": "permissions",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "roles",
+    "rows": 5,
+    "columnCount": 7,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(50)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "description",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "level",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "is_system",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "name",
+        "column": "name",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_roles_level",
+        "column": "level",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "search_history",
+    "rows": 0,
+    "columnCount": 10,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_keyword",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_type",
+        "type": "enum('keyword','category','tag','content_type')",
+        "null": "YES",
+        "key": "MUL",
+        "default": "keyword",
+        "extra": ""
+      },
+      {
+        "field": "results_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "selected_result_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "selected_result_title",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "search_time_ms",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_search_keyword",
+        "column": "search_keyword",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_search_type",
+        "column": "search_type",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_created_at",
+        "column": "created_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "search_history_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "search_history_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      }
+    ]
+  },
+  {
+    "tableName": "site_settings",
+    "rows": 1,
+    "columnCount": 16,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "site_name",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": "TgsTechInfo",
+        "extra": ""
+      },
+      {
+        "field": "cms_logo1",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "cms_logo2",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "cms_favicon",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "website_logo",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "website_favicon",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "site_description",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "site_keywords",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      },
+      {
+        "field": "seo_site_title",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "seo_site_separator",
+        "type": "varchar(10)",
+        "null": "YES",
+        "key": "",
+        "default": " - ",
+        "extra": ""
+      },
+      {
+        "field": "seo_meta_description",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "seo_meta_keywords",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "seo_og_image",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "tags",
+    "rows": 1594,
+    "columnCount": 6,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "name",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "slug",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "usage_count",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "name",
+        "column": "name",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "slug",
+        "column": "slug",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_name",
+        "column": "name",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_slug",
+        "column": "slug",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_usage_count",
+        "column": "usage_count",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "user_journey",
+    "rows": 3736,
+    "columnCount": 12,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "step_number",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_url",
+        "type": "varchar(500)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "page_title",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "action_type",
+        "type": "enum('page_view','content_view','download','search','cta_click','form_submit','other')",
+        "null": "YES",
+        "key": "",
+        "default": "page_view",
+        "extra": ""
+      },
+      {
+        "field": "action_data",
+        "type": "longtext",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "timestamp",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "unique_step",
+        "column": "session_uuid",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "unique_step",
+        "column": "step_number",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_step_number",
+        "column": "step_number",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_timestamp",
+        "column": "timestamp",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "user_journey_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "user_journey_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      }
+    ]
+  },
+  {
+    "tableName": "user_roles",
+    "rows": 12,
+    "columnCount": 4,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "user_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "role_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "unique_user_role",
+        "column": "user_id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "unique_user_role",
+        "column": "role_id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "user_sessions",
+    "rows": 533,
+    "columnCount": 14,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "user_id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "session_token",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "refresh_token",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_name",
+        "type": "varchar(255)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_type",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "browser",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "os",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_agent",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "MUL",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "last_activity",
+        "type": "datetime",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "datetime",
+        "null": "YES",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "expires_at",
+        "type": "datetime",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "session_token",
+        "column": "session_token",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_token",
+        "column": "session_token",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_user_id",
+        "column": "user_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_is_active",
+        "column": "is_active",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "user_sessions_ibfk_1",
+        "COLUMN_NAME": "user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "users",
+    "rows": 503,
+    "columnCount": 16,
+    "columns": [
+      {
+        "field": "id",
+        "type": "bigint(20) unsigned",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "first_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "last_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "job_title",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "company_name",
+        "type": "varchar(200)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "country",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "password_hash",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "role",
+        "type": "varchar(20)",
+        "null": "YES",
+        "key": "",
+        "default": "user",
+        "extra": ""
+      },
+      {
+        "field": "is_active",
+        "type": "tinyint(1)",
+        "null": "YES",
+        "key": "",
+        "default": "1",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "failed_login_attempts",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "last_failed_login",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "locked_until",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "role_id",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "email",
+        "column": "email",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_users_locked_until",
+        "column": "locked_until",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "fk_user_role",
+        "column": "role_id",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "fk_user_role",
+        "COLUMN_NAME": "role_id",
+        "REFERENCED_TABLE_NAME": "roles",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "video_progress",
+    "rows": 0,
+    "columnCount": 13,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "video_started_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "video_25_percent_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "video_50_percent_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "video_75_percent_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "video_completed_at",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "duration_watched_seconds",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "total_duration_seconds",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_session_uuid",
+        "column": "session_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_content_id",
+        "column": "content_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_video_completed_at",
+        "column": "video_completed_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "video_progress_ibfk_1",
+        "COLUMN_NAME": "session_uuid",
+        "REFERENCED_TABLE_NAME": "visitor_sessions",
+        "REFERENCED_COLUMN_NAME": "session_uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "video_progress_ibfk_2",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "video_progress_ibfk_3",
+        "COLUMN_NAME": "content_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "view_count_backup",
+    "rows": 237,
+    "columnCount": 4,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "content_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "UNI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "original_view_count",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "backup_timestamp",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "unique_content",
+        "column": "content_id",
+        "nonUnique": 0
+      }
+    ],
+    "foreignKeys": []
+  },
+  {
+    "tableName": "visitor_sessions",
+    "rows": 1971,
+    "columnCount": 20,
+    "columns": [
+      {
+        "field": "session_uuid",
+        "type": "varchar(36)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "consent_uuid",
+        "type": "varchar(36)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "user_id",
+        "type": "bigint(20) unsigned",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "session_start",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "session_end",
+        "type": "timestamp",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "total_session_duration",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "total_pages_visited",
+        "type": "int(11)",
+        "null": "YES",
+        "key": "",
+        "default": "0",
+        "extra": ""
+      },
+      {
+        "field": "country",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "browser",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "operating_system",
+        "type": "varchar(100)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "device_type",
+        "type": "enum('desktop','mobile','tablet')",
+        "null": "YES",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "screen_resolution",
+        "type": "varchar(20)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "language",
+        "type": "varchar(10)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "timezone",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "ip_address",
+        "type": "varchar(45)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "referrer",
+        "type": "text",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "landing_page",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "exit_page",
+        "type": "varchar(500)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "created_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": ""
+      },
+      {
+        "field": "updated_at",
+        "type": "timestamp",
+        "null": "NO",
+        "key": "",
+        "default": "current_timestamp()",
+        "extra": "on update current_timestamp()"
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "session_uuid",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_consent_uuid",
+        "column": "consent_uuid",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_user_id",
+        "column": "user_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_session_start",
+        "column": "session_start",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_session_end",
+        "column": "session_end",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_country",
+        "column": "country",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_device_type",
+        "column": "device_type",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "visitor_sessions_ibfk_1",
+        "COLUMN_NAME": "consent_uuid",
+        "REFERENCED_TABLE_NAME": "cookie_consents",
+        "REFERENCED_COLUMN_NAME": "uuid"
+      },
+      {
+        "CONSTRAINT_NAME": "visitor_sessions_ibfk_2",
+        "COLUMN_NAME": "user_id",
+        "REFERENCED_TABLE_NAME": "users",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  },
+  {
+    "tableName": "webinar_registrations",
+    "rows": 0,
+    "columnCount": 9,
+    "columns": [
+      {
+        "field": "id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "PRI",
+        "default": null,
+        "extra": "auto_increment"
+      },
+      {
+        "field": "webinar_id",
+        "type": "int(11)",
+        "null": "NO",
+        "key": "MUL",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "first_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "last_name",
+        "type": "varchar(100)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "email",
+        "type": "varchar(255)",
+        "null": "NO",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "job_title",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "company_name",
+        "type": "varchar(150)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "contact_number",
+        "type": "varchar(50)",
+        "null": "YES",
+        "key": "",
+        "default": null,
+        "extra": ""
+      },
+      {
+        "field": "registered_at",
+        "type": "datetime",
+        "null": "YES",
+        "key": "MUL",
+        "default": "current_timestamp()",
+        "extra": ""
+      }
+    ],
+    "indexes": [
+      {
+        "keyName": "PRIMARY",
+        "column": "id",
+        "nonUnique": 0
+      },
+      {
+        "keyName": "idx_webinar_id",
+        "column": "webinar_id",
+        "nonUnique": 1
+      },
+      {
+        "keyName": "idx_registered_at",
+        "column": "registered_at",
+        "nonUnique": 1
+      }
+    ],
+    "foreignKeys": [
+      {
+        "CONSTRAINT_NAME": "webinar_registrations_ibfk_1",
+        "COLUMN_NAME": "webinar_id",
+        "REFERENCED_TABLE_NAME": "contents",
+        "REFERENCED_COLUMN_NAME": "id"
+      }
+    ]
+  }
+]

@@ -62,66 +62,72 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
     console.log('SEOSection - Fetching search data with timeRange:', timeRange, 'dateParams:', dateParams);
     console.log('SEOSection - Full API URL:', `/api/analytics/search${dateParams}`);
 
-    // Fetch search analytics data
-    axios.get(`/api/analytics/search${dateParams}`)
-      .then(res => {
-        console.log('SEOSection - API response:', res.data);
-        const popularSearches = res.data.popularSearches || [];
-        const searchAnalytics = res.data.searchAnalytics || [];
-        
-        console.log('SEOSection - Popular searches fetched:', popularSearches.length);
-        console.log('SEOSection - Search analytics fetched:', searchAnalytics.length);
-        if (popularSearches.length > 0) {
-          console.log('SEOSection - Sample search data:', popularSearches[0]);
-        }
+    // Fetch search analytics data and popular pages in parallel
+    Promise.allSettled([
+      axios.get(`/api/analytics/search${dateParams}`),
+      axios.get(`/api/analytics/popular-pages${dateParams}`)
+    ]).then(([searchRes, pagesRes]) => {
+      console.log('SEOSection - Search API response:', searchRes.status, searchRes.value?.data);
+      console.log('SEOSection - Pages API response:', pagesRes.status, pagesRes.value?.data);
+      
+      const popularSearches = searchRes.status === 'fulfilled' && searchRes.value?.data ? (searchRes.value.data.popularSearches || []) : [];
+      const searchAnalytics = searchRes.status === 'fulfilled' && searchRes.value?.data ? (searchRes.value.data.searchAnalytics || []) : [];
+      
+      console.log('SEOSection - Popular searches fetched:', popularSearches.length);
+      console.log('SEOSection - Search analytics fetched:', searchAnalytics.length);
+      if (popularSearches.length > 0) {
+        console.log('SEOSection - Sample search data:', popularSearches[0]);
+      }
 
-        // Transform search data to frontend format
-        const queries = popularSearches.map((q, i) => ({
-          query: q.search_keyword || q.query_text || q.query || 'Unknown',
-          impressions: q.search_count || 0,
-          clicks: q.click_count || 0,
-          ctr: q.search_count > 0 ? ((q.click_count || 0) / q.search_count * 100).toFixed(1) + '%' : '0.0%',
-          position: (i + 1).toFixed(1),
-          search_type: q.search_type || 'keyword'
+      // Transform search data to frontend format
+      const queries = popularSearches.map((q, i) => ({
+        query: q.search_keyword || q.query_text || q.query || 'Unknown',
+        search_count: q.search_count || 0,
+        avg_results: q.avg_results || 0,
+        position: (i + 1).toFixed(1),
+        search_type: q.search_type || 'keyword'
+      }));
+
+      // Transform top pages data
+      let topPages = [];
+      if (pagesRes.status === 'fulfilled' && pagesRes.value?.data?.popularPages) {
+        topPages = pagesRes.value.data.popularPages.map((p, i) => ({
+          url: p.page_url || p.url || `/page/${i}`,
+          clicks: p.view_count || p.visit_count || p.page_views || p.count || 0,
+          position: (i + 1).toFixed(1)
         }));
+      }
 
-        // Calculate KPIs from real data
-        const totalImpressions = queries.reduce((a, q) => a + q.impressions, 0);
-        const totalClicks = queries.reduce((a, q) => a + q.clicks, 0);
-        const avgCtr = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.ctr), 0) / queries.length).toFixed(1) + '%' : '0.0%';
-        const avgPosition = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.position), 0) / queries.length).toFixed(1) : '0.0';
+      // Calculate KPIs from real data
+      const totalSearches = queries.reduce((a, q) => a + q.search_count, 0);
+      const avgResults = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.avg_results), 0) / queries.length).toFixed(1) : '0.0';
+      const avgPosition = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.position), 0) / queries.length).toFixed(1) : '0.0';
 
-        // Get top pages from page view data
-        const topPages = []; // Will need to fetch from page views API
-
-        setSeoData({
-          popularSearches: queries,
-          searchAnalytics,
-          topPages,
-          kpis: {
-            totalImpressions,
-            totalClicks,
-            avgCtr,
-            avgPosition
-          }
-        });
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('SEOSection - Error fetching search data:', err);
-        setSeoData({
-          popularSearches: [],
-          searchAnalytics: [],
-          topPages: [],
-          kpis: {
-            totalImpressions: 0,
-            totalClicks: 0,
-            avgCtr: '0.0%',
-            avgPosition: '0.0'
-          }
-        });
-        setLoading(false);
+      setSeoData({
+        popularSearches: queries,
+        searchAnalytics,
+        topPages,
+        kpis: {
+          totalSearches,
+          avgResults,
+          avgPosition
+        }
       });
+      setLoading(false);
+    }).catch(err => {
+      console.error('SEOSection - Error fetching SEO data:', err);
+      setSeoData({
+        popularSearches: [],
+        searchAnalytics: [],
+        topPages: [],
+        kpis: {
+          totalSearches: 0,
+          avgResults: '0.0',
+          avgPosition: '0.0'
+        }
+      });
+      setLoading(false);
+    });
   }, [timeRange]);
 
   // Filter queries based on active filter
@@ -142,13 +148,13 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
     return seoData.popularSearches;
   }, [seoData.popularSearches, activeFilter]);
 
-  const maxImpressions = Math.max(...filteredQueries.map(q => q.impressions), 1);
+  const maxSearchCount = Math.max(...filteredQueries.map(q => q.search_count), 1);
 
   const seoKpis = [
-    { label: 'Total Impressions', value: seoData.kpis?.totalImpressions?.toLocaleString() || '0', color: '#0AAEEF', icon: <LineChartOutlined />, delta: null, up: true },
-    { label: 'Organic Clicks',    value: seoData.kpis?.totalClicks?.toLocaleString() || '0',      color: '#10B981', icon: <AimOutlined />,       delta: null, up: true },
-    { label: 'Avg CTR',           value: seoData.kpis?.avgCtr || '0.0%', color: '#8B5CF6', icon: <BulbOutlined />, delta: null, up: true },
-    { label: 'Avg Position',      value: seoData.kpis?.avgPosition || '0.0', color: '#F59E0B', icon: <RiseOutlined />, delta: null, up: true },
+    { label: 'Total Searches',    value: seoData.kpis?.totalSearches?.toLocaleString() || '0',   color: '#0AAEEF', icon: <SearchOutlined />, delta: null, up: true },
+    { label: 'Avg Results',       value: seoData.kpis?.avgResults || '0.0',                   color: '#10B981', icon: <LineChartOutlined />, delta: null, up: true },
+    { label: 'Avg Position',      value: seoData.kpis?.avgPosition || '0.0',                  color: '#8B5CF6', icon: <RiseOutlined />, delta: null, up: true },
+    { label: 'Query Types',      value: new Set(seoData.popularSearches.map(q => q.search_type)).size.toString(), color: '#F59E0B', icon: <BulbOutlined />, delta: null, up: true },
   ];
 
   const pages = seoData.topPages.length > 0 ? seoData.topPages : [];
@@ -307,12 +313,12 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
             ))}
           </div>
         </div>
-        <div className="seo-queries-table" style={{ overflowX: 'auto' }}>
+        <div className="seo-queries-table" style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '400px' }}>
           {filteredQueries.length > 0 ? (
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: darkMode ? '#1E293B' : '#F8FAFC' }}>
-                  {['#', 'Query', 'Impressions', 'Clicks', 'CTR', 'Avg Position'].map(h => (
+                  {['#', 'Query', 'Search Count', 'Avg Results', 'Search Type', 'Avg Position'].map(h => (
                     <th
                       key={h}
                       style={{
@@ -334,7 +340,7 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
               <tbody>
                 {filteredQueries.map((q, i) => {
                   const color = COLORS[i % COLORS.length];
-                  const pct = Math.round((q.impressions / maxImpressions) * 100);
+                  const pct = Math.round((q.search_count / maxSearchCount) * 100);
                   return (
                     <tr
                       key={i}
@@ -371,12 +377,12 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
                             />
                           </div>
                           <span style={{ fontFamily: 'monospace', fontSize: 11, color }}>
-                            {q.impressions.toLocaleString()}
+                            {q.search_count.toLocaleString()}
                           </span>
                         </div>
                       </td>
                       <td style={{ padding: '11px 14px', fontFamily: 'monospace', fontSize: 12, fontWeight: 700, color: '#10B981' }}>
-                        {q.clicks.toLocaleString()}
+                        {parseFloat(q.avg_results).toFixed(1)}
                       </td>
                       <td style={{ padding: '11px 14px' }}>
                         <span
@@ -387,9 +393,10 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
                             borderRadius: 4,
                             background: darkMode ? 'rgba(10,174,239,0.15)' : '#E0F2FE',
                             color: '#0AAEEF',
+                            textTransform: 'capitalize',
                           }}
                         >
-                          {q.ctr}
+                          {q.search_type}
                         </span>
                       </td>
                       <td
@@ -438,7 +445,7 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
           <FileTextOutlined style={{ color: '#8B5CF6' }} />
           <span>Top Organic Destination Pages</span>
         </div>
-        <div className="organic-pages-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="organic-pages-list" style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', maxHeight: '400px' }}>
           {pages.length > 0 ? (
             pages.map((p, i) => {
               const color = COLORS[i % COLORS.length];
@@ -484,9 +491,6 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
                   </div>
                   <span className="page-clicks" style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 700, color, width: 44, textAlign: 'right' }}>
                     {p.clicks.toLocaleString()}
-                  </span>
-                  <span className="page-ctr" style={{ fontFamily: 'monospace', fontSize: 11, color: '#10B981', width: 38, textAlign: 'right' }}>
-                    {p.ctr}
                   </span>
                 </div>
               );

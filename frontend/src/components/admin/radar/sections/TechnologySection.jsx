@@ -1,5 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useMemo } from 'react';
 import {
   GlobalOutlined,
   DesktopOutlined,
@@ -16,16 +15,38 @@ const PieChart = ({ segments, size = 130, darkMode }) => {
   const cx = size / 2, cy = size / 2, r = size * 0.4;
   let cumAngle = -Math.PI / 2;
 
+  // Handle case where segments might be empty or have zero values
+  if (!segments || segments.length === 0) {
+    return (
+      <svg width={size} height={size} style={{ overflow: 'visible' }}>
+        <circle cx={cx} cy={cy} r={r} fill={darkMode ? '#1E293B' : '#E2E8F0'} />
+        <circle cx={cx} cy={cy} r={r * 0.55} fill={darkMode ? '#0F172A' : '#FFFFFF'} />
+      </svg>
+    );
+  }
+
   return (
     <svg width={size} height={size} style={{ overflow: 'visible' }}>
       {segments.map((seg, i) => {
-        const angle = ((seg.pct || 0) / 100) * 2 * Math.PI;
-        const x1 = cx + r * Math.cos(cumAngle);
-        const y1 = cy + r * Math.sin(cumAngle);
-        const x2 = cx + r * Math.cos(cumAngle + angle);
-        const y2 = cy + r * Math.sin(cumAngle + angle);
-        const large = angle > Math.PI ? 1 : 0;
-        const path = `M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${large} 1 ${x2.toFixed(1)},${y2.toFixed(1)} Z`;
+        const pct = seg.pct || 0;
+        const angle = (pct / 100) * 2 * Math.PI;
+        
+        // Handle edge case for 100% or near-100% segments
+        const isFullCircle = pct >= 99.9;
+        
+        let path;
+        if (isFullCircle) {
+          // Draw a full circle for 100% case
+          path = `M${cx},${cy} m-${r},0 a${r},${r} 0 1,0 ${r*2},0 a${r},${r} 0 1,0 -${r*2},0`;
+        } else {
+          const x1 = cx + r * Math.cos(cumAngle);
+          const y1 = cy + r * Math.sin(cumAngle);
+          const x2 = cx + r * Math.cos(cumAngle + angle);
+          const y2 = cy + r * Math.sin(cumAngle + angle);
+          const large = angle > Math.PI ? 1 : 0;
+          path = `M${cx},${cy} L${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${large} 1 ${x2.toFixed(1)},${y2.toFixed(1)} Z`;
+        }
+        
         const el = (
           <path
             key={i}
@@ -33,7 +54,7 @@ const PieChart = ({ segments, size = 130, darkMode }) => {
             fill={seg.color}
             style={{ transition: 'opacity 0.2s' }}
           >
-            <title>{seg.label}: {seg.pct}%</title>
+            <title>{seg.label}: {pct}%</title>
           </path>
         );
         cumAngle += angle;
@@ -98,48 +119,13 @@ const TechCard = ({ title, segments, darkMode, icon }) => (
   </div>
 );
 
-const TechnologySection = ({ darkMode, recentSessions = [], timeRange = '7d' }) => {
-  const [filteredSessions, setFilteredSessions] = useState([]);
-  const [loading, setLoading] = useState(true);
+const TechnologySection = ({ darkMode, recentSessions = [], timeRange = '7d', isLoading = false }) => {
+  // Use the recentSessions prop directly - it's already filtered by the parent component
+  const filteredSessions = recentSessions;
+  const loading = isLoading;
 
-  useEffect(() => {
-    // Calculate date range based on timeRange
-    let dateParams = '';
-    
-    if (timeRange !== 'all') {
-      const endDate = new Date();
-      const startDate = new Date();
-      if (timeRange === '7d') startDate.setDate(startDate.getDate() - 7);
-      if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
-      if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
-
-      const s = startDate.toISOString().split('T')[0];
-      const e = endDate.toISOString().split('T')[0];
-      dateParams = `?start_date=${s}&end_date=${e}`;
-    }
-
-    console.log('TechnologySection - Fetching sessions with timeRange:', timeRange, 'dateParams:', dateParams);
-    console.log('TechnologySection - Full API URL:', `/api/analytics/sessions${dateParams}`);
-
-    // Fetch session data with date filtering
-    axios.get(`/api/analytics/sessions${dateParams}`)
-      .then(res => {
-        console.log('TechnologySection - API response:', res.data);
-        const sessions = Array.isArray(res.data.recentSessions) ? res.data.recentSessions : Array.isArray(res.data.sessions) ? res.data.sessions : Array.isArray(res.data) ? res.data : [];
-        console.log('TechnologySection - Sessions fetched:', sessions.length);
-        console.log('TechnologySection - Sample session data:', sessions.length > 0 ? sessions[0] : 'No sessions');
-        if (sessions.length > 0) {
-          console.log('TechnologySection - Session data structure:', JSON.stringify(sessions.slice(0, 2), null, 2));
-        }
-        setFilteredSessions(sessions);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('TechnologySection - Error fetching sessions:', err);
-        setFilteredSessions([]);
-        setLoading(false);
-      });
-  }, [timeRange]);
+  console.log('TechnologySection - Using filtered sessions from parent:', filteredSessions.length);
+  console.log('TechnologySection - Current timeRange:', timeRange);
 
   // Aggregate real technology metrics from filteredSessions dynamically
   const { browsers, os, devices, screenRes, counts } = useMemo(() => {
@@ -220,7 +206,7 @@ const TechnologySection = ({ darkMode, recentSessions = [], timeRange = '7d' }) 
     </div>
   );
 
-  if (loading) {
+  if (loading && filteredSessions.length === 0) {
     return (
       <div style={{ padding: '40px', textAlign: 'center', color: darkMode ? '#64748B' : '#94A3B8' }}>
         Loading technology data...

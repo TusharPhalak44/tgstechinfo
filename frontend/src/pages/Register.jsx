@@ -245,7 +245,7 @@ const Register = () => {
   const [showPw, setShowPw]   = useState(false);
   const [showCPw, setShowCPw] = useState(false);
   const [agree, setAgree]     = useState(false);
-  const [fd, setFd]           = useState({ firstName:'', lastName:'', email:'', phone:'', password:'', confirmPassword:'' });
+  const [fd, setFd]           = useState({ firstName:'', lastName:'', email:'', jobTitle:'', companyName:'', phone:'', password:'', confirmPassword:'' });
   const [errors, setErrors]   = useState({});
   const { register }          = useAuth();
   const navigate              = useNavigate();
@@ -256,6 +256,10 @@ const Register = () => {
     if (!fd.lastName.trim())  e.lastName  = 'Required';
     if (!fd.email.trim())     e.email = 'Required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fd.email)) e.email = 'Invalid email';
+    if (!fd.jobTitle.trim())  e.jobTitle  = 'Required';
+    else if (fd.jobTitle.length > 150) e.jobTitle = 'Job title must not exceed 150 characters';
+    if (!fd.companyName.trim()) e.companyName = 'Required';
+    else if (fd.companyName.length > 200) e.companyName = 'Company name must not exceed 200 characters';
     if (!fd.password)         e.password = 'Required';
     else if (fd.password.length < 12) e.password = 'Min 12 characters';
     else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(fd.password))
@@ -286,8 +290,9 @@ const Register = () => {
     setLoading(true);
     try {
       const result = await register({
-        first_name: fd.firstName, last_name: fd.lastName,
-        email: fd.email, password: fd.password, role: 'user',
+        first_name: fd.firstName.trim(), last_name: fd.lastName.trim(),
+        email: fd.email.trim(), job_title: fd.jobTitle.trim(), company_name: fd.companyName.trim(),
+        password: fd.password, role: 'user',
       });
       if (result.success) navigate('/');
     } catch (err) { console.error(err); }
@@ -377,6 +382,32 @@ const Register = () => {
                 {errors.email && <div className="rp-ferr"><AlertCircle size={10}/>{errors.email}</div>}
               </div>
 
+              {/* Job Title */}
+              <div className="rp-f">
+                <label htmlFor="rg-jt" className="rp-lbl">Job Title</label>
+                <div className="rp-iw">
+                  <User className="rp-ii" />
+                  <input id="rg-jt" name="jobTitle" placeholder="Marketing Director"
+                    value={fd.jobTitle} onChange={hc}
+                    className={`rp-input${errors.jobTitle?' rp-input--e':''}`}
+                    autoComplete="organization-title" required />
+                </div>
+                {errors.jobTitle && <div className="rp-ferr"><AlertCircle size={10}/>{errors.jobTitle}</div>}
+              </div>
+
+              {/* Company Name */}
+              <div className="rp-f">
+                <label htmlFor="rg-cn" className="rp-lbl">Company Name</label>
+                <div className="rp-iw">
+                  <User className="rp-ii" />
+                  <input id="rg-cn" name="companyName" placeholder="Example Technologies"
+                    value={fd.companyName} onChange={hc}
+                    className={`rp-input${errors.companyName?' rp-input--e':''}`}
+                    autoComplete="organization" required />
+                </div>
+                {errors.companyName && <div className="rp-ferr"><AlertCircle size={10}/>{errors.companyName}</div>}
+              </div>
+
               {/* Phone */}
               <div className="rp-f">
                 <label htmlFor="rg-ph" className="rp-lbl">
@@ -390,62 +421,64 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Password */}
-              <div className="rp-f">
-                <label htmlFor="rg-pw" className="rp-lbl">Password</label>
-                <div className="rp-iw">
-                  <Lock className="rp-ii" />
-                  <input id="rg-pw" name="password"
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Create a strong password"
-                    value={fd.password} onChange={hc}
-                    className={`rp-input${errors.password?' rp-input--e':''}`}
-                    style={{ paddingRight:40 }}
-                    autoComplete="new-password" required />
-                  <button type="button" className="rp-eye"
-                    onClick={() => setShowPw(!showPw)} aria-label="Toggle">
-                    {showPw ? <EyeOff size={14}/> : <Eye size={14}/>}
-                  </button>
+              {/* Password grid */}
+              <div className="rp-grid">
+                <div className="rp-f">
+                  <label htmlFor="rg-pw" className="rp-lbl">Password</label>
+                  <div className="rp-iw">
+                    <Lock className="rp-ii" />
+                    <input id="rg-pw" name="password"
+                      type={showPw ? 'text' : 'password'}
+                      placeholder="Create a strong password"
+                      value={fd.password} onChange={hc}
+                      className={`rp-input${errors.password?' rp-input--e':''}`}
+                      style={{ paddingRight:40 }}
+                      autoComplete="new-password" required />
+                    <button type="button" className="rp-eye"
+                      onClick={() => setShowPw(!showPw)} aria-label="Toggle">
+                      {showPw ? <EyeOff size={14}/> : <Eye size={14}/>}
+                    </button>
+                  </div>
+                  {errors.password && <div className="rp-ferr"><AlertCircle size={10}/>{errors.password}</div>}
                 </div>
-                {fd.password && (
-                  <>
-                    <div className="rp-str">
-                      <div className="rp-str-track">
-                        <div className="rp-str-fill" style={{ width:`${(s/6)*100}%`, background:strColor(s) }} />
-                      </div>
-                      <span className="rp-str-lbl" style={{ color:strColor(s) }}>{strLabel(s)}</span>
-                    </div>
-                    <div className="rp-rules">
-                      {rules.map((r) => (
-                        <div key={r.label} className={`rp-rule${r.pass?' rp-rule--p':''}`}>
-                          <div className="rp-dot"/>{r.label}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {errors.password && <div className="rp-ferr"><AlertCircle size={10}/>{errors.password}</div>}
+                <div className="rp-f">
+                  <label htmlFor="rg-cpw" className="rp-lbl">Confirm Password</label>
+                  <div className="rp-iw">
+                    <Lock className="rp-ii" />
+                    <input id="rg-cpw" name="confirmPassword"
+                      type={showCPw ? 'text' : 'password'}
+                      placeholder="Confirm your password"
+                      value={fd.confirmPassword} onChange={hc}
+                      className={`rp-input${errors.confirmPassword?' rp-input--e':''}`}
+                      style={{ paddingRight:40 }}
+                      autoComplete="new-password" required />
+                    <button type="button" className="rp-eye"
+                      onClick={() => setShowCPw(!showCPw)} aria-label="Toggle">
+                      {showCPw ? <EyeOff size={14}/> : <Eye size={14}/>}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && <div className="rp-ferr"><AlertCircle size={10}/>{errors.confirmPassword}</div>}
+                </div>
               </div>
 
-              {/* Confirm password */}
-              <div className="rp-f">
-                <label htmlFor="rg-cpw" className="rp-lbl">Confirm Password</label>
-                <div className="rp-iw">
-                  <Lock className="rp-ii" />
-                  <input id="rg-cpw" name="confirmPassword"
-                    type={showCPw ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    value={fd.confirmPassword} onChange={hc}
-                    className={`rp-input${errors.confirmPassword?' rp-input--e':''}`}
-                    style={{ paddingRight:40 }}
-                    autoComplete="new-password" required />
-                  <button type="button" className="rp-eye"
-                    onClick={() => setShowCPw(!showCPw)} aria-label="Toggle">
-                    {showCPw ? <EyeOff size={14}/> : <Eye size={14}/>}
-                  </button>
-                </div>
-                {errors.confirmPassword && <div className="rp-ferr"><AlertCircle size={10}/>{errors.confirmPassword}</div>}
-              </div>
+              {/* Password strength indicator */}
+              {fd.password && (
+                <>
+                  <div className="rp-str">
+                    <div className="rp-str-track">
+                      <div className="rp-str-fill" style={{ width:`${(s/6)*100}%`, background:strColor(s) }} />
+                    </div>
+                    <span className="rp-str-lbl" style={{ color:strColor(s) }}>{strLabel(s)}</span>
+                  </div>
+                  <div className="rp-rules">
+                    {rules.map((r) => (
+                      <div key={r.label} className={`rp-rule${r.pass?' rp-rule--p':''}`}>
+                        <div className="rp-dot"/>{r.label}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Agreement */}
               <div className="rp-agree">

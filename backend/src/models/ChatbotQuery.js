@@ -1,4 +1,5 @@
 const { pool } = require('../config/database');
+const { CHATBOT_QUERY_STATUSES } = require('../utils/statusHelper');
 
 class ChatbotQuery {
     static async create(queryData) {
@@ -6,10 +7,10 @@ class ChatbotQuery {
 
         const sql = `
             INSERT INTO chatbot_queries (email, query, status)
-            VALUES (?, ?, 'pending')
+            VALUES (?, ?, ?)
         `;
 
-        const [result] = await pool.query(sql, [email, query]);
+        const [result] = await pool.query(sql, [email, query, CHATBOT_QUERY_STATUSES.PENDING]);
         return await this.findById(result.insertId);
     }
 
@@ -54,13 +55,17 @@ class ChatbotQuery {
         const sql = `
             SELECT 
                 COUNT(*) as total,
-                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = 'answered' THEN 1 ELSE 0 END) as answered,
-                SUM(CASE WHEN status = 'closed' THEN 1 ELSE 0 END) as closed
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as answered,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as closed
             FROM chatbot_queries
         `;
 
-        const [rows] = await pool.query(sql);
+        const [rows] = await pool.query(sql, [
+            CHATBOT_QUERY_STATUSES.PENDING,
+            CHATBOT_QUERY_STATUSES.ANSWERED,
+            CHATBOT_QUERY_STATUSES.CLOSED
+        ]);
         return rows[0];
     }
 }

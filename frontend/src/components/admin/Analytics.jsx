@@ -259,6 +259,7 @@ const Analytics = () => {
         {...commonProps}
         recentSessions={recentSessions}
         timeRange={timeRange}
+        isLoading={loading}
       />
     ),
     seo: <SEOSection {...commonProps} searchData={searchData} timeRange={timeRange} />,

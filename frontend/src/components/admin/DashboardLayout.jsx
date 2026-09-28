@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import RouteLoadingFallback from '../common/RouteLoadingFallback';
 import { Layout, Menu, Avatar, Dropdown, Button, Badge, Tooltip, Popover, Tag } from 'antd';
 import {
   DashboardOutlined,
@@ -488,7 +489,7 @@ const DashboardLayout = () => {
 
       /* ── 3. LEAD GEN & INBOUND (Solar Flame & Amber) ── */
       navGroup('g-leads', '🎯 Lead Gen & Inbound', [
-        navItem('/admin/submissions', <SendOutlined style={{ color: D ? '#FB923C' : '#EA580C' }} />, 'Form Submissions'),
+        navItem('/dashboard/submissions', <SendOutlined style={{ color: D ? '#FB923C' : '#EA580C' }} />, 'Form Submissions'),
         // navItem('/dashboard/forms', <FormOutlined style={{ color: D ? '#FBBF24' : '#D97706' }} />, 'Forms Builder'),
         navItem('/dashboard/email-templates', <MailOutlined style={{ color: D ? '#F59E0B' : '#B45309' }} />, 'Email Templates'),
       ]),
@@ -496,7 +497,7 @@ const DashboardLayout = () => {
       /* ── 4.5. AUDIENCE INTELLIGENCE (Taraj Cyan & Deep Blue) ── */
       navGroup('g-audience', '🎯 Audience Intelligence', [
         navItem('/audience-intelligence', <CompassOutlined style={{ color: D ? '#38BDF8' : '#0284C7' }} />, 'Live Audience Sizing'),
-        navItem('/admin/audience', <DatabaseOutlined style={{ color: D ? '#0AAEEF' : '#0284C7' }} />, 'Data Demographics Hub'),
+        navItem('/dashboard/audience', <DatabaseOutlined style={{ color: D ? '#0AAEEF' : '#0284C7' }} />, 'Data Demographics Hub'),
       ]),
 
       /* ── 5. SEO & DISTRIBUTION (Teal & Cyan) ── */
@@ -692,7 +693,7 @@ const DashboardLayout = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', minWidth: 0, overflow: 'hidden' }}
-              onClick={() => navigate('/admin')}
+              onClick={() => navigate('/dashboard')}
             >
               {collapsed && !isMobile ? (
                 iconLogo ? (
@@ -1009,7 +1010,9 @@ const DashboardLayout = () => {
               overflowY: 'auto',
             }}
           >
-            <Outlet />
+            <Suspense fallback={<RouteLoadingFallback />}>
+              <Outlet />
+            </Suspense>
           </Content>
 
         </Layout>

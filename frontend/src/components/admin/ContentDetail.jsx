@@ -14,6 +14,7 @@ import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import './radar/RadarStyles.css';
+import { formatContentPublishDate, formatDateForDisplay, formatWebinarDate } from '../../utils/dateHelper';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -530,7 +531,7 @@ const ContentDetail = () => {
                     <div>
                       <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Scheduled Date & Time</Text>
                       <Text style={{ fontSize: '0.9rem', color: '#ef4444', fontWeight: 700, display: 'block' }}>
-                        {moment(content.webinar_date).format('MMMM D, YYYY [at] h:mm A')}
+                        {formatWebinarDate(content.webinar_date)}
                       </Text>
                     </div>
                   )}
@@ -555,16 +556,16 @@ const ContentDetail = () => {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
-                  <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Created Date</Text>
+                  <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Scheduled/Published Date</Text>
                   <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 600, display: 'block' }}>
-                    {moment(content.created_at).format('MMM D, YYYY')}
+                    {formatContentPublishDate(content)}
                   </Text>
                 </div>
 
                 <div>
                   <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Updated Date</Text>
                   <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 600, display: 'block' }}>
-                    {moment(content.updated_at).format('MMM D, YYYY')}
+                    {formatDateForDisplay(content.updated_at)}
                   </Text>
                 </div>
 

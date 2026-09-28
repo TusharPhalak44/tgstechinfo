@@ -80,6 +80,7 @@ const ConversionsSection = ({
       const e = endDate.toISOString().split('T')[0];
       dateParams = `?start_date=${s}&end_date=${e}`;
     }
+    // For 'all' time range, don't send date parameters - let backend use default (90 days)
 
     // Fetch real conversion data using existing APIs
     console.log('ConversionsSection - Fetching data with timeRange:', timeRange, 'dateParams:', dateParams);
@@ -103,6 +104,12 @@ const ConversionsSection = ({
         data.ctaData = ctaRes.value.data.ctaClicks || ctaRes.value.data || [];
         data.totalConversions = ctaRes.value.data.totalConversions || 0;
         console.log('ConversionsSection - CTA data parsed:', data.ctaData.length, 'items');
+        console.log('ConversionsSection - CTA data structure:', JSON.stringify(data.ctaData, null, 2));
+      } else {
+        console.log('ConversionsSection - CTA API failed or returned no data:', ctaRes.status, ctaRes.reason?.message);
+        if (ctaRes.status === 'rejected') {
+          console.error('CTA API Error:', ctaRes.reason);
+        }
       }
 
       // Get journey/funnel data
@@ -113,20 +120,27 @@ const ConversionsSection = ({
         // Transform backend funnel data to frontend format
         data.funnel = rawFunnel.map(item => ({
           step: item.action_type || item.step || 'Unknown',
+          label: item.action_type || item.step || 'Unknown',
           count: item.count || 0,
-          sessions: item.unique_sessions || item.count || 0,
-          pct: parseFloat(item.percentage) || 0,
-          percentage: parseFloat(item.percentage) || 0
+          sessions: item.unique_sessions || item.sessions || item.count || 0,
+          pct: parseFloat(item.percentage) || parseFloat(item.pct) || 0,
+          percentage: parseFloat(item.percentage) || parseFloat(item.pct) || 0
         }));
         
         console.log('ConversionsSection - Funnel data parsed:', data.funnel.length, 'items, totalSessions:', data.totalSessions);
         console.log('ConversionsSection - Funnel data structure:', JSON.stringify(data.funnel, null, 2));
+      } else {
+        console.log('ConversionsSection - Journey API failed or returned no data:', journeyRes.status, journeyRes.reason?.message);
+        if (journeyRes.status === 'rejected') {
+          console.error('Journey API Error:', journeyRes.reason);
+        }
       }
 
       setConversionData(data);
       setLoading(false);
     }).catch((error) => {
       console.error('Conversion data fetch error:', error);
+      console.error('Error details:', error.response?.data || error.message);
       // Set empty data on error
       setConversionData({
         totalSessions: 0,
@@ -143,8 +157,26 @@ const ConversionsSection = ({
 
   // Use real data only - no fallbacks
   const funnelData = funnel.length > 0 ? funnel : [];
-  const ctaDisplayData = ctaData.length > 0 ? ctaData.slice(0, 8) : [];
+  
+  // Filter and prioritize meaningful conversion data
+  const meaningfulCtaData = ctaData.filter(c => c.cta_type !== 'Other Interaction');
+  
+  // If we have meaningful data, use it; otherwise show all data but prioritize meaningful items
+  let ctaDisplayData = [];
+  if (meaningfulCtaData.length > 0) {
+    ctaDisplayData = meaningfulCtaData.slice(0, 8);
+  } else if (ctaData.length > 0) {
+    // If no meaningful data, show top items by conversion rate
+    ctaDisplayData = ctaData
+      .sort((a, b) => (parseFloat(b.conv_rate || b.conv || 0) - parseFloat(a.conv_rate || a.conv || 0)))
+      .slice(0, 8);
+  }
+    
   const maxClicks = ctaDisplayData.length > 0 ? Math.max(...ctaDisplayData.map(c => c.click_count || c.clicks || 0), 1) : 1;
+
+  console.log('ConversionsSection - Final ctaDisplayData:', ctaDisplayData);
+  console.log('ConversionsSection - ctaDisplayData.length:', ctaDisplayData.length);
+  console.log('ConversionsSection - maxClicks:', maxClicks);
 
   console.log('ConversionsSection - Final funnelData:', funnelData);
   console.log('ConversionsSection - funnelData.length:', funnelData.length);
@@ -212,6 +244,17 @@ const ConversionsSection = ({
             >
               <AimOutlined style={{ color: '#0AAEEF' }} />
               <span>User Conversion Funnel</span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: '2px 6px',
+                borderRadius: 4,
+                background: '#10B98120',
+                color: '#10B981',
+                marginLeft: 'auto'
+              }}>
+                Real Data
+              </span>
             </div>
             {funnelData.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0 }}>
@@ -255,13 +298,24 @@ const ConversionsSection = ({
             >
               <ThunderboltOutlined style={{ color: '#8B5CF6' }} />
               <span>CTA Performance &amp; Actions</span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: '2px 6px',
+                borderRadius: 4,
+                background: '#10B98120',
+                color: '#10B981',
+                marginLeft: 'auto'
+              }}>
+                Real Data
+              </span>
             </div>
             {ctaDisplayData.length > 0 ? (
               <div className="cta-table-container" style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: darkMode ? '#1E293B' : '#F8FAFC' }}>
-                      {['CTA Action / Button', 'Clicks', 'Conv. Rate', 'Volume'].map(h => (
+                      {['Action Type', 'Interactions', 'Unique Users', 'Conv. Rate', 'Volume'].map(h => (
                         <th
                           key={h}
                           style={{
@@ -283,9 +337,11 @@ const ConversionsSection = ({
                   <tbody>
                     {ctaDisplayData.map((c, i) => {
                       const clicks = c.click_count || c.clicks || 0;
+                      const uniqueClicks = c.unique_clicks || 0;
                       const pct = Math.round((clicks / maxClicks) * 100);
                       const color = COLORS[i % COLORS.length];
-                      const convR = c.conv_rate || c.conv || Math.round((clicks / Math.max(1, realSessions)) * 100);
+                      const convR = c.conv_rate || c.conv || 0;
+                      
                       return (
                         <tr
                           key={i}
@@ -295,10 +351,13 @@ const ConversionsSection = ({
                           }}
                         >
                           <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 600, color: darkMode ? '#F8FAFC' : '#0F172A' }}>
-                            {c.cta_type || c.label || c.cta_label || `CTA ${i + 1}`}
+                            {c.cta_type || c.label || c.cta_label || `Action ${i + 1}`}
                           </td>
                           <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color }}>
                             {clicks.toLocaleString()}
+                          </td>
+                          <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontSize: 12, fontWeight: 600, color: darkMode ? '#94A3B8' : '#64748B' }}>
+                            {uniqueClicks.toLocaleString()}
                           </td>
                           <td style={{ padding: '12px 14px' }}>
                             <span

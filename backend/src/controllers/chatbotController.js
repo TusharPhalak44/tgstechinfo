@@ -7,6 +7,7 @@ const { detectIntent } = require('../utils/intentDetection');
 const { searchKnowledgeBase } = require('../data/websiteKnowledgeBase');
 const { sendEmail, chatbotQueryAdminTemplate, chatbotQueryResponseTemplate } = require('../config/email');
 const { validationResult } = require('express-validator');
+const { CHATBOT_QUERY_STATUSES } = require('../utils/statusHelper');
 
 /**
  * Chatbot Search Controller
@@ -684,7 +685,7 @@ exports.updateQuery = async (req, res) => {
         }
 
         // Send email to user if status is 'answered' and admin_response is provided
-        if (status === 'answered' && admin_response) {
+        if (status === CHATBOT_QUERY_STATUSES.ANSWERED && admin_response) {
             const queryData = await ChatbotQuery.findById(id);
             if (queryData) {
                 const emailHtml = chatbotQueryResponseTemplate(queryData.query, admin_response);

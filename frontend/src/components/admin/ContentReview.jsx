@@ -4,7 +4,7 @@ import {
   Button, 
   Tag, 
   Space, 
-  message, 
+  message,
   Input,
   DatePicker,
   Select,
@@ -32,12 +32,14 @@ import {
   ThunderboltOutlined,
   CheckSquareOutlined,
   CloseOutlined,
-  CheckOutlined
+  CheckOutlined,
+  MessageOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
+import api from '../../services/api';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { formatDateForTableWithDraft } from '../../utils/dateHelper';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -132,6 +134,9 @@ const ContentReview = () => {
   const [selectedContent, setSelectedContent] = useState(null);
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
   const [adminComment, setAdminComment] = useState('');
+  const [editRequestModal, setEditRequestModal] = useState(false);
+  const [editRequestComment, setEditRequestComment] = useState('');
+  const [editRequestLoading, setEditRequestLoading] = useState(null);
   const [statusCounts, setStatusCounts] = useState({
     pending: 0,
     approved: 0,
@@ -202,7 +207,7 @@ const ContentReview = () => {
       const statusToFetch = filterStatus !== 'all' ? filterStatus : (activeTab !== 'all' ? activeTab : null);
       if (statusToFetch) params.status = statusToFetch;
 
-      const response = await axios.get('/api/admin/content/pending', { params });
+      const response = await api.get('/api/admin/content/pending', { params });
       const result = response.data?.data || response.data || [];
       setAllContents(Array.isArray(result) ? result : []);
       setContents(Array.isArray(result) ? result : []);
@@ -218,7 +223,7 @@ const ContentReview = () => {
 
   const fetchStatusCounts = async () => {
     try {
-      const response = await axios.get('/api/admin/content/pending');
+      const response = await api.get('/api/admin/content/pending');
       const result = response.data?.data || response.data || [];
       const counts = {
         pending: 0,
@@ -245,7 +250,7 @@ const ContentReview = () => {
   const handleReview = async (action, contentId) => {
     setReviewActionLoading(contentId);
     try {
-      await axios.put(`/api/admin/content/${contentId}/review`, {
+      await api.put(`/api/admin/content/${contentId}/review`, {
         action,
         comment: adminComment
       });
@@ -273,7 +278,7 @@ const ContentReview = () => {
   const handleDirectPublish = async (contentId) => {
     setPublishingId(contentId);
     try {
-      await axios.put(`/api/admin/content/${contentId}/review`, { action: 'publish', comment: '' });
+      await api.put(`/api/admin/content/${contentId}/review`, { action: 'publish', comment: '' });
       message.success('Content published successfully');
       fetchContents();
     } catch (error) {
@@ -285,7 +290,7 @@ const ContentReview = () => {
 
   const handleDelete = async (contentId) => {
     try {
-      await axios.delete(`/api/admin/content/${contentId}`);
+      await api.delete(`/api/admin/content/${contentId}`);
       message.success('Content deleted successfully');
       fetchContents();
     } catch {
@@ -303,7 +308,7 @@ const ContentReview = () => {
     
     try {
       const newVisibility = !currentVisibility;
-      await axios.put(`/api/admin/content/${contentId}/visibility`, { 
+      await api.put(`/api/admin/content/${contentId}/visibility`, { 
         is_visible_on_site: newVisibility 
       });
       
@@ -318,6 +323,30 @@ const ContentReview = () => {
       message.error('Failed to toggle visibility');
     } finally {
       setTogglingVisibility(null);
+    }
+  };
+
+  const handleSendEditRequest = async (contentId) => {
+    if (!editRequestComment.trim()) {
+      message.warning('Please provide edit instructions for the author');
+      return;
+    }
+    
+    setEditRequestLoading(contentId);
+    try {
+      await api.post(`/api/admin/content/${contentId}/edit-request`, {
+        admin_comment: editRequestComment
+      });
+      
+      message.success('Edit request sent to author successfully');
+      setEditRequestModal(false);
+      setEditRequestComment('');
+      fetchContents();
+    } catch (error) {
+      console.error('Failed to send edit request:', error);
+      message.error('Failed to send edit request');
+    } finally {
+      setEditRequestLoading(null);
     }
   };
 
@@ -445,32 +474,50 @@ const ContentReview = () => {
       key: 'published_date',
       render: (date) => (
         <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
-          {date ? moment(date).format('MMM DD, YYYY') : 'Draft'}
+          {formatDateForTableWithDraft(date)}
         </span>
       ),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 140,
+      width: 180,
       align: 'right',
       render: (_, record) => (
         <Space size={6}>
           {record.status === 'pending' ? (
-            <Button
-              type="primary"
-              size="small"
-              icon={<CheckCircleOutlined />}
-              onClick={() => navigate(`/dashboard/content-review/${record.id}`)}
-              style={{
-                borderRadius: 8,
-                background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
-                border: 'none',
-                fontWeight: 700,
-              }}
-            >
-              Approve
-            </Button>
+            <>
+              <Button
+                type="primary"
+                size="small"
+                icon={<CheckCircleOutlined />}
+                onClick={() => navigate(`/dashboard/content-review/${record.id}`)}
+                style={{
+                  borderRadius: 8,
+                  background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
+                  border: 'none',
+                  fontWeight: 700,
+                }}
+              >
+                Approve
+              </Button>
+              <Button
+                size="small"
+                icon={<MessageOutlined />}
+                onClick={() => {
+                  setSelectedContent(record);
+                  setEditRequestModal(true);
+                }}
+                style={{ 
+                  borderRadius: 8, 
+                  background: D ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.06)', 
+                  color: '#F59E0B',
+                  borderColor: '#F59E0B'
+                }}
+              >
+                Request Edit
+              </Button>
+            </>
           ) : record.status === 'approved' ? (
             <Button 
               type="primary" 
@@ -741,6 +788,57 @@ const ContentReview = () => {
                   placeholder="Provide detailed feedback or reasons for approval / requested revisions..."
                   value={adminComment}
                   onChange={(e) => setAdminComment(e.target.value)}
+                  style={{ borderRadius: 10 }}
+                />
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* ── EDIT REQUEST MODAL ── */}
+        {selectedContent && (
+          <Modal
+            title={
+              <div style={{ fontSize: '1.1rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <MessageOutlined style={{ color: '#F59E0B' }} /> Request Edit from Author
+              </div>
+            }
+            open={editRequestModal}
+            onCancel={() => { setEditRequestModal(false); setSelectedContent(null); setEditRequestComment(''); }}
+            onOk={() => handleSendEditRequest(selectedContent.id)}
+            okText="Send Edit Request"
+            okButtonProps={{ 
+              loading: editRequestLoading === selectedContent.id, 
+              style: { background: '#F59E0B', border: 'none', borderRadius: 8 } 
+            }}
+            cancelButtonProps={{ style: { borderRadius: 8 } }}
+            width={600}
+          >
+            <div style={{ marginTop: 16 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0F172A', marginBottom: 8 }}>
+                {selectedContent.title}
+              </h2>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                <Tag color="blue">{selectedContent.content_type_name || 'Article'}</Tag>
+                <Tag color="geekblue">{selectedContent.category_name || 'General'}</Tag>
+                <Tag color="gold">Pending Approval</Tag>
+              </div>
+
+              <div style={{ background: D ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.05)', padding: 12, borderRadius: 8, border: `1px solid ${D ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)'}`, marginBottom: 16 }}>
+                <div style={{ fontSize: '0.8rem', color: D ? '#FCD34D' : '#B45309', fontWeight: 600 }}>
+                  ℹ️ The author will receive a notification and can edit the content after accepting this request.
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: D ? '#F8FAFC' : '#0F172A', display: 'block', marginBottom: 6 }}>
+                  Edit Instructions for Author *
+                </label>
+                <AntInput.TextArea
+                  rows={5}
+                  placeholder="Describe what changes the author needs to make. For example: 'Please update the introduction section, add more references, fix the banner image...'"
+                  value={editRequestComment}
+                  onChange={(e) => setEditRequestComment(e.target.value)}
                   style={{ borderRadius: 10 }}
                 />
               </div>

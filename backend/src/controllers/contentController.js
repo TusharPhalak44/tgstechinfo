@@ -288,6 +288,7 @@ exports.updateContent = async (req, res) => {
         if (req.body.platform !== undefined) updateData.platform = req.body.platform;
         if (req.body.webinar_type !== undefined) updateData.webinar_type = req.body.webinar_type;
         if (req.body.join_link !== undefined) updateData.join_link = req.body.join_link;
+        if (req.body.redirect_url !== undefined) updateData.redirect_url = req.body.redirect_url;
         if (req.body.custom_fields) {
             try {
                 updateData.custom_fields = typeof req.body.custom_fields === 'string'

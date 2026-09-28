@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import RBACManagement from './RBACManagement';
 import SecurityDashboard from '../user/SecurityDashboard';
 import { useTheme } from '../../context/ThemeContext';
+import { formatContentPublishDate } from '../../utils/dateHelper';
 
 const AdminDashboard = () => {
   const { darkMode } = useTheme();
@@ -367,7 +368,7 @@ const AdminDashboard = () => {
                                 )}
                                 <span
                                   style={{ color: '#4a7cff', cursor: 'pointer', transition: 'color 0.2s' }}
-                                  onClick={() => navigate(`/admin/review/${record.id}`)}
+                                  onClick={() => navigate(`/dashboard/review/${record.id}`)}
                                 >
                                   {record.title}
                                 </span>
@@ -385,13 +386,13 @@ const AdminDashboard = () => {
                               </Tag>
                             </td>
                             <td style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1vw, 14px)', color: darkMode ? '#cbd5e1' : '#111827' }}>
-                              {record.scheduled_publish_date ? new Date(record.scheduled_publish_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-')}
+                              {formatContentPublishDate(record)}
                             </td>
                             <td style={{ padding: 'clamp(12px, 1.5vw, 14px) clamp(16px, 2vw, 24px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1vw, 14px)', color: darkMode ? '#94a3b8' : '#6b7280' }}>
                               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'nowrap' }}>
                                 {record.status === 'pending' && (
                                   <Button type="primary" size="small" icon={<EyeOutlined />}
-                                    onClick={() => navigate(`/admin/review/${record.id}`)}
+                                    onClick={() => navigate(`/dashboard/review/${record.id}`)}
                                     style={{ minWidth: 80, background: '#10B981', borderColor: '#10B981' }}>
                                     Review
                                   </Button>
@@ -406,7 +407,7 @@ const AdminDashboard = () => {
                                 )}
                                 {record.status !== 'pending' && record.status !== 'approved' && (
                                   <Button size="small" icon={<EyeOutlined />}
-                                    onClick={() => navigate(`/admin/review/${record.id}`)}
+                                    onClick={() => navigate(`/dashboard/review/${record.id}`)}
                                     style={{ minWidth: 60 }}>View</Button>
                                 )}
                                 <Popconfirm
@@ -432,7 +433,7 @@ const AdminDashboard = () => {
                               )}
                               <span
                                 style={{ color: '#4a7cff', cursor: 'pointer', transition: 'color 0.2s', fontSize: 15, fontWeight: 600, display: 'block', marginBottom: 8 }}
-                                onClick={() => navigate(`/admin/review/${record.id}`)}
+                                onClick={() => navigate(`/dashboard/review/${record.id}`)}
                               >
                                 {record.title}
                               </span>
@@ -450,7 +451,7 @@ const AdminDashboard = () => {
                             <div style={{ marginBottom: 12 }}>
                               <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Published Date</span>
                               <div style={{ marginTop: 4, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>
-                                {record.scheduled_publish_date ? new Date(record.scheduled_publish_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : (record.published_date ? new Date(record.published_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '-')}
+                                {formatContentPublishDate(record)}
                               </div>
                             </div>
                             <div style={{ marginBottom: 12 }}>
@@ -464,7 +465,7 @@ const AdminDashboard = () => {
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
                               {record.status === 'pending' && (
                                 <Button type="primary" size="small" icon={<EyeOutlined />}
-                                  onClick={() => navigate(`/admin/review/${record.id}`)}
+                                  onClick={() => navigate(`/dashboard/review/${record.id}`)}
                                   style={{ minWidth: 80, flex: window.innerWidth < 768 ? '1 1 auto' : 'auto', background: '#10B981', borderColor: '#10B981' }}>
                                   Review
                                 </Button>
@@ -479,7 +480,7 @@ const AdminDashboard = () => {
                               )}
                               {record.status !== 'pending' && record.status !== 'approved' && (
                                 <Button size="small" icon={<EyeOutlined />}
-                                  onClick={() => navigate(`/admin/review/${record.id}`)}
+                                  onClick={() => navigate(`/dashboard/review/${record.id}`)}
                                   style={{ minWidth: 60, flex: window.innerWidth < 768 ? '1 1 auto' : 'auto' }}>View</Button>
                               )}
                               <Popconfirm

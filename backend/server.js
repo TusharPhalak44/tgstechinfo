@@ -296,6 +296,8 @@ app.use('/api/tracking', require('./src/routes/trackingRoutes'));
 
 app.use('/api/analytics', require('./src/routes/analyticsRoutes'));
 
+// Canonical geographic analytics router mount + backward-compatible alias
+app.use('/api/analytics/geographic', require('./src/routes/geographicAnalyticsRoutes'));
 app.use('/api/analytics', require('./src/routes/geographicAnalyticsRoutes'));
 
 app.use('/api/chatbot', require('./src/routes/chatbotRoutes'));

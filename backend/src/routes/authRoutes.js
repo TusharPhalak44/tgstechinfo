@@ -10,6 +10,18 @@ const registerValidation = [
     body('first_name').notEmpty().withMessage('First name is required'),
     body('last_name').notEmpty().withMessage('Last name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
+    body('job_title')
+        .trim()
+        .notEmpty().withMessage('Job title is required')
+        .isLength({ max: 150 }).withMessage('Job title must not exceed 150 characters'),
+    body('company_name')
+        .trim()
+        .notEmpty().withMessage('Company name is required')
+        .isLength({ max: 200 }).withMessage('Company name must not exceed 200 characters'),
+    body('country')
+        .trim()
+        .optional()
+        .isLength({ max: 100 }).withMessage('Country must not exceed 100 characters'),
     body('password').isLength({ min: 12 }).withMessage('Password must be at least 12 characters')
         .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/)
         .withMessage('Password must include uppercase, lowercase, number & special character')

@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
+import { formatDateForDisplay } from '../../utils/dateHelper';
 
 const { Text, Title } = Typography;
 
@@ -85,7 +86,7 @@ const LoginHistory = () => {
   };
 
   const formatDateTime = (dateString) => {
-    return moment(dateString).format('MMM D, YYYY HH:mm:ss');
+    return formatDateForDisplay(dateString, 'MMM D, YYYY HH:mm:ss');
   };
 
   return (

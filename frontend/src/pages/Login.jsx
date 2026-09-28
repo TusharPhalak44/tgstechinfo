@@ -264,7 +264,7 @@ const Login = () => {
   useEffect(() => {
     if (isAuthenticated) {
       setSuccess(true);
-      setTimeout(() => navigate(user?.role === 'admin' ? '/admin' : '/user-dashboard'), 500);
+      setTimeout(() => navigate(user?.role === 'admin' ? '/dashboard' : '/user-dashboard'), 500);
     }
   }, [isAuthenticated, user, navigate]);
 

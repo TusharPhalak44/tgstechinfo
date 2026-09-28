@@ -85,7 +85,11 @@ class VisitorSession {
         if (filters.start_date) {
             baseWhere += ' AND session_start >= ?';
             values.push(filters.start_date);
+        } else {
+            // Default to last 90 days if no start date specified
+            baseWhere += ' AND session_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
         }
+        
         if (filters.end_date) {
             baseWhere += ' AND session_start <= ?';
             values.push(filters.end_date.includes(':') ? filters.end_date : `${filters.end_date} 23:59:59`);

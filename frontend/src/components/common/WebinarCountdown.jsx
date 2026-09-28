@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ClockCircleOutlined, CalendarOutlined, BellOutlined, GoogleOutlined, ThunderboltFilled } from '@ant-design/icons';
 import { Dropdown, Button, Tag, Space, Tooltip } from 'antd';
 import moment from 'moment';
+import { formatDateForDisplay, DATE_FORMATS, formatDateForICS } from '../../utils/dateHelper';
 
 const WebinarCountdown = ({ webinarDate, darkMode, title = 'Live Technical Webinar', variant = 'hero' }) => {
   const [timeLeft, setTimeLeft] = useState(null);
@@ -45,14 +46,14 @@ const WebinarCountdown = ({ webinarDate, darkMode, title = 'Live Technical Webin
 
   // Calendar Links Generator
   const getGoogleCalendarUrl = () => {
-    const start = moment(webinarDate).utc().format('YYYYMMDDTHHmmss[Z]');
-    const end = moment(webinarDate).add(1, 'hour').utc().format('YYYYMMDDTHHmmss[Z]');
+    const start = formatDateForICS(webinarDate);
+    const end = formatDateForICS(moment(webinarDate).add(1, 'hour'));
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${start}/${end}&details=${encodeURIComponent('Join our live technical webinar session on TGS Tech Info!')}`;
   };
 
   const downloadIcsFile = () => {
-    const start = moment(webinarDate).utc().format('YYYYMMDDTHHmmss[Z]');
-    const end = moment(webinarDate).add(1, 'hour').utc().format('YYYYMMDDTHHmmss[Z]');
+    const start = formatDateForICS(webinarDate);
+    const end = formatDateForICS(moment(webinarDate).add(1, 'hour'));
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//TGS Tech Info//Webinar Calendar//EN
@@ -190,7 +191,7 @@ END:VCALENDAR`;
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#94a3b8', fontSize: 13 }}>
             <ClockCircleOutlined style={{ color: '#38bdf8' }} />
-            <span>Starts {moment(webinarDate).format('dddd, MMMM D, YYYY [at] h:mm A')}</span>
+            <span>Starts {formatDateForDisplay(webinarDate, DATE_FORMATS.DATE_TIME)}</span>
           </div>
         </div>
 

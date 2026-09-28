@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const fs = require('fs');
 const path = require('path');
 const { pool } = require('./database');
+const { formatDateForEmail } = require('../utils/dateHelper');
 
 dotenv.config();
 
@@ -536,13 +537,16 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             name: derivedName,
             first_name: derivedFirstName,
             last_name: derivedLastName,
+            job_title: variables.job_title || '',
+            company_name: variables.company_name || '',
+            country: variables.country || '',
             title: derivedTitle,
             content_title: derivedTitle,
             category: 'General',
-            submitted_date: new Date().toLocaleDateString(),
-            approved_date: new Date().toLocaleDateString(),
-            published_date: new Date().toLocaleDateString(),
-            reviewed_date: new Date().toLocaleDateString(),
+            submitted_date: formatDateForEmail(new Date()),
+            approved_date: formatDateForEmail(new Date()),
+            published_date: formatDateForEmail(new Date()),
+            reviewed_date: formatDateForEmail(new Date()),
             feedback: '',
             email: to || '',
             ...variables

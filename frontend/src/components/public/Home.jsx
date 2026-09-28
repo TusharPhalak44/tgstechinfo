@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem } from '../../lib/contentRoute';
+import { formatContentPublishDate, sortContentByDate } from '../../utils/dateHelper';
 
 // Newsletter Subscribe Form Component
 const NewsletterSubscribeForm = ({ darkMode = false }) => {
@@ -157,9 +158,29 @@ const useCountUp = (target, visible, duration = 1400) => {
   return count;
 };
 
+// Format large numbers to readable format (e.g., 376543303 -> "376.5M+", 1500000000 -> "1.5B+")
+function formatNumber(num) {
+  if (!num || num === 0) return '0';
+  
+  let formatted;
+  if (num >= 1000000000) {
+    formatted = (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B+';
+  } else if (num >= 1000000) {
+    formatted = (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M+';
+  } else if (num >= 1000) {
+    formatted = (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K+';
+  } else {
+    formatted = num.toString();
+  }
+  
+  return formatted;
+}
+
 // ── Single Stat Item ──────────────────────────────────────────
 const StatCard = ({ s, i, visible, darkMode = false, isLast = false }) => {
   const num = useCountUp(Number(s.value) || 0, visible);
+  const formattedNum = formatNumber(Number(s.value) || 0);
+  const displayNum = s.formatLarge ? formattedNum : num.toLocaleString();
   return (
     <div
       className="stat-simple-card"
@@ -215,7 +236,7 @@ const StatCard = ({ s, i, visible, darkMode = false, isLast = false }) => {
         alignItems: 'baseline',
         gap: 2
       }}>
-        <span>{num.toLocaleString()}</span>
+        <span>{displayNum}</span>
         {s.suffix && <span style={{ color: s.color, fontSize: '0.7em' }}>{s.suffix}</span>}
       </div>
 
@@ -249,7 +270,7 @@ const StatsBar = ({ stats, darkMode = false }) => {
 
   const items = [
     { label: 'Articles Published', value: stats.totalPublished, icon: <FileTextOutlined />, color: '#0AAEEF', suffix: '+' },
-    { label: 'Total Reads & Views', value: stats.totalViews, icon: <EyeOutlined />, color: '#F7941D', suffix: '+' },
+    { label: 'Total Reads & Views', value: stats.totalViews, icon: <EyeOutlined />, color: '#F7941D', suffix: '', formatLarge: true },
     { label: 'Verified Contributors', value: stats.totalAuthors, icon: <TeamOutlined />, color: '#16A34A', suffix: '+' },
     { label: 'Tech Categories', value: stats.totalCategories, icon: <FolderOpenOutlined />, color: '#8B5CF6' },
   ];
@@ -633,7 +654,7 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
                   <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                     <span style={{ fontSize: 12, color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CalendarOutlined style={{ fontSize: 11 }} />
-                      {moment(cs.scheduled_publish_date || cs.published_date || cs.created_at).format('MMM D, YYYY')}
+                      {formatContentPublishDate(cs)}
                     </span>
                     <button className="download-btn" style={{
                       display: 'inline-flex',
@@ -925,10 +946,10 @@ const NewsletterBox = () => {
 
 // ── Hero slides ──────────────────────────────────────────────────
 const HERO_SLIDES = [
-  { img: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80', tag: 'Artificial Intelligence', title: 'How AI is Reshaping the Future of Enterprise Technology' },
-  { img: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', tag: 'Cybersecurity', title: 'Zero Trust Architecture: The New Standard for Enterprise Security' },
-  { img: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80', tag: 'Cloud Computing', title: 'Multi-Cloud Strategies Driving Digital Transformation in 2026' },
-  { img: 'https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80', tag: 'Data Analytics', title: 'Real-Time Data Processing: The Shift Every Business Must Make' },
+  { img: '/images/hero/hero_ai.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80', tag: 'Artificial Intelligence', title: 'How AI is Reshaping the Future of Enterprise Technology' },
+  { img: '/images/hero/hero_cybersecurity.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', tag: 'Cybersecurity', title: 'Zero Trust Architecture: The New Standard for Enterprise Security' },
+  { img: '/images/hero/hero_cloud.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80', tag: 'Cloud Computing', title: 'Multi-Cloud Strategies Driving Digital Transformation in 2026' },
+  { img: '/images/hero/hero_data.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80', tag: 'Data Analytics', title: 'Real-Time Data Processing: The Shift Every Business Must Make' },
 ];
 
 // ── Hero quotes with shimmer words ─────────────────────────────────
@@ -1217,14 +1238,26 @@ const HeroSection = () => {
                 opacity: active === i ? 1 : 0,
                 transform: active === i ? 'scale(1)' : 'scale(1.04)',
                 transition: 'opacity 1.2s ease, transform 1.2s ease',
-                pointerEvents: active === i ? 'auto' : 'none'
+                pointerEvents: active === i ? 'auto' : 'none',
+                background: 'linear-gradient(135deg, #0B1F4D 0%, #152A60 50%, #070D1E 100%)'
               }}>
-                <img src={slide.img} alt={slide.tag} style={{
-                  width: '100%',
-                  height: 'clamp(240px, 24vw, 340px)',
-                  objectFit: 'cover',
-                  display: 'block'
-                }} />
+                <img
+                  src={slide.img}
+                  alt={slide.tag}
+                  onError={(e) => {
+                    if (slide.fallback && e.currentTarget.src !== slide.fallback) {
+                      e.currentTarget.src = slide.fallback;
+                    } else {
+                      e.currentTarget.style.display = 'none';
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    height: 'clamp(240px, 24vw, 340px)',
+                    objectFit: 'cover',
+                    display: 'block'
+                  }}
+                />
 
                 {/* Overlay Vignette Gradient */}
                 <div style={{
@@ -1681,15 +1714,14 @@ const ListCard = ({ article, navigate, onImgClick, isLast }) => (
     <div style={{ flex: 1, minWidth: 0 }}>
       {article.category_name && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .6 }}>{article.category_name} · </span>}
       <div style={{ fontWeight: 600, fontSize: 'clamp(13px, 0.9vw, 14px)', color: 'var(--color-heading)', lineHeight: 1.4, margin: '2px 0 4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
-      <span style={{ fontSize: 'clamp(11px, 0.7vw, 12px)', color: 'var(--color-muted)' }}><CalendarOutlined style={{ marginRight: 3 }} />{moment(article.scheduled_publish_date || article.published_date || article.created_at).format('MMM D, YYYY')}</span>
+      <span style={{ fontSize: 'clamp(11px, 0.7vw, 12px)', color: 'var(--color-muted)' }}><CalendarOutlined style={{ marginRight: 3 }} />{formatContentPublishDate(article)}</span>
     </div>
   </div>
 );
 
 // ── Latest Posts Section ─────────────────────────────────────────
 const LatestArticlesSection = ({ articles, blogs, navigate }) => {
-  const combined = [...(articles || []), ...(blogs || [])]
-    .sort((a, b) => new Date(b.scheduled_publish_date || b.published_date || b.created_at) - new Date(a.scheduled_publish_date || a.published_date || a.created_at))
+  const combined = sortContentByDate([...(articles || []), ...(blogs || [])])
     .slice(0, 4);
   const [ref, visible] = useReveal();
   if (!combined.length) return null;
@@ -1843,7 +1875,7 @@ const TrendingTopicsSection = ({ items, navigate, darkMode = false }) => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 6 }}>
                   <span style={{ fontSize: 'clamp(12px, 0.8vw, 13px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <CalendarOutlined style={{ color: 'var(--color-primary)', fontSize: 13 }} />
-                    {moment(item.scheduled_publish_date || item.published_date || item.created_at).format('MMM D, YYYY')}
+                    {formatContentPublishDate(item)}
                   </span>
                   {item.category_name && (
                     <span style={{
@@ -2103,7 +2135,7 @@ const Home = () => {
                                 </span>
                                 <span style={{ fontWeight: 500 }}>{a.author_name || a.author || 'TgsTechInfo'}</span>
                               </span>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CalendarOutlined />{moment(a.scheduled_publish_date || a.published_date || a.created_at).format('MMM D, YYYY')}</span>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CalendarOutlined />{formatContentPublishDate(a)}</span>
                             </div>
                             <div style={{ marginTop: 'auto', paddingTop: 4 }}>
                               <button onClick={(e) => { e.stopPropagation(); navigateArticle(a, navigate); }}

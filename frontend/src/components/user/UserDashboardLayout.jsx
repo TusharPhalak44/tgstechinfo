@@ -1,5 +1,6 @@
 // UserDashboardLayout.jsx - Enterprise Parity with Admin Dashboard
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import RouteLoadingFallback from '../common/RouteLoadingFallback';
 import { Layout, Menu, Avatar, Dropdown, Button, Badge, Tooltip, Popover, Tag } from 'antd';
 import {
   DashboardOutlined,
@@ -990,7 +991,9 @@ const UserDashboardLayout = () => {
               minHeight: 'calc(100vh - 64px)',
             }}
           >
-            <Outlet />
+            <Suspense fallback={<RouteLoadingFallback />}>
+              <Outlet />
+            </Suspense>
           </Content>
         </Layout>
       </Layout>

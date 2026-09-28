@@ -590,10 +590,43 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
+        // Resolve redirect URL from submitted form data or content configuration
+        let redirectUrl = extraData?.redirect_url ||
+                          extraData?.redirectUrl ||
+                          extraData?.redirect ||
+                          extraData?.return_url ||
+                          extraData?.returnUrl ||
+                          extraData?.thank_you_url ||
+                          extraData?.thankYouUrl ||
+                          extraData?.page_url ||
+                          extraData?.pageUrl ||
+                          extraData?.target_url ||
+                          extraData?.targetUrl ||
+                          extraData?.success_url ||
+                          extraData?.successUrl ||
+                          extraData?.download_url ||
+                          extraData?.downloadUrl ||
+                          content?.redirect_url ||
+                          content?.join_link ||
+                          null;
+
+        if (redirectUrl && typeof redirectUrl === 'string') {
+            redirectUrl = redirectUrl.trim();
+            if (
+                redirectUrl.includes('/api/public/landing-page') ||
+                redirectUrl.includes('/api/users') ||
+                redirectUrl === '#' ||
+                redirectUrl.startsWith('javascript:')
+            ) {
+                redirectUrl = null;
+            }
+        }
+
         res.json({
             message: 'Access granted successfully.',
             has_access: true,
-            pdf_file: content?.pdf_file || null
+            pdf_file: content?.pdf_file || null,
+            redirect_url: redirectUrl || null
         });
         console.log('========== FORM SUBMISSION END (SUCCESS) ==========');
     } catch (error) {

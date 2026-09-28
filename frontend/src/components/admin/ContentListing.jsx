@@ -17,6 +17,7 @@ import moment from 'moment';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { formatContentPublishDate } from '../../utils/dateHelper';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -371,10 +372,9 @@ const ContentListing = () => {
       title: 'Date',
       dataIndex: 'created_at',
       render: (_, record) => {
-        const date = record.scheduled_publish_date || record.published_date || record.created_at;
         return (
           <span style={{ fontSize: '0.75rem', color: D ? '#64748B' : '#94A3B8', fontWeight: 600 }}>
-            {date ? moment(date).format('MMM D, YYYY') : '—'}
+            {formatContentPublishDate(record)}
           </span>
         );
       },

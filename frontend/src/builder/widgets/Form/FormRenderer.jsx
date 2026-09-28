@@ -64,12 +64,13 @@ export default function FormRenderer({ node, contentWebhookUrl }) {
         dbFields[key] = rawValue;
       });
 
+      let submitRes = null;
       // Save to backend database if a contentId is configured
       if (contentId) {
         if (apiUrl) {
           dbFields.apiUrl = apiUrl;
         }
-        await axios.post('/api/public/landing-page', {
+        submitRes = await axios.post('/api/public/landing-page', {
           content_id: contentId,
           extra_fields: dbFields,
         });
@@ -92,6 +93,17 @@ export default function FormRenderer({ node, contentWebhookUrl }) {
       setSubmitted(true);
       form.resetFields();
       antMessage.success(successMessage);
+
+      // Handle redirect if returned by backend or form fields
+      const redirectUrl = submitRes?.data?.redirect_url || dbFields.redirect_url || dbFields.page_url;
+      if (redirectUrl && typeof redirectUrl === 'string') {
+        const trimmed = redirectUrl.trim();
+        if (trimmed && !trimmed.startsWith('javascript:') && trimmed !== '#' && !trimmed.includes('/api/public/landing-page')) {
+          setTimeout(() => {
+            window.location.href = trimmed;
+          }, 800);
+        }
+      }
     } catch (err) {
       console.error('Form submission error:', err);
       antMessage.error(err.response?.data?.message || 'Submission failed. Please try again.');

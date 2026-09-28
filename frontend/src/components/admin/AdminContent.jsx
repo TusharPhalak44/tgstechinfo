@@ -21,6 +21,21 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import './radar/RadarStyles.css';
+import { formatContentPublishDate } from '../../utils/dateHelper';
+
+// Format large numbers to readable format (e.g., 376543303 -> "376.5M", 1500000000 -> "1.5B")
+function formatNumber(num) {
+  if (!num || num === 0) return '0';
+  
+  if (num >= 1000000000) {
+    return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
+  } else if (num >= 1000000) {
+    return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  }
+  return num.toString();
+}
 
 const { Text, Title, Paragraph } = Typography;
 const { Option } = Select;
@@ -413,7 +428,7 @@ const AdminContent = () => {
               <div style={{ fontSize: '0.72rem', color: textMuted, display: 'flex', gap: 8, alignItems: 'center', marginTop: 2 }}>
                 <span>{record.category_name || 'General'}</span>
                 <span>•</span>
-                <span>{moment(record.created_at).format('MMM D, YYYY')}</span>
+                <span>{formatContentPublishDate(record)}</span>
               </div>
             </div>
           </div>
@@ -466,7 +481,7 @@ const AdminContent = () => {
       sorter: (a, b) => (a.view_count || 0) - (b.view_count || 0),
       render: (views) => (
         <span style={{ fontWeight: 700, color: '#0AAEEF', fontSize: '0.84rem' }}>
-          {(views || 0).toLocaleString()}
+          {formatNumber(views || 0)}
         </span>
       )
     },
@@ -579,7 +594,7 @@ const AdminContent = () => {
               <FileTextOutlined style={{ fontSize: 18, color: '#F7941D' }} />
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: textPrimary, marginTop: 8 }}>
-              {metrics.total.toLocaleString()}
+              {formatNumber(metrics.total)}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#10B981', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
               <RiseOutlined /> Active Content Library
@@ -596,7 +611,7 @@ const AdminContent = () => {
               <CheckCircleOutlined style={{ fontSize: 18, color: '#10B981' }} />
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10B981', marginTop: 8 }}>
-              {metrics.published.toLocaleString()}
+              {formatNumber(metrics.published)}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
               {metrics.total > 0 ? `${Math.round((metrics.published / metrics.total) * 100)}% of total portfolio` : '0%'}
@@ -613,7 +628,7 @@ const AdminContent = () => {
               <ClockCircleOutlined style={{ fontSize: 18, color: '#F59E0B' }} />
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F59E0B', marginTop: 8 }}>
-              {(metrics.drafts + metrics.inReview).toLocaleString()}
+              {formatNumber(metrics.drafts + metrics.inReview)}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
               {metrics.inReview} awaiting approval
@@ -630,7 +645,7 @@ const AdminContent = () => {
               <FireOutlined style={{ fontSize: 18, color: '#0AAEEF' }} />
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0AAEEF', marginTop: 8 }}>
-              {metrics.totalViews.toLocaleString()}
+              {formatNumber(metrics.totalViews)}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
               Combined readership engagement
@@ -849,7 +864,7 @@ const AdminContent = () => {
                       <div style={{ fontSize: '0.72rem', color: textMuted, marginBottom: 4, display: 'flex', gap: 6, alignItems: 'center' }}>
                         <span>{item.category_name || 'General'}</span>
                         <span>•</span>
-                        <span>{moment(item.created_at).format('MMM D, YYYY')}</span>
+                        <span>{formatContentPublishDate(item)}</span>
                       </div>
 
                       <h3
@@ -899,7 +914,7 @@ const AdminContent = () => {
                       </div>
 
                       <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0AAEEF', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <EyeOutlined /> {(item.view_count || 0).toLocaleString()}
+                        <EyeOutlined /> {formatNumber(item.view_count || 0)}
                       </div>
                     </div>
                   </div>
@@ -1053,7 +1068,7 @@ const AdminContent = () => {
               <div style={{ padding: 12, textAlign: 'center' }}>
                 <div style={{ fontSize: '0.7rem', color: textMuted }}>READERSHIP VIEWS</div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0AAEEF', marginTop: 2 }}>
-                  {(selectedArticle.view_count || 0).toLocaleString()}
+                  {formatNumber(selectedArticle.view_count || 0)}
                 </div>
               </div>
               <div style={{ padding: 12, textAlign: 'center' }}>

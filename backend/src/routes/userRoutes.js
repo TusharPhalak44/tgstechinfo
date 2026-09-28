@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const contentController = require('../controllers/contentController');
 const notificationController = require('../controllers/notificationController');
+const editRequestController = require('../controllers/editRequestController');
 const { authenticate } = require('../middleware/auth');
 const { hasPermission, hasAnyPermission, isOwnerOrHasPermission } = require('../middleware/permissions');
 const { upload, uploadWithPdf } = require('../middleware/upload');
@@ -142,6 +143,13 @@ router.delete('/content/:id',
 // View content — any authenticated user
 router.get('/content', contentController.getUserContent);
 router.get('/content/:id', contentController.getUserContentById);
+
+// Edit request management (user)
+router.get('/edit-requests', editRequestController.getUserEditRequests);
+router.put('/edit-requests/:id/accept', editRequestController.acceptEditRequest);
+router.put('/edit-requests/:id/reject', editRequestController.rejectEditRequest);
+router.put('/edit-requests/:id/complete', editRequestController.completeEditRequest);
+router.get('/content/:id/can-edit', editRequestController.canEditContent);
 
 // User's article submissions (landing page form data)
 router.get('/submissions', async (req, res) => {

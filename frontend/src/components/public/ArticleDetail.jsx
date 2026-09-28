@@ -363,6 +363,15 @@ const ArticleDetail = () => {
       setPdfFile(res.data?.pdf_file || null);
       setSubmittedData(extra_fields);
       form.resetFields();
+
+      if (res.data?.redirect_url) {
+        const target = res.data.redirect_url.trim();
+        if (target && !target.startsWith('javascript:') && target !== '#') {
+          setTimeout(() => {
+            window.location.href = target;
+          }, 800);
+        }
+      }
     } catch (error) {
       messageApi.error(error.response?.data?.message || 'Failed to submit');
     } finally {
