@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise AI Infrastructure Whitepaper 2026 | TGS Tech Info</title>
+    <meta name="description" content="Discover modern strategies for architecting scalable AI infrastructure, high-throughput compute, and resilient data storage.">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', -apple-system, Roboto, sans-serif; background: #0b0f19; color: #f1f5f9; line-height: 1.6; }
+        .page-wrapper { max-width: 1140px; margin: 0 auto; padding: 30px 20px; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 24px; border-bottom: 1px solid #1e293b; margin-bottom: 40px; }
+        .brand-logo { height: 40px; }
+        .report-tag { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); font-size: 13px; font-weight: 600; padding: 4px 12px; border-radius: 9999px; }
+        .hero-section { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; margin-bottom: 50px; }
+        .hero-content h1 { font-size: 40px; font-weight: 800; line-height: 1.2; margin-bottom: 16px; background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-lead { font-size: 18px; color: #94a3b8; margin-bottom: 24px; }
+        .hero-meta { display: flex; gap: 20px; font-size: 14px; color: #38bdf8; font-weight: 600; }
+        .hero-visual img { width: 100%; height: 260px; object-fit: cover; border-radius: 12px; border: 1px solid #1e293b; }
+        .grid-section { display: grid; grid-template-columns: 1.4fr 1fr; gap: 40px; }
+        .left-col h2 { font-size: 26px; margin-bottom: 20px; color: #f8fafc; }
+        .feature-list { list-style: none; margin-bottom: 30px; }
+        .feature-list li { margin-bottom: 16px; padding-left: 24px; position: relative; color: #cbd5e1; font-size: 15px; }
+        .feature-list li::before { content: '✓'; position: absolute; left: 0; color: #38bdf8; font-weight: bold; }
+        .preview-card { background: #131b2e; border: 1px solid #1e293b; padding: 24px; border-radius: 12px; }
+        .preview-card h3 { margin-bottom: 8px; color: #ffffff; }
+        .preview-card p { color: #94a3b8; margin-bottom: 16px; font-size: 14px; }
+        .btn-download { display: inline-block; background: #0284c7; color: #fff; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; }
+        .form-container { background: #131b2e; border: 1px solid #1e293b; padding: 30px; border-radius: 12px; }
+        .form-container h3 { font-size: 22px; margin-bottom: 6px; color: #ffffff; }
+        .form-container p { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
+        .field { margin-bottom: 16px; }
+        .field label { display: block; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
+        .field input { width: 100%; padding: 10px 14px; background: #0b0f19; border: 1px solid #334155; border-radius: 6px; color: #ffffff; font-size: 14px; outline: none; }
+        .field input:focus { border-color: #38bdf8; }
+        .btn-submit { width: 100%; background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%); color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 10px; }
+        .status-box { background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 14px; border-radius: 6px; text-align: center; font-weight: 600; margin-top: 16px; }
+        .footer { text-align: center; margin-top: 60px; padding-top: 20px; border-top: 1px solid #1e293b; color: #64748b; font-size: 14px; }
+        @media (max-width: 768px) {
+            .hero-section, .grid-section { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="navbar">
+            <img src="assets/company-logo.png" alt="Company Logo" class="brand-logo">
+            <span class="report-tag">Industry Blueprint 2026</span>
+        </header>
+
+        <section class="hero-section">
+            <div class="hero-content">
+                <h1>Next-Gen Enterprise AI Infrastructure</h1>
+                <p class="hero-lead">A definitive technical guide to scaling generative AI models, optimizing GPU utilisation, and minimizing inference latencies.</p>
+                <div class="hero-meta">
+                    <span>📄 36 Pages</span>
+                    <span>⚡ Executive Summary</span>
+                    <span>🔒 Technical Blueprints</span>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <img src="assets/hero.jpg" alt="AI Infrastructure Architecture" class="hero-image">
+            </div>
+        </section>
+
+        <main class="grid-section">
+            <div class="left-col">
+                <h2>Inside This Report</h2>
+                <ul class="feature-list">
+                    <li><strong>Distributed Computing Architectures:</strong> High-bandwidth fabric comparisons across InfiniBand vs. RoCEv2.</li>
+                    <li><strong>Storage Tiering:</strong> NVMe-over-Fabrics benchmarks for ultra-low latency checkpoints.</li>
+                    <li><strong>Operational Cost Reduction:</strong> Strategies for achieving up to 40% reduction in GPU idle time.</li>
+                    <li><strong>Enterprise Security:</strong> Zero-trust network microsegmentation for AI clusters.</li>
+                </ul>
+
+                <div class="preview-card">
+                    <h3>Download Full Whitepaper</h3>
+                    <p>Immediate access to architectural diagrams and implementation recommendations.</p>
+                    <a href="assets/whitepaper.pdf" class="btn-download" target="_blank">Download Whitepaper (PDF)</a>
+                </div>
+            </div>
+
+            <div class="right-col">
+                <div class="form-container">
+                    <h3>Request Free Access</h3>
+                    <p>Enter your professional details to download the technical report.</p>
+                    <form id="aiLeadForm">
+                        <div class="field">
+                            <label>Full Name</label>
+                            <input type="text" name="name" required placeholder="Alex Mercer">
+                        </div>
+                        <div class="field">
+                            <label>Business Email</label>
+                            <input type="email" name="email" required placeholder="alex@enterprise.com">
+                        </div>
+                        <div class="field">
+                            <label>Company</label>
+                            <input type="text" name="company" placeholder="Cloud Innovations LLC">
+                        </div>
+                        <div class="field">
+                            <label>Job Title</label>
+                            <input type="text" name="jobTitle" placeholder="VP of Infrastructure">
+                        </div>
+                        <button type="submit" class="btn-submit">Instant Download</button>
+                    </form>
+                    <div id="statusMessage" style="display:none;" class="status-box">
+                        ✓ Download link sent to your email.
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 TGS Tech Info. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        console.log('Enterprise AI Infrastructure landing script loaded.');
+
+        document.getElementById('aiLeadForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerText = 'Processing...';
+
+            const formData = new FormData(this);
+            const payload = {
+                first_name: formData.get('name')?.split(' ')[0] || 'Subscriber',
+                last_name: formData.get('name')?.split(' ').slice(1).join(' ') || '',
+                email: formData.get('email'),
+                landing_slug: 'enterprise-ai-infrastructure-whitepaper',
+                extra_fields: {
+                    company: formData.get('company'),
+                    job_title: formData.get('jobTitle'),
+                    source: 'enterprise-ai-infrastructure-whitepaper'
+                }
+            };
+
+            try {
+                await fetch('/api/public/landing-page', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            } catch (err) {
+                console.warn('Lead submission network note:', err.message);
+            }
+
+            this.style.display = 'none';
+            document.getElementById('statusMessage').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

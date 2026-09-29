@@ -9,6 +9,8 @@ const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail } = require('../config/email');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Extract webhook URL (apiUrl) from Visual Builder JSON trees (builder_page_data or builder_layout)
@@ -225,22 +227,48 @@ exports.submitLandingPage = async (req, res) => {
         
         let normalizedContentId = content_id ? Number(content_id) : null;
         if (normalizedContentId && Number.isNaN(normalizedContentId)) normalizedContentId = null;
-        
-        console.log('Normalized content_id:', normalizedContentId);
 
-        // If content_id is missing, try to resolve it from the Referer header slug
-        // Uses findBySlugAny so draft/pending pages also work (findBySlug is published-only)
-        if (!normalizedContentId) {
-            // Fallback 1: slug passed as a query param (?slug=my-page-slug)
-            const slugParam = req.query.slug;
-            if (slugParam) {
-                const c = await Content.findBySlugAny(slugParam);
-                if (c) normalizedContentId = c.id;
+        // Check if this submission is from a file-based landing page (/lp/:slug, landing_slug, or Referer /lp/:slug)
+        let fileLandingSlug = req.body.landing_slug || req.body.landingSlug || req.query.landing_slug || req.query.slug || req.params.slug;
+        if (!fileLandingSlug) {
+            const referer = req.headers.referer || req.headers.referrer;
+            if (referer) {
+                try {
+                    const url = new URL(referer);
+                    const parts = url.pathname.split('/');
+                    const lpIdx = parts.indexOf('lp');
+                    if (lpIdx !== -1 && parts[lpIdx + 1]) {
+                        fileLandingSlug = decodeURIComponent(parts[lpIdx + 1]);
+                    }
+                } catch (e) {}
             }
         }
 
-        if (!normalizedContentId) {
-            // Fallback 2: parse slug from the Referer header URL path (/content/:slug)
+        let content = null;
+
+        // 1. If this is a file-based landing page, automatically find or create its content record in `contents`
+        if (fileLandingSlug) {
+            const { getOrCreateContentForLandingPage } = require('../utils/landingPageHelper');
+            content = await getOrCreateContentForLandingPage(fileLandingSlug, req.body);
+            if (content) {
+                normalizedContentId = content.id;
+                console.log(`[submitLandingPage] Auto-resolved content #${content.id} for landing slug '${fileLandingSlug}'`);
+            }
+        }
+
+        // 2. If content_id was provided, look up by ID
+        if (!content && normalizedContentId) {
+            content = await Content.findById(normalizedContentId);
+        }
+
+        // 3. Fallback: slug passed as a query param (?slug=my-page-slug)
+        if (!content && !normalizedContentId && req.query.slug) {
+            content = await Content.findBySlugAny(req.query.slug);
+            if (content) normalizedContentId = content.id;
+        }
+
+        // 4. Fallback: parse slug from Referer URL path (/content/:slug)
+        if (!content && !normalizedContentId) {
             const referer = req.headers.referer || req.headers.referrer;
             if (referer) {
                 try {
@@ -249,17 +277,13 @@ exports.submitLandingPage = async (req, res) => {
                     const slugIndex = pathParts.indexOf('content');
                     if (slugIndex !== -1 && pathParts[slugIndex + 1]) {
                         const slug = pathParts[slugIndex + 1];
-                        // findBySlugAny works for any status (draft, pending, published)
-                        const c = await Content.findBySlugAny(slug);
-                        if (c) normalizedContentId = c.id;
+                        content = await Content.findBySlugAny(slug);
+                        if (content) normalizedContentId = content.id;
                     }
-                } catch (e) {
-                    console.error('Error parsing Referer header for slug:', e);
-                }
+                } catch (e) {}
             }
         }
 
-        const content = normalizedContentId ? await Content.findById(normalizedContentId) : null;
         if (!content) {
             return res.status(404).json({ message: 'Content not found or invalid content ID' });
         }
@@ -288,9 +312,9 @@ exports.submitLandingPage = async (req, res) => {
             normalizedExtraData[sanitizeColumnName(key)] = val;
         }
 
-        // Validate required fields — only when customFieldsDef has entries
-        // HTML builder pages often have no custom_fields definition; skip validation for them
-        if (customFieldsDef.length > 0) {
+        // Validate required fields — only for standard CMS pages when customFieldsDef has entries
+        // HTML file-based landing pages have their own form structure and client-side validation
+        if (!fileLandingSlug && customFieldsDef.length > 0) {
             for (const field of customFieldsDef) {
                 const val = normalizedExtraData[field.name] ?? '';
                 if (field.required !== false && String(val).trim() === '') {
@@ -299,83 +323,32 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
-        // Find email field value for dedup check (use normalized names)
-        const emailField = customFieldsDef.find(f => f.type === 'email' || f.name === 'email' || (f.webhook_key || '').toLowerCase() === 'email');
-        const emailValue = emailField ? normalizedExtraData[emailField.name] : null;
+        // ── Store Form Submission in Database ─────────────────────────────────────
+        const leadDataWithMeta = {
+            ...normalizedExtraData,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+        };
 
-        // Dedup: check the dynamic table first (primary storage).
-        // Only fall back to landing_page_submissions if the dynamic table doesn't exist yet.
-        let existing = null;
-        if (emailValue) {
+        if (normalizedContentId) {
+            // 1. Always insert into the dedicated dynamic table (e.g. form_submissions_459)
             try {
-                const { pool: dbPool } = require('../config/database');
-                const dynTable = `form_submissions_${normalizedContentId}`;
-                const [dynTables] = await dbPool.query(`SHOW TABLES LIKE '${dynTable}'`);
-                if (dynTables.length > 0) {
-                    const [dupRows] = await dbPool.query(
-                        `SELECT id FROM ${dynTable} WHERE email = ? LIMIT 1`,
-                        [emailValue]
-                    );
-                    existing = dupRows[0] || null;
-                } else {
-                    // Dynamic table not yet created — check legacy JSON table
-                    existing = await LandingPage.findByEmailAndContent(emailValue, normalizedContentId);
-                }
-            } catch (dedupErr) {
-                // Non-fatal — if dedup check fails, allow the insert
-                console.warn('[submitLandingPage] Dedup check failed (non-fatal):', dedupErr.message);
-                existing = null;
-            }
-        }
-        if (!existing) {
-            console.log('No duplicate found, attempting to insert into dynamic table...');
-            // Store in dynamic table — auto-create it if it doesn't exist yet
-            try {
-                console.log('Calling insertIntoDynamicTable with contentId:', normalizedContentId);
-                console.log('Data to insert:', JSON.stringify({
-                    ...normalizedExtraData,
-                    ip_address: req.ip,
-                    user_agent: req.headers['user-agent']
-                }, null, 2));
-                
-                await insertIntoDynamicTable(normalizedContentId, {
-                    ...normalizedExtraData,
-                    ip_address: req.ip,
-                    user_agent: req.headers['user-agent']
-                });
-                console.log('✅ Successfully inserted into dynamic table!');
+                await insertIntoDynamicTable(normalizedContentId, leadDataWithMeta);
+                console.log(`✅ Successfully inserted into dynamic table form_submissions_${normalizedContentId}`);
             } catch (dynamicTableError) {
-                console.error('❌ Dynamic table insert failed:', dynamicTableError);
-                // Table doesn't exist — create it from submitted field names and retry
-                if (dynamicTableError.message && dynamicTableError.message.includes('does not exist')) {
-                    try {
-                        // Build field definitions from submitted data
-                        const autoFields = Object.keys(normalizedExtraData)
-                            .filter(k => !['ip_address', 'user_agent'].includes(k))
-                            .map(k => ({ name: k, label: k, type: 'text', required: false }));
-                        
-                        if (autoFields.length > 0) {
-                            const { createDynamicTable } = require('../utils/dynamicTable');
-                            await createDynamicTable(normalizedContentId, content.slug, autoFields);
-                        }
-                        
-                        // Retry the insert
-                        await insertIntoDynamicTable(normalizedContentId, {
-                            ...normalizedExtraData,
-                            ip_address: req.ip,
-                            user_agent: req.headers['user-agent']
-                        });
-                    } catch (retryError) {
-                        console.error('Auto-create table and retry failed, falling back to JSON:', retryError);
-                        await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
-                    }
-                } else {
-                    console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
-                    await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
-                }
+                console.error(`❌ Dynamic table insert failed for form_submissions_${normalizedContentId}:`, dynamicTableError.message);
             }
-        } else {
-            console.log('⚠️ Duplicate found, skipping insert. Existing record:', existing);
+
+            // 2. Always ALSO insert into landing_page_submissions so it shows in Admin Panel and unified submissions
+            try {
+                await LandingPage.create({
+                    content_id: normalizedContentId,
+                    extra_fields: leadDataWithMeta
+                });
+                console.log(`✅ Successfully recorded submission into landing_page_submissions for content ${normalizedContentId}`);
+            } catch (lpErr) {
+                console.warn(`[LandingPage.create] Note:`, lpErr.message);
+            }
         }
 
 
@@ -588,7 +561,10 @@ exports.submitLandingPage = async (req, res) => {
         console.log('[submitLandingPage] Final redirect_url:', targetRedirectUrl);
 
         // Check if browser made a traditional synchronous form POST (document navigation)
-        const isHtmlRequest = req.accepts && req.accepts('html') && !req.xhr && req.headers['sec-fetch-dest'] === 'document';
+        const isHtmlRequest = 
+            req.headers['sec-fetch-dest'] === 'document' || 
+            (req.is && req.is('application/x-www-form-urlencoded') && !req.xhr && (!req.headers.accept || !req.headers.accept.includes('application/json'))) ||
+            (req.accepts && req.accepts('html') && !req.xhr && (!req.headers.accept || !req.headers.accept.includes('application/json')));
         if (isHtmlRequest && targetRedirectUrl) {
             return res.redirect(targetRedirectUrl);
         }

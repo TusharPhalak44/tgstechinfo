@@ -306,6 +306,9 @@ app.use('/api/audience', require('./src/routes/audienceRoutes'));
 
 app.use('/api/admin/audience', require('./src/routes/adminAudienceRoutes'));
 
+// File-based Landing Pages (/lp/:slug and /lp/:slug/*)
+app.use('/lp', require('./src/routes/fileLandingRoutes'));
+
 
 
 app.use((err, req, res, next) => {

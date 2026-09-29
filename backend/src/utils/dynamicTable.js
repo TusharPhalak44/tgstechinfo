@@ -56,7 +56,7 @@ const createDynamicTable = async (contentId, slug, customFields) => {
         let createSQL = `
             CREATE TABLE ${tableName} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                content_id INT NOT NULL,
+                content_id INT NULL DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 ip_address VARCHAR(45),
@@ -147,20 +147,24 @@ const insertIntoDynamicTable = async (contentId, formData) => {
         );
         
         if (existingTables.length === 0) {
-            throw new Error(`Table ${tableName} does not exist`);
+            console.log(`Table ${tableName} does not exist, auto-creating...`);
+            const autoFields = Object.keys(formData)
+                .filter(k => !['id', 'content_id', 'created_at', 'updated_at', 'ip_address', 'user_agent'].includes(k))
+                .map(k => ({ name: k, label: k, type: 'text', required: false }));
+            await createDynamicTable(contentId, null, autoFields);
         }
         
         // Get table columns
         const [columns] = await pool.query(`SHOW COLUMNS FROM ${tableName}`);
         const columnNames = columns.map(col => col.Field);
         
-        // Filter form data — auto-add columns that don't exist yet (VARCHAR 255 NULL)
+        // Filter form data — auto-add columns that don't exist yet (VARCHAR 500 NULL)
         const filteredData = {};
-        const standardColumns = ['id', 'content_id', 'created_at', 'updated_at', 'ip_address', 'user_agent'];
+        const systemColumns = ['id', 'content_id', 'created_at', 'updated_at'];
         
         for (const [key, value] of Object.entries(formData)) {
             const sanitizedKey = sanitizeColumnName(key);
-            if (standardColumns.includes(sanitizedKey)) continue;
+            if (systemColumns.includes(sanitizedKey)) continue;
             if (sanitizedKey === '') continue;
             
             // If column doesn't exist yet, create it dynamically
@@ -177,13 +181,20 @@ const insertIntoDynamicTable = async (contentId, formData) => {
                 }
             }
             
-            filteredData[sanitizedKey] = value !== undefined && value !== null ? String(value) : null;
+            // Handle boolean/optin conversions
+            if (sanitizedKey === 'optin') {
+                filteredData[sanitizedKey] = (value === 'on' || value === true || value === '1' || value === 1 || value === 'true') ? 1 : 0;
+            } else {
+                filteredData[sanitizedKey] = value !== undefined && value !== null ? String(value) : null;
+            }
         }
         
         // Build INSERT query
         const dynamicColumns = Object.keys(filteredData);
         const placeholders = dynamicColumns.map(() => '?').join(', ');
-        const values = [...Object.values(filteredData), contentId];
+        const numContentId = Number(contentId);
+        const validContentId = (!isNaN(numContentId) && numContentId > 0) ? numContentId : null;
+        const values = [...Object.values(filteredData), validContentId];
         
         const insertSQL = `
             INSERT INTO ${tableName} (${dynamicColumns.join(', ')}, content_id)
@@ -191,7 +202,7 @@ const insertIntoDynamicTable = async (contentId, formData) => {
         `;
         
         const [result] = await pool.query(insertSQL, values);
-        console.log(`Inserted form submission into ${tableName}`);
+        console.log(`Inserted form submission into ${tableName} with ID ${result.insertId}`);
         
         return { success: true, insertId: result.insertId, tableName };
     } catch (error) {
