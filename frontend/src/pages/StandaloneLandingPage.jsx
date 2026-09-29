@@ -216,8 +216,37 @@ const StandaloneLandingPage = () => {
           })
           .then(data => {
             console.log('✅ Lead form submit success:', data);
+
+            // Hide error alert if previously shown
+            const errBox = form.querySelector('.form-error-alert');
+            if (errBox) errBox.style.display = 'none';
+
+            // Check if there is a redirect URL from API response or form payload
+            const rawTarget = data.redirect_url || data.page_url || payload.page_url || payload.redirect_url || payload.thank_you_url || payload.return_url;
+
+            if (rawTarget && typeof rawTarget === 'string' && rawTarget.trim() && rawTarget.trim() !== '#' && !rawTarget.trim().startsWith('javascript:')) {
+              const destination = rawTarget.trim();
+              console.log('🔗 Redirecting to page_url:', destination);
+
+              // Display quick redirect feedback inside or below the form
+              let alertBox = form.querySelector('.form-success-alert');
+              if (!alertBox) {
+                alertBox = document.createElement('div');
+                alertBox.className = 'form-success-alert';
+                alertBox.style.cssText = 'padding: 12px 16px; margin-top: 16px; background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center;';
+                form.appendChild(alertBox);
+              }
+              alertBox.style.display = 'block';
+              alertBox.innerText = 'Thank you! Redirecting...';
+
+              // Redirect
+              setTimeout(() => {
+                window.location.href = destination;
+              }, 300);
+              return;
+            }
             
-            // Display success message inside or below the form
+            // Display success message inside or below the form if no redirect
             let alertBox = form.querySelector('.form-success-alert');
             if (!alertBox) {
               alertBox = document.createElement('div');
@@ -227,10 +256,6 @@ const StandaloneLandingPage = () => {
             }
             alertBox.style.display = 'block';
             alertBox.innerText = data.message || 'Thank you! Your details have been submitted successfully.';
-            
-            // Hide error alert if previously shown
-            const errBox = form.querySelector('.form-error-alert');
-            if (errBox) errBox.style.display = 'none';
 
             form.reset();
           })

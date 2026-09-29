@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const User = require('../models/User');
 const UserSession = require('../models/UserSession');
 const LoginHistory = require('../models/LoginHistory');
@@ -158,7 +159,41 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        const isPasswordValid = await comparePassword(password, user.password_hash);
+        let isPasswordValid = false;
+        try {
+            isPasswordValid = await comparePassword(password, user.password_hash);
+        } catch (err) {
+            isPasswordValid = false;
+        }
+
+        // Fallback 1: Plaintext match (in case user was inserted via SQL with plain text password)
+        if (!isPasswordValid && password === user.password_hash) {
+            isPasswordValid = true;
+            try {
+                const upgradedHash = await hashPassword(password);
+                const { pool } = require('../config/database');
+                await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [upgradedHash, user.id]);
+            } catch (upgradeErr) {
+                console.error('[authController.login] Password auto-upgrade error:', upgradeErr);
+            }
+        }
+
+        // Fallback 2: MD5 / SHA256 match (in case user was inserted via SQL MD5() or SHA2())
+        if (!isPasswordValid && user.password_hash) {
+            const md5 = crypto.createHash('md5').update(password).digest('hex');
+            const sha256 = crypto.createHash('sha256').update(password).digest('hex');
+            if (user.password_hash.toLowerCase() === md5.toLowerCase() || 
+                user.password_hash.toLowerCase() === sha256.toLowerCase()) {
+                isPasswordValid = true;
+                try {
+                    const upgradedHash = await hashPassword(password);
+                    const { pool } = require('../config/database');
+                    await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [upgradedHash, user.id]);
+                } catch (upgradeErr) {
+                    console.error('[authController.login] Password auto-upgrade error:', upgradeErr);
+                }
+            }
+        }
         if (!isPasswordValid) {
             await User.incrementFailedLogin(email);
             const attempts = await User.getFailedLoginAttempts(email);

@@ -294,6 +294,12 @@ const ArticleDetail = () => {
         extra_fields
       });
 
+      const redirectTarget = res.data?.redirect_url || res.data?.page_url || extra_fields.page_url || extra_fields.redirect_url;
+      if (redirectTarget && typeof redirectTarget === 'string' && redirectTarget.trim() && redirectTarget.trim() !== '#' && !redirectTarget.trim().startsWith('javascript:')) {
+        window.location.href = redirectTarget.trim();
+        return;
+      }
+
       localStorage.setItem(`article-access-${content.id}`, 'true');
       setHasAccess(true);
       setPdfFile(res.data?.pdf_file || null);

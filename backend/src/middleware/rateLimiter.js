@@ -19,12 +19,13 @@ exports.loginLimiter = rateLimit({
 // Rate limiter for registration endpoint
 exports.registerLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // 3 registrations per hour per IP
+    max: 20, // 20 registrations per hour per IP (supports regression suite runs)
     message: {
         message: 'Too many registration attempts from this IP. Please try again later.'
     },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: (req) => process.env.NODE_ENV === 'test' || (process.env.NODE_ENV === 'development' && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'))
 });
 
 // Rate limiter for password reset endpoint

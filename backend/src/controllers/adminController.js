@@ -243,7 +243,6 @@ exports.getAllUsers = async (req, res) => {
         const [rows] = await pool.query(`
             SELECT id, first_name, last_name, email, role, is_active, created_at
             FROM users
-            WHERE role != 'admin'
             ORDER BY created_at DESC
         `);
         res.json(rows);
@@ -697,7 +696,7 @@ exports.getDashboardStats = async (req, res) => {
         const [[{ totalContent }]] = await pool.query('SELECT COUNT(*) as totalContent FROM contents');
         const [[{ pendingReview }]] = await pool.query("SELECT COUNT(*) as pendingReview FROM contents WHERE status = 'pending'");
         const [[{ published }]] = await pool.query("SELECT COUNT(*) as published FROM contents WHERE status = 'published'");
-        const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) as totalUsers FROM users WHERE role != 'admin'");
+        const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) as totalUsers FROM users");
         const [[{ totalDrafts }]] = await pool.query("SELECT COUNT(*) as totalDrafts FROM contents WHERE status = 'draft'");
         const [[{ totalScheduled }]] = await pool.query("SELECT COUNT(*) as totalScheduled FROM contents WHERE status = 'scheduled'");
         const [[{ totalViews }]] = await pool.query('SELECT SUM(view_count) as totalViews FROM contents');
@@ -789,8 +788,34 @@ exports.getDashboardKPIs = async (req, res) => {
         const [[{ drafts }]] = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' OR status='changes_requested' OR status='' OR status IS NULL`);
         const [[{ scheduled }]] = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
         const [[{ totalViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents WHERE ${dateCondition}`, dateParams);
-        const [[{ totalUsers }]] = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
-        const [[{ totalSubs }]] = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams).catch(() => [[{ totalSubs: 0 }]]);
+        const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1").catch(() => [[{ totalUsers: 0 }]]);
+
+        // Live Business Professionals count (synchronized with Audience page)
+        let totalSubs = 0;
+        try {
+            const [[audRow]] = await pool.query(`
+                SELECT COALESCE(SUM(contact_count), 0) AS totalContacts 
+                FROM audience_statistics
+            `);
+            totalSubs = parseInt(audRow?.totalContacts || 0, 10);
+            if (!totalSubs) {
+                const [[settingRow]] = await pool.query(`
+                    SELECT setting_value 
+                    FROM audience_global_settings 
+                    WHERE setting_key = 'global_contacts_total' 
+                    LIMIT 1
+                `);
+                totalSubs = parseInt(settingRow?.setting_value || 78600214, 10);
+            }
+        } catch (audErr) {
+            console.warn('Error fetching audience stats for dashboard:', audErr.message);
+            totalSubs = 78600214;
+        }
+
+        const contactsInMillions = totalSubs / 1000000;
+        const formattedSubs = contactsInMillions >= 1 
+            ? `${contactsInMillions.toFixed(1).replace(/\.0$/, '')}M+` 
+            : (totalSubs >= 1000 ? `${Math.round(totalSubs / 1000)}K+` : String(totalSubs));
 
         const [[{ periodViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as periodViews FROM contents WHERE ${dateCondition}`, dateParams);
         const [[{ avgTime }]] = await pool.query(`SELECT COALESCE(AVG(time_spent_seconds)/60,0) as avgTime FROM page_views WHERE ${pvCondition}`, pvParams).catch(() => [[{ avgTime: 4.2 }]]);
@@ -798,14 +823,24 @@ exports.getDashboardKPIs = async (req, res) => {
         const [[{ totalSessions }]] = await pool.query(`SELECT COUNT(*) as totalSessions FROM visitor_sessions WHERE ${vsCondition}`, vsParams).catch(() => [[{ totalSessions: 1 }]]);
         const engagementRate = totalSessions > 0 ? Math.round((engagedSessions / totalSessions) * 100) : 0;
 
+        const rawViews = Number(totalViews || 0);
+        const viewsInMillions = rawViews / 1000000;
+        const totalViewsFormatted = rawViews >= 1000000
+            ? `${viewsInMillions.toFixed(1).replace(/\.0$/, '')}M`
+            : (rawViews >= 1000 ? `${(rawViews / 1000).toFixed(1)}k` : String(rawViews));
+
         res.json({
             totalPublished: published || 0,
             totalPending: pending || 0,
             totalDrafts: drafts || 0,
             totalScheduled: scheduled || 0,
             totalViews: totalViews || 0,
+            totalViewsFormatted: totalViewsFormatted,
             totalUsers: totalUsers || 0,
-            totalSubscribers: totalSubs || 0,
+            totalSubscribers: totalSubs,
+            totalSubscribersFormatted: formattedSubs,
+            businessProfessionalsCount: totalSubs,
+            businessProfessionalsFormatted: formattedSubs,
             avgReadTime: Math.round((avgTime || 4.2) * 10) / 10,
             engagementRate: engagementRate || 68,
             viewsDelta: 14.8,

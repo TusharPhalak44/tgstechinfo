@@ -101,6 +101,8 @@ const CreateContent = () => {
   const [builderPageData, setBuilderPageData] = useState(null); // v2.0 full page tree from VisualBuilder
   const [builderContent, setBuilderContent] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
+  const htmlEditorRef = useRef(null);
+  const savedHtmlSelectionRef = useRef(null);
   const [editContentType, setEditContentType] = useState(null); // Store content type for back navigation
   const [builderSections, setBuilderSections] = useState([
     { id: 'sec-1', type: 'content_type_category' },
@@ -274,6 +276,7 @@ const CreateContent = () => {
           } catch { setCustomFields([]); }
         }
       if (data.webhook_url) form.setFieldsValue({ webhook_url: data.webhook_url });
+      if (data.redirect_url) form.setFieldsValue({ redirect_url: data.redirect_url });
       // Use content_type_name directly from API — don't depend on contentTypes state
       const typeName = (data.content_type_name || '').toLowerCase();
       setSelectedTypeName(typeName);
@@ -447,6 +450,79 @@ const CreateContent = () => {
     return found;
   };
 
+  const handleInsertMediaToHtml = (url, item, insertMode = 'url') => {
+    if (!url) return;
+    
+    // Ensure fully accessible URL that can be opened anywhere
+    const fullUrl = url.startsWith('http://') || url.startsWith('https://') 
+      ? url 
+      : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+    
+    // Determine media type and alt text
+    const fileType = item?.type || '';
+    const fileName = item?.name || item?.filename || 'Media';
+    
+    let toInsert = fullUrl;
+    
+    if (insertMode === 'tag') {
+      if (fileType.includes('image') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(fullUrl)) {
+        toInsert = `<img src="${fullUrl}" alt="${fileName}" />`;
+      } else if (fileType.includes('video') || /\.(mp4|mov|avi)$/i.test(fullUrl)) {
+        toInsert = `<video src="${fullUrl}" controls style="max-width: 100%; height: auto;"></video>`;
+      } else {
+        toInsert = `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${fileName}</a>`;
+      }
+    } else {
+      // By default or when 'url' mode is requested:
+      // Insert ONLY the raw image URL without any extra properties or tags
+      toInsert = fullUrl;
+    }
+
+    // Attempt insertion at Monaco cursor position or replace selected text
+    if (htmlEditorRef.current) {
+      const editor = htmlEditorRef.current;
+      const model = editor.getModel();
+      const position = editor.getPosition();
+      const selection = savedHtmlSelectionRef.current || editor.getSelection();
+      savedHtmlSelectionRef.current = null;
+
+      // If user selected 'tag' mode but cursor is already inside src="..." or url(...)
+      if (insertMode === 'tag' && model && position) {
+        const lineContent = model.getLineContent(position.lineNumber);
+        const textBeforeCursor = lineContent.substring(0, position.column - 1);
+        if (/src\s*=\s*["'][^"']*$/i.test(textBeforeCursor) || /url\s*\(\s*["']?[^"')]*$/i.test(textBeforeCursor)) {
+          toInsert = fullUrl; // Prevent broken nested tags
+        }
+      }
+
+      if (position) {
+        editor.executeEdits('media-insert', [
+          {
+            range: selection || {
+              startLineNumber: position.lineNumber,
+              startColumn: position.column,
+              endLineNumber: position.lineNumber,
+              endColumn: position.column
+            },
+            text: toInsert,
+            forceMoveMarkers: true
+          }
+        ]);
+        editor.pushUndoStop();
+        editor.focus();
+        message.success(toInsert === fullUrl ? 'Image URL inserted into HTML Content' : 'Image tag inserted into HTML Content');
+        return;
+      }
+    }
+
+    // Fallback: append to htmlContent
+    setHtmlContent(prev => {
+      const trimmed = (prev || '').trim();
+      return trimmed ? `${trimmed}\n\n${toInsert}` : toInsert;
+    });
+    message.success(toInsert === fullUrl ? 'Image URL inserted into HTML Content' : 'Image tag inserted into HTML Content');
+  };
+
   const buildFormData = (values) => {
     const formData = new FormData();
     
@@ -492,6 +568,9 @@ const CreateContent = () => {
     });
     if (values.webhook_url && typeof values.webhook_url === 'string' && values.webhook_url.trim()) {
       formData.set('webhook_url', values.webhook_url.trim());
+    }
+    if (values.redirect_url && typeof values.redirect_url === 'string' && values.redirect_url.trim()) {
+      formData.set('redirect_url', values.redirect_url.trim());
     }
     if (values.tags?.length) formData.append('tags', values.tags.join(','));
     if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
@@ -582,6 +661,7 @@ const CreateContent = () => {
 
             await axios.put(`${apiBase}/content/${savedContentId}/webhook`, {
               webhook_url: values.webhook_url || existing.webhook_url || '',
+              redirect_url: values.redirect_url || existing.redirect_url || '',
               ...(finalCustomFields.length > 0 ? { custom_fields: JSON.stringify(finalCustomFields) } : {})
             });
             message.success('Settings updated successfully!');
@@ -1870,12 +1950,22 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                           </div>
                         ))}
                       </div>
-                      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
                         <div style={{ marginBottom: 16 }}>
                           <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
                         </div>
                         <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
                           <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                        </Form.Item>
+                      </div>
+
+                      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                        <div style={{ marginBottom: 16 }}>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><LinkOutlined style={{ marginRight: 8, color: '#10b981' }} />Redirect / Thank You URL (page_url)</Text>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Visitors will be automatically redirected to this URL after submitting the form</div>
+                        </div>
+                        <Form.Item name="redirect_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid URL (https://...)' }]}>
+                          <Input placeholder="https://example.com/thank-you" prefix={<LinkOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                         </Form.Item>
                       </div>
                     </>
@@ -1960,6 +2050,17 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                   </div>
                   <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
                     <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                  </Form.Item>
+                </div>
+
+                {/* Redirect / Thank You URL for Visual Builder */}
+                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><LinkOutlined style={{ marginRight: 8, color: '#10b981' }} />Redirect / Thank You URL (page_url)</Text>
+                    <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Visitors will be automatically redirected to this URL after submitting the form</div>
+                  </div>
+                  <Form.Item name="redirect_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid URL (https://...)' }]}>
+                    <Input placeholder="https://example.com/thank-you" prefix={<LinkOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   </Form.Item>
                 </div>
 
@@ -2217,7 +2318,12 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                       <Button 
                         size="small" 
                         icon={<PictureOutlined />} 
-                        onClick={() => setMediaLibraryVisible(true)}
+                        onClick={() => {
+                          if (htmlEditorRef.current) {
+                            savedHtmlSelectionRef.current = htmlEditorRef.current.getSelection();
+                          }
+                          setMediaLibraryVisible(true);
+                        }}
                       >
                         Media Library
                       </Button>
@@ -2225,7 +2331,7 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                     </Space>
                   </div>
                   <div style={{ padding: '0 4px 4px' }}>
-                    <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" />
+                    <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" editorRef={htmlEditorRef} />
                   </div>
                 </div>
 
@@ -2294,13 +2400,24 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                 )}
 
                 {/* Webhook URL - Always visible in HTML Builder for form submissions */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
                   <div style={{ marginBottom: 16 }}>
                     <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
                     <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Form data will be forwarded to this URL after submission</div>
                   </div>
                   <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
                     <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                  </Form.Item>
+                </div>
+
+                {/* Redirect / Thank You URL (page_url) */}
+                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                  <div style={{ marginBottom: 16 }}>
+                    <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><LinkOutlined style={{ marginRight: 8, color: '#10b981' }} />Redirect / Thank You URL (page_url)</Text>
+                    <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Visitors will be automatically redirected to this URL after form submission. If left blank, the system auto-detects <code>page_url</code> from your HTML code.</div>
+                  </div>
+                  <Form.Item name="redirect_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid URL (https://...)' }]}>
+                    <Input placeholder="https://example.com/thank-you (or page_url from HTML)" prefix={<LinkOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                   </Form.Item>
                 </div>
               </>
@@ -2554,9 +2671,8 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
       <MediaLibraryModal
         visible={mediaLibraryVisible}
         onClose={() => setMediaLibraryVisible(false)}
-        onSelect={(url) => {
-          // URL is already copied to clipboard by the modal
-          console.log('Selected media URL:', url);
+        onSelect={(url, item, mode) => {
+          handleInsertMediaToHtml(url, item, mode || item?.insertMode || 'url');
         }}
       />
 

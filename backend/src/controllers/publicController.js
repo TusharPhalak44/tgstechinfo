@@ -205,11 +205,6 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
-        // Check if content is visible on site
-        if (content.is_visible_on_site === false || content.is_visible_on_site === 0) {
-            return res.status(404).json({ message: 'Content not found' });
-        }
-
         // Get related articles
         const relatedArticles = await Content.getRelatedArticles(content.id, content.category_id);
 
@@ -553,10 +548,57 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
+        // Determine redirect URL from multiple sources in priority order:
+        // 1. Submitted payload (page_url, redirect_url, thank_you_url, return_url)
+        // 2. Content record in DB (content.redirect_url)
+        // 3. Extracted from content.content HTML (<input name="page_url" value="...">)
+        const submittedRedirect = extraData.page_url || extraData.redirect_url || extraData.thank_you_url || extraData.return_url ||
+                                  rest.page_url || rest.redirect_url || rest.thank_you_url || rest.return_url ||
+                                  req.body.page_url || req.body.redirect_url || req.body.thank_you_url || req.body.return_url ||
+                                  normalizedExtraData.page_url || normalizedExtraData.redirect_url;
+        
+        let targetRedirectUrl = (submittedRedirect && typeof submittedRedirect === 'string' && submittedRedirect.trim()) ? submittedRedirect.trim() : null;
+
+        if (!targetRedirectUrl && content?.redirect_url && typeof content.redirect_url === 'string' && content.redirect_url.trim()) {
+            targetRedirectUrl = content.redirect_url.trim();
+        }
+
+        if (!targetRedirectUrl && content?.content) {
+            const pageUrlMatch = content.content.match(/<input[^>]+name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["'][^>]*value=["']([^"']+)["']/i) ||
+                                 content.content.match(/<input[^>]+value=["']([^"']+)["'][^>]*name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["']/i);
+            if (pageUrlMatch && pageUrlMatch[1] && pageUrlMatch[1].trim()) {
+                targetRedirectUrl = pageUrlMatch[1].trim();
+            }
+        }
+
+        // Clean targetRedirectUrl
+        if (targetRedirectUrl) {
+            targetRedirectUrl = targetRedirectUrl.replace(/\\/g, '/').trim();
+            if (targetRedirectUrl === '#' || targetRedirectUrl.startsWith('javascript:')) {
+                targetRedirectUrl = null;
+            }
+        }
+
+        // Persist redirect_url back to contents table if missing in DB
+        if (targetRedirectUrl && normalizedContentId && !content?.redirect_url) {
+            pool.query('UPDATE contents SET redirect_url = ? WHERE id = ?', [targetRedirectUrl, normalizedContentId])
+                .catch(err => console.error('[submitLandingPage] Failed to save redirect_url:', err.message));
+        }
+
+        console.log('[submitLandingPage] Final redirect_url:', targetRedirectUrl);
+
+        // Check if browser made a traditional synchronous form POST (document navigation)
+        const isHtmlRequest = req.accepts && req.accepts('html') && !req.xhr && req.headers['sec-fetch-dest'] === 'document';
+        if (isHtmlRequest && targetRedirectUrl) {
+            return res.redirect(targetRedirectUrl);
+        }
+
         res.json({
             message: 'Access granted successfully.',
             has_access: true,
-            pdf_file: content?.pdf_file || null
+            pdf_file: content?.pdf_file || null,
+            redirect_url: targetRedirectUrl || null,
+            page_url: targetRedirectUrl || null
         });
         console.log('========== FORM SUBMISSION END (SUCCESS) ==========');
     } catch (error) {
@@ -1179,7 +1221,6 @@ exports.getCaseStudyBySlug = async (req, res) => {
              LEFT JOIN content_types ct ON ct.id = c.content_type_id
              WHERE c.slug = ?
                AND c.status = 'published'
-               AND c.is_visible_on_site = 1
                AND ct.slug = 'case-study'
              LIMIT 1`,
             [slug]
