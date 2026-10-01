@@ -18,6 +18,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTracking } from '../../context/TrackingContext';
 import useEngagementTracking from '../../hooks/useEngagementTracking';
 import WebinarCountdown from '../common/WebinarCountdown';
+import ArticleNewsletterBanner from './ArticleNewsletterBanner';
 
 const { Title, Text } = Typography;
 
@@ -942,6 +943,9 @@ const ArticleDetail = () => {
         {/* Sidebar - 30% */}
         <Col xs={24} lg={7} style={{ order: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* Newsletter Subscription Widget at Top of Right Sidebar */}
+            <ArticleNewsletterBanner darkMode={darkMode} contentTitle={content?.title} />
 
             {/* ── Get Access Card — only for webinar/whitepaper/event ── */}
             {requiresLanding && (

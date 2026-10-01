@@ -68,7 +68,7 @@ export default function AudienceSummaryBreadcrumb({
   }
 
   return (
-    <div className="aud-breadcrumb-bar" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="aud-breadcrumb-bar" style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
         <span style={{ color: 'var(--aud-text-muted)', fontWeight: 700, fontSize: '0.8125rem', display: 'flex', alignItems: 'center', gap: 6, marginRight: 4 }}>
           <FilterOutlined style={{ color: 'var(--aud-primary)' }} /> ICP Target Filters:

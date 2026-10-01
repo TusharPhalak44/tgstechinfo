@@ -409,18 +409,18 @@ export const About = () => {
             </p>
 
             {/* Quick Metrics Bar */}
-            <div className="pt-4 grid grid-cols-3 gap-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-              <div>
-                <div className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">10,000+</div>
-                <div className="text-xs font-semibold" style={{ color: 'var(--color-muted)' }}>Published Articles</div>
+            <div className="pt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 border-t min-w-0" style={{ borderColor: 'var(--color-border)' }}>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-extrabold text-blue-600 dark:text-blue-400">10,000+</div>
+                <div className="text-xs font-semibold truncate sm:whitespace-normal" style={{ color: 'var(--color-muted)' }}>Published Articles</div>
               </div>
-              <div>
-                <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">50+</div>
-                <div className="text-xs font-semibold" style={{ color: 'var(--color-muted)' }}>Tech Verticals</div>
+              <div className="min-w-0">
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">50+</div>
+                <div className="text-xs font-semibold truncate sm:whitespace-normal" style={{ color: 'var(--color-muted)' }}>Tech Verticals</div>
               </div>
-              <div>
-                <div className="text-2xl font-extrabold text-amber-500">100K+</div>
-                <div className="text-xs font-semibold" style={{ color: 'var(--color-muted)' }}>Monthly Readers</div>
+              <div className="min-w-0 col-span-2 sm:col-span-1">
+                <div className="text-xl sm:text-2xl font-extrabold text-amber-500">100K+</div>
+                <div className="text-xs font-semibold truncate sm:whitespace-normal" style={{ color: 'var(--color-muted)' }}>Monthly Readers</div>
               </div>
             </div>
 
@@ -447,9 +447,9 @@ export const About = () => {
             initial={{ opacity: 0, x: 35 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="lg:col-span-5 relative"
+            className="lg:col-span-5 relative min-w-0 w-full"
           >
-            <div className="relative rounded-3xl overflow-hidden border shadow-2xl group" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="relative rounded-3xl overflow-hidden border shadow-2xl group w-full" style={{ borderColor: 'var(--color-border)' }}>
               <img
                 src="/about_hero_banner.png"
                 alt="TGS Tech Info Executive & Editorial Team"

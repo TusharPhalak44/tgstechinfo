@@ -6,33 +6,55 @@ const { pool } = require('./database');
 
 dotenv.config();
 
-// Email rate limiting tracker (in-memory, for production use Redis)
+// HTML Entity Escaper for email security
+const escapeHtml = (unsafe) => {
+    if (unsafe === undefined || unsafe === null) return '';
+    return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+};
+
+// Email rate limiting tracker (in-memory, clean garbage collection)
 const emailRateLimiter = new Map();
 
 /**
  * Check if an email address has exceeded rate limit
  * @param {string} to - Recipient email
- * @param {number} maxPerHour - Max emails per hour (default: 5)
+ * @param {number} maxPerHour - Max emails per hour (default: 10)
  * @returns {boolean} - True if rate limit exceeded
  */
-const isRateLimited = (to, maxPerHour = 5) => {
+const isRateLimited = (to, maxPerHour = 10) => {
+    if (!to) return false;
+    const normalizedTo = String(to).trim().toLowerCase();
     const now = Date.now();
     const hourAgo = now - (60 * 60 * 1000);
     
-    if (!emailRateLimiter.has(to)) {
-        emailRateLimiter.set(to, []);
+    if (!emailRateLimiter.has(normalizedTo)) {
+        emailRateLimiter.set(normalizedTo, []);
     }
     
-    const timestamps = emailRateLimiter.get(to).filter(t => t > hourAgo);
-    emailRateLimiter.set(to, timestamps);
+    const timestamps = emailRateLimiter.get(normalizedTo).filter(t => t > hourAgo);
+    
+    // Clean up old entries if map grows
+    if (emailRateLimiter.size > 500) {
+        for (const [key, val] of emailRateLimiter.entries()) {
+            if (!val || val.length === 0 || val.every(t => t <= hourAgo)) {
+                emailRateLimiter.delete(key);
+            }
+        }
+    }
     
     if (timestamps.length >= maxPerHour) {
-        console.warn(`[Rate Limit] Email to ${to} exceeds limit (${maxPerHour}/hour)`);
+        console.warn(`[Rate Limit] Email to ${normalizedTo} exceeds limit (${maxPerHour}/hour)`);
+        emailRateLimiter.set(normalizedTo, timestamps);
         return true;
     }
     
     timestamps.push(now);
-    emailRateLimiter.set(to, timestamps);
+    emailRateLimiter.set(normalizedTo, timestamps);
     return false;
 };
 
@@ -216,9 +238,10 @@ const buildLogoHtml = (logoData) => {
 
 const sendEmail = async (to, subject, html, options = {}) => {
     // Check rate limit
-    if (isRateLimited(to, 5)) {
+    if (isRateLimited(to, 10)) {
         console.warn(`[sendEmail] Rate limit exceeded for ${to}`);
         return { 
+            success: false,
             skipped: true, 
             reason: 'rate_limit_exceeded',
             message: 'Too many emails sent to this address. Please try again later.'
@@ -227,7 +250,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
 
     if (!to) {
         console.warn('Email skipped: no recipient address provided.');
-        return { skipped: true, reason: 'no_recipient' };
+        return { success: false, skipped: true, reason: 'no_recipient' };
     }
 
     const fromAddress = process.env.EMAIL_FROM || 'noreply@tgstechinfo.com';
@@ -242,7 +265,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
         if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY.includes('placeholder')) {
             console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD or SENDGRID_API_KEY.');
-            return { skipped: true, reason: 'credentials_not_configured', from: fromAddress };
+            return { success: false, skipped: true, reason: 'credentials_not_configured', from: fromAddress };
         }
     }
 
@@ -273,7 +296,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
     try {
         const info = await transporter.sendMail(mailOptions);
         console.log(`[sendEmail] Email successfully sent to ${to}. MessageId: ${info.messageId || info.id}`);
-        return info;
+        return { ...info, success: true };
     } catch (sendErr) {
         console.error(`[sendEmail] Email Send Error for recipient ${to}:`, sendErr.message);
         
@@ -297,6 +320,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
         }
         
         return {
+            success: false,
             error: sendErr.message,
             responseCode: sendErr.responseCode || 500,
             skipped: true,
@@ -307,6 +331,8 @@ const sendEmail = async (to, subject, html, options = {}) => {
 
 // Template for subscription email
 const subscriptionEmailTemplate = (name, contentTitle) => {
+    const safeName = escapeHtml(name);
+    const safeTitle = escapeHtml(contentTitle);
     return `
         <!DOCTYPE html>
         <html>
@@ -325,13 +351,13 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
                     <h2>Subscription Confirmed</h2>
                 </div>
                 <div class="content">
-                    <h3>Hi ${name},</h3>
+                    <h3>Hi ${safeName},</h3>
                     <p>Thank you for reaching out! We've received your details, and our team is reviewing them.</p>
                     <p>We'll be in touch shortly to explore result-driven growth strategies tailored to your business goals.</p>
-                    <p>You now have access to: <strong>${contentTitle}</strong></p>
+                    <p>You now have access to: <strong>${safeTitle}</strong></p>
                     <p>For urgent placements and queries, please feel free to contact:</p>
                     <p><strong>Contact person:</strong> Mark Jason</p>
-                    <p><strong>Email ID:</strong> </p>
+                    <p><strong>Email ID:</strong> info@tgstechinfo.com</p>
                     <br>
                     <p>Regards,</p>
                     <p><strong>TGS Tech Info Team</strong></p>
@@ -345,6 +371,8 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
 
 // Template for access grant email
 const accessGrantEmailTemplate = (name, contentTitle) => {
+    const safeName = escapeHtml(name);
+    const safeTitle = escapeHtml(contentTitle);
     return `
         <!DOCTYPE html>
         <html>
@@ -363,10 +391,10 @@ const accessGrantEmailTemplate = (name, contentTitle) => {
                     <h2>Content Access Granted</h2>
                 </div>
                 <div class="content">
-                    <h3>Hi ${name},</h3>
+                    <h3>Hi ${safeName},</h3>
                     <p>Thank you for reaching out! We've received your details, and our team is reviewing them.</p>
                     <p>We'll be in touch shortly to explore result-driven growth strategies tailored to your business goals.</p>
-                    <p>You now have access to: <strong>${contentTitle}</strong></p>
+                    <p>You now have access to: <strong>${safeTitle}</strong></p>
                     <p>For urgent placements and queries, please feel free to contact:</p>
                     <p><strong>Contact person:</strong> Mark Jason</p>
                     <p><strong>Email ID:</strong> max.brown@tgstechinfo.com</p>
@@ -384,6 +412,9 @@ const accessGrantEmailTemplate = (name, contentTitle) => {
 };
 
 const chatbotQueryAdminTemplate = (email, query, submittedAt) => {
+    const safeEmail = escapeHtml(email);
+    const safeQuery = escapeHtml(query);
+    const safeSubmittedAt = escapeHtml(submittedAt);
     return `
         <!DOCTYPE html>
         <html>
@@ -409,13 +440,13 @@ const chatbotQueryAdminTemplate = (email, query, submittedAt) => {
                    
                     <div class="query-box">
                         <p class="label">User Email:</p>
-                        <p>${email}</p>
+                        <p>${safeEmail}</p>
                        
                         <p class="label" style="margin-top: 15px;">User Query:</p>
-                        <p style="font-style: italic;">"${query}"</p>
+                        <p style="font-style: italic;">"${safeQuery}"</p>
                        
                         <p class="label" style="margin-top: 15px;">Submitted At:</p>
-                        <p>${submittedAt}</p>
+                        <p>${safeSubmittedAt}</p>
                        
                         <p class="label" style="margin-top: 15px;">Status:</p>
                         <p><span class="status">Pending</span></p>
@@ -437,6 +468,8 @@ const chatbotQueryAdminTemplate = (email, query, submittedAt) => {
  
 // Template for admin response to user
 const chatbotQueryResponseTemplate = (query, adminResponse) => {
+    const safeQuery = escapeHtml(query);
+    const safeAdminResponse = escapeHtml(adminResponse);
     return `
         <!DOCTYPE html>
         <html>
@@ -462,12 +495,12 @@ const chatbotQueryResponseTemplate = (query, adminResponse) => {
                    
                     <div class="query-box">
                         <p class="label">Your Question:</p>
-                        <p style="font-style: italic;">"${query}"</p>
+                        <p style="font-style: italic;">"${safeQuery}"</p>
                     </div>
                    
                     <div class="response-box">
                         <p class="label">Our Response:</p>
-                        <p>${adminResponse}</p>
+                        <p>${safeAdminResponse}</p>
                     </div>
                    
                     <p>If you have any further questions, please don't hesitate to reach out through our chatbot or contact form.</p>
@@ -529,7 +562,7 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             site_url: publicUrl,
             frontend_url: publicUrl,
             login_url: `${publicUrl}/login`,
-            dashboard_url: `${publicUrl}/user/dashboard`,
+            dashboard_url: `${publicUrl}/user-dashboard`,
             unsubscribe_url: `${publicUrl}/unsubscribe`,
             download_url: publicUrl,
             reset_url: `${publicUrl}/reset-password`,
@@ -626,5 +659,6 @@ module.exports = {
     buildLogoHtml,
     convertLogoToPublicUrl,
     getPublicUrl,
-    getBackendUrl
+    getBackendUrl,
+    escapeHtml
 };

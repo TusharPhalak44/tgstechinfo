@@ -71,6 +71,12 @@ router.get('/webinar-registrations', hasPermission('content.read'), adminControl
 router.get('/data-requests', hasPermission('user.read'), adminController.getDataRequests);
 router.put('/data-requests/:id/status', hasPermission('user.update'), adminController.updateDataRequestStatus);
 
+// Newsletter subscriber management
+const newsletterController = require('../controllers/newsletterController');
+router.get('/newsletter', hasPermission('user.read'), newsletterController.getSubscribers);
+router.delete('/newsletter/:email', hasPermission('user.delete'), newsletterController.removeSubscriber);
+
+
 // Content editing and deletion
 router.put('/content/:id/edit',
     hasPermission('content.update'),

@@ -74,7 +74,7 @@ exports.reviewContent = async (req, res) => {
                         content_title: content.title,
                         category: category?.name || 'Uncategorized',
                         approved_date: new Date().toLocaleDateString(),
-                        dashboard_url: `${frontendUrl}/dashboard`
+                        dashboard_url: `${frontendUrl}/user-dashboard`
                     });
                 } catch (e) { console.warn('Email failed:', e.message); }
                 break;
@@ -89,7 +89,7 @@ exports.reviewContent = async (req, res) => {
                         category: category?.name || 'Uncategorized',
                         published_date: new Date().toLocaleDateString(),
                         article_url: `${frontendUrl}/article/${content.slug}`,
-                        dashboard_url: `${frontendUrl}/dashboard`
+                        dashboard_url: `${frontendUrl}/user-dashboard`
                     });
                 } catch (e) { console.warn('Email failed:', e.message); }
 
@@ -105,7 +105,7 @@ exports.reviewContent = async (req, res) => {
                         category: category?.name || 'Uncategorized',
                         reviewed_date: new Date().toLocaleDateString(),
                         feedback: comment || 'No specific reason provided',
-                        dashboard_url: `${frontendUrl}/dashboard`
+                        dashboard_url: `${frontendUrl}/user-dashboard`
                     });
                 } catch (e) { console.warn('Email failed:', e.message); }
 
@@ -121,7 +121,7 @@ exports.reviewContent = async (req, res) => {
                         category: category?.name || 'Uncategorized',
                         reviewed_date: new Date().toLocaleDateString(),
                         feedback: comment || 'Please review and make necessary changes.',
-                        dashboard_url: `${frontendUrl}/dashboard`
+                        dashboard_url: `${frontendUrl}/user-dashboard`
                     });
                 } catch (e) { console.warn('Email failed:', e.message); }
                 break;

@@ -123,22 +123,25 @@ router.post('/detect-intent', chatbotController.detectIntent);
  */
 router.post('/submit-query', submitQueryValidation, chatbotController.submitQuery);
 
+const { authenticate, requireAdmin } = require('../middleware/auth');
+
 /**
  * GET /api/chatbot/queries
  * Get all queries (admin only)
  */
-router.get('/queries', chatbotController.getQueries);
+router.get('/queries', authenticate, requireAdmin, chatbotController.getQueries);
 
 /**
  * GET /api/chatbot/queries/stats
  * Get query statistics (admin only)
  */
-router.get('/queries/stats', chatbotController.getQueryStats);
+router.get('/queries/stats', authenticate, requireAdmin, chatbotController.getQueryStats);
 
 /**
  * PUT /api/chatbot/queries/:id
  * Update query status and add admin response (admin only)
  */
-router.put('/queries/:id', chatbotController.updateQuery);
+router.put('/queries/:id', authenticate, requireAdmin, chatbotController.updateQuery);
 
 module.exports = router;
+

@@ -62,5 +62,6 @@ exports.strictLimiter = rateLimit({
         message: 'Rate limit exceeded for this operation.'
     },
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    skip: (req) => process.env.NODE_ENV === 'test' || (process.env.NODE_ENV === 'development' && (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1'))
 });

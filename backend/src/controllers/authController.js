@@ -542,11 +542,16 @@ exports.forgotPassword = async (req, res) => {
                 name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
                 reset_url: resetUrl
             });
+            if (emailResult?.skipped && emailResult.reason === 'smtp_error') {
+                console.warn('[authController.forgotPassword] Password reset email skipped due to SMTP error:', emailResult.error || emailResult.reason);
+                return res.status(503).json({ message: 'Email service is temporarily unavailable. Please try again later or contact support.' });
+            }
             if (emailResult?.skipped) {
                 console.warn('[authController.forgotPassword] Password reset email was skipped:', emailResult.reason || emailResult.error);
             }
         } catch (emailError) {
             console.error('Forgot password email error:', emailError);
+            return res.status(503).json({ message: 'Email service is temporarily unavailable. Please try again later or contact support.' });
         }
 
         res.json({ message: 'If that email exists, a reset link has been sent.' });

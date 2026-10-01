@@ -148,9 +148,9 @@ export default function AudienceFilterPanel({
   const dimBoxBorder = darkMode ? '1px solid rgba(30, 58, 102, 0.45)' : '1px solid rgba(226, 232, 240, 0.95)';
 
   return (
-    <div className="aud-glass-panel aud-sidebar-console" style={{ padding: '20px 22px' }}>
+    <div className="aud-glass-panel aud-sidebar-console">
       {/* Console Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, pb: 14, borderBottom: '1px solid var(--aud-card-border)', paddingBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid var(--aud-card-border)', paddingBottom: 14, flexWrap: 'wrap', gap: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(10, 174, 239, 0.15)', border: '1px solid rgba(10, 174, 239, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--aud-primary)' }}>
             <FilterOutlined style={{ fontSize: 16 }} />
