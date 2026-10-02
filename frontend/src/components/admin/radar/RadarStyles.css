@@ -263,6 +263,12 @@
   border-radius: 14px;
 }
 
+.radar-dashboard-root.light .radar-glass-panel.analytics-globe-card,
+.radar-dashboard-root .radar-glass-panel.analytics-globe-card {
+  background: radial-gradient(circle at 50% 50%, #0c1c38 0%, #030814 100%) !important;
+  border: 1px solid rgba(30, 58, 102, 0.7) !important;
+}
+
 .radar-dashboard-root.light .radar-glass-panel:hover {
   border-color: #cbd5e1 !important;
   box-shadow: 0 4px 12px 0 rgba(0, 0, 0, 0.07);

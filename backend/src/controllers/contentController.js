@@ -35,9 +35,28 @@ exports.createContent = async (req, res) => {
             }
         }
 
+        const parseOptionalId = (val) => {
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+            const num = parseInt(val, 10);
+            return isNaN(num) ? null : num;
+        };
+
+        const safeJsonParse = (val) => {
+            if (!val) return null;
+            if (typeof val === 'object') return val;
+            try {
+                return JSON.parse(val);
+            } catch {
+                return null;
+            }
+        };
+
         const contentData = stripEmDash({
             ...req.body,
             user_id: req.user.id,
+            content_type_id: parseOptionalId(req.body.content_type_id),
+            category_id: parseOptionalId(req.body.category_id),
+            reading_time: parseOptionalId(req.body.reading_time),
             status: String(req.body.status || 'draft').trim(),
             banner_image: existingBanner?.filename || bannerFile?.filename || null,
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
@@ -47,22 +66,15 @@ exports.createContent = async (req, res) => {
             platform: req.body.platform || null,
             webinar_type: req.body.webinar_type || 'live',
             join_link: req.body.join_link || null,
-            tags: req.body.tags ? req.body.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-            custom_fields: req.body.custom_fields ? JSON.parse(req.body.custom_fields) : null,
-            webhook_field_mapping: req.body.webhook_field_mapping ? JSON.parse(req.body.webhook_field_mapping) : null,
+            tags: req.body.tags ? (Array.isArray(req.body.tags) ? req.body.tags : String(req.body.tags).split(',').map(t => t.trim()).filter(Boolean)) : [],
+            custom_fields: safeJsonParse(req.body.custom_fields),
+            webhook_field_mapping: safeJsonParse(req.body.webhook_field_mapping),
             builder_layout: req.body.builder_layout || null,
-            builder_content_elements: req.body.builder_content_elements ? (() => {
-                try {
-                    return JSON.parse(req.body.builder_content_elements);
-                } catch (e) {
-                    console.error('Error parsing builder_content_elements:', e);
-                    return null;
-                }
-            })() : null,
+            builder_content_elements: safeJsonParse(req.body.builder_content_elements),
             builder_page_data: req.body.builder_page_data ? (() => {
                 try {
                     return typeof req.body.builder_page_data === 'string'
-                        ? req.body.builder_page_data   // keep as JSON string — model handles it
+                        ? req.body.builder_page_data
                         : JSON.stringify(req.body.builder_page_data);
                 } catch (e) {
                     console.error('Error processing builder_page_data:', e);
@@ -265,6 +277,10 @@ exports.updateContent = async (req, res) => {
             updateData[key] = req.body[key];
         });
 
+        if (updateData.content_type_id !== undefined) updateData.content_type_id = parseOptionalId(updateData.content_type_id);
+        if (updateData.category_id !== undefined) updateData.category_id = parseOptionalId(updateData.category_id);
+        if (updateData.reading_time !== undefined) updateData.reading_time = parseOptionalId(updateData.reading_time);
+
         const bannerFile = req.files?.banner_image?.[0];
         if (bannerFile) {
             let existingBanner = null;
@@ -275,7 +291,7 @@ exports.updateContent = async (req, res) => {
             }
             updateData.banner_image = existingBanner?.filename || bannerFile.filename;
         }
-        
+
         // Ensure status is never empty/null - default to 'draft' if provided but empty
         if (updateData.status === '' || updateData.status === null || updateData.status === undefined) {
             updateData.status = 'draft';

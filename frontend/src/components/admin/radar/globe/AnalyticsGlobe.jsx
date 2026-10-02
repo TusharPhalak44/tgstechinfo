@@ -256,8 +256,10 @@ export default function AnalyticsGlobe({
   // Main Canvas Render Loop
   useEffect(() => {
     let animId;
+    let resizeObserver;
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
     const ctx = canvas.getContext('2d');
 
     const handleResize = () => {
@@ -269,13 +271,15 @@ export default function AnalyticsGlobe({
       if (canvas.width !== targetW || canvas.height !== targetH) {
         canvas.width = targetW;
         canvas.height = targetH;
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.scale(dpr, dpr);
       }
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
+    if (typeof ResizeObserver !== 'undefined' && container) {
+      resizeObserver = new ResizeObserver(() => handleResize());
+      resizeObserver.observe(container);
+    }
 
     const render = () => {
       const st = stateRef.current;
@@ -287,15 +291,26 @@ export default function AnalyticsGlobe({
       st.lastFrameTime = now;
       st.time += 0.016;
 
-      if (!containerRef.current) return;
+      if (!containerRef.current || !canvasRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const width = rect.width;
       const height = rect.height;
+      if (width <= 0 || height <= 0) return;
       const dpr = window.devicePixelRatio || 1;
 
-      // Always reset transform to uniform dpr scaling on every frame for perfect 1:1 isotropic circular rendering
+      const targetW = Math.round(width * dpr);
+      const targetH = Math.round(height * dpr);
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+
+      // Reset transform to identity and wipe ENTIRE physical canvas buffer
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Set scale transform for high-DPI isotropic rendering
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, width, height);
 
       const cx = width / 2;
       const cy = height / 2;
@@ -520,6 +535,7 @@ export default function AnalyticsGlobe({
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
+      if (resizeObserver) resizeObserver.disconnect();
     };
   }, [countries]);
 
@@ -696,7 +712,7 @@ export default function AnalyticsGlobe({
   return (
     <div
       ref={containerRef}
-      className={`radar-glass-panel relative w-full flex flex-col justify-between p-4 overflow-hidden rounded-2xl ${isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen' : 'h-[520px] md:h-[580px] lg:h-[640px]'}`}
+      className={`radar-glass-panel analytics-globe-card relative w-full flex flex-col justify-between p-4 overflow-hidden rounded-2xl ${isFullscreen ? 'fixed inset-0 z-[99999] w-screen h-screen' : 'h-[520px] md:h-[580px] lg:h-[640px]'}`}
       style={{
         background: 'radial-gradient(circle at 50% 50%, #0c1c38 0%, #030814 100%)',
         border: '1px solid rgba(30, 58, 102, 0.7)',

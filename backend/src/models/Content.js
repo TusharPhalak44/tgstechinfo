@@ -299,8 +299,14 @@ class Content {
         console.log('[Content.create] user_id:', user_id, 'content_type_id:', content_type_id, 'category_id:', category_id);
         console.log('[Content.create] title:', title, 'slug:', slug);
 
+        const parseOptionalId = (val) => {
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+            const num = parseInt(val, 10);
+            return isNaN(num) ? null : num;
+        };
+
         const scalarize = (val) => {
-            if (val === null || val === undefined) return null;
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
             if (typeof val === 'string') return val;
             if (typeof val === 'number' || typeof val === 'boolean') return val;
             return JSON.stringify(val);
@@ -317,9 +323,9 @@ class Content {
         ];
 
         const rawValues = [
-            user_id,
-            content_type_id,
-            category_id,
+            parseOptionalId(user_id),
+            parseOptionalId(content_type_id),
+            parseOptionalId(category_id),
             title,
             slug,
             short_description,
@@ -343,7 +349,7 @@ class Content {
             platform || null,
             webinar_type || 'live',
             join_link || null,
-            reading_time,
+            parseOptionalId(reading_time),
             status,
             is_visible_on_site,
             email_subject || null,
@@ -565,8 +571,14 @@ class Content {
             }
         }
 
+        const parseOptionalId = (val) => {
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+            const num = parseInt(val, 10);
+            return isNaN(num) ? null : num;
+        };
+
         const scalarizeVal = (val) => {
-            if (val === null || val === undefined) return null;
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
             if (typeof val === 'string') return val;
             if (typeof val === 'number' || typeof val === 'boolean') return val;
             return JSON.stringify(val);
@@ -581,6 +593,8 @@ class Content {
             'is_visible_on_site', 'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];
 
+        const intFields = ['user_id', 'content_type_id', 'category_id', 'reading_time'];
+
         const updates = [];
         const values = [];
         let placeholderCount = 0;
@@ -588,7 +602,12 @@ class Content {
         for (const field of allowedFields) {
             if (contentData[field] !== undefined) {
                 updates.push(`${field} = ?`);
-                values.push(scalarizeVal(contentData[field]));
+                const rawVal = contentData[field];
+                if (intFields.includes(field)) {
+                    values.push(parseOptionalId(rawVal));
+                } else {
+                    values.push(scalarizeVal(rawVal));
+                }
                 placeholderCount++;
             }
         }
