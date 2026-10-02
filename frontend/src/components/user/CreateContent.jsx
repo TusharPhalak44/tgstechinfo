@@ -43,23 +43,23 @@ const FIELD_TYPES = [
 
 // Only these 4 sections are reorderable
 const STANDARD_SECTIONS = [
-  { key: 'meta',    label: 'Article Details' },
-  { key: 'title',   label: 'Title & Description'},
-  { key: 'banner',  label: 'Banner Image'     },
+  { key: 'meta', label: 'Article Details' },
+  { key: 'title', label: 'Title & Description' },
+  { key: 'banner', label: 'Banner Image' },
   { key: 'content', label: 'Content' },
-  { key: 'video',   label: 'Video Upload'    },
+  { key: 'video', label: 'Video Upload' },
 ];
 
 const SECTION_TYPES = [
   { type: 'content_type_category', label: 'Content Type & Category' },
-  { type: 'title_description',     label: 'Title & Description' },
-  { type: 'banner_image',          label: 'Banner Image' },
-  { type: 'pdf_attachment',        label: 'PDF Attachment' },
-  { type: 'content',               label: 'Content' },
-  { type: 'tags',                  label: 'Tags' },
-  { type: 'schedule',              label: 'Schedule' },
-  { type: 'reorder_layout',        label: 'Reorder Layout' },
-  { type: 'seo',                   label: 'SEO Settings' },
+  { type: 'title_description', label: 'Title & Description' },
+  { type: 'banner_image', label: 'Banner Image' },
+  { type: 'pdf_attachment', label: 'PDF Attachment' },
+  { type: 'content', label: 'Content' },
+  { type: 'tags', label: 'Tags' },
+  { type: 'schedule', label: 'Schedule' },
+  { type: 'reorder_layout', label: 'Reorder Layout' },
+  { type: 'seo', label: 'SEO Settings' },
 ];
 
 const CreateContent = () => {
@@ -115,14 +115,14 @@ const CreateContent = () => {
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [webinarTypeMode, setWebinarTypeMode] = useState('live'); // 'live' | 'on_demand'
-  
+
   // Guidelines modals state
   const [guidelinesVisible, setGuidelinesVisible] = useState(false);
   const [instructionsVisible, setInstructionsVisible] = useState(false);
   const [termsVisible, setTermsVisible] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-// Initialize new builder architecture - register widgets once globally
+  // Initialize new builder architecture - register widgets once globally
   useEffect(() => {
     if (!window.__widgetsRegistered) {
       registerAllWidgets();
@@ -158,17 +158,17 @@ const CreateContent = () => {
       const apiBase = isAdmin ? '/api/admin' : '/api/user';
       console.log('[CreateContent] fetchExistingContent - apiBase:', apiBase);
       console.log('[CreateContent] fetchExistingContent - URL:', `${apiBase}/content/${id}`);
-      
+
       const res = await axios.get(`${apiBase}/content/${id}`);
       const data = res.data;
       console.log('[CreateContent] fetchExistingContent - data received:', data);
-      
+
       // Store content type for back navigation
       if (data.content_type_name) {
         const contentTypeSlug = data.content_type_name.toLowerCase().replace(/\s+/g, '-');
         setEditContentType(contentTypeSlug);
       }
-      
+
       const tags = (() => {
         if (!data.tags) return [];
         if (Array.isArray(data.tags)) return data.tags;
@@ -199,12 +199,12 @@ const CreateContent = () => {
         setWebinarTypeMode(data.webinar_type);
       }
       setContentStatus(data.status || 'draft');
-      
+
       // Restore layout first to determine which tab to use
       if (data.builder_layout) {
         try {
           const layout = typeof data.builder_layout === 'string' ? JSON.parse(data.builder_layout) : data.builder_layout;
-          
+
           // Check if this is HTML Builder content (layout === ['html'])
           if (Array.isArray(layout) && layout.length > 0 && layout[0] === 'html') {
             // HTML Builder mode
@@ -245,7 +245,7 @@ const CreateContent = () => {
               setEditorReady(true);
             }
           }
-        } catch (e) { 
+        } catch (e) {
           console.error('Error parsing builder_layout:', e);
           setActiveTab('standard');
           setInitialContent(data.content || '');
@@ -269,16 +269,17 @@ const CreateContent = () => {
         setVideoList([{ uid: '-1', name: data.video_file, status: 'done', url: `/uploads/${data.video_file}` }]);
       }
       if (data.custom_fields) {
-          try {
-            const cf = typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields;
-            setCustomFields(cf || []);
-          } catch { setCustomFields([]); }
-        }
+        try {
+          const cf = typeof data.custom_fields === 'string' ? JSON.parse(data.custom_fields) : data.custom_fields;
+          setCustomFields(cf || []);
+        } catch { setCustomFields([]); }
+      }
       if (data.webhook_url) form.setFieldsValue({ webhook_url: data.webhook_url });
+      if (data.redirect_url) form.setFieldsValue({ redirect_url: data.redirect_url });
       // Use content_type_name directly from API — don't depend on contentTypes state
       const typeName = (data.content_type_name || '').toLowerCase();
       setSelectedTypeName(typeName);
-      
+
       // Clear any stale localStorage backup since we loaded fresh data from server
       if (id) {
         const storageKey = `builder_autosave_${id}`;
@@ -328,15 +329,15 @@ const CreateContent = () => {
       });
 
       const existingContent = response.data?.data || [];
-      
+
       if (existingContent.length > 0) {
         const exactMatch = existingContent.find(content => {
           return content.title?.toLowerCase().trim() === title.toLowerCase().trim();
- 
+
 
         });
 
-       if (exactMatch) {
+        if (exactMatch) {
           setDuplicateWarning({
             found: true,
             isExact: true,
@@ -402,10 +403,10 @@ const CreateContent = () => {
           formFields.forEach(f => {
             if (f.label || f.id) {
               // Use apiKey if set, otherwise generate from label
-              const fieldName = f.apiKey && f.apiKey.trim() 
+              const fieldName = f.apiKey && f.apiKey.trim()
                 ? f.apiKey.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^_|_$/g, '').substring(0, 64)
                 : (f.label || f.id).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').substring(0, 64) || f.id;
-              
+
               fields.push({
                 id: f.id,
                 name: fieldName,
@@ -450,11 +451,11 @@ const CreateContent = () => {
 
   const handleInsertMediaToHtml = (url, item) => {
     if (!url) return;
-    
+
     // Determine media type and alt text
     const fileType = item?.type || '';
     const fileName = item?.name || item?.filename || 'Media';
-    
+
     let htmlSnippet = '';
     if (fileType.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
       htmlSnippet = `<img src="${url}" alt="${fileName}" style="max-width: 100%; height: auto;" />`;
@@ -501,7 +502,7 @@ const CreateContent = () => {
 
   const buildFormData = (values) => {
     const formData = new FormData();
-    
+
     // For webinar type, include essential fields and webinar metadata
     if (isWebinarType) {
       formData.append('content_type_id', values.content_type_id);
@@ -510,31 +511,31 @@ const CreateContent = () => {
       formData.append('short_description', values.short_description || '');
       formData.append('status', values.status || 'draft');
       formData.append('content', ''); // Ensure content is not null
-      
+
       // Webinar specific fields
       formData.append('hosted_by', values.hosted_by || '');
       formData.append('platform', values.platform || 'Zoom');
       formData.append('webinar_type', values.webinar_type || webinarTypeMode || 'live');
       formData.append('join_link', values.join_link || '');
-      
+
       // Webinar date
       if (values.webinar_date) {
         formData.append('webinar_date', values.webinar_date.format('YYYY-MM-DD HH:mm:ss'));
       }
-      
+
       // Banner image for webinar
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('banner_image', fileList[0].originFileObj);
       }
-      
+
       // Video for webinar
       if (videoList.length > 0 && videoList[0].originFileObj) {
         formData.append('video_file', videoList[0].originFileObj);
       }
-      
+
       return formData;
     }
-    
+
     // Standard form processing for other content types
     const skip = ['banner_image', 'content', 'tags', 'scheduled_publish_date', 'pdf_file', 'video_file', 'status', 'webinar_date'];
     Object.keys(values).forEach(key => {
@@ -545,10 +546,13 @@ const CreateContent = () => {
     if (values.webhook_url && typeof values.webhook_url === 'string' && values.webhook_url.trim()) {
       formData.set('webhook_url', values.webhook_url.trim());
     }
+    if (values.redirect_url && typeof values.redirect_url === 'string' && values.redirect_url.trim()) {
+      formData.set('redirect_url', values.redirect_url.trim());
+    }
     if (values.tags?.length) formData.append('tags', values.tags.join(','));
     if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
     if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
-    
+
     // Generate content based on active tab
     let finalContent = content;
     if (activeTab === 'builder') {
@@ -556,7 +560,7 @@ const CreateContent = () => {
     } else if (activeTab === 'html') {
       finalContent = htmlContent;
     }
-    
+
     formData.append('content', finalContent || '');
     if (activeTab === 'html') {
       formData.append('builder_layout', JSON.stringify(['html']));
@@ -575,7 +579,7 @@ const CreateContent = () => {
     if (fileList.length > 0 && fileList[0].originFileObj) formData.append('banner_image', fileList[0].originFileObj);
     if (pdfList.length > 0 && pdfList[0].originFileObj) formData.append('pdf_file', pdfList[0].originFileObj);
     if (videoList.length > 0 && videoList[0].originFileObj) formData.append('video_file', videoList[0].originFileObj);
-    
+
     // Determine custom fields
     let finalCustomFields = customFields;
     if (activeTab === 'html') {
@@ -597,10 +601,10 @@ const CreateContent = () => {
         formData.set('webhook_url', builderWebhookUrl);
       }
     }
-    
+
     // HTML Builder: always use manual webhook_url field if provided
     // The backend will prioritize manual webhook_url over HTML-extracted URLs
-    
+
     return formData;
   };
 
@@ -615,7 +619,7 @@ const CreateContent = () => {
 
       if (savedContentId) {
         const existing = (await axios.get(`${apiBase}/content/${savedContentId}`)).data;
-        
+
         if (existing.status === 'published') {
           if (isAdmin) {
             // Admins can edit published content through the full admin edit endpoint.
@@ -634,6 +638,7 @@ const CreateContent = () => {
 
             await axios.put(`${apiBase}/content/${savedContentId}/webhook`, {
               webhook_url: values.webhook_url || existing.webhook_url || '',
+              redirect_url: values.redirect_url || existing.redirect_url || '',
               ...(finalCustomFields.length > 0 ? { custom_fields: JSON.stringify(finalCustomFields) } : {})
             });
             message.success('Settings updated successfully!');
@@ -686,7 +691,7 @@ const CreateContent = () => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       // Validation for webinar type based on mode (live vs on_demand)
       if (isWebinarType) {
         const currentMode = form.getFieldValue('webinar_type') || webinarTypeMode || 'live';
@@ -699,7 +704,7 @@ const CreateContent = () => {
           return;
         }
       }
-      
+
       setSubmitLoading(true);
       const formData = buildFormData(values);
       const typeName = contentTypes.find(t => t.id === values.content_type_id)?.name || 'Content';
@@ -722,12 +727,12 @@ const CreateContent = () => {
       }
       const response = await axios.post(`${apiBase}/content/${contentId}/submit`);
       setContentStatus(response.data.content.status);
-      
+
       // Clear localStorage backup after successful submission
       const storageKey = `builder_autosave_${contentId || 'draft'}`;
       localStorage.removeItem(storageKey);
       localStorage.removeItem(`${storageKey}_timestamp`);
-      
+
       message.success(`${typeName} submitted for review!`);
       navigate(redirectPath);
     } catch (error) {
@@ -879,7 +884,7 @@ const CreateContent = () => {
       message.error('Please fill in required fields');
     }
   };
- 
+
 
   // ── Custom Fields Drag & Drop ──
   const addField = () => {
@@ -891,7 +896,7 @@ const CreateContent = () => {
       placeholder: '',
       options: '',
       required: true,
-       consent_text: '',
+      consent_text: '',
       redirect_link: ''
     }]);
   };
@@ -949,12 +954,12 @@ const CreateContent = () => {
     setBuilderSections(items);
   };
 
- const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook', 'case study', 'case-study', 'landing page', 'landing-page'];
+  const LANDING_TYPES = ['webinar', 'whitepaper', 'event', 'ebook', 'case study', 'case-study', 'landing page', 'landing-page'];
   const showLandingFields = LANDING_TYPES.includes(selectedTypeName.toLowerCase());
   const isCaseStudy = ['case study', 'case-study'].includes(selectedTypeName.toLowerCase());
-const isLandingPageType = ['landing page', 'landing-page'].includes(selectedTypeName.toLowerCase());
-const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
- 
+  const isLandingPageType = ['landing page', 'landing-page'].includes(selectedTypeName.toLowerCase());
+  const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
+
   // Auto-switch to HTML Builder tab when Landing Page type is selected (new content only)
   useEffect(() => {
     if (isLandingPageType && !isEditMode) {
@@ -1014,408 +1019,945 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
           },
         }}
       >
-      <div style={{ minHeight: '100vh', background: darkMode ? '#0f172a' : '#f5f5f5', paddingTop: '64px' }}>
+        <div style={{ minHeight: '100vh', background: darkMode ? '#0f172a' : '#f5f5f5', paddingTop: '64px' }}>
 
-        {/* Top Header */}
-        <div style={{
-          background: darkMode ? '#1e293b' : '#fff', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
-          padding: '0 clamp(12px, 2vw, 24px)', height: 'clamp(48px, 6vw, 56px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 16px)' }}>
-            <Button 
-              type="text" 
-              icon={<ArrowLeftOutlined />} 
-              onClick={() => {
-                if (isEditMode && editContentType && id) {
-                  navigate(`/dashboard/${editContentType}/${id}`);
-                } else {
-                  navigate(isAdmin ? '/admin' : '/user-dashboard');
-                }
-              }} 
-              style={{ color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(12px, 0.9vw, 13px)' }} 
-              size={window.innerWidth < 768 ? 'small' : 'middle'}
-            >
-              {window.innerWidth < 768 ? '' : (isEditMode ? 'Back to Content' : (isAdmin ? 'Dashboard' : 'Dashboard'))}
-            </Button>
-            {window.innerWidth >= 768 && <Divider orientation="vertical" style={{ margin: 0, borderColor: darkMode ? '#334155' : '#e8e8e8' }} />}
-            <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>{isEditMode ? 'Edit Article' : 'New Article'}</Text>
-          </div>
-        <Space size={window.innerWidth < 768 ? 4 : 8} wrap style={{ display: 'flex', alignItems: 'center' }}>
-          <Button icon={<EyeOutlined />} onClick={() => {
-            const v = form.getFieldsValue();
-
-            // When in builder mode, trigger the builder's own preview modal
-            // (which renders PreviewCanvas inside its BuilderProvider)
-            if (activeTab === 'builder') {
-              if (builderPreviewTrigger.current) {
-                builderPreviewTrigger.current();
-              }
-              return;
-            }
-
-            const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
-            
-            // Generate content based on active tab
-            let previewContent = content;
-            if (activeTab === 'html') {
-              previewContent = htmlContent;
-            }
-
-            // Calculate SEO score
-            const seoScore = calculateSEOScore(
-              v.title,
-              v.short_description,
-              previewContent,
-              v.tags,
-              v.seo_meta_title,
-              v.seo_meta_description,
-              v.seo_meta_keywords
-            );
-
-            setPreviewData({
-              content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
-              category: categories.find(c => c.id === v.category_id)?.name || '',
-              title: v.title || 'Untitled',
-              scheduled_publish_date: v.scheduled_publish_date ? v.scheduled_publish_date.format('MMMM D, YYYY') : null,
-              reading_time: Math.ceil(wordCount / 200) || 1,
-              banner_image: bannerImageUrl,
-              short_description: v.short_description || '',
-              tags: v.tags || [],
-              seo_meta_title: v.seo_meta_title || '',
-              seo_meta_description: v.seo_meta_description || '',
-              seo_meta_keywords: v.seo_meta_keywords || '',
-              content: previewContent,
-              seoScore,
-            });
-            setPreviewVisible(true);
-          }} size="small" style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}>Preview</Button>
-          <Button
-            icon={<SaveOutlined />}
-            loading={loading}
-            disabled={contentStatus === 'pending'}
-            onClick={handleSave}
-            size="small"
-            style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}
-          >
-            {window.innerWidth < 768 ? (savedContentId ? 'Update' : 'Save') : (savedContentId ? 'Update Draft' : 'Save Draft')}
-          </Button>
-          <Tooltip title={
-            !savedContentId ? 'Please save the content first' :
-            contentStatus === 'pending' ? 'Already under review' :
-            contentStatus === 'published' ? 'Published content cannot be submitted again' : ''
-          }>
-            <Button
-              type="primary"
-              icon={<SendOutlined />}
-              loading={submitLoading}
-              disabled={!savedContentId || contentStatus === 'pending' || contentStatus === 'published'}
-              onClick={handleSubmit}
-              size="small"
-              style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto', color: darkMode ? '#fff' : undefined }}
-            >
-              {window.innerWidth < 768
-                ? (contentStatus === 'pending' ? 'Review' : contentStatus === 'published' ? 'Published' : 'Submit')
-                : (contentStatus === 'pending' ? 'Under Review' : contentStatus === 'published' ? 'Published' : 'Submit for Review')}
-            </Button>
-          </Tooltip>
-        </Space>
-      </div>
-
-      {draftSaved && contentStatus !== 'published' && contentStatus !== 'pending' && (
-        <div style={{
-          background: darkMode ? 'rgba(34, 197, 94, 0.1)' : '#f6ffed', borderBottom: darkMode ? '1px solid #22c55e' : '1px solid #b7eb8f',
-          padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 24px)', display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 10px)'
-        }}>
-          <span style={{ fontSize: 'clamp(14px, 1.8vw, 16px)' }}>✏️</span>
-          <span style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#22c55e' : '#389e0d', fontWeight: 500 }}>
-            {contentStatus === 'changes_requested'
-              ? 'Admin has requested changes. Edit your content and save, then re-submit for review.'
-              : 'Draft saved! You can freely edit — change title, structure, images, or any field. Save again to update, then submit for review.'}
-          </span>
-        </div>
-      )}
-      {contentStatus === 'pending' && (
-        <div style={{
-          background: darkMode ? 'rgba(245, 158, 11, 0.1)' : '#fffbe6', borderBottom: darkMode ? '1px solid #f59e0b' : '1px solid #ffe58f',
-          padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 24px)', display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 10px)'
-        }}>
-          <span style={{ fontSize: 'clamp(14px, 1.8vw, 16px)' }}>⏳</span>
-          <span style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#f59e0b' : '#d48806', fontWeight: 500 }}>
-            Content is under review. Editing is locked until admin responds.
-          </span>
-        </div>
-      )}
-
-      <Form form={form} layout="vertical" initialValues={{ status: 'draft' }}>
-
-        {/* Page-level Tabs */}
-        <div style={{ 
-          background: darkMode ? '#1e293b' : '#fff', 
-          borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8'
-        }}>
-          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(12px, 2vw, 24px)', display: 'flex', gap: 0, alignItems: 'center', justifyContent: 'space-between' }} className="create-content-tabs">
-            {[
-              { key: 'standard', label: 'Standard Form', desc: 'Fill all fields directly' },
-              { key: 'builder', label: 'Drag & Drop Builder', desc: 'Build structure by dragging blocks' },
-              { key: 'html', label: 'HTML Builder', desc: 'Create custom landing pages' }
-            ].map(tab => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  padding: 'clamp(10px, 1.5vw, 14px) clamp(16px, 2.5vw, 24px)', border: 'none', background: 'transparent',
-                  cursor: 'pointer', fontSize: 'clamp(12px, 0.9vw, 14px)', fontWeight: activeTab === tab.key ? 600 : 400,
-                  color: activeTab === tab.key ? '#4a7cff' : (darkMode ? '#94a3b8' : '#595959'),
-                  borderBottom: activeTab === tab.key ? '2px solid #4a7cff' : '2px solid transparent',
-                   transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
+          {/* Top Header */}
+          <div style={{
+            background: darkMode ? '#1e293b' : '#fff', borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8',
+            padding: '0 clamp(12px, 2vw, 24px)', height: 'clamp(48px, 6vw, 56px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 16px)' }}>
+              <Button
+                type="text"
+                icon={<ArrowLeftOutlined />}
+                onClick={() => {
+                  if (isEditMode && editContentType && id) {
+                    navigate(`/dashboard/${editContentType}/${id}`);
+                  } else {
+                    navigate(isAdmin ? '/admin' : '/user-dashboard');
+                  }
                 }}
+                style={{ color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(12px, 0.9vw, 13px)' }}
+                size={window.innerWidth < 768 ? 'small' : 'middle'}
               >
-                {tab.label}
-                {/* Pulse badge when Landing Page type forces HTML builder */}
-                {tab.key === 'html' && isLandingPageType && activeTab !== 'html' && (
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#6c5ce7', display: 'inline-block' }} />
-                )}
-                {tab.key === 'html' && isLandingPageType && (
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#6c5ce7', background: '#f0ecff', padding: '1px 6px', borderRadius: 10 }}>
-                    ACTIVE
-                  </span>
-                )}
- 
-              </button>
-            ))}
+                {window.innerWidth < 768 ? '' : (isEditMode ? 'Back to Content' : (isAdmin ? 'Dashboard' : 'Dashboard'))}
+              </Button>
+              {window.innerWidth >= 768 && <Divider orientation="vertical" style={{ margin: 0, borderColor: darkMode ? '#334155' : '#e8e8e8' }} />}
+              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>{isEditMode ? 'Edit Article' : 'New Article'}</Text>
+            </div>
+            <Space size={window.innerWidth < 768 ? 4 : 8} wrap style={{ display: 'flex', alignItems: 'center' }}>
+              <Button icon={<EyeOutlined />} onClick={() => {
+                const v = form.getFieldsValue();
 
-            {/* Guidelines Buttons */}
-            <Space size={8} style={{ marginLeft: 16 }}>
-              <Tooltip title="Editorial Guidelines">
-                <button
-                  type="button"
-                  onClick={() => setGuidelinesVisible(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 12px',
-                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                    borderRadius: 6,
-                    background: darkMode ? '#1e293b' : '#f8fafc',
-                    color: darkMode ? '#94a3b8' : '#64748b',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#4a7cff';
-                    e.currentTarget.style.color = '#4a7cff';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
-                    e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
-                  }}
+                // When in builder mode, trigger the builder's own preview modal
+                // (which renders PreviewCanvas inside its BuilderProvider)
+                if (activeTab === 'builder') {
+                  if (builderPreviewTrigger.current) {
+                    builderPreviewTrigger.current();
+                  }
+                  return;
+                }
+
+                const wordCount = content.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
+
+                // Generate content based on active tab
+                let previewContent = content;
+                if (activeTab === 'html') {
+                  previewContent = htmlContent;
+                }
+
+                // Calculate SEO score
+                const seoScore = calculateSEOScore(
+                  v.title,
+                  v.short_description,
+                  previewContent,
+                  v.tags,
+                  v.seo_meta_title,
+                  v.seo_meta_description,
+                  v.seo_meta_keywords
+                );
+
+                setPreviewData({
+                  content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
+                  category: categories.find(c => c.id === v.category_id)?.name || '',
+                  title: v.title || 'Untitled',
+                  scheduled_publish_date: v.scheduled_publish_date ? v.scheduled_publish_date.format('MMMM D, YYYY') : null,
+                  reading_time: Math.ceil(wordCount / 200) || 1,
+                  banner_image: bannerImageUrl,
+                  short_description: v.short_description || '',
+                  tags: v.tags || [],
+                  seo_meta_title: v.seo_meta_title || '',
+                  seo_meta_description: v.seo_meta_description || '',
+                  seo_meta_keywords: v.seo_meta_keywords || '',
+                  content: previewContent,
+                  seoScore,
+                });
+                setPreviewVisible(true);
+              }} size="small" style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}>Preview</Button>
+              <Button
+                icon={<SaveOutlined />}
+                loading={loading}
+                disabled={contentStatus === 'pending'}
+                onClick={handleSave}
+                size="small"
+                style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto' }}
+              >
+                {window.innerWidth < 768 ? (savedContentId ? 'Update' : 'Save') : (savedContentId ? 'Update Draft' : 'Save Draft')}
+              </Button>
+              <Tooltip title={
+                !savedContentId ? 'Please save the content first' :
+                  contentStatus === 'pending' ? 'Already under review' :
+                    contentStatus === 'published' ? 'Published content cannot be submitted again' : ''
+              }>
+                <Button
+                  type="primary"
+                  icon={<SendOutlined />}
+                  loading={submitLoading}
+                  disabled={!savedContentId || contentStatus === 'pending' || contentStatus === 'published'}
+                  onClick={handleSubmit}
+                  size="small"
+                  style={{ borderRadius: 6, fontSize: 13, height: 32, padding: '4px 12px', minWidth: 'auto', color: darkMode ? '#fff' : undefined }}
                 >
-                  <BookOutlined style={{ fontSize: 13 }} />
-                  <span>Guidelines</span>
-                </button>
-              </Tooltip>
-              <Tooltip title="How to Submit">
-                <button
-                  type="button"
-                  onClick={() => setInstructionsVisible(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 12px',
-                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                    borderRadius: 6,
-                    background: darkMode ? '#1e293b' : '#f8fafc',
-                    color: darkMode ? '#94a3b8' : '#64748b',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#4a7cff';
-                    e.currentTarget.style.color = '#4a7cff';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
-                    e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
-                  }}
-                >
-                  <QuestionCircleOutlined style={{ fontSize: 13 }} />
-                  <span>How to Submit</span>
-                </button>
-              </Tooltip>
-              <Tooltip title="Terms & Conditions">
-                <button
-                  type="button"
-                  onClick={() => setTermsVisible(true)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 12px',
-                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                    borderRadius: 6,
-                    background: darkMode ? '#1e293b' : '#f8fafc',
-                    color: darkMode ? '#94a3b8' : '#64748b',
-                    cursor: 'pointer',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#4a7cff';
-                    e.currentTarget.style.color = '#4a7cff';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
-                    e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
-                  }}
-                >
-                  <FileTextOutlined style={{ fontSize: 13 }} />
-                  <span>Terms</span>
-                </button>
+                  {window.innerWidth < 768
+                    ? (contentStatus === 'pending' ? 'Review' : contentStatus === 'published' ? 'Published' : 'Submit')
+                    : (contentStatus === 'pending' ? 'Under Review' : contentStatus === 'published' ? 'Published' : 'Submit for Review')}
+                </Button>
               </Tooltip>
             </Space>
-
-            {/* Properties Panel Toggle — desktop only */}
-            {window.innerWidth >= 768 && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen(o => !o)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: '6px 14px',
-                    border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
-                    borderRadius: 8,
-                    background: sidebarOpen
-                      ? (darkMode ? '#1e3a5f' : '#eff6ff')
-                      : (darkMode ? '#1e293b' : '#f8fafc'),
-                    color: sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b'),
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                    transition: 'all 0.15s',
-                    marginLeft: 'auto',
-                    position: 'relative',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#4a7cff';
-                    e.currentTarget.style.color = '#4a7cff';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
-                    e.currentTarget.style.color = sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b');
-                  }}
-                >
-                {/* Animated indicator line on the left side */}
-                {!sidebarOpen && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      left: -6,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: 3,
-                      height: '80%',
-                      background: 'linear-gradient(to bottom, transparent, #4a7cff, transparent)',
-                      borderRadius: 2,
-                      animation: 'propertiesIndicator 2s ease-in-out infinite',
-                      pointerEvents: 'none',
-                      boxShadow: '0 0 8px rgba(74, 124, 255, 0.6)',
-                    }}
-                  />
-                )}
-                <span
-                  style={{
-                    fontSize: 11,
-                    color: '#4a7cff',
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    opacity: 0.8,
-                    animation: 'shimmer 2s ease-in-out infinite',
-                    marginRight: 4,
-                  }}
-                >
-                  {sidebarOpen ? 'Hide panel' : 'Show panel'}
-                </span>
-                <SettingOutlined style={{ fontSize: 13 }} />
-                Properties
-                <span style={{ fontSize: 11, opacity: 0.7 }}>{sidebarOpen ? '›' : '‹'}</span>
-              </button>
-              </>
-            )}
           </div>
-        </div>
 
-        <div style={{ position: 'relative', maxWidth: 1400, margin: '0 auto', padding: 'clamp(16px, 2vw, 32px) clamp(12px, 2vw, 24px)', paddingTop: 'clamp(24px, 3vw, 32px)', display: 'flex', gap: sidebarOpen ? 'clamp(16px, 2vw, 24px)' : 0, alignItems: 'flex-start', flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
+          {draftSaved && contentStatus !== 'published' && contentStatus !== 'pending' && (
+            <div style={{
+              background: darkMode ? 'rgba(34, 197, 94, 0.1)' : '#f6ffed', borderBottom: darkMode ? '1px solid #22c55e' : '1px solid #b7eb8f',
+              padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 24px)', display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 10px)'
+            }}>
+              <span style={{ fontSize: 'clamp(14px, 1.8vw, 16px)' }}>✏️</span>
+              <span style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#22c55e' : '#389e0d', fontWeight: 500 }}>
+                {contentStatus === 'changes_requested'
+                  ? 'Admin has requested changes. Edit your content and save, then re-submit for review.'
+                  : 'Draft saved! You can freely edit — change title, structure, images, or any field. Save again to update, then submit for review.'}
+              </span>
+            </div>
+          )}
+          {contentStatus === 'pending' && (
+            <div style={{
+              background: darkMode ? 'rgba(245, 158, 11, 0.1)' : '#fffbe6', borderBottom: darkMode ? '1px solid #f59e0b' : '1px solid #ffe58f',
+              padding: 'clamp(8px, 1.5vw, 10px) clamp(12px, 2vw, 24px)', display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 10px)'
+            }}>
+              <span style={{ fontSize: 'clamp(14px, 1.8vw, 16px)' }}>⏳</span>
+              <span style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#f59e0b' : '#d48806', fontWeight: 500 }}>
+                Content is under review. Editing is locked until admin responds.
+              </span>
+            </div>
+          )}
 
-          {/* Main Content */}
-          <div style={{ flex: 1, minWidth: 0, width: window.innerWidth < 768 ? '100%' : 'auto', marginTop: '8px' }}>
+          <Form form={form} layout="vertical" initialValues={{ status: 'draft' }}>
 
-            {/* Mobile Reorder Layout - Top on mobile */}
-            {window.innerWidth < 768 && (
-              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 'clamp(16px, 2vw, 20px)', marginBottom: 'clamp(12px, 2vw, 16px)', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', display: 'block', marginBottom: 'clamp(4px, 0.5vw, 4px)', color: darkMode ? '#f1f5f9' : '#111827' }}>
-                  <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
-                </Text>
-                <Text style={{ fontSize: 'clamp(10px, 0.8vw, 11px)', color: darkMode ? '#94a3b8' : '#8c8c8c', display: 'block', marginBottom: 'clamp(8px, 1vw, 12px)' }}>Drag sections to change order</Text>
-                {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
-                  const sec = activeTab === 'builder' 
-                    ? SECTION_TYPES.find(s => s.type === item.type)
-                    : STANDARD_SECTIONS.find(s => s.key === item);
-                  if (!sec) return null;
-                  const key = activeTab === 'builder' ? item.id : item;
-                  if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
-                  return (
-                    <div
-                      key={key}
-                      draggable
-                      onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
-                      onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
-                      onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
-                      onDragOver={e => e.preventDefault()}
+            {/* Page-level Tabs */}
+            <div style={{
+              background: darkMode ? '#1e293b' : '#fff',
+              borderBottom: darkMode ? '1px solid #334155' : '1px solid #e8e8e8'
+            }}>
+              <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(12px, 2vw, 24px)', display: 'flex', gap: 0, alignItems: 'center', justifyContent: 'space-between' }} className="create-content-tabs">
+                {[
+                  { key: 'standard', label: 'Standard Form', desc: 'Fill all fields directly' },
+                  { key: 'builder', label: 'Drag & Drop Builder', desc: 'Build structure by dragging blocks' },
+                  { key: 'html', label: 'HTML Builder', desc: 'Create custom landing pages' }
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveTab(tab.key)}
+                    style={{
+                      padding: 'clamp(10px, 1.5vw, 14px) clamp(16px, 2.5vw, 24px)', border: 'none', background: 'transparent',
+                      cursor: 'pointer', fontSize: 'clamp(12px, 0.9vw, 14px)', fontWeight: activeTab === tab.key ? 600 : 400,
+                      color: activeTab === tab.key ? '#4a7cff' : (darkMode ? '#94a3b8' : '#595959'),
+                      borderBottom: activeTab === tab.key ? '2px solid #4a7cff' : '2px solid transparent',
+                      transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6,
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {tab.label}
+                    {/* Pulse badge when Landing Page type forces HTML builder */}
+                    {tab.key === 'html' && isLandingPageType && activeTab !== 'html' && (
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#6c5ce7', display: 'inline-block' }} />
+                    )}
+                    {tab.key === 'html' && isLandingPageType && (
+                      <span style={{ fontSize: 10, fontWeight: 700, color: '#6c5ce7', background: '#f0ecff', padding: '1px 6px', borderRadius: 10 }}>
+                        ACTIVE
+                      </span>
+                    )}
+
+                  </button>
+                ))}
+
+                {/* Guidelines Buttons */}
+                <Space size={8} style={{ marginLeft: 16 }}>
+                  <Tooltip title="Editorial Guidelines">
+                    <button
+                      type="button"
+                      onClick={() => setGuidelinesVisible(true)}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)',
-                        padding: 'clamp(6px, 1vw, 8px) clamp(8px, 1vw, 10px)', marginBottom: 'clamp(4px, 0.5vw, 6px)',
-                        background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8,
-                        border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab',
-                        userSelect: 'none'
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '6px 12px',
+                        border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                        borderRadius: 6,
+                        background: darkMode ? '#1e293b' : '#f8fafc',
+                        color: darkMode ? '#94a3b8' : '#64748b',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        transition: 'all 0.15s',
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fafafa'; }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#4a7cff';
+                        e.currentTarget.style.color = '#4a7cff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                        e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
+                      }}
                     >
-                      <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', fontSize: 'clamp(10px, 0.8vw, 12px)' }} />
-                      <span style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#cbd5e1' : '#1a1a2e', flex: 1 }}>{sec.label}</span>
-                      <span style={{ fontSize: 'clamp(9px, 0.7vw, 10px)', color: darkMode ? '#475569' : '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                      <BookOutlined style={{ fontSize: 13 }} />
+                      <span>Guidelines</span>
+                    </button>
+                  </Tooltip>
+                  <Tooltip title="How to Submit">
+                    <button
+                      type="button"
+                      onClick={() => setInstructionsVisible(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '6px 12px',
+                        border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                        borderRadius: 6,
+                        background: darkMode ? '#1e293b' : '#f8fafc',
+                        color: darkMode ? '#94a3b8' : '#64748b',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#4a7cff';
+                        e.currentTarget.style.color = '#4a7cff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                        e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
+                      }}
+                    >
+                      <QuestionCircleOutlined style={{ fontSize: 13 }} />
+                      <span>How to Submit</span>
+                    </button>
+                  </Tooltip>
+                  <Tooltip title="Terms & Conditions">
+                    <button
+                      type="button"
+                      onClick={() => setTermsVisible(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '6px 12px',
+                        border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                        borderRadius: 6,
+                        background: darkMode ? '#1e293b' : '#f8fafc',
+                        color: darkMode ? '#94a3b8' : '#64748b',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        fontWeight: 500,
+                        transition: 'all 0.15s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#4a7cff';
+                        e.currentTarget.style.color = '#4a7cff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                        e.currentTarget.style.color = darkMode ? '#94a3b8' : '#64748b';
+                      }}
+                    >
+                      <FileTextOutlined style={{ fontSize: 13 }} />
+                      <span>Terms</span>
+                    </button>
+                  </Tooltip>
+                </Space>
 
-            {/* ── STANDARD FORM TAB ── */}
-            {activeTab === 'standard' && (() => {
-              // Webinar-specific simplified form
-              if (isWebinarType) {
-                return (
+                {/* Properties Panel Toggle — desktop only */}
+                {window.innerWidth >= 768 && (
                   <>
-                    {/* Webinar Core Info Section */}
-                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <Text style={{ fontSize: 11, fontWeight: 700, color: '#4a7cff', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>Webinar Overview & Host Details</Text>
-                      <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+                    <button
+                      type="button"
+                      onClick={() => setSidebarOpen(o => !o)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '6px 14px',
+                        border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                        borderRadius: 8,
+                        background: sidebarOpen
+                          ? (darkMode ? '#1e3a5f' : '#eff6ff')
+                          : (darkMode ? '#1e293b' : '#f8fafc'),
+                        color: sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b'),
+                        cursor: 'pointer',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        transition: 'all 0.15s',
+                        marginLeft: 'auto',
+                        position: 'relative',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = '#4a7cff';
+                        e.currentTarget.style.color = '#4a7cff';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e2e8f0';
+                        e.currentTarget.style.color = sidebarOpen ? '#4a7cff' : (darkMode ? '#94a3b8' : '#64748b');
+                      }}
+                    >
+                      {/* Animated indicator line on the left side */}
+                      {!sidebarOpen && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: -6,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: 3,
+                            height: '80%',
+                            background: 'linear-gradient(to bottom, transparent, #4a7cff, transparent)',
+                            borderRadius: 2,
+                            animation: 'propertiesIndicator 2s ease-in-out infinite',
+                            pointerEvents: 'none',
+                            boxShadow: '0 0 8px rgba(74, 124, 255, 0.6)',
+                          }}
+                        />
+                      )}
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: '#4a7cff',
+                          fontWeight: 500,
+                          whiteSpace: 'nowrap',
+                          opacity: 0.8,
+                          animation: 'shimmer 2s ease-in-out infinite',
+                          marginRight: 4,
+                        }}
+                      >
+                        {sidebarOpen ? 'Hide panel' : 'Show panel'}
+                      </span>
+                      <SettingOutlined style={{ fontSize: 13 }} />
+                      Properties
+                      <span style={{ fontSize: 11, opacity: 0.7 }}>{sidebarOpen ? '›' : '‹'}</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div style={{ position: 'relative', maxWidth: 1400, margin: '0 auto', padding: 'clamp(16px, 2vw, 32px) clamp(12px, 2vw, 24px)', paddingTop: 'clamp(24px, 3vw, 32px)', display: 'flex', gap: sidebarOpen ? 'clamp(16px, 2vw, 24px)' : 0, alignItems: 'flex-start', flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
+
+              {/* Main Content */}
+              <div style={{ flex: 1, minWidth: 0, width: window.innerWidth < 768 ? '100%' : 'auto', marginTop: '8px' }}>
+
+                {/* Mobile Reorder Layout - Top on mobile */}
+                {window.innerWidth < 768 && (
+                  <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 'clamp(16px, 2vw, 20px)', marginBottom: 'clamp(12px, 2vw, 16px)', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                    <Text strong style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', display: 'block', marginBottom: 'clamp(4px, 0.5vw, 4px)', color: darkMode ? '#f1f5f9' : '#111827' }}>
+                      <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
+                    </Text>
+                    <Text style={{ fontSize: 'clamp(10px, 0.8vw, 11px)', color: darkMode ? '#94a3b8' : '#8c8c8c', display: 'block', marginBottom: 'clamp(8px, 1vw, 12px)' }}>Drag sections to change order</Text>
+                    {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
+                      const sec = activeTab === 'builder'
+                        ? SECTION_TYPES.find(s => s.type === item.type)
+                        : STANDARD_SECTIONS.find(s => s.key === item);
+                      if (!sec) return null;
+                      const key = activeTab === 'builder' ? item.id : item;
+                      if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
+                      return (
+                        <div
+                          key={key}
+                          draggable
+                          onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
+                          onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
+                          onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
+                          onDragOver={e => e.preventDefault()}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)',
+                            padding: 'clamp(6px, 1vw, 8px) clamp(8px, 1vw, 10px)', marginBottom: 'clamp(4px, 0.5vw, 6px)',
+                            background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8,
+                            border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab',
+                            userSelect: 'none'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fafafa'; }}
+                        >
+                          <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', fontSize: 'clamp(10px, 0.8vw, 12px)' }} />
+                          <span style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#cbd5e1' : '#1a1a2e', flex: 1 }}>{sec.label}</span>
+                          <span style={{ fontSize: 'clamp(9px, 0.7vw, 10px)', color: darkMode ? '#475569' : '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* ── STANDARD FORM TAB ── */}
+                {activeTab === 'standard' && (() => {
+                  // Webinar-specific simplified form
+                  if (isWebinarType) {
+                    return (
+                      <>
+                        {/* Webinar Core Info Section */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <Text style={{ fontSize: 11, fontWeight: 700, color: '#4a7cff', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>Webinar Overview & Host Details</Text>
+                          <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+                            <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                              <Select placeholder="Select type" size="large" onChange={val => {
+                                const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                                setSelectedTypeName(name);
+                              }}>
+                                {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+                              </Select>
+                            </Form.Item>
+                            <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                              <Select placeholder="Select category" size="large">
+                                {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                              </Select>
+                            </Form.Item>
+                          </div>
+
+                          {duplicateWarning && duplicateWarning.found && duplicateWarning.isExact && (
+                            <div style={{
+                              background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                              border: darkMode ? '1px solid #ef4444' : '1px solid #fecaca',
+                              borderRadius: 8,
+                              padding: '12px 16px',
+                              marginBottom: 16
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                <InfoCircleOutlined style={{ color: '#ef4444', fontSize: 16, marginTop: 2 }} />
+                                <div>
+                                  <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: 4 }}>
+                                    Duplicate content detected
+                                  </div>
+                                  <div style={{ fontSize: 13, color: '#991b1b' }}>
+                                    Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <Form.Item name="title" rules={[{ required: true, message: 'Please enter a webinar title' }]} style={{ marginBottom: 16 }}>
+                            <Input placeholder="Webinar title..." size="large"
+                              onChange={(e) => {
+                                const title = e.target.value;
+                                const shortDesc = form.getFieldValue('short_description');
+                                const tags = form.getFieldValue('tags');
+                                checkDuplicateContent(title, shortDesc, tags);
+                              }}
+                              style={{ fontSize: 24, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
+                          </Form.Item>
+
+                          <Form.Item name="short_description" label="Short Description" style={{ marginBottom: 20 }}>
+                            <TextArea rows={2} placeholder="Write a brief overview of what attendees will learn in this webinar..." style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                          </Form.Item>
+
+                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                            <Form.Item name="hosted_by" label="Hosted By" rules={[{ required: true, message: 'Please specify who is hosting this webinar' }]} style={{ flex: 1, minWidth: 240, marginBottom: 0 }}>
+                              <Input prefix={<UserOutlined style={{ color: '#4a7cff' }} />} placeholder="e.g. Dr. Alex Morgan & TGS Tech Team" size="large" />
+                            </Form.Item>
+
+                            <Form.Item name="platform" label="Platform" rules={[{ required: true, message: 'Select platform' }]} style={{ flex: 1, minWidth: 200, marginBottom: 0 }}>
+                              <Select placeholder="Select platform" size="large" dropdownMatchSelectWidth={false}>
+                                <Option value="Zoom">Zoom Meeting / Webinar</Option>
+                                <Option value="Google Meet">Google Meet</Option>
+                                <Option value="Microsoft Teams">Microsoft Teams</Option>
+                                <Option value="Webex">Cisco Webex</Option>
+                                <Option value="YouTube Live">YouTube Live</Option>
+                                <Option value="Custom Platform">Custom Platform</Option>
+                              </Select>
+                            </Form.Item>
+                          </div>
+                        </div>
+
+                        {/* Webinar Mode Selection (Live vs On-Demand) */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 12 }}>
+                            Webinar Format / Type
+                          </Text>
+                          <Form.Item name="webinar_type" initialValue={webinarTypeMode} style={{ marginBottom: 0 }}>
+                            <Radio.Group
+                              size="large"
+                              buttonStyle="solid"
+                              onChange={e => {
+                                setWebinarTypeMode(e.target.value);
+                              }}
+                            >
+                              <Radio.Button value="live" style={{ padding: '0 24px', borderRadius: '8px 0 0 8px' }}>
+                                🔴 Live Webinar (Upcoming / Scheduled)
+                              </Radio.Button>
+                              <Radio.Button value="on_demand" style={{ padding: '0 24px', borderRadius: '0 8px 8px 0' }}>
+                                📹 On-Demand Webinar (Pre-recorded Video)
+                              </Radio.Button>
+                            </Radio.Group>
+                          </Form.Item>
+                        </div>
+
+                        {/* Mode Specific Fields */}
+                        {webinarTypeMode === 'live' ? (
+                          <>
+                            {/* Live Webinar Date & Join Link Section */}
+                            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 16 }}>
+                                <CalendarOutlined style={{ marginRight: 8, color: '#ef4444' }} />Live Event Details & Access
+                              </Text>
+                              <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                <Form.Item
+                                  name="webinar_date"
+                                  label="Scheduled Date & Time"
+                                  rules={[{ required: true, message: 'Webinar date is required for live events' }]}
+                                  style={{ flex: 1, minWidth: 260, marginBottom: 0 }}
+                                >
+                                  <DatePicker
+                                    showTime
+                                    style={{ width: '100%' }}
+                                    size="large"
+                                    placeholder="Select webinar date and time"
+                                    format="YYYY-MM-DD HH:mm:ss"
+                                    disabledDate={(current) => current && current < moment().startOf('day')}
+                                  />
+                                </Form.Item>
+
+                                <Form.Item
+                                  name="join_link"
+                                  label="Join Link / Meeting URL"
+                                  rules={[{ required: true, message: 'Join link is required for live webinar' }]}
+                                  style={{ flex: 1.5, minWidth: 280, marginBottom: 0 }}
+                                >
+                                  <Input
+                                    prefix={<LinkOutlined style={{ color: '#10b981' }} />}
+                                    placeholder="https://zoom.us/j/123456789 or https://meet.google.com/..."
+                                    size="large"
+                                  />
+                                </Form.Item>
+                              </div>
+                            </div>
+
+                            {/* Banner Image for Live Webinar */}
+                            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div>
+                                  <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Webinar Banner Image <Tag color="blue" style={{ marginLeft: 8 }}>Required for Live</Tag></Text>
+                                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Displayed on webinar page cards & hero story countdown</div>
+                                </div>
+                                <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                                  <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                                </Upload>
+                              </div>
+                              {fileList.length > 0 && fileList[0].originFileObj ? (
+                                <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                                  <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
+                                </div>
+                              ) : (
+                                <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '30px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                                  <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                                  <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>Upload banner image for live webinar</Text>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Video Upload - Optional for Live Webinar */}
+                            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div>
+                                  <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload <span style={{ fontWeight: 400, fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginLeft: 8 }}>(Optional for Live Webinar)</span></Text>
+                                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optionally upload a teaser or recording video</div>
+                                </div>
+                                <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
+                                  <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
+                                </Upload>
+                              </div>
+                              {videoList.length > 0 ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
+                                  <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
+                                  <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
+                                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
+                                </div>
+                              ) : (
+                                <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                                  <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded (optional for live webinar)</Text>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Video Upload - Mandatory for On-Demand Webinar */}
+                            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div>
+                                  <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                                    <PlayCircleOutlined style={{ marginRight: 8, color: '#3b82f6' }} />Add a Video <Tag color="red" style={{ marginLeft: 8 }}>Required for On-Demand</Tag>
+                                  </Text>
+                                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload full webinar recording (MP4, WebM, etc.)</div>
+                                </div>
+                                <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
+                                  <Button icon={<UploadOutlined />} type="primary" size="small">{videoList.length > 0 ? 'Change Video' : 'Add Video'}</Button>
+                                </Upload>
+                              </div>
+                              {videoList.length > 0 ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: darkMode ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff', borderRadius: 8, border: '1px solid #3b82f6' }}>
+                                  <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 22 }} />
+                                  <Text style={{ flex: 1, fontSize: 14, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
+                                  <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
+                                </div>
+                              ) : (
+                                <div style={{ border: '2px dashed #ef4444', borderRadius: 8, padding: '28px 20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.05)' : '#fef2f2' }}>
+                                  <PlayCircleOutlined style={{ fontSize: 32, color: '#ef4444', marginBottom: 8, display: 'block' }} />
+                                  <Text style={{ color: '#991b1b', fontWeight: 600, fontSize: 14 }}>Please upload a video file for this on-demand webinar</Text>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Banner Image for On-Demand Webinar */}
+                            <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div>
+                                  <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image / Poster Thumbnail</Text>
+                                  <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Thumbnail displayed before video playback</div>
+                                </div>
+                                <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                                  <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                                </Upload>
+                              </div>
+                              {fileList.length > 0 && fileList[0].originFileObj ? (
+                                <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                                  <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
+                                </div>
+                              ) : (
+                                <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '30px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                                  <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                                  <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner thumbnail uploaded</Text>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    );
+                  }
+
+                  // Standard form for other content types
+                  const sectionMap = {
+                    meta: (
+                      <div key="meta" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                        <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</Text>
+                        <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                          <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                            <Select placeholder="Select type" size="large" onChange={val => {
+                              const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                              setSelectedTypeName(name);
+                            }}>
+                              {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+                            </Select>
+                          </Form.Item>
+                          <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                            <Select placeholder="Select category" size="large">
+                              {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                            </Select>
+                          </Form.Item>
+                        </div>
+                        {duplicateWarning && duplicateWarning.found && duplicateWarning.isExact && (
+                          <div style={{
+                            // background: '#FFF7ED',
+                            // border: '1px solid #FDBA74',
+                            background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
+                            border: darkMode ? '1px solid #ef4444' : '1px solid #fecaca',
+                            borderRadius: 8,
+                            padding: '12px 16px',
+                            marginBottom: 16
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                              {/* <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} /> */}
+                              <InfoCircleOutlined style={{ color: '#ef4444', fontSize: 16, marginTop: 2 }} />
+                              <div>
+                                <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: 4 }}>
+                                  Duplicate content detected
+                                </div>
+                                <div style={{ fontSize: 13, color: '#991b1b' }}>
+                                  Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.While testing landing page on local from html builder and inserted the api the table created in backedn and also in html code and webhook input i have added url but its not working the data is not insrted in the table also not hit to the api
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
+                          <Input placeholder="Article title..." size="large"
+                            onChange={(e) => {
+                              const title = e.target.value;
+                              const shortDesc = form.getFieldValue('short_description');
+                              const tags = form.getFieldValue('tags');
+                              checkDuplicateContent(title, shortDesc, tags);
+                            }}
+                            style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
+                        </Form.Item>
+                        <Form.Item name="short_description"
+                          label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                          rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
+                          <TextArea rows={3} placeholder="Write a compelling summary..."
+                            onChange={(e) => {
+                              const shortDesc = e.target.value;
+                              const title = form.getFieldValue('title');
+                              const tags = form.getFieldValue('tags');
+                              checkDuplicateContent(title, shortDesc, tags);
+                            }}
+                            style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                        </Form.Item>
+                      </div>
+                    ),
+                    banner: (
+                      <div key="banner" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                          <div>
+                            <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image</Text>
+                            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
+                          </div>
+                          <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                            <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                          </Upload>
+                        </div>
+                        {bannerImageUrl ? (
+                          <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                            <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
+                          </div>
+                        ) : (
+                          <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                            <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                            <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner image</Text>
+                          </div>
+                        )}
+                      </div>
+                    ),
+                    content: (
+                      <div key="content" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 40 }}>
+                        <div style={{ padding: '14px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}>Content</Text>
+                        </div>
+                        <div style={{ padding: '0 4px 4px' }}>
+                          {editorReady ? (
+                            <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing your article..." darkMode={darkMode} />
+                          ) : (
+                            <div style={{ padding: 40, textAlign: 'center', color: darkMode ? '#94a3b8' : '#8c8c8c' }}>Loading editor...</div>
+                          )}
+                        </div>
+                      </div>
+                    ),
+                    video: (
+                      <div key="video" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                          <div>
+                            <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload</Text>
+                            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload video files (MP4, WebM, etc.)</div>
+                          </div>
+                          <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
+                            <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
+                          </Upload>
+                        </div>
+                        {videoList.length > 0 ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
+                            <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
+                            <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
+                            <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
+                          </div>
+                        ) : (
+                          <div style={{ border: darkMode ? '2px dashed #3b82f6' : '2px dashed #bfdbfe', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff' }}>
+                            <PlayCircleOutlined style={{ fontSize: 24, color: '#3b82f6', marginBottom: 4, display: 'block' }} />
+                            <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded</Text>
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  };
+
+                  return (
+                    <>
+                      {standardLayout.map(key => {
+                        // For webinar type, show meta (content-type, category, title), banner image, and video sections
+                        if (isWebinarType) {
+                          if (key === 'meta' || key === 'banner' || key === 'video') {
+                            return sectionMap[key] || null;
+                          }
+                          return null;
+                        }
+                        return sectionMap[key] || null;
+                      })}
+
+                      {/* Fixed: PDF Attachment — always below reorderable sections */}
+                      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                          <div>
+                            <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><FilePdfOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />PDF Attachment</Text>
+                            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This PDF will be downloaded when user submits the access form</div>
+                          </div>
+                          <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
+                            <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
+                          </Upload>
+                        </div>
+                        {pdfList.length > 0 ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0', borderRadius: 8, border: darkMode ? '1px solid #ef4444' : '1px solid #ffccc7' }}>
+                            <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
+                            <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{pdfList[0].name}</Text>
+                            <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
+                          </div>
+                        ) : (
+                          <div style={{ border: darkMode ? '2px dashed #ef4444' : '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0' }}>
+                            <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
+                            <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
+                          </div>
+                        )}
+                      </div>
+
+                      {isCaseStudy && (
+                        <>
+                          {/* Case Study: Headline */}
+                          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                            <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>Case Study Details</Text>
+                            <Form.Item
+                              name="case_study_headline"
+                              label={<span>Headline <Tooltip title="Bold headline shown on the case study card"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                              rules={[{ required: true, message: 'Headline is required for case studies' }]}
+                              style={{ marginBottom: 16 }}
+                            >
+                              <Input placeholder="e.g. How Acme Corp reduced churn by 40%" size="large" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                            </Form.Item>
+                            <Form.Item
+                              name="case_study_summary"
+                              label={<span>One-line Summary <Tooltip title="Single sentence shown under the headline on the card"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                              rules={[{ required: true, message: 'Summary is required for case studies' }]}
+                              style={{ marginBottom: 16 }}
+                            >
+                              <Input placeholder="e.g. A B2B SaaS company cuts customer churn in half within 6 months." size="large" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                            </Form.Item>
+                            {/* Auto slug preview derived from the title field */}
+                            <Form.Item noStyle shouldUpdate={(prev, cur) => prev.title !== cur.title}>
+                              {({ getFieldValue }) => {
+                                const title = getFieldValue('title') || '';
+                                const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                                return slug ? (
+                                  <div style={{ padding: '10px 14px', background: darkMode ? 'rgba(34, 197, 94, 0.1)' : '#f6ffed', border: darkMode ? '1px solid #22c55e' : '1px solid #b7eb8f', borderRadius: 8, fontSize: 13 }}>
+                                    <span style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontWeight: 500 }}>Auto slug: </span>
+                                    <span style={{ color: darkMode ? '#22c55e' : '#389e0d', fontWeight: 700 }}>/case-study/{slug}</span>
+                                  </div>
+                                ) : null;
+                              }}
+                            </Form.Item>
+                          </div>
+
+                          {/* Case Study: Email Template */}
+                          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                            <div style={{ marginBottom: 12 }}>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                                <span style={{ marginRight: 8 }}>✉️</span>Email Template
+                              </Text>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 4 }}>
+                                HTML email sent to the user after gate form submission. Use{' '}
+                                {['{{name}}', '{{title}}', '{{email}}', '{{contact}}', '{{slug}}'].map(p => (
+                                  <code key={p} style={{ background: darkMode ? '#0f172a' : '#f0f4ff', padding: '1px 5px', borderRadius: 4, fontSize: 11, marginRight: 4, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{p}</code>
+                                ))} as placeholders. Leave blank to use the default template.
+                              </div>
+                            </div>
+                            <Form.Item name="email_template" style={{ marginBottom: 0 }}>
+                              <TextArea
+                                rows={14}
+                                placeholder={`<!DOCTYPE html>\n<html>\n<body>\n  <h2>Hi {{name}},</h2>\n  <p>Thank you for downloading <strong>{{title}}</strong>.</p>\n  <p>Your case study is ready. Click below to view it.</p>\n  <p>— TGS Tech Info Team</p>\n</body>\n</html>`}
+                                style={{ fontFamily: 'monospace', fontSize: 12, lineHeight: 1.6, resize: 'vertical', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }}
+                              />
+                            </Form.Item>
+                          </div>
+                        </>
+                      )}
+
+
+                      {/* Fixed: Landing + Webhook — only for webinar/whitepaper/event */}
+                      {showLandingFields && (
+                        <>
+                          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                              <div>
+                                <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields</Text>
+                                <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Add all form fields with their label, API key, and type.</div>
+                              </div>
+                              <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
+                            </div>
+                            {customFields.length === 0 && (
+                              <div style={{ textAlign: 'center', padding: '20px', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13, border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8 }}>
+                                No fields added. Click "Add Field" to add form fields.
+                              </div>
+                            )}
+                            {customFields.map((field, index) => (
+                              <div key={field.id} draggable
+                                onDragStart={() => onDragStart(index)} onDragEnter={() => onDragEnter(index)}
+                                onDragEnd={onDragEnd} onDragOver={e => e.preventDefault()}
+                                style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', marginBottom: 10, background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab' }}
+                              >
+                                <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', marginTop: 8, flexShrink: 0 }} />
+                                <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                  <Input placeholder="Field Label (e.g. First Name)" value={field.label} onChange={e => updateField(field.id, 'label', e.target.value)} style={{ flex: '1 1 140px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
+                                  <Input placeholder="API Key (e.g. firstname)" value={field.webhook_key || ''} onChange={e => updateField(field.id, 'webhook_key', e.target.value)} style={{ flex: '1 1 130px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
+                                  <Select value={field.type} onChange={v => updateField(field.id, 'type', v)} style={{ width: 110 }} size="small">
+                                    {FIELD_TYPES.map(t => <Option key={t.value} value={t.value}>{t.label}</Option>)}
+                                  </Select>
+                                  <Input placeholder="Placeholder text" value={field.placeholder} onChange={e => updateField(field.id, 'placeholder', e.target.value)} style={{ flex: '1 1 130px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
+                                  {field.type === 'select' && (
+                                    <Input placeholder="Options (comma separated)" value={field.options} onChange={e => updateField(field.id, 'options', e.target.value)} style={{ flex: '1 1 180px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
+                                  )}
+                                </div>
+                                <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => removeField(field.id)} style={{ flexShrink: 0 }} />
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
+                            <div style={{ marginBottom: 16 }}>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                            </div>
+                            <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                              <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                            </Form.Item>
+                          </div>
+
+                          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                            <div style={{ marginBottom: 16 }}>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><LinkOutlined style={{ marginRight: 8, color: '#10b981' }} />Redirect / Thank You URL (page_url)</Text>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Visitors will be automatically redirected to this URL after submitting the form</div>
+                            </div>
+                            <Form.Item name="redirect_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid URL (https://...)' }]}>
+                              <Input placeholder="https://example.com/thank-you" prefix={<LinkOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                            </Form.Item>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* ── DRAG & DROP BUILDER TAB ── */}
+                {activeTab === 'builder' && (
+                  <>
+                    {/* Required Metadata Fields */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</Text>
+                      <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
                         <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
                           <Select placeholder="Select type" size="large" onChange={val => {
                             const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
@@ -1430,468 +1972,378 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                           </Select>
                         </Form.Item>
                       </div>
-
-                      {duplicateWarning && duplicateWarning.found && duplicateWarning.isExact && (
-                        <div style={{ 
-                           background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
-                          border: darkMode ? '1px solid #ef4444' : '1px solid #fecaca',
-                          borderRadius: 8, 
-                          padding: '12px 16px', 
-                          marginBottom: 16 
+                      {duplicateWarning && duplicateWarning.found && (
+                        <div style={{
+                          background: '#FFF7ED',
+                          border: '1px solid #FDBA74',
+                          borderRadius: 8,
+                          padding: '12px 16px',
+                          marginTop: 16,
+                          marginBottom: 16
                         }}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                            <InfoCircleOutlined style={{ color: '#ef4444', fontSize: 16, marginTop: 2 }} />
+                            <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
                             <div>
-                               <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: 4 }}>
-                                Duplicate content detected
+                              <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
+                                Similar content already exists
                               </div>
-                              <div style={{ fontSize: 13, color: '#991b1b' }}>
-                                Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.
+                              <div style={{ fontSize: 13, color: '#9A3412' }}>
+                                Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
                               </div>
                             </div>
                           </div>
                         </div>
                       )}
-
-                      <Form.Item name="title" rules={[{ required: true, message: 'Please enter a webinar title' }]} style={{ marginBottom: 16 }}>
-                        <Input placeholder="Webinar title..." size="large"
+                      <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginTop: 16, marginBottom: 0 }}>
+                        <Input placeholder="Article title..." size="large"
                           onChange={(e) => {
                             const title = e.target.value;
                             const shortDesc = form.getFieldValue('short_description');
                             const tags = form.getFieldValue('tags');
                             checkDuplicateContent(title, shortDesc, tags);
                           }}
-                          style={{ fontSize: 24, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
+                          style={{ fontSize: 20, fontWeight: 600, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }}
+                        />
                       </Form.Item>
-
-                      <Form.Item name="short_description" label="Short Description" style={{ marginBottom: 20 }}>
-                        <TextArea rows={2} placeholder="Write a brief overview of what attendees will learn in this webinar..." style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      <Form.Item name="short_description"
+                        label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                        rules={[{ required: true, message: 'Required' }]} style={{ marginTop: 16, marginBottom: 0 }}>
+                        <TextArea rows={2} placeholder="Write a compelling summary..."
+                          onChange={(e) => {
+                            const shortDesc = e.target.value;
+                            const title = form.getFieldValue('title');
+                            const tags = form.getFieldValue('tags');
+                            checkDuplicateContent(title, shortDesc, tags);
+                          }}
+                          style={{ resize: 'none', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
                       </Form.Item>
+                    </div>
 
-                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                        <Form.Item name="hosted_by" label="Hosted By" rules={[{ required: true, message: 'Please specify who is hosting this webinar' }]} style={{ flex: 1, minWidth: 240, marginBottom: 0 }}>
-                          <Input prefix={<UserOutlined style={{ color: '#4a7cff' }} />} placeholder="e.g. Dr. Alex Morgan & TGS Tech Team" size="large" />
+                    {/* Webhook URL for Visual Builder — Always visible like HTML Builder */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Form data will be forwarded to this URL after submission</div>
+                      </div>
+                      <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                        <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+                    </div>
+
+                    {/* Redirect / Thank You URL for Visual Builder */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><LinkOutlined style={{ marginRight: 8, color: '#10b981' }} />Redirect / Thank You URL (page_url)</Text>
+                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Visitors will be automatically redirected to this URL after submitting the form</div>
+                      </div>
+                      <Form.Item name="redirect_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid URL (https://...)' }]}>
+                        <Input placeholder="https://example.com/thank-you" prefix={<LinkOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+                    </div>
+
+                    {/* BuilderIntegration — always Visual Builder */}
+                    <BuilderIntegration
+                      darkMode={darkMode}
+                      contentId={savedContentId}
+                      triggerPreview={builderPreviewTrigger}
+                      previewMeta={(() => {
+                        const v = form.getFieldsValue();
+                        const seoScore = calculateSEOScore(
+                          v.title,
+                          v.short_description,
+                          '',
+                          v.tags,
+                          v.seo_meta_title,
+                          v.seo_meta_description,
+                          v.seo_meta_keywords
+                        );
+                        return {
+                          content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
+                          category: categories.find(c => c.id === v.category_id)?.name || '',
+                          title: v.title || '',
+                          banner_image: bannerImageUrl,
+                          short_description: v.short_description || '',
+                          tags: v.tags || [],
+                          seoScore,
+                        };
+                      })()}
+                      existingData={{
+                        builder_page_data: builderPageData,
+                        builder_layout: builderSections,
+                        builder_content_elements: [],
+                        content: builderContent,
+                      }}
+                      onSave={async (data, options) => {
+                        console.log('[CreateContent] onSave callback triggered', {
+                          hasData: !!data,
+                          isAutoSync: options?.autoSync,
+                          savedContentId,
+                          builderPageDataSize: data.builder_page_data ? JSON.stringify(data.builder_page_data).length : 0
+                        });
+
+                        // Update local state for both auto-sync and manual saves
+                        if (data.builder_page_data !== undefined) {
+                          setBuilderPageData(data.builder_page_data);
+                        }
+                        if (data.builder_layout) {
+                          setBuilderSections(data.builder_layout);
+                        }
+                        if (data.content) {
+                          setBuilderContent(data.content);
+                        }
+
+                        // Auto-save to backend when auto-sync is triggered
+                        if (options?.autoSync) {
+                          // Mark as having unsaved changes (will be cleared after backend save)
+                          setHasUnsavedChanges(true);
+
+                          try {
+                            const values = form.getFieldsValue();
+
+                            // Validate minimum required fields for auto-save
+                            if (!values.title || !values.content_type_id) {
+                              console.log('[CreateContent] Auto-save skipped - missing required fields (title or content_type_id)');
+                              // Still mark as having unsaved changes
+                              return;
+                            }
+
+                            const formData = buildFormData(values);
+                            const apiBase = isAdmin ? '/api/admin' : '/api/user';
+
+                            if (savedContentId && contentStatus !== 'published') {
+                              // Update existing content - keep its current status (draft/published)
+                              console.log('[CreateContent] Auto-saving to existing content:', savedContentId);
+                              const response = await axios.put(`${apiBase}/content/${savedContentId}`, formData, {
+                                headers: { 'Content-Type': 'multipart/form-data' }
+                              });
+                              console.log('[CreateContent] Auto-save SUCCESS');
+                            } else if (!savedContentId) {
+                              // Create new draft automatically
+                              console.log('[CreateContent] Auto-creating new draft content');
+                              // Explicitly set status to 'draft' for auto-save
+                              formData.append('status', 'draft');
+                              const response = await axios.post(`${apiBase}/content`, formData, {
+                                headers: { 'Content-Type': 'multipart/form-data' }
+                              });
+                              const newContentId = response.data.content?.id || response.data.id;
+                              console.log('[CreateContent] Draft created with ID:', newContentId);
+                              setSavedContentId(newContentId);
+                              setContentStatus('draft');
+                              setDraftSaved(true);
+
+                              // Update URL to edit mode without page reload
+                              window.history.replaceState({}, '', isAdmin ? `/admin/edit-content/${newContentId}` : `/edit-content/${newContentId}`);
+                            } else {
+                              console.log('[CreateContent] Auto-save skipped for published content:', savedContentId);
+                              return;
+                            }
+
+                            // Clear unsaved changes flag after successful save
+                            setHasUnsavedChanges(false);
+
+                            // Clear localStorage backup after successful backend save
+                            const storageKey = `builder_autosave_${savedContentId || 'draft'}`;
+                            localStorage.removeItem(storageKey);
+                            localStorage.removeItem(`${storageKey}_timestamp`);
+
+                            console.log('[CreateContent] Auto-save complete - draft saved to database');
+                          } catch (error) {
+                            console.error('[CreateContent] Auto-save to backend failed:', error);
+                            console.error('[CreateContent] Error details:', error.response?.data);
+                            // Don't show error message to avoid disturbing user during editing
+                            // Changes remain in localStorage as backup
+                          }
+                        }
+                      }}
+                      enableNewBuilder={true}
+                    />
+                  </>
+                )}
+
+                {/* ── HTML BUILDER TAB ── */}
+                {activeTab === 'html' && (
+                  <>
+                    {/* Landing Page type hint banner */}
+                    {isLandingPageType && (
+                      <div style={{ background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', border: darkMode ? '1px solid #4a7cff' : '1px solid #4a7cff33', borderRadius: 12, padding: '14px 20px', marginBottom: 40, display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 20 }}>🚀</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: '#4a7cff' }}>HTML Builder mode active</div>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#595959', marginTop: 2 }}>
+                            Your landing page will be published at <code style={{ background: '#e8eeff', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>/content/<em>your-title-slug</em></code> — no Navbar or Footer, just your HTML.
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Meta Section */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Landing Page Details</Text>
+                      <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
+                        <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                          <Select placeholder="Select type" size="large" onChange={val => {
+                            const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                            setSelectedTypeName(name);
+                          }}>
+                            {contentTypes.map(t => (
+                              <Option key={t.id} value={t.id}>
+                                {t.name}
+                                {['landing page', 'landing-page'].includes(t.name.toLowerCase()) && (
+                                  <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#6c5ce7', background: '#f0ecff', padding: '1px 7px', borderRadius: 10, textTransform: 'uppercase' }}>
+                                    HTML
+                                  </span>
+                                )}
+                              </Option>
+                            ))}
+                          </Select>
                         </Form.Item>
-
-                        <Form.Item name="platform" label="Platform" rules={[{ required: true, message: 'Select platform' }]} style={{ flex: 1, minWidth: 200, marginBottom: 0 }}>
-                          <Select placeholder="Select platform" size="large" dropdownMatchSelectWidth={false}>
-                            <Option value="Zoom">Zoom Meeting / Webinar</Option>
-                            <Option value="Google Meet">Google Meet</Option>
-                            <Option value="Microsoft Teams">Microsoft Teams</Option>
-                            <Option value="Webex">Cisco Webex</Option>
-                            <Option value="YouTube Live">YouTube Live</Option>
-                            <Option value="Custom Platform">Custom Platform</Option>
+                        <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                          <Select placeholder="Select category" size="large">
+                            {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
                           </Select>
                         </Form.Item>
                       </div>
                     </div>
 
-                    {/* Webinar Mode Selection (Live vs On-Demand) */}
-                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 12 }}>
-                        Webinar Format / Type
-                      </Text>
-                      <Form.Item name="webinar_type" initialValue={webinarTypeMode} style={{ marginBottom: 0 }}>
-                        <Radio.Group 
-                          size="large" 
-                          buttonStyle="solid"
-                          onChange={e => {
-                            setWebinarTypeMode(e.target.value);
-                          }}
-                        >
-                          <Radio.Button value="live" style={{ padding: '0 24px', borderRadius: '8px 0 0 8px' }}>
-                            🔴 Live Webinar (Upcoming / Scheduled)
-                          </Radio.Button>
-                          <Radio.Button value="on_demand" style={{ padding: '0 24px', borderRadius: '0 8px 8px 0' }}>
-                            📹 On-Demand Webinar (Pre-recorded Video)
-                          </Radio.Button>
-                        </Radio.Group>
-                      </Form.Item>
-                    </div>
-
-                    {/* Mode Specific Fields */}
-                    {webinarTypeMode === 'live' ? (
-                      <>
-                        {/* Live Webinar Date & Join Link Section */}
-                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 16 }}>
-                            <CalendarOutlined style={{ marginRight: 8, color: '#ef4444' }} />Live Event Details & Access
-                          </Text>
-                          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                            <Form.Item 
-                              name="webinar_date" 
-                              label="Scheduled Date & Time"
-                              rules={[{ required: true, message: 'Webinar date is required for live events' }]}
-                              style={{ flex: 1, minWidth: 260, marginBottom: 0 }}
-                            >
-                              <DatePicker 
-                                showTime 
-                                style={{ width: '100%' }}
-                                size="large"
-                                placeholder="Select webinar date and time"
-                                format="YYYY-MM-DD HH:mm:ss"
-                                disabledDate={(current) => current && current < moment().startOf('day')}
-                              />
-                            </Form.Item>
-
-                            <Form.Item 
-                              name="join_link" 
-                              label="Join Link / Meeting URL"
-                              rules={[{ required: true, message: 'Join link is required for live webinar' }]}
-                              style={{ flex: 1.5, minWidth: 280, marginBottom: 0 }}
-                            >
-                              <Input 
-                                prefix={<LinkOutlined style={{ color: '#10b981' }} />} 
-                                placeholder="https://zoom.us/j/123456789 or https://meet.google.com/..." 
-                                size="large" 
-                              />
-                            </Form.Item>
-                          </div>
-                        </div>
-
-                        {/* Banner Image for Live Webinar */}
-                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <div>
-                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Webinar Banner Image <Tag color="blue" style={{ marginLeft: 8 }}>Required for Live</Tag></Text>
-                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Displayed on webinar page cards & hero story countdown</div>
-                            </div>
-                            <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
-                              <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
-                            </Upload>
-                          </div>
-                          {fileList.length > 0 && fileList[0].originFileObj ? (
-                            <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                              <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
-                            </div>
-                          ) : (
-                            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '30px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
-                              <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
-                              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>Upload banner image for live webinar</Text>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Video Upload - Optional for Live Webinar */}
-                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <div>
-                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload <span style={{ fontWeight: 400, fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginLeft: 8 }}>(Optional for Live Webinar)</span></Text>
-                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optionally upload a teaser or recording video</div>
-                            </div>
-                            <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
-                              <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
-                            </Upload>
-                          </div>
-                          {videoList.length > 0 ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
-                              <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
-                              <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
-                              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
-                            </div>
-                          ) : (
-                            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
-                              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded (optional for live webinar)</Text>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        {/* Video Upload - Mandatory for On-Demand Webinar */}
-                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <div>
-                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                                <PlayCircleOutlined style={{ marginRight: 8, color: '#3b82f6' }} />Add a Video <Tag color="red" style={{ marginLeft: 8 }}>Required for On-Demand</Tag>
-                              </Text>
-                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload full webinar recording (MP4, WebM, etc.)</div>
-                            </div>
-                            <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
-                              <Button icon={<UploadOutlined />} type="primary" size="small">{videoList.length > 0 ? 'Change Video' : 'Add Video'}</Button>
-                            </Upload>
-                          </div>
-                          {videoList.length > 0 ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: darkMode ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff', borderRadius: 8, border: '1px solid #3b82f6' }}>
-                              <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 22 }} />
-                              <Text style={{ flex: 1, fontSize: 14, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
-                              <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
-                            </div>
-                          ) : (
-                            <div style={{ border: '2px dashed #ef4444', borderRadius: 8, padding: '28px 20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.05)' : '#fef2f2' }}>
-                              <PlayCircleOutlined style={{ fontSize: 32, color: '#ef4444', marginBottom: 8, display: 'block' }} />
-                              <Text style={{ color: '#991b1b', fontWeight: 600, fontSize: 14 }}>Please upload a video file for this on-demand webinar</Text>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Banner Image for On-Demand Webinar */}
-                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <div>
-                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image / Poster Thumbnail</Text>
-                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Thumbnail displayed before video playback</div>
-                            </div>
-                            <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
-                              <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
-                            </Upload>
-                          </div>
-                          {fileList.length > 0 && fileList[0].originFileObj ? (
-                            <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                              <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 300, objectFit: 'contain', display: 'block' }} />
-                            </div>
-                          ) : (
-                            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '30px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
-                              <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
-                              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner thumbnail uploaded</Text>
-                            </div>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </>
-                );
-              }
-
-              // Standard form for other content types
-              const sectionMap = {
-                meta: (
-                  <div key="meta" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                    <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</Text>
-                    <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
-                      <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                        <Select placeholder="Select type" size="large" onChange={val => {
-                          const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
-                          setSelectedTypeName(name);
+                    {/* Title & Description */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      {duplicateWarning && duplicateWarning.found && (
+                        <div style={{
+                          background: '#FFF7ED',
+                          border: '1px solid #FDBA74',
+                          borderRadius: 8,
+                          padding: '12px 16px',
+                          marginBottom: 16
                         }}>
-                          {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
-                        </Select>
-                      </Form.Item>
-                      <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                        <Select placeholder="Select category" size="large">
-                          {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
-                        </Select>
-                      </Form.Item>
-                    </div>
-                    {duplicateWarning && duplicateWarning.found && duplicateWarning.isExact && (
-                      <div style={{ 
-                        // background: '#FFF7ED', 
-                        // border: '1px solid #FDBA74',
-                         background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fef2f2',
-                        border: darkMode ? '1px solid #ef4444' : '1px solid #fecaca',
-                        borderRadius: 8, 
-                        padding: '12px 16px', 
-                        marginBottom: 16 
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                          {/* <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} /> */}
-                          <InfoCircleOutlined style={{ color: '#ef4444', fontSize: 16, marginTop: 2 }} />
-                          <div>
-                             <div style={{ fontWeight: 600, color: '#991b1b', marginBottom: 4 }}>
-                              Duplicate content detected
-                            </div>
-                            <div style={{ fontSize: 13, color: '#991b1b' }}>
-                              Content with title "{duplicateWarning.title}" already exists (Status: {duplicateWarning.status}). Please use a different title.While testing landing page on local from html builder and inserted the api the table created in backedn and also in html code and webhook input i have added url but its not working the data is not insrted in the table also not hit to the api
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
+                            <div>
+                              <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
+                                Similar content already exists
+                              </div>
+                              <div style={{ fontSize: 13, color: '#9A3412' }}>
+                                Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                    <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
-                      <Input placeholder="Article title..." size="large"
-                        onChange={(e) => {
-                          const title = e.target.value;
-                          const shortDesc = form.getFieldValue('short_description');
-                          const tags = form.getFieldValue('tags');
-                          checkDuplicateContent(title, shortDesc, tags);
+                      )}
+                      <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
+                        <Input placeholder="Landing page title..." size="large"
+                          onChange={(e) => {
+                            const title = e.target.value;
+                            const shortDesc = form.getFieldValue('short_description');
+                            const tags = form.getFieldValue('tags');
+                            checkDuplicateContent(title, shortDesc, tags);
+                          }}
+                          style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
+                      </Form.Item>
+                      <Form.Item name="short_description"
+                        label={<span>Short Description <Tooltip title="Brief summary shown in listing cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
+                        rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 16 }}>
+                        <TextArea rows={3} placeholder="Write a compelling summary..."
+                          onChange={(e) => {
+                            const shortDesc = e.target.value;
+                            const title = form.getFieldValue('title');
+                            const tags = form.getFieldValue('tags');
+                            checkDuplicateContent(title, shortDesc, tags);
+                          }}
+                          style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+                      {/* Auto slug preview */}
+                      <Form.Item noStyle shouldUpdate={(prev, cur) => prev.title !== cur.title}>
+                        {({ getFieldValue }) => {
+                          const title = getFieldValue('title') || '';
+                          const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                          return slug ? (
+                            <div style={{ padding: '10px 14px', background: darkMode ? 'rgba(34, 197, 94, 0.1)' : '#f6ffed', border: darkMode ? '1px solid #22c55e' : '1px solid #b7eb8f', borderRadius: 8, fontSize: 13 }}>
+                              <span style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontWeight: 500 }}>Public URL: </span>
+                              <span style={{ color: darkMode ? '#22c55e' : '#389e0d', fontWeight: 700 }}>/content/{slug}</span>
+                            </div>
+                          ) : null;
                         }}
-                        style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
-                    </Form.Item>
-                    <Form.Item name="short_description"
-                      label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
-                      rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 0 }}>
-                      <TextArea rows={3} placeholder="Write a compelling summary..." 
-                        onChange={(e) => {
-                          const shortDesc = e.target.value;
-                          const title = form.getFieldValue('title');
-                          const tags = form.getFieldValue('tags');
-                          checkDuplicateContent(title, shortDesc, tags);
-                        }}
-                        style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                    </Form.Item>
-                  </div>
-                ),
-                banner: (
-                  <div key="banner" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <div>
-                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Banner Image</Text>
-                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Recommended: 1200×630px</div>
-                      </div>
-                      <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
-                        <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
-                      </Upload>
+                      </Form.Item>
                     </div>
-                    {bannerImageUrl ? (
-                      <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                        <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
+
+                    {/* Banner Image */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                        <div>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Thumbnail Image</Text>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This image will be displayed in the White Papers/Resources listing</div>
+                        </div>
+                        <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                          <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                        </Upload>
                       </div>
-                    ) : (
-                      <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
-                        <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
-                        <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No banner image</Text>
-                      </div>
-                    )}
-                  </div>
-                ),
-                content: (
-                  <div key="content" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 40 }}>
-                    <div style={{ padding: '14px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
-                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}>Content</Text>
-                    </div>
-                    <div style={{ padding: '0 4px 4px' }}>
-                      {editorReady ? (
-                        <TipTapEditor value={content} initialContent={initialContent} onChange={setContent} placeholder="Start writing your article..." darkMode={darkMode} />
+                      {bannerImageUrl ? (
+                        <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
+                        </div>
                       ) : (
-                        <div style={{ padding: 40, textAlign: 'center', color: darkMode ? '#94a3b8' : '#8c8c8c' }}>Loading editor...</div>
+                        <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                          <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                          <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No thumbnail image</Text>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ),
-                video: (
-                  <div key="video" style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <div>
-                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PlayCircleOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Video Upload</Text>
-                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Upload video files (MP4, WebM, etc.)</div>
+
+                    {/* HTML Editor */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 40 }}>
+                      <div style={{ padding: '14px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><CodeOutlined style={{ marginRight: 8, color: '#4a7cff' }} />HTML Content</Text>
+                        <Space>
+                          <Button
+                            size="small"
+                            icon={<PictureOutlined />}
+                            onClick={() => {
+                              if (htmlEditorRef.current) {
+                                savedHtmlSelectionRef.current = htmlEditorRef.current.getSelection();
+                              }
+                              setMediaLibraryVisible(true);
+                            }}
+                          >
+                            Media Library
+                          </Button>
+                          <Button size="small" icon={<EyeOutlined />} onClick={() => setHtmlPreviewVisible(true)}>Preview</Button>
+                        </Space>
                       </div>
-                      <Upload beforeUpload={() => false} fileList={videoList} onChange={({ fileList: fl }) => setVideoList(fl)} maxCount={1} showUploadList={false} accept="video/*">
-                        <Button icon={<UploadOutlined />} size="small">{videoList.length > 0 ? 'Change Video' : 'Upload Video'}</Button>
-                      </Upload>
+                      <div style={{ padding: '0 4px 4px' }}>
+                        <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" editorRef={htmlEditorRef} />
+                      </div>
                     </div>
-                    {videoList.length > 0 ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff', borderRadius: 8, border: darkMode ? '1px solid #3b82f6' : '1px solid #bfdbfe' }}>
-                        <PlayCircleOutlined style={{ color: '#3b82f6', fontSize: 20 }} />
-                        <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{videoList[0].name}</Text>
-                        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setVideoList([])} />
-                      </div>
-                    ) : (
-                      <div style={{ border: darkMode ? '2px dashed #3b82f6' : '2px dashed #bfdbfe', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(59, 130, 246, 0.1)' : '#eff6ff' }}>
-                        <PlayCircleOutlined style={{ fontSize: 24, color: '#3b82f6', marginBottom: 4, display: 'block' }} />
-                        <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No video uploaded</Text>
-                      </div>
-                    )}
-                  </div>
-                ),
-              };
 
-              return (
-                <>
-                  {standardLayout.map(key => {
-                    // For webinar type, show meta (content-type, category, title), banner image, and video sections
-                    if (isWebinarType) {
-                      if (key === 'meta' || key === 'banner' || key === 'video') {
-                        return sectionMap[key] || null;
-                      }
-                      return null;
-                    }
-                    return sectionMap[key] || null;
-                  })}
-
-                  {/* Fixed: PDF Attachment — always below reorderable sections */}
-                  <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <div>
-                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><FilePdfOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />PDF Attachment</Text>
-                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This PDF will be downloaded when user submits the access form</div>
-                      </div>
-                      <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
-                        <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
-                      </Upload>
-                    </div>
-                    {pdfList.length > 0 ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0', borderRadius: 8, border: darkMode ? '1px solid #ef4444' : '1px solid #ffccc7' }}>
-                        <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
-                        <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{pdfList[0].name}</Text>
-                        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
-                      </div>
-                    ) : (
-                      <div style={{ border: darkMode ? '2px dashed #ef4444' : '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0' }}>
-                        <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
-                        <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
-                      </div>
-                    )}
-                  </div>
-
-                  {isCaseStudy && (
-                    <>
-                      {/* Case Study: Headline */}
-                      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                        <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 16 }}>Case Study Details</Text>
-                        <Form.Item
-                          name="case_study_headline"
-                          label={<span>Headline <Tooltip title="Bold headline shown on the case study card"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
-                          rules={[{ required: true, message: 'Headline is required for case studies' }]}
-                          style={{ marginBottom: 16 }}
-                        >
-                          <Input placeholder="e.g. How Acme Corp reduced churn by 40%" size="large" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                        </Form.Item>
-                        <Form.Item
-                          name="case_study_summary"
-                          label={<span>One-line Summary <Tooltip title="Single sentence shown under the headline on the card"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
-                          rules={[{ required: true, message: 'Summary is required for case studies' }]}
-                          style={{ marginBottom: 16 }}
-                        >
-                          <Input placeholder="e.g. A B2B SaaS company cuts customer churn in half within 6 months." size="large" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                        </Form.Item>
-                        {/* Auto slug preview derived from the title field */}
-                        <Form.Item noStyle shouldUpdate={(prev, cur) => prev.title !== cur.title}>
-                          {({ getFieldValue }) => {
-                            const title = getFieldValue('title') || '';
-                            const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                            return slug ? (
-                              <div style={{ padding: '10px 14px', background: darkMode ? 'rgba(34, 197, 94, 0.1)' : '#f6ffed', border: darkMode ? '1px solid #22c55e' : '1px solid #b7eb8f', borderRadius: 8, fontSize: 13 }}>
-                                <span style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontWeight: 500 }}>Auto slug: </span>
-                                <span style={{ color: darkMode ? '#22c55e' : '#389e0d', fontWeight: 700 }}>/case-study/{slug}</span>
-                              </div>
-                            ) : null;
-                          }}
-                        </Form.Item>
-                      </div>
- 
-                      {/* Case Study: Email Template */}
-                      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                        <div style={{ marginBottom: 12 }}>
-                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                            <span style={{ marginRight: 8 }}>✉️</span>Email Template
-                          </Text>
-                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 4 }}>
-                            HTML email sent to the user after gate form submission. Use{' '}
-                            {['{{name}}', '{{title}}', '{{email}}', '{{contact}}', '{{slug}}'].map(p => (
-                              <code key={p} style={{ background: darkMode ? '#0f172a' : '#f0f4ff', padding: '1px 5px', borderRadius: 4, fontSize: 11, marginRight: 4, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{p}</code>
-                            ))} as placeholders. Leave blank to use the default template.
-                          </div>
+                    {/* PDF Attachment */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><FilePdfOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />PDF Attachment (Optional)</Text>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This PDF will be available for download on the landing page</div>
                         </div>
-                        <Form.Item name="email_template" style={{ marginBottom: 0 }}>
-                          <TextArea
-                            rows={14}
-                            placeholder={`<!DOCTYPE html>\n<html>\n<body>\n  <h2>Hi {{name}},</h2>\n  <p>Thank you for downloading <strong>{{title}}</strong>.</p>\n  <p>Your case study is ready. Click below to view it.</p>\n  <p>— TGS Tech Info Team</p>\n</body>\n</html>`}
-                            style={{ fontFamily: 'monospace', fontSize: 12, lineHeight: 1.6, resize: 'vertical', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }}
-                          />
-                        </Form.Item>
+                        <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
+                          <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
+                        </Upload>
                       </div>
-                    </>
-                  )}
- 
+                      {pdfList.length > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0', borderRadius: 8, border: darkMode ? '1px solid #ef4444' : '1px solid #ffccc7' }}>
+                          <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
+                          <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{pdfList[0].name}</Text>
+                          <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
+                        </div>
+                      ) : (
+                        <div style={{ border: darkMode ? '2px dashed #ef4444' : '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0' }}>
+                          <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
+                          <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Fixed: Landing + Webhook — only for webinar/whitepaper/event */}
-                  {showLandingFields && (
-                    <>
+                    {/* Landing Page Form Fields */}
+                    {showLandingFields && (
                       <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                           <div>
                             <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields</Text>
-                            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Add all form fields with their label, API key, and type.</div>
+                            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Add form fields for lead capture</div>
                           </div>
                           <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
                         </div>
@@ -1922,696 +2374,286 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
                           </div>
                         ))}
                       </div>
-                      <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
-                        <div style={{ marginBottom: 16 }}>
-                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
-                        </div>
-                        <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
-                          <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                        </Form.Item>
-                      </div>
-                    </>
-                  )}
-                </>
-              );
-            })()}
+                    )}
 
-            {/* ── DRAG & DROP BUILDER TAB ── */}
-            {activeTab === 'builder' && (
-              <>
-                {/* Required Metadata Fields */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                  <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Article Details</Text>
-                  <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
-                    <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                      <Select placeholder="Select type" size="large" onChange={val => {
-                        const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
-                        setSelectedTypeName(name);
+                    {/* Webhook URL - Always visible in HTML Builder for form submissions */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
+                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Form data will be forwarded to this URL after submission</div>
+                      </div>
+                      <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
+                        <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+                    </div>
+
+                    {/* Redirect / Thank You URL (page_url) */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
+                      <div style={{ marginBottom: 16 }}>
+                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><LinkOutlined style={{ marginRight: 8, color: '#10b981' }} />Redirect / Thank You URL (page_url)</Text>
+                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Visitors will be automatically redirected to this URL after form submission. If left blank, the system auto-detects <code>page_url</code> from your HTML code.</div>
+                      </div>
+                      <Form.Item name="redirect_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid URL (https://...)' }]}>
+                        <Input placeholder="https://example.com/thank-you (or page_url from HTML)" prefix={<LinkOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Sidebar — for desktop only */}
+              {window.innerWidth >= 768 && (
+                <div style={{
+                  width: sidebarOpen ? 300 : 0,
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  transition: 'width 0.3s ease',
+                  opacity: sidebarOpen ? 1 : 0,
+                  pointerEvents: sidebarOpen ? 'auto' : 'none',
+                }}>
+                  <div style={{ width: 300 }}>
+
+                    {/* Layout Reorder Panel */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 4, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                        <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
+                      </Text>
+                      <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', display: 'block', marginBottom: 12 }}>Drag sections to change order</Text>
+                      {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
+                        const sec = activeTab === 'builder'
+                          ? SECTION_TYPES.find(s => s.type === item.type)
+                          : STANDARD_SECTIONS.find(s => s.key === item);
+                        if (!sec) return null;
+                        const key = activeTab === 'builder' ? item.id : item;
+                        if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
+                        return (
+                          <div
+                            key={key}
+                            draggable
+                            onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
+                            onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
+                            onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
+                            onDragOver={e => e.preventDefault()}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8,
+                              padding: '8px 10px', marginBottom: 6,
+                              background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8,
+                              border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab',
+                              userSelect: 'none'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fafafa'; }}
+                          >
+                            <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', fontSize: 12 }} />
+                            <span style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', flex: 1 }}>{sec.label}</span>
+                            <span style={{ fontSize: 10, color: darkMode ? '#475569' : '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Tags */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                        <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
+                      </Text>
+                      <Form.Item name="tags" style={{ marginBottom: 0 }}>
+                        <Select mode="tags" placeholder="Add tags..." style={{ width: '100%' }} tokenSeparators={[',']}
+                          onChange={(tags) => {
+                            const title = form.getFieldValue('title');
+                            const shortDesc = form.getFieldValue('short_description');
+                            checkDuplicateContent(title, shortDesc, tags);
+                          }}
+                        />
+                      </Form.Item>
+                    </div>
+
+                    {/* Schedule */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                        <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
+                      </Text>
+                      <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
+                        <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
+                      </Form.Item>
+                    </div>
+
+                    {/* SEO */}
+                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                      <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
+                        <SettingOutlined style={{ marginRight: 6, color: '#4a7cff' }} />SEO Settings
+                      </Text>
+                      <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Title</Text>} style={{ marginBottom: 12 }}>
+                        <Input placeholder="SEO title" size="small" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+                      <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Description</Text>} style={{ marginBottom: 12 }}>
+                        <TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', fontSize: 12, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+                      </Form.Item>
+                      <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
+                        <Select mode="tags" placeholder="Add keyword and press Enter..." style={{ width: '100%' }} size="small" tokenSeparators={[',']} />
+                      </Form.Item>
+                    </div>
+
+                    <Form.Item name="status" hidden><Input /></Form.Item>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Form>
+
+          {/* Preview Modal */}
+          {previewVisible && previewData && (
+            <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'clamp(16px, 2vw, 40px) clamp(12px, 2vw, 20px)', overflowY: 'auto' }}
+              onClick={() => setPreviewVisible(false)}>
+              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, width: '100%', maxWidth: 860, padding: 'clamp(20px, 3vw, 40px)', position: 'relative', border: darkMode ? '1px solid #334155' : 'none' }}
+                onClick={e => e.stopPropagation()}>
+                <Button type="text" onClick={() => setPreviewVisible(false)} style={{ position: 'absolute', top: 'clamp(12px, 1.5vw, 16px)', right: 'clamp(12px, 1.5vw, 16px)', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 'clamp(14px, 1.2vw, 16px)' }}>✕ Close</Button>
+
+                {/* SEO Score Display */}
+                {previewData.seoScore && (
+                  <div style={{
+                    marginBottom: 'clamp(16px, 2vw, 24px)',
+                    padding: 'clamp(12px, 1.5vw, 16px)',
+                    background: previewData.seoScore.percentage >= 80
+                      ? darkMode ? 'rgba(91, 189, 43, 0.1)' : 'rgba(91, 189, 43, 0.1)'
+                      : darkMode ? 'rgba(249, 148, 29, 0.1)' : 'rgba(249, 148, 29, 0.1)',
+                    border: `2px solid ${previewData.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D'}`,
+                    borderRadius: 10
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <Text strong style={{ fontSize: 'clamp(13px, 0.9vw, 15px)', color: darkMode ? '#f1f5f9' : '#1a1a1a' }}>
+                        SEO Score: {previewData.seoScore.percentage}%
+                      </Text>
+                      <div style={{
+                        width: 'clamp(80px, 10vw, 120px)',
+                        height: 'clamp(8px, 1vw, 10px)',
+                        background: darkMode ? '#334155' : '#e5e7eb',
+                        borderRadius: 5,
+                        overflow: 'hidden'
                       }}>
-                        {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                      <Select placeholder="Select category" size="large">
-                        {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
-                      </Select>
-                    </Form.Item>
-                  </div>
-                  {duplicateWarning && duplicateWarning.found && (
-                    <div style={{ 
-                      background: '#FFF7ED', 
-                      border: '1px solid #FDBA74', 
-                      borderRadius: 8, 
-                      padding: '12px 16px', 
-                      marginTop: 16,
-                      marginBottom: 16 
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
-                        <div>
-                          <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
-                            Similar content already exists
-                          </div>
-                          <div style={{ fontSize: 13, color: '#9A3412' }}>
-                            Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
-                          </div>
-                        </div>
+                        <div style={{
+                          width: `${previewData.seoScore.percentage}%`,
+                          height: '100%',
+                          background: previewData.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D',
+                          transition: 'width 0.3s ease'
+                        }} />
                       </div>
                     </div>
-                  )}
-                  <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginTop: 16, marginBottom: 0 }}>
-                    <Input placeholder="Article title..." size="large"
-                      onChange={(e) => {
-                        const title = e.target.value;
-                        const shortDesc = form.getFieldValue('short_description');
-                        const tags = form.getFieldValue('tags');
-                        checkDuplicateContent(title, shortDesc, tags);
-                      }}
-                      style={{ fontSize: 20, fontWeight: 600, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }}
-                    />
-                  </Form.Item>
-                  <Form.Item name="short_description"
-                    label={<span>Short Description <Tooltip title="Brief summary shown in article cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
-                    rules={[{ required: true, message: 'Required' }]} style={{ marginTop: 16, marginBottom: 0 }}>
-                    <TextArea rows={2} placeholder="Write a compelling summary..." 
-                      onChange={(e) => {
-                        const shortDesc = e.target.value;
-                        const title = form.getFieldValue('title');
-                        const tags = form.getFieldValue('tags');
-                        checkDuplicateContent(title, shortDesc, tags);
-                      }}
-                      style={{ resize: 'none', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                  </Form.Item>
-                </div>
- 
-                {/* Webhook URL for Visual Builder — Always visible like HTML Builder */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 20 }}>
-                  <div style={{ marginBottom: 16 }}>
-                    <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
-                    <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Form data will be forwarded to this URL after submission</div>
-                  </div>
-                  <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
-                    <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                  </Form.Item>
-                </div>
-
-                {/* BuilderIntegration — always Visual Builder */}
-                <BuilderIntegration
-                  darkMode={darkMode}
-                  contentId={savedContentId}
-                  triggerPreview={builderPreviewTrigger}
-                  previewMeta={(() => {
-                    const v = form.getFieldsValue();
-                    const seoScore = calculateSEOScore(
-                      v.title,
-                      v.short_description,
-                      '',
-                      v.tags,
-                      v.seo_meta_title,
-                      v.seo_meta_description,
-                      v.seo_meta_keywords
-                    );
-                    return {
-                      content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
-                      category: categories.find(c => c.id === v.category_id)?.name || '',
-                      title: v.title || '',
-                      banner_image: bannerImageUrl,
-                      short_description: v.short_description || '',
-                      tags: v.tags || [],
-                      seoScore,
-                    };
-                  })()}
-                  existingData={{
-                    builder_page_data: builderPageData,
-                    builder_layout: builderSections,
-                    builder_content_elements: [],
-                    content: builderContent,
-                  }}
-                  onSave={async (data, options) => {
-                    console.log('[CreateContent] onSave callback triggered', { 
-                      hasData: !!data, 
-                      isAutoSync: options?.autoSync,
-                      savedContentId,
-                      builderPageDataSize: data.builder_page_data ? JSON.stringify(data.builder_page_data).length : 0
-                    });
-
-                    // Update local state for both auto-sync and manual saves
-                    if (data.builder_page_data !== undefined) {
-                      setBuilderPageData(data.builder_page_data);
-                    }
-                    if (data.builder_layout) {
-                      setBuilderSections(data.builder_layout);
-                    }
-                    if (data.content) {
-                      setBuilderContent(data.content);
-                    }
-
-                    // Auto-save to backend when auto-sync is triggered
-                    if (options?.autoSync) {
-                      // Mark as having unsaved changes (will be cleared after backend save)
-                      setHasUnsavedChanges(true);
-
-                      try {
-                        const values = form.getFieldsValue();
-                        
-                        // Validate minimum required fields for auto-save
-                        if (!values.title || !values.content_type_id) {
-                          console.log('[CreateContent] Auto-save skipped - missing required fields (title or content_type_id)');
-                          // Still mark as having unsaved changes
-                          return;
-                        }
-
-                        const formData = buildFormData(values);
-                        const apiBase = isAdmin ? '/api/admin' : '/api/user';
-                        
-                        if (savedContentId && contentStatus !== 'published') {
-                          // Update existing content - keep its current status (draft/published)
-                          console.log('[CreateContent] Auto-saving to existing content:', savedContentId);
-                          const response = await axios.put(`${apiBase}/content/${savedContentId}`, formData, { 
-                            headers: { 'Content-Type': 'multipart/form-data' } 
-                          });
-                          console.log('[CreateContent] Auto-save SUCCESS');
-                        } else if (!savedContentId) {
-                          // Create new draft automatically
-                          console.log('[CreateContent] Auto-creating new draft content');
-                          // Explicitly set status to 'draft' for auto-save
-                          formData.append('status', 'draft');
-                          const response = await axios.post(`${apiBase}/content`, formData, { 
-                            headers: { 'Content-Type': 'multipart/form-data' } 
-                          });
-                          const newContentId = response.data.content?.id || response.data.id;
-                          console.log('[CreateContent] Draft created with ID:', newContentId);
-                          setSavedContentId(newContentId);
-                          setContentStatus('draft');
-                          setDraftSaved(true);
-                          
-                          // Update URL to edit mode without page reload
-                          window.history.replaceState({}, '', isAdmin ? `/admin/edit-content/${newContentId}` : `/edit-content/${newContentId}`);
-                        } else {
-                          console.log('[CreateContent] Auto-save skipped for published content:', savedContentId);
-                          return;
-                        }
-                        
-                        // Clear unsaved changes flag after successful save
-                        setHasUnsavedChanges(false);
-                        
-                        // Clear localStorage backup after successful backend save
-                        const storageKey = `builder_autosave_${savedContentId || 'draft'}`;
-                        localStorage.removeItem(storageKey);
-                        localStorage.removeItem(`${storageKey}_timestamp`);
-                        
-                        console.log('[CreateContent] Auto-save complete - draft saved to database');
-                      } catch (error) {
-                        console.error('[CreateContent] Auto-save to backend failed:', error);
-                        console.error('[CreateContent] Error details:', error.response?.data);
-                        // Don't show error message to avoid disturbing user during editing
-                        // Changes remain in localStorage as backup
-                      }
-                    }
-                  }}
-                  enableNewBuilder={true}
-                />
-              </>
-            )}
-
-            {/* ── HTML BUILDER TAB ── */}
-            {activeTab === 'html' && (
-              <>
-{/* Landing Page type hint banner */}
-                {isLandingPageType && (
-                  <div style={{ background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', border: darkMode ? '1px solid #4a7cff' : '1px solid #4a7cff33', borderRadius: 12, padding: '14px 20px', marginBottom: 40, display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 20 }}>🚀</span>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 13, color: '#4a7cff' }}>HTML Builder mode active</div>
-                      <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#595959', marginTop: 2 }}>
-                        Your landing page will be published at <code style={{ background: '#e8eeff', padding: '1px 6px', borderRadius: 4, fontWeight: 700 }}>/content/<em>your-title-slug</em></code> — no Navbar or Footer, just your HTML.
-                      </div>
+                    <div style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#94a3b8' : '#6B7280' }}>
+                      Word Count: {previewData.seoScore.wordCount}
                     </div>
-                  </div>
-                )}         
-                       {/* Meta Section */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                  <Text style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Landing Page Details</Text>
-                  <div style={{ display: 'flex', gap: 16, marginTop: 16 }}>
-                    <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                      <Select placeholder="Select type" size="large" onChange={val => {
-                        const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
-                        setSelectedTypeName(name);
-                      }}>
-                       {contentTypes.map(t => (
-                          <Option key={t.id} value={t.id}>
-                            {t.name}
-                            {['landing page', 'landing-page'].includes(t.name.toLowerCase()) && (
-                              <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, color: '#6c5ce7', background: '#f0ecff', padding: '1px 7px', borderRadius: 10, textTransform: 'uppercase' }}>
-                                HTML
-                              </span>
-                            )}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
-                      <Select placeholder="Select category" size="large">
-                        {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
-                      </Select>
-                    </Form.Item>
-                  </div>
-                </div>
-
-                {/* Title & Description */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                  {duplicateWarning && duplicateWarning.found && (
-                    <div style={{ 
-                      background: '#FFF7ED', 
-                      border: '1px solid #FDBA74', 
-                      borderRadius: 8, 
-                      padding: '12px 16px', 
-                      marginBottom: 16 
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                        <InfoCircleOutlined style={{ color: '#F97316', fontSize: 16, marginTop: 2 }} />
-                        <div>
-                          <div style={{ fontWeight: 600, color: '#9A3412', marginBottom: 4 }}>
-                            Similar content already exists
-                          </div>
-                          <div style={{ fontSize: 13, color: '#9A3412' }}>
-                            Found {duplicateWarning.count} similar article(s): {duplicateWarning.titles.join(', ')}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <Form.Item name="title" rules={[{ required: true, message: 'Please enter a title' }]} style={{ marginBottom: 16 }}>
-                    <Input placeholder="Landing page title..." size="large"
-                      onChange={(e) => {
-                        const title = e.target.value;
-                        const shortDesc = form.getFieldValue('short_description');
-                        const tags = form.getFieldValue('tags');
-                        checkDuplicateContent(title, shortDesc, tags);
-                      }}
-                      style={{ fontSize: 26, fontWeight: 700, border: 'none', borderBottom: darkMode ? '2px solid #334155' : '2px solid #f0f0f0', borderRadius: 0, padding: '8px 0', boxShadow: 'none', color: darkMode ? '#f1f5f9' : '#1a1a1a', background: 'transparent' }} />
-                  </Form.Item>
-                  <Form.Item name="short_description"
-                    label={<span>Short Description <Tooltip title="Brief summary shown in listing cards"><InfoCircleOutlined style={{ marginLeft: 6, color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 12 }} /></Tooltip></span>}
-                    rules={[{ required: true, message: 'Required' }]} style={{ marginBottom: 16 }}>
-                    <TextArea rows={3} placeholder="Write a compelling summary..." 
-                      onChange={(e) => {
-                        const shortDesc = e.target.value;
-                        const title = form.getFieldValue('title');
-                        const tags = form.getFieldValue('tags');
-                        checkDuplicateContent(title, shortDesc, tags);
-                      }}
-                      style={{ resize: 'none', fontSize: 15, lineHeight: 1.7, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                  </Form.Item>
-                  {/* Auto slug preview */}
-                  <Form.Item noStyle shouldUpdate={(prev, cur) => prev.title !== cur.title}>
-                    {({ getFieldValue }) => {
-                      const title = getFieldValue('title') || '';
-                      const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-                      return slug ? (
-                        <div style={{ padding: '10px 14px', background: darkMode ? 'rgba(34, 197, 94, 0.1)' : '#f6ffed', border: darkMode ? '1px solid #22c55e' : '1px solid #b7eb8f', borderRadius: 8, fontSize: 13 }}>
-                          <span style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontWeight: 500 }}>Public URL: </span>
-                          <span style={{ color: darkMode ? '#22c55e' : '#389e0d', fontWeight: 700 }}>/content/{slug}</span>
-                        </div>
-                      ) : null;
-                    }}
-                  </Form.Item>
-                </div>
-
-                {/* Banner Image */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                    <div>
-                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Thumbnail Image</Text>
-                      <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This image will be displayed in the White Papers/Resources listing</div>
-                    </div>
-                    <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
-                      <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
-                    </Upload>
-                  </div>
-                  {bannerImageUrl ? (
-                    <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <img src={bannerImageUrl} alt="Banner" style={{ width: '100%', maxHeight: 360, objectFit: 'contain', display: 'block' }} />
-                    </div>
-                  ) : (
-                    <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '40px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
-                      <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
-                      <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No thumbnail image</Text>
-                    </div>
-                  )}
-                </div>
-
-                {/* HTML Editor */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', overflow: 'hidden', marginBottom: 40 }}>
-                  <div style={{ padding: '14px 28px', borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><CodeOutlined style={{ marginRight: 8, color: '#4a7cff' }} />HTML Content</Text>
-                    <Space>
-                      <Button 
-                        size="small" 
-                        icon={<PictureOutlined />} 
-                        onClick={() => setMediaLibraryVisible(true)}
-                      >
-                        Media Library
-                      </Button>
-                      <Button size="small" icon={<EyeOutlined />} onClick={() => setHtmlPreviewVisible(true)}>Preview</Button>
-                    </Space>
-                  </div>
-                  <div style={{ padding: '0 4px 4px' }}>
-                    <HtmlEditor value={htmlContent} onChange={setHtmlContent} height="600px" editorRef={htmlEditorRef} />
-                  </div>
-                </div>
-
-                {/* PDF Attachment */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div>
-                      <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><FilePdfOutlined style={{ marginRight: 8, color: '#ff4d4f' }} />PDF Attachment (Optional)</Text>
-                      <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>This PDF will be available for download on the landing page</div>
-                    </div>
-                    <Upload beforeUpload={() => false} fileList={pdfList} onChange={({ fileList: fl }) => setPdfList(fl)} maxCount={1} showUploadList={false} accept=".pdf">
-                      <Button icon={<UploadOutlined />} size="small">{pdfList.length > 0 ? 'Change PDF' : 'Upload PDF'}</Button>
-                    </Upload>
-                  </div>
-                  {pdfList.length > 0 ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0', borderRadius: 8, border: darkMode ? '1px solid #ef4444' : '1px solid #ffccc7' }}>
-                      <FilePdfOutlined style={{ color: '#ff4d4f', fontSize: 20 }} />
-                      <Text style={{ flex: 1, fontSize: 13, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{pdfList[0].name}</Text>
-                      <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => setPdfList([])} />
-                    </div>
-                  ) : (
-                    <div style={{ border: darkMode ? '2px dashed #ef4444' : '2px dashed #ffccc7', borderRadius: 8, padding: '20px', textAlign: 'center', background: darkMode ? 'rgba(239, 68, 68, 0.1)' : '#fff2f0' }}>
-                      <FilePdfOutlined style={{ fontSize: 24, color: '#ff4d4f', marginBottom: 4, display: 'block' }} />
-                      <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>No PDF attached</Text>
-                    </div>
-                  )}
-                </div>
-
-                {/* Landing Page Form Fields */}
-                {showLandingFields && (
-                  <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <div>
-                        <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><MenuOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Landing Page Form Fields</Text>
-                        <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Add form fields for lead capture</div>
-                      </div>
-                      <Button type="dashed" icon={<PlusOutlined />} onClick={addField} size="small">Add Field</Button>
-                    </div>
-                    {customFields.length === 0 && (
-                      <div style={{ textAlign: 'center', padding: '20px', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13, border: darkMode ? '2px dashed #334155' : '2px dashed #e8e8e8', borderRadius: 8 }}>
-                        No fields added. Click "Add Field" to add form fields.
+                    {previewData.seoScore.issues.length > 0 && (
+                      <div style={{ marginTop: 12 }}>
+                        <Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#f1f5f9' : '#1a1a1a', fontWeight: 500 }}>
+                          Issues to fix:
+                        </Text>
+                        <ul style={{ margin: '8px 0 0 0', paddingLeft: 20, fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : '#6B7280' }}>
+                          {previewData.seoScore.issues.map((issue, i) => (
+                            <li key={i} style={{ marginBottom: 4 }}>{issue}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
-                    {customFields.map((field, index) => (
-                      <div key={field.id} draggable
-                        onDragStart={() => onDragStart(index)} onDragEnter={() => onDragEnter(index)}
-                        onDragEnd={onDragEnd} onDragOver={e => e.preventDefault()}
-                        style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px', marginBottom: 10, background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab' }}
-                      >
-                        <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', marginTop: 8, flexShrink: 0 }} />
-                        <div style={{ flex: 1, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          <Input placeholder="Field Label (e.g. First Name)" value={field.label} onChange={e => updateField(field.id, 'label', e.target.value)} style={{ flex: '1 1 140px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
-                          <Input placeholder="API Key (e.g. firstname)" value={field.webhook_key || ''} onChange={e => updateField(field.id, 'webhook_key', e.target.value)} style={{ flex: '1 1 130px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
-                          <Select value={field.type} onChange={v => updateField(field.id, 'type', v)} style={{ width: 110 }} size="small">
-                            {FIELD_TYPES.map(t => <Option key={t.value} value={t.value}>{t.label}</Option>)}
-                          </Select>
-                          <Input placeholder="Placeholder text" value={field.placeholder} onChange={e => updateField(field.id, 'placeholder', e.target.value)} style={{ flex: '1 1 130px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
-                          {field.type === 'select' && (
-                            <Input placeholder="Options (comma separated)" value={field.options} onChange={e => updateField(field.id, 'options', e.target.value)} style={{ flex: '1 1 180px', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} size="small" />
-                          )}
-                        </div>
-                        <Button type="text" danger icon={<DeleteOutlined />} size="small" onClick={() => removeField(field.id)} style={{ flexShrink: 0 }} />
-                      </div>
+                  </div>
+                )}
+
+                {previewData.category && <Tag color="blue" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)', marginRight: 8 }}>{previewData.category}</Tag>}
+                {previewData.content_type && <Tag color="purple" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.content_type}</Tag>}
+                <h1 style={{ fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a1a', margin: 'clamp(12px, 1.5vw, 16px) 0', lineHeight: 1.3 }}>{previewData.title}</h1>
+                {previewData.banner_image && (
+                  <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden' }}>
+                    <img src={previewData.banner_image} alt={previewData.title} style={{ width: '100%', maxHeight: 'clamp(280px, 35vw, 420px)', objectFit: 'contain', display: 'block' }} />
+                  </div>
+                )}
+                {previewData.video_file && (
+                  <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden', background: darkMode ? '#0f172a' : '#000' }}>
+                    <video
+                      controls
+                      style={{ width: '100%', maxHeight: 'clamp(320px, 40vw, 480px)', display: 'block' }}
+                      preload="metadata"
+                    >
+                      <source src={`/uploads/${previewData.video_file}`} type="video/mp4" />
+                      Your browser does not support the video tag.
+                    </video>
+                  </div>
+                )}
+                {previewData.short_description && (
+                  <div style={{ marginBottom: 'clamp(16px, 2vw, 20px)', padding: 'clamp(10px, 1.5vw, 12px) clamp(12px, 1.5vw, 16px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f8f9fa', borderLeft: '4px solid #4a7cff', borderRadius: '0 8px 8px 0' }}>
+                    <Text style={{ fontSize: 'clamp(13px, 0.9vw, 15px)', color: darkMode ? '#cbd5e1' : '#495057', lineHeight: 1.7 }}>{previewData.short_description}</Text>
+                  </div>
+                )}
+                {previewData.tags?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+                    <TagOutlined style={{ color: darkMode ? '#94a3b8' : '#8c8c8c' }} />
+                    {previewData.tags.map((tag, i) => (
+                      <Tag key={i} color="geekblue" style={{ borderRadius: 20 }}>{tag}</Tag>
                     ))}
                   </div>
                 )}
-
-                {/* Webhook URL - Always visible in HTML Builder for form submissions */}
-                <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', marginBottom: 40 }}>
-                  <div style={{ marginBottom: 16 }}>
-                    <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><ApiOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Client Webhook URL</Text>
-                    <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Optional: Form data will be forwarded to this URL after submission</div>
+                {previewData.scheduled_publish_date && (
+                  <div style={{ marginBottom: 'clamp(16px, 2vw, 20px)', display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)', color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
+                    <CalendarOutlined style={{ color: '#4a7cff', fontSize: 'clamp(12px, 1vw, 14px)' }} />
+                    <Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Scheduled: <strong>{previewData.scheduled_publish_date}</strong></Text>
                   </div>
-                  <Form.Item name="webhook_url" style={{ marginBottom: 0 }} rules={[{ type: 'url', message: 'Enter Valid api (https://...)' }]}>
-                    <Input placeholder="https://client-api.example.com/webhook" prefix={<ApiOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf' }} />} allowClear style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                  </Form.Item>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Sidebar — for desktop only */}
-          {window.innerWidth >= 768 && (
-            <div style={{
-              width: sidebarOpen ? 300 : 0,
-              flexShrink: 0,
-              overflow: 'hidden',
-              transition: 'width 0.3s ease',
-              opacity: sidebarOpen ? 1 : 0,
-              pointerEvents: sidebarOpen ? 'auto' : 'none',
-            }}>
-              <div style={{ width: 300 }}>
-
-              {/* Layout Reorder Panel */}
-              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 4, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                  <HolderOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Reorder Layout
-                </Text>
-                <Text style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#8c8c8c', display: 'block', marginBottom: 12 }}>Drag sections to change order</Text>
-                {(activeTab === 'builder' ? builderSections : standardLayout).map((item, index) => {
-                  const sec = activeTab === 'builder'
-                    ? SECTION_TYPES.find(s => s.type === item.type)
-                    : STANDARD_SECTIONS.find(s => s.key === item);
-                  if (!sec) return null;
-                  const key = activeTab === 'builder' ? item.id : item;
-                  if (activeTab !== 'builder' && ((key === 'landing' || key === 'webhook') && !showLandingFields)) return null;
-                  return (
-                    <div
-                      key={key}
-                      draggable
-                      onDragStart={() => activeTab === 'builder' ? onBuilderLayoutDragStart(index) : onLayoutDragStart(index)}
-                      onDragEnter={() => activeTab === 'builder' ? onBuilderLayoutDragEnter(index) : onLayoutDragEnter(index)}
-                      onDragEnd={activeTab === 'builder' ? onBuilderLayoutDragEnd : onLayoutDragEnd}
-                      onDragOver={e => e.preventDefault()}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '8px 10px', marginBottom: 6,
-                        background: darkMode ? '#0f172a' : '#fafafa', borderRadius: 8,
-                        border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8', cursor: 'grab',
-                        userSelect: 'none'
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#4a7cff'; e.currentTarget.style.background = darkMode ? '#1e293b' : '#f0f4ff'; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = darkMode ? '#334155' : '#e8e8e8'; e.currentTarget.style.background = darkMode ? '#0f172a' : '#fafafa'; }}
-                    >
-                      <HolderOutlined style={{ color: darkMode ? '#475569' : '#bfbfbf', fontSize: 12 }} />
-                      <span style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e', flex: 1 }}>{sec.label}</span>
-                      <span style={{ fontSize: 10, color: darkMode ? '#475569' : '#bfbfbf', fontWeight: 600 }}>{index + 1}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Tags */}
-              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                  <TagOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Tags
-                </Text>
-                <Form.Item name="tags" style={{ marginBottom: 0 }}>
-                  <Select mode="tags" placeholder="Add tags..." style={{ width: '100%' }} tokenSeparators={[',']}
-                    onChange={(tags) => {
-                      const title = form.getFieldValue('title');
-                      const shortDesc = form.getFieldValue('short_description');
-                      checkDuplicateContent(title, shortDesc, tags);
-                    }}
-                  />
-                </Form.Item>
-              </div>
-
-              {/* Schedule */}
-              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                  <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
-                </Text>
-                <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
-                  <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
-                </Form.Item>
-              </div>
-
-              {/* SEO */}
-              <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                  <SettingOutlined style={{ marginRight: 6, color: '#4a7cff' }} />SEO Settings
-                </Text>
-                <Form.Item name="seo_meta_title" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Title</Text>} style={{ marginBottom: 12 }}>
-                  <Input placeholder="SEO title" size="small" style={{ background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                </Form.Item>
-                <Form.Item name="seo_meta_description" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Description</Text>} style={{ marginBottom: 12 }}>
-                  <TextArea rows={3} placeholder="SEO description" style={{ resize: 'none', fontSize: 12, background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
-                </Form.Item>
-                <Form.Item name="seo_meta_keywords" label={<Text style={{ fontSize: 12, color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Meta Keywords</Text>} style={{ marginBottom: 0 }}>
-                  <Select mode="tags" placeholder="Add keyword and press Enter..." style={{ width: '100%' }} size="small" tokenSeparators={[',']} />
-                </Form.Item>
-              </div>
-
-              <Form.Item name="status" hidden><Input /></Form.Item>
+                )}
+                <div className="prose-content" dangerouslySetInnerHTML={{ __html: previewData.content || '<p>No content</p>' }} />
+                {(previewData.seo_meta_title || previewData.seo_meta_description || previewData.seo_meta_keywords) && (
+                  <div style={{ marginTop: 'clamp(24px, 3vw, 32px)', padding: 'clamp(12px, 1.5vw, 16px) clamp(16px, 2vw, 20px)', background: darkMode ? '#0f172a' : '#f6f8fa', borderRadius: 10, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                    <Text strong style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 'clamp(10px, 1.5vw, 12px)' }}>SEO Settings</Text>
+                    {previewData.seo_meta_title && (
+                      <div style={{ marginBottom: 'clamp(6px, 1vw, 8px)' }}>
+                        <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : undefined }}>Meta Title</Text>
+                        <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{previewData.seo_meta_title}</Text></div>
+                      </div>
+                    )}
+                    {previewData.seo_meta_description && (
+                      <div style={{ marginBottom: 'clamp(6px, 1vw, 8px)' }}>
+                        <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : undefined }}>Meta Description</Text>
+                        <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{previewData.seo_meta_description}</Text></div>
+                      </div>
+                    )}
+                    {previewData.seo_meta_keywords && (
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : undefined }}>Keywords</Text>
+                        <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{previewData.seo_meta_keywords}</Text></div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
-        </div>
-      </Form>
 
-      {/* Preview Modal */}
-      {previewVisible && previewData && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 'clamp(16px, 2vw, 40px) clamp(12px, 2vw, 20px)', overflowY: 'auto' }}
-          onClick={() => setPreviewVisible(false)}>
-          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, width: '100%', maxWidth: 860, padding: 'clamp(20px, 3vw, 40px)', position: 'relative', border: darkMode ? '1px solid #334155' : 'none' }}
-            onClick={e => e.stopPropagation()}>
-            <Button type="text" onClick={() => setPreviewVisible(false)} style={{ position: 'absolute', top: 'clamp(12px, 1.5vw, 16px)', right: 'clamp(12px, 1.5vw, 16px)', color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 'clamp(14px, 1.2vw, 16px)' }}>✕ Close</Button>
-
-            {/* SEO Score Display */}
-            {previewData.seoScore && (
-              <div style={{
-                marginBottom: 'clamp(16px, 2vw, 24px)',
-                padding: 'clamp(12px, 1.5vw, 16px)',
-                background: previewData.seoScore.percentage >= 80
-                  ? darkMode ? 'rgba(91, 189, 43, 0.1)' : 'rgba(91, 189, 43, 0.1)'
-                  : darkMode ? 'rgba(249, 148, 29, 0.1)' : 'rgba(249, 148, 29, 0.1)',
-                border: `2px solid ${previewData.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D'}`,
-                borderRadius: 10
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <Text strong style={{ fontSize: 'clamp(13px, 0.9vw, 15px)', color: darkMode ? '#f1f5f9' : '#1a1a1a' }}>
-                    SEO Score: {previewData.seoScore.percentage}%
-                  </Text>
-                  <div style={{
-                    width: 'clamp(80px, 10vw, 120px)',
-                    height: 'clamp(8px, 1vw, 10px)',
-                    background: darkMode ? '#334155' : '#e5e7eb',
-                    borderRadius: 5,
-                    overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      width: `${previewData.seoScore.percentage}%`,
-                      height: '100%',
-                      background: previewData.seoScore.percentage >= 80 ? '#5BBD2B' : '#F7941D',
-                      transition: 'width 0.3s ease'
-                    }} />
-                  </div>
+          {/* HTML Preview Modal */}
+          {htmlPreviewVisible && (
+            <Modal
+              title="HTML Landing Page Preview"
+              open={htmlPreviewVisible}
+              onCancel={() => setHtmlPreviewVisible(false)}
+              footer={[
+                <Button key="close" onClick={() => setHtmlPreviewVisible(false)}>Close</Button>
+              ]}
+              width={window.innerWidth < 768 ? '95%' : '90%'}
+              style={{ top: 20 }}
+            >
+              <div style={{ minHeight: 'clamp(50vh, 70vh, 70vh)', background: darkMode ? '#0f172a' : '#f5f5f5', padding: 'clamp(12px, 2vw, 20px)' }}>
+                <div style={{ background: darkMode ? '#1e293b' : '#fff', minHeight: 'clamp(40vh, 60vh, 60vh)', padding: 'clamp(12px, 2vw, 20px)', borderRadius: 8, border: darkMode ? '1px solid #334155' : 'none' }}>
+                  <div dangerouslySetInnerHTML={{ __html: htmlContent || '<p>No HTML content</p>' }} />
                 </div>
-                <div style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#94a3b8' : '#6B7280' }}>
-                  Word Count: {previewData.seoScore.wordCount}
-                </div>
-                {previewData.seoScore.issues.length > 0 && (
-                  <div style={{ marginTop: 12 }}>
-                    <Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#f1f5f9' : '#1a1a1a', fontWeight: 500 }}>
-                      Issues to fix:
-                    </Text>
-                    <ul style={{ margin: '8px 0 0 0', paddingLeft: 20, fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : '#6B7280' }}>
-                      {previewData.seoScore.issues.map((issue, i) => (
-                        <li key={i} style={{ marginBottom: 4 }}>{issue}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
               </div>
-            )}
+            </Modal>
+          )}
 
-            {previewData.category && <Tag color="blue" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)', marginRight: 8 }}>{previewData.category}</Tag>}
-            {previewData.content_type && <Tag color="purple" style={{ fontSize: 'clamp(11px, 0.85vw, 12px)' }}>{previewData.content_type}</Tag>}
-            <h1 style={{ fontSize: 'clamp(20px, 2.5vw, 32px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a1a', margin: 'clamp(12px, 1.5vw, 16px) 0', lineHeight: 1.3 }}>{previewData.title}</h1>
-            {previewData.banner_image && (
-              <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden' }}>
-                <img src={previewData.banner_image} alt={previewData.title} style={{ width: '100%', maxHeight: 'clamp(280px, 35vw, 420px)', objectFit: 'contain', display: 'block' }} />
-              </div>
-            )}
-            {previewData.video_file && (
-              <div style={{ marginBottom: 'clamp(16px, 2vw, 24px)', borderRadius: 10, overflow: 'hidden', background: darkMode ? '#0f172a' : '#000' }}>
-                <video
-                  controls
-                  style={{ width: '100%', maxHeight: 'clamp(320px, 40vw, 480px)', display: 'block' }}
-                  preload="metadata"
-                >
-                  <source src={`/uploads/${previewData.video_file}`} type="video/mp4" />
-                  Your browser does not support the video tag.
-                </video>
-              </div>
-            )}
-            {previewData.short_description && (
-              <div style={{ marginBottom: 'clamp(16px, 2vw, 20px)', padding: 'clamp(10px, 1.5vw, 12px) clamp(12px, 1.5vw, 16px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f8f9fa', borderLeft: '4px solid #4a7cff', borderRadius: '0 8px 8px 0' }}>
-                <Text style={{ fontSize: 'clamp(13px, 0.9vw, 15px)', color: darkMode ? '#cbd5e1' : '#495057', lineHeight: 1.7 }}>{previewData.short_description}</Text>
-              </div>
-            )}
-            {previewData.tags?.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-                <TagOutlined style={{ color: darkMode ? '#94a3b8' : '#8c8c8c' }} />
-                {previewData.tags.map((tag, i) => (
-                  <Tag key={i} color="geekblue" style={{ borderRadius: 20 }}>{tag}</Tag>
-                ))}
-              </div>
-            )}
-            {previewData.scheduled_publish_date && (
-              <div style={{ marginBottom: 'clamp(16px, 2vw, 20px)', display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)', color: darkMode ? '#94a3b8' : '#595959', fontSize: 'clamp(11px, 0.85vw, 13px)' }}>
-                <CalendarOutlined style={{ color: '#4a7cff', fontSize: 'clamp(12px, 1vw, 14px)' }} />
-                <Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Scheduled: <strong>{previewData.scheduled_publish_date}</strong></Text>
-              </div>
-            )}
-            <div className="prose-content" dangerouslySetInnerHTML={{ __html: previewData.content || '<p>No content</p>' }} />
-            {(previewData.seo_meta_title || previewData.seo_meta_description || previewData.seo_meta_keywords) && (
-              <div style={{ marginTop: 'clamp(24px, 3vw, 32px)', padding: 'clamp(12px, 1.5vw, 16px) clamp(16px, 2vw, 20px)', background: darkMode ? '#0f172a' : '#f6f8fa', borderRadius: 10, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                <Text strong style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 'clamp(10px, 1.5vw, 12px)' }}>SEO Settings</Text>
-                {previewData.seo_meta_title && (
-                  <div style={{ marginBottom: 'clamp(6px, 1vw, 8px)' }}>
-                    <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : undefined }}>Meta Title</Text>
-                    <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{previewData.seo_meta_title}</Text></div>
-                  </div>
-                )}
-                {previewData.seo_meta_description && (
-                  <div style={{ marginBottom: 'clamp(6px, 1vw, 8px)' }}>
-                    <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : undefined }}>Meta Description</Text>
-                    <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{previewData.seo_meta_description}</Text></div>
-                  </div>
-                )}
-                {previewData.seo_meta_keywords && (
-                  <div>
-                    <Text type="secondary" style={{ fontSize: 'clamp(10px, 0.8vw, 12px)', color: darkMode ? '#94a3b8' : undefined }}>Keywords</Text>
-                    <div><Text style={{ fontSize: 'clamp(11px, 0.85vw, 13px)', color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>{previewData.seo_meta_keywords}</Text></div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+          {/* Media Library Modal */}
+          <MediaLibraryModal
+            visible={mediaLibraryVisible}
+            onClose={() => setMediaLibraryVisible(false)}
+            onSelect={(url, item) => {
+              handleInsertMediaToHtml(url, item);
+            }}
+          />
 
-      {/* HTML Preview Modal */}
-      {htmlPreviewVisible && (
-        <Modal
-          title="HTML Landing Page Preview"
-          open={htmlPreviewVisible}
-          onCancel={() => setHtmlPreviewVisible(false)}
-          footer={[
-            <Button key="close" onClick={() => setHtmlPreviewVisible(false)}>Close</Button>
-          ]}
-          width={window.innerWidth < 768 ? '95%' : '90%'}
-          style={{ top: 20 }}
-        >
-          <div style={{ minHeight: 'clamp(50vh, 70vh, 70vh)', background: darkMode ? '#0f172a' : '#f5f5f5', padding: 'clamp(12px, 2vw, 20px)' }}>
-            <div style={{ background: darkMode ? '#1e293b' : '#fff', minHeight: 'clamp(40vh, 60vh, 60vh)', padding: 'clamp(12px, 2vw, 20px)', borderRadius: 8, border: darkMode ? '1px solid #334155' : 'none' }}>
-              <div dangerouslySetInnerHTML={{ __html: htmlContent || '<p>No HTML content</p>' }} />
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      {/* Media Library Modal */}
-      <MediaLibraryModal
-        visible={mediaLibraryVisible}
-        onClose={() => setMediaLibraryVisible(false)}
-        onSelect={(url, item) => {
-          handleInsertMediaToHtml(url, item);
-        }}
-      />
-
-      <style>{`
+          <style>{`
         @keyframes shimmer {
           0%, 100% {
             opacity: 0.5;
@@ -2643,23 +2685,23 @@ const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
         }
       `}</style>
 
-      {/* Guidelines Modals */}
-      <EditorialGuidelines
-        visible={guidelinesVisible}
-        onClose={() => setGuidelinesVisible(false)}
-      />
-      <SubmissionInstructions
-        visible={instructionsVisible}
-        onClose={() => setInstructionsVisible(false)}
-      />
-      <TermsAndConditions
-        visible={termsVisible}
-        onClose={() => setTermsVisible(false)}
-        accepted={termsAccepted}
-        onAccept={setTermsAccepted}
-      />
-      </div>
-    </ConfigProvider>
+          {/* Guidelines Modals */}
+          <EditorialGuidelines
+            visible={guidelinesVisible}
+            onClose={() => setGuidelinesVisible(false)}
+          />
+          <SubmissionInstructions
+            visible={instructionsVisible}
+            onClose={() => setInstructionsVisible(false)}
+          />
+          <TermsAndConditions
+            visible={termsVisible}
+            onClose={() => setTermsVisible(false)}
+            accepted={termsAccepted}
+            onAccept={setTermsAccepted}
+          />
+        </div>
+      </ConfigProvider>
     </>
   );
 };

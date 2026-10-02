@@ -178,15 +178,8 @@ const RealTimeSection = ({
       />
 
       {/* Main hero row: 3D WebGL Globe + Real-Time Live Signals Feed */}
-      <div className="realtime-hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-        <style>{`
-          @media (max-width: 1024px) {
-            .realtime-hero-grid > div {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}</style>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+      <div className="realtime-hero-grid w-full flex flex-col lg:flex-row gap-4">
+        <div className="w-full lg:w-2/3 min-w-0">
           <GlobeErrorBoundary darkMode={darkMode}>
             <AnalyticsGlobe
               globalData={globalData}
@@ -200,6 +193,8 @@ const RealTimeSection = ({
               darkMode={darkMode}
             />
           </GlobeErrorBoundary>
+        </div>
+        <div className="w-full lg:w-1/3 min-w-0">
           <LiveSignalsFeed
             recentSessions={recentSessions}
             ctaClicks={ctaClicks}

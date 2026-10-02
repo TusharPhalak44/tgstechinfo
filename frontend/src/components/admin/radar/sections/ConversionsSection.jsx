@@ -68,7 +68,7 @@ const ConversionsSection = ({
   useEffect(() => {
     // Calculate date range based on timeRange
     let dateParams = '';
-    
+
     if (timeRange !== 'all') {
       const endDate = new Date();
       const startDate = new Date();
@@ -103,6 +103,11 @@ const ConversionsSection = ({
       if (ctaRes.status === 'fulfilled' && ctaRes.value?.data) {
         data.ctaData = ctaRes.value.data.ctaClicks || ctaRes.value.data || [];
         data.totalConversions = ctaRes.value.data.totalConversions || 0;
+
+        if (data.ctaData.length === 0) {
+          // No dummy data, just use empty array
+        }
+
         console.log('ConversionsSection - CTA data parsed:', data.ctaData.length, 'items');
         console.log('ConversionsSection - CTA data structure:', JSON.stringify(data.ctaData, null, 2));
       } else {
@@ -116,7 +121,7 @@ const ConversionsSection = ({
       if (journeyRes.status === 'fulfilled' && journeyRes.value?.data) {
         const rawFunnel = journeyRes.value.data.funnel || journeyRes.value.data.journey || [];
         data.totalSessions = journeyRes.value.data.totalSessions || 0;
-        
+
         // Transform backend funnel data to frontend format
         data.funnel = rawFunnel.map(item => ({
           step: item.action_type || item.step || 'Unknown',
@@ -126,7 +131,11 @@ const ConversionsSection = ({
           pct: parseFloat(item.percentage) || parseFloat(item.pct) || 0,
           percentage: parseFloat(item.percentage) || parseFloat(item.pct) || 0
         }));
-        
+
+        if (data.funnel.length === 0) {
+          // No dummy data
+        }
+
         console.log('ConversionsSection - Funnel data parsed:', data.funnel.length, 'items, totalSessions:', data.totalSessions);
         console.log('ConversionsSection - Funnel data structure:', JSON.stringify(data.funnel, null, 2));
       } else {
@@ -157,10 +166,10 @@ const ConversionsSection = ({
 
   // Use real data only - no fallbacks
   const funnelData = funnel.length > 0 ? funnel : [];
-  
+
   // Filter and prioritize meaningful conversion data
   const meaningfulCtaData = ctaData.filter(c => c.cta_type !== 'Other Interaction');
-  
+
   // If we have meaningful data, use it; otherwise show all data but prioritize meaningful items
   let ctaDisplayData = [];
   if (meaningfulCtaData.length > 0) {
@@ -171,7 +180,7 @@ const ConversionsSection = ({
       .sort((a, b) => (parseFloat(b.conv_rate || b.conv || 0) - parseFloat(a.conv_rate || a.conv || 0)))
       .slice(0, 8);
   }
-    
+
   const maxClicks = ctaDisplayData.length > 0 ? Math.max(...ctaDisplayData.map(c => c.click_count || c.clicks || 0), 1) : 1;
 
   console.log('ConversionsSection - Final ctaDisplayData:', ctaDisplayData);
@@ -214,7 +223,7 @@ const ConversionsSection = ({
           }
         }
       `}</style>
-      
+
       {loading ? (
         <div style={{ padding: '40px 20px', textAlign: 'center', color: darkMode ? '#64748B' : '#94A3B8' }}>
           Loading conversion data...
@@ -341,7 +350,7 @@ const ConversionsSection = ({
                       const pct = Math.round((clicks / maxClicks) * 100);
                       const color = COLORS[i % COLORS.length];
                       const convR = c.conv_rate || c.conv || 0;
-                      
+
                       return (
                         <tr
                           key={i}

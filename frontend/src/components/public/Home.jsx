@@ -997,6 +997,8 @@ const HeroSection = () => {
       background: 'linear-gradient(135deg, #0B1F4D 0%, #0A1229 60%, #070D1E 100%)',
       position: 'relative',
       overflow: 'hidden',
+      contain: 'paint',
+      clipPath: 'inset(0)',
       padding: '40px 0 48px'
     }}>
       {/* Animated Floating Ambient Background Mesh Blobs */}
@@ -1571,7 +1573,7 @@ const HeroSection = () => {
 const TickerStrip = ({ items }) => {
   const doubled = [...items, ...items];
   return (
-    <div className="ticker-strip" style={{ background: 'var(--color-primary)', overflow: 'hidden', padding: '9px 0' }}>
+    <div className="ticker-strip" style={{ background: 'var(--color-primary)', overflow: 'hidden', padding: '9px 0', width: '100%', maxWidth: '100%', position: 'relative', contain: 'paint', clipPath: 'inset(0)' }}>
       <div style={{ display: 'flex', animation: 'ticker 28s linear infinite', whiteSpace: 'nowrap', width: 'max-content' }}>
         {doubled.map((item, i) => (
           <span key={i} style={{ fontSize: 'clamp(12px, 0.9vw, 13px)', color: '#fff', fontWeight: 500, padding: '0 clamp(16px, 2vw, 32px)', opacity: .92 }}>

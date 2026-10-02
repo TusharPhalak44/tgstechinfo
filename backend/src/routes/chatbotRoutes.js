@@ -124,6 +124,7 @@ router.post('/detect-intent', chatbotController.detectIntent);
  */
 router.post('/submit-query', submitQueryValidation, chatbotController.submitQuery);
 
+
 /**
  * GET /api/chatbot/queries
  * Get all queries (admin only)
@@ -143,3 +144,4 @@ router.get('/queries/stats', authenticate, requireAdmin, chatbotController.getQu
 router.put('/queries/:id', authenticate, requireAdmin, chatbotController.updateQuery);
 
 module.exports = router;
+

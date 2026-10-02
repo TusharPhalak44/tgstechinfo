@@ -81,6 +81,16 @@ exports.reviewContent = async (req, res) => {
                         });
                     } catch (e) { console.warn('Email failed:', e.message); }
                 }
+                try {
+                    await sendTemplatedEmail('content_approved', user.email, {
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        content_title: content.title,
+                        category: category?.name || 'Uncategorized',
+                        approved_date: new Date().toLocaleDateString(),
+                        dashboard_url: `${frontendUrl}/user-dashboard`
+                    });
+                } catch (e) { console.warn('Email failed:', e.message); }
                 break;
             case 'publish':
                 status = 'published';
@@ -98,6 +108,17 @@ exports.reviewContent = async (req, res) => {
                         });
                     } catch (e) { console.warn('Email failed:', e.message); }
                 }
+                try {
+                    await sendTemplatedEmail('content_published', user.email, {
+                        first_name: user.first_name,
+                        last_name: user.last_name,
+                        content_title: content.title,
+                        category: category?.name || 'Uncategorized',
+                        published_date: new Date().toLocaleDateString(),
+                        article_url: `${frontendUrl}/article/${content.slug}`,
+                        dashboard_url: `${frontendUrl}/user-dashboard`
+                    });
+                } catch (e) { console.warn('Email failed:', e.message); }
 
                 break;
             case 'reject':
@@ -256,7 +277,6 @@ exports.getAllUsers = async (req, res) => {
         const [rows] = await pool.query(`
             SELECT id, first_name, last_name, email, job_title, company_name, country, role, is_active, created_at
             FROM users
-            WHERE role != 'admin'
             ORDER BY created_at DESC
         `);
         res.json(rows);
@@ -712,7 +732,7 @@ exports.getDashboardStats = async (req, res) => {
         const [[{ totalContent }]] = await pool.query('SELECT COUNT(*) as totalContent FROM contents');
         const [[{ pendingReview }]] = await pool.query("SELECT COUNT(*) as pendingReview FROM contents WHERE status = 'pending'");
         const [[{ published }]] = await pool.query("SELECT COUNT(*) as published FROM contents WHERE status = 'published'");
-        const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) as totalUsers FROM users WHERE role != 'admin'");
+        const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) as totalUsers FROM users");
         const [[{ totalDrafts }]] = await pool.query("SELECT COUNT(*) as totalDrafts FROM contents WHERE status = 'draft'");
         const [[{ totalScheduled }]] = await pool.query("SELECT COUNT(*) as totalScheduled FROM contents WHERE status = 'scheduled'");
         const [[{ totalViews }]] = await pool.query('SELECT SUM(view_count) as totalViews FROM contents');
@@ -811,7 +831,7 @@ exports.getDashboardKPIs = async (req, res) => {
         const [[{ totalViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents`);
         const [[{ totalUsers }]] = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
         const [[{ totalSubs }]] = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1`).catch(() => [[{ totalSubs: 0 }]]);
-        
+
         // Get Business Professionals count from audience statistics
         const [[{ businessProfessionals }]] = await pool.query(
             `SELECT COALESCE(SUM(contact_count), 0) as businessProfessionals FROM audience_statistics WHERE status = 'Published'`
@@ -852,6 +872,7 @@ exports.getDashboardKPIs = async (req, res) => {
             totalDrafts: drafts || 0,
             totalScheduled: scheduled || 0,
             totalViews: totalViews || 0,
+            totalViewsFormatted: totalViewsFormatted,
             totalUsers: totalUsers || 0,
             totalSubscribers: totalSubs || businessProfessionals || 0,
             avgReadTime: Math.round((avgTime || 4.2) * 10) / 10,

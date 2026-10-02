@@ -3,22 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const Media = require('../models/Media');
 
-// Configure multer for file uploads
-const uploadDir = path.join(__dirname, '../../uploads');
-console.log('MediaController uploadDir:', uploadDir);
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
- cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+// Configure multer for file uploads directly in memory (zero disk touches)
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage: storage,
@@ -28,7 +14,7 @@ const upload = multer({
     fileFilter: (req, file, cb) => {
         const allowedTypes = /jpeg|jpg|png|gif|webp|pdf|doc|docx|mp4|mov|avi/;
         const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        
+
         // Only check extension, not mimetype (more lenient)
         if (extname) {
             return cb(null, true);
@@ -38,44 +24,64 @@ const upload = multer({
     }
 });
 
+// Helper to build fully accessible public URL matching client origin or host
+const buildPublicUrl = (req, filePath) => {
+    if (!filePath) return '';
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+    const origin = req.headers['origin'] || req.headers['referer'];
+    if (origin) {
+        try {
+            const parsed = new URL(origin);
+            const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+            return `${parsed.origin}${cleanPath}`;
+        } catch (e) { /* ignore */ }
+    }
+    const proto = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+    const host = req.headers['x-forwarded-host'] || req.get('host') || 'localhost:5000';
+    const cleanPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    return `${proto}://${host}${cleanPath}`;
+};
+
 // Store original filename mapping
 const filenameMapping = new Map();
 
 exports.uploadFile = async (req, res) => {
     try {
         console.log('Upload request received');
-        console.log('Req file:', req.file);
-        console.log('Req body:', req.body);
-        
+
         if (!req.file) {
             console.error('No file in request');
             return res.status(400).json({ message: 'No file uploaded' });
         }
-        
-        console.log('File uploaded successfully:', req.file.filename);
-        console.log('File path:', req.file.path);
-        
+
+        // Generate unique filename since memoryStorage keeps file in RAM
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = req.file.filename || (uniqueSuffix + path.extname(req.file.originalname));
+        req.file.filename = filename;
+
+        console.log('File uploaded to memory:', req.file.filename);
+
         // Determine file type and folder
         const ext = path.extname(req.file.filename).toLowerCase();
         let fileType = 'other';
         let folder = 'Documents';
-        
-        if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+
+        if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) {
             fileType = 'image';
             folder = 'Images';
         } else if (['.mp4', '.mov', '.avi'].includes(ext)) {
             fileType = 'video';
             folder = 'Videos';
-        } else if (ext === '.pdf') {
+        } else if (['.pdf', '.doc', '.docx'].includes(ext)) {
             fileType = 'document';
             folder = 'Documents';
         }
-        
+
         // Save to database with physical disk persistence (avoids memory exhaustion)
         const mediaData = {
             filename: req.file.filename,
             original_name: req.file.originalname,
-            file_path: `/uploads/${req.file.filename}`,
+            file_path: relativeUrl,
             file_type: fileType,
             file_size: req.file.size,
             mime_type: req.file.mimetype,
@@ -83,10 +89,10 @@ exports.uploadFile = async (req, res) => {
             uploaded_by: req.user ? req.user.id : null,
             file_data: null
         };
-        
+
         const savedMedia = await Media.create(mediaData);
         console.log('Media saved to database and persisted to disk:', savedMedia.filename);
-        
+
         res.json({
             message: 'File uploaded successfully',
             file: {
@@ -95,7 +101,10 @@ exports.uploadFile = async (req, res) => {
                 originalname: req.file.originalname,
                 mimetype: req.file.mimetype,
                 size: req.file.size,
-                path: `/uploads/${req.file.filename}`
+                path: fullUrl,
+                url: fullUrl,
+                full_url: fullUrl,
+                relative_url: relativeUrl
             }
         });
     } catch (error) {
@@ -106,8 +115,13 @@ exports.uploadFile = async (req, res) => {
 
 exports.getAllFiles = async (req, res) => {
     try {
+        // Security check: If caller is not admin, restrict to user's own files
+        if (req.user && req.user.role !== 'admin') {
+            return exports.getUserFiles(req, res);
+        }
+
         const { file_type, folder, search } = req.query;
-        
+
         // Capitalize folder to match DB values (images -> Images)
         const folderValue = folder && folder !== 'all'
             ? folder.charAt(0).toUpperCase() + folder.slice(1)
@@ -120,9 +134,9 @@ exports.getAllFiles = async (req, res) => {
             limit: 500,
             offset: 0
         };
-        
+
         const mediaFiles = await Media.findAll(filters);
-        
+
         // Show all DB records — file_data in DB or file on filesystem
         const seenFilenames = new Set();
         const uniqueFiles = mediaFiles.filter(media => {
@@ -130,22 +144,29 @@ exports.getAllFiles = async (req, res) => {
             seenFilenames.add(media.filename);
             return true;
         });
-        
+
         // Transform database records to match frontend format
-        const formattedFiles = uniqueFiles.map(media => ({
-            id: media.id,
-            name: media.original_name,
-            filename: media.filename,
-            type: media.file_type,
-            url: media.file_path,
-            thumbnail: media.file_type === 'image' ? media.file_path : null,
-            size: media.file_size,
-            folder: media.folder,
-            createdAt: media.created_at,
-            usageCount: 0,
-            content_title: null,
-        }));
-        
+        const formattedFiles = uniqueFiles.map(media => {
+            const relativePath = media.file_path && media.file_path.startsWith('/') ? media.file_path : `/${media.file_path || `uploads/${media.filename}`}`;
+            const fullUrl = buildPublicUrl(req, relativePath);
+            return {
+                id: media.id,
+                name: media.original_name,
+                filename: media.filename,
+                type: media.file_type,
+                url: fullUrl,
+                full_url: fullUrl,
+                relative_url: relativePath,
+                path: fullUrl,
+                thumbnail: media.file_type === 'image' ? fullUrl : null,
+                size: media.file_size,
+                folder: media.folder,
+                createdAt: media.created_at,
+                usageCount: 0,
+                content_title: null,
+            };
+        });
+
         res.json({
             data: formattedFiles,
             total: uniqueFiles.length
@@ -159,7 +180,7 @@ exports.getAllFiles = async (req, res) => {
 exports.getUserFiles = async (req, res) => {
     try {
         const { file_type, folder, search } = req.query;
-        
+
         // Capitalize folder to match DB values (images -> Images)
         const folderValue = folder && folder !== 'all'
             ? folder.charAt(0).toUpperCase() + folder.slice(1)
@@ -173,9 +194,9 @@ exports.getUserFiles = async (req, res) => {
             limit: 500,
             offset: 0
         };
-        
+
         const mediaFiles = await Media.findAll(filters);
-        
+
         // Show all DB records — file_data in DB or file on filesystem
         const seenFilenames = new Set();
         const uniqueFiles = mediaFiles.filter(media => {
@@ -183,22 +204,29 @@ exports.getUserFiles = async (req, res) => {
             seenFilenames.add(media.filename);
             return true;
         });
-        
+
         // Transform database records to match frontend format
-        const formattedFiles = uniqueFiles.map(media => ({
-            id: media.id,
-            name: media.original_name,
-            filename: media.filename,
-            type: media.file_type,
-            url: media.file_path,
-            thumbnail: media.file_type === 'image' ? media.file_path : null,
-            size: media.file_size,
-            folder: media.folder,
-            createdAt: media.created_at,
-            usageCount: 0,
-            content_title: null,
-        }));
-        
+        const formattedFiles = uniqueFiles.map(media => {
+            const relativePath = media.file_path && media.file_path.startsWith('/') ? media.file_path : `/${media.file_path || `uploads/${media.filename}`}`;
+            const fullUrl = buildPublicUrl(req, relativePath);
+            return {
+                id: media.id,
+                name: media.original_name,
+                filename: media.filename,
+                type: media.file_type,
+                url: fullUrl,
+                full_url: fullUrl,
+                relative_url: relativePath,
+                path: fullUrl,
+                thumbnail: media.file_type === 'image' ? fullUrl : null,
+                size: media.file_size,
+                folder: media.folder,
+                createdAt: media.created_at,
+                usageCount: 0,
+                content_title: null,
+            };
+        });
+
         res.json({
             data: formattedFiles,
             total: uniqueFiles.length
@@ -221,6 +249,9 @@ exports.getUserFolderCounts = async (req, res) => {
 
 exports.getFolderCounts = async (req, res) => {
     try {
+        if (req.user && req.user.role !== 'admin') {
+            return exports.getUserFolderCounts(req, res);
+        }
         const counts = await Media.getFolderCounts();
         res.json(counts);
     } catch (error) {
@@ -269,23 +300,23 @@ exports.serveFile = async (req, res) => {
 exports.deleteFile = async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         // Get media record before deletion
         const media = await Media.findById(id);
         if (!media) {
             return res.status(404).json({ message: 'Media not found' });
         }
-        
+
         // Non-admin users can only delete their own uploaded files
         if (req.user && req.user.role !== 'admin') {
             if (!media.uploaded_by || Number(media.uploaded_by) !== Number(req.user.id)) {
                 return res.status(403).json({ message: 'Forbidden: You can only delete your own media files' });
             }
         }
-        
+
         // Delete from database
         const deleted = await Media.delete(id);
-        
+
         if (deleted) {
             // Try to delete from filesystem as well
             const filePath = path.join(uploadDir, media.filename);
@@ -293,7 +324,7 @@ exports.deleteFile = async (req, res) => {
                 fs.unlinkSync(filePath);
                 console.log('File deleted from filesystem:', media.filename);
             }
-            
+
             res.json({ message: 'Media deleted successfully' });
         } else {
             res.status(404).json({ message: 'Media not found' });

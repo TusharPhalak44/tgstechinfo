@@ -29,10 +29,25 @@ export default function HTMLInspector({ node, onUpdate }) {
     });
   };
 
-  const handleMediaSelect = (url) => {
-    // MediaLibraryModal already handles the clipboard copying
-    // Just show a helpful message to guide the user
-    message.success('Image URL copied! You can now paste it in your HTML code.');
+  const handleMediaSelect = (url, item, insertMode = 'url') => {
+    if (!url) return;
+    const fullUrl = url.startsWith('http://') || url.startsWith('https://') 
+      ? url 
+      : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+    
+    let snippet = fullUrl;
+    if (insertMode === 'tag') {
+      const isVideo = item?.type?.startsWith('video') || /\.(mp4|webm|ogg|mov)$/i.test(fullUrl);
+      if (isVideo) {
+        snippet = `<video controls style="max-width: 100%; height: auto;"><source src="${fullUrl}" type="video/mp4">Your browser does not support the video tag.</video>`;
+      } else {
+        snippet = `<img src="${fullUrl}" alt="${item?.name || 'Image'}" />`;
+      }
+    }
+    const currentHtml = content.html || '';
+    const newHtml = currentHtml ? `${currentHtml}\n${snippet}` : snippet;
+    handleChange('html', newHtml);
+    message.success(snippet === fullUrl ? 'Image URL inserted into HTML code' : 'Image tag inserted into HTML code');
   };
 
   return (

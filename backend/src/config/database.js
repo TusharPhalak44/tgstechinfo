@@ -1,8 +1,10 @@
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 
+const path = require('path');
+
 // Do NOT override env vars already set by Docker
-dotenv.config({ override: false });
+dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: false });
 
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
@@ -19,7 +21,7 @@ const testConnection = async (retries = 15, delay = 3000) => {
     for (let i = 0; i < retries; i++) {
         try {
             const conn = await pool.getConnection();
-            console.log('✅ Connected to MySQL database successfully');
+            console.log(`✅ Connected to MySQL database [${process.env.DB_NAME || 'publishing_platform'}] successfully`);
             conn.release();
             return true;
         } catch (err) {

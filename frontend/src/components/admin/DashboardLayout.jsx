@@ -346,6 +346,39 @@ const layoutStyles = `
     from { opacity: 0; }
     to { opacity: 1; }
   }
+
+  /* ─── MOBILE RESPONSIVE HEADER & WORKSPACE ─── */
+  @media (max-width: 640px) {
+    .admin-top-header {
+      padding: 0 12px !important;
+    }
+    .admin-header-right {
+      gap: 6px !important;
+    }
+    .admin-status-text {
+      display: none !important;
+    }
+    .admin-status-pill {
+      padding: 6px 8px !important;
+    }
+  }
+  @media (max-width: 380px) {
+    .admin-top-header {
+      padding: 0 8px !important;
+    }
+    .admin-header-right {
+      gap: 4px !important;
+    }
+    .admin-icon-btn {
+      width: 32px !important;
+      height: 32px !important;
+    }
+  }
+  @media (max-width: 480px) {
+    .admin-main-content {
+      padding: 12px 8px !important;
+    }
+  }
 `;
 
 /* ─────────────────────────────────────────────
@@ -903,12 +936,12 @@ const DashboardLayout = () => {
             </div>
 
             {/* ─ RIGHT: Controls & Profile ─ */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="admin-header-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
 
               {/* Platform Status */}
               <div className={`admin-status-pill ${D ? 'dark-status-pill' : ''}`}>
                 <span className="admin-beacon" />
-                <span>Platform Operational • 99.8%</span>
+                <span className="admin-status-text">Platform Operational • 99.8%</span>
               </div>
 
               {/* Create Publication Action */}
@@ -1002,7 +1035,7 @@ const DashboardLayout = () => {
               SUBPAGE CONTENT AREA
           ═════════════════════════════════════════ */}
           <Content
-            className="admin-scroll"
+            className="admin-scroll admin-main-content"
             style={{
               marginTop: 64,
               padding: isMobile ? '16px 14px' : '28px 32px',

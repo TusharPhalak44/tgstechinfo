@@ -230,7 +230,10 @@ export default function Audience() {
       }`}
     >
       {/* ── Dynamic Ambient Page Background Animation ── */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div
+        className="fixed inset-0 overflow-hidden pointer-events-none z-0"
+        style={{ contain: 'paint', clipPath: 'inset(0)', maxWidth: '100vw', maxHeight: '100vh' }}
+      >
         {/* Floating Aurora 1: Electric Cyan */}
         <motion.div
           animate={{
@@ -240,7 +243,7 @@ export default function Audience() {
             opacity: darkMode ? [0.18, 0.28, 0.18] : [0.12, 0.22, 0.12]
           }}
           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-24 -left-24 w-[600px] h-[600px] rounded-full blur-[140px] bg-[#0AAEEF]"
+          className="absolute -top-24 -left-24 w-[min(600px,100vw)] h-[min(600px,100vw)] max-w-full rounded-full blur-[140px] bg-[#0AAEEF]"
         />
 
         {/* Floating Aurora 2: Sunfire Amber */}
@@ -252,7 +255,7 @@ export default function Audience() {
             opacity: darkMode ? [0.14, 0.24, 0.14] : [0.08, 0.18, 0.08]
           }}
           transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-1/4 -right-28 w-[550px] h-[550px] rounded-full blur-[150px] bg-[#F7941D]"
+          className="absolute top-1/4 -right-28 w-[min(550px,100vw)] h-[min(550px,100vw)] max-w-full rounded-full blur-[150px] bg-[#F7941D]"
         />
 
         {/* Floating Aurora 3: Emerald Sync */}
@@ -264,7 +267,7 @@ export default function Audience() {
             opacity: darkMode ? [0.14, 0.22, 0.14] : [0.08, 0.16, 0.08]
           }}
           transition={{ duration: 17, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-2/3 left-10 w-[500px] h-[500px] rounded-full blur-[150px] bg-[#10B981]"
+          className="absolute top-2/3 left-10 w-[min(500px,100vw)] h-[min(500px,100vw)] max-w-full rounded-full blur-[150px] bg-[#10B981]"
         />
 
         {/* Floating Aurora 4: Royal Indigo / Purple */}
@@ -276,7 +279,7 @@ export default function Audience() {
             opacity: darkMode ? [0.12, 0.2, 0.12] : [0.06, 0.14, 0.06]
           }}
           transition={{ duration: 21, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -bottom-20 right-1/4 w-[520px] h-[520px] rounded-full blur-[160px] bg-[#8B5CF6]"
+          className="absolute -bottom-20 right-1/4 w-[min(520px,100vw)] h-[min(520px,100vw)] max-w-full rounded-full blur-[160px] bg-[#8B5CF6]"
         />
 
         {/* Dynamic Subtle Tech Dot Grid */}
@@ -335,7 +338,7 @@ export default function Audience() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6"
+            className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
           >
             {keyMetrics.map((stat, i) => (
               <motion.div
@@ -360,7 +363,7 @@ export default function Audience() {
                   boxShadow: `0 16px 32px ${stat.glowRgba}`,
                   transition: { duration: 0.2 }
                 }}
-                className={`relative group p-5 sm:p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 ${
+                className={`relative group overflow-hidden p-4 sm:p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 min-w-0 ${
                   darkMode
                     ? 'bg-slate-900/80 border-slate-800/90 shadow-lg'
                     : 'bg-white/90 border-slate-200/90 shadow-[0_8px_24px_rgba(10,174,239,0.06)]'

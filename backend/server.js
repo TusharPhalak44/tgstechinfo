@@ -1,5 +1,4 @@
 const express = require('express');
-
 const cors = require('cors');
 
 const cookieParser = require('cookie-parser');
@@ -180,67 +179,54 @@ app.use(cookieParser());
 
 
 const uploadsDir = path.join(__dirname, 'uploads');
+const rootUploadsDir = path.join(__dirname, '../uploads');
 
-app.use('/uploads', express.static(uploadsDir));
-
-
+// Enable CORS for static file serving
+app.use('/uploads', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    next();
+});
 
 // Also serve branding folder specifically
-
 const brandingDir = path.join(__dirname, 'uploads', 'branding');
-
 app.use('/uploads/branding', express.static(brandingDir));
 
-
-
 app.use('/uploads/:filename', async (req, res, next) => {
-
     try {
-
         const { pool } = require('./src/config/database');
-
         const filename = req.params.filename;
 
+        // Set global CORS and inline disposition headers so media can be accessed/opened anywhere
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
 
-
-        const filePath = path.join(uploadsDir, filename);
-
-        if (require('fs').existsSync(filePath)) {
-
-            return res.sendFile(filePath);
-
-        }
-
-
-
+        // 1. Serve directly from database BLOB first (database-first delivery)
         const [rows] = await pool.query(
-
             'SELECT file_data, mime_type FROM media_files WHERE filename = ? LIMIT 1',
-
             [filename]
-
         );
 
-
-
         if (rows[0] && rows[0].file_data) {
-
-            // Set proper content type for videos
             const mimeType = rows[0].mime_type || 'application/octet-stream';
             res.setHeader('Content-Type', mimeType);
-            
-            // For videos, enable streaming and range requests
+            res.setHeader('Content-Disposition', 'inline; filename="' + filename + '"');
             if (mimeType.startsWith('video/')) {
                 res.setHeader('Accept-Ranges', 'bytes');
-                res.setHeader('Cache-Control', 'public, max-age=31536000');
-                // Enable CORS for video elements
-                res.setHeader('Access-Control-Allow-Origin', '*');
-            } else {
-                res.setHeader('Cache-Control', 'public, max-age=31536000');
             }
-            
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
             return res.send(rows[0].file_data);
+        }
 
+        // 2. Physical disk fallback
+        const filePath = path.join(uploadsDir, filename);
+        if (require('fs').existsSync(filePath)) {
+            return res.sendFile(filePath);
+        }
+
+        const rootFilePath = path.join(rootUploadsDir, filename);
+        if (require('fs').existsSync(rootFilePath)) {
+            return res.sendFile(rootFilePath);
         }
 
 
@@ -321,6 +307,9 @@ app.use('/api/audit-logs', require('./src/routes/auditLogRoutes'));
 app.use('/api/audience', require('./src/routes/audienceRoutes'));
 
 app.use('/api/admin/audience', require('./src/routes/adminAudienceRoutes'));
+
+// File-based Landing Pages (/lp/:slug and /lp/:slug/*)
+app.use('/lp', require('./src/routes/fileLandingRoutes'));
 
 
 

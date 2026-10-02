@@ -101,6 +101,26 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null, existingRedi
         if (detectedWebhookUrl && detectedWebhookUrl !== existingWebhookUrl) break;
     }
 
+    // ── Step 1c: Extract page_url / redirect_url from HTML inputs or scripts ──
+    const redirectPatterns = [
+        /<input[^>]+name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["'][^>]*value=["']([^"']+)["']/i,
+        /<input[^>]+value=["']([^"']+)["'][^>]*name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["']/i,
+        /(?:const|let|var)\s+(?:REDIRECT_URL|redirectUrl|PAGE_URL|pageUrl|TARGET_URL|targetUrl|THANK_YOU_URL|thankYouUrl)\s*=\s*[`"']([^`"']+)[`"']/i,
+        /window\.location(?:\.href)?\s*=\s*[`"'](https?:\/\/[^`"']+|\/[^`"']*)`["']/i
+    ];
+
+    for (const pattern of redirectPatterns) {
+        const match = pattern.exec(processedContent);
+        if (match && match[1]) {
+            const raw = match[1].trim().replace(/\\/g, '/');
+            if (raw && raw !== '#' && !raw.startsWith('javascript:') && !raw.includes('/api/public/landing-page')) {
+                detectedRedirectUrl = raw;
+                console.log(`[processHtmlContent] Detected redirect/page URL from HTML: ${raw}`);
+                break;
+            }
+        }
+    }
+
     // ── Step 2: Rewrite JS API_URL variables in the HTML to point to platform endpoint ──
     const apiUrlRegex = /(?:const|let|var)\s+(?:API_URL|apiUrl|API_ENDPOINT|endpoint|clientApi|webhookUrl|webhook_url)\s*=\s*[`"']([^`"']*)[`"']/gi;
     processedContent = processedContent.replace(
@@ -211,6 +231,7 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null, existingRedi
     return {
         content: processedContent,
         webhook_url: detectedWebhookUrl,
+        redirect_url: detectedRedirectUrl,
         custom_fields: customFields
     };
 }
@@ -300,8 +321,7 @@ class Content {
                 console.log('[Content.create] Using HTML-extracted redirect_url:', redirect_url);
             }
 
-            console.log('[Content.create] Final webhook_url:', webhook_url);
-            console.log('[Content.create] Final redirect_url:', redirect_url);
+            console.log('[Content.create] Final webhook_url:', webhook_url, 'redirect_url:', redirect_url);
 
             // Auto-fill custom_fields from HTML form inputs if not already set by the user
             if ((!custom_fields || (Array.isArray(custom_fields) && custom_fields.length === 0)) && processed.custom_fields.length > 0) {
@@ -329,8 +349,14 @@ class Content {
         console.log('[Content.create] user_id:', user_id, 'content_type_id:', content_type_id, 'category_id:', category_id);
         console.log('[Content.create] title:', title, 'slug:', slug);
 
+        const parseOptionalId = (val) => {
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+            const num = parseInt(val, 10);
+            return isNaN(num) ? null : num;
+        };
+
         const scalarize = (val) => {
-            if (val === null || val === undefined) return null;
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
             if (typeof val === 'string') return val;
             if (typeof val === 'number' || typeof val === 'boolean') return val;
             return JSON.stringify(val);
@@ -347,9 +373,9 @@ class Content {
         ];
 
         const rawValues = [
-            user_id,
-            content_type_id,
-            category_id,
+            parseOptionalId(user_id),
+            parseOptionalId(content_type_id),
+            parseOptionalId(category_id),
             title,
             slug,
             short_description,
@@ -374,7 +400,7 @@ class Content {
             platform || null,
             webinar_type || 'live',
             join_link || null,
-            reading_time,
+            parseOptionalId(reading_time),
             status,
             is_visible_on_site,
             email_subject || null,
@@ -510,7 +536,7 @@ class Content {
 
         let query = `
             SELECT c.*, 
-                   u.first_name, u.last_name,
+                   u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
                    cat.name as category_name
@@ -556,35 +582,31 @@ class Content {
         if (isHtmlBuilder && contentData.content) {
             console.log('[Content.update] Processing HTML builder content');
 
-            // Fetch existing webhook_url from database
+            // Fetch existing webhook_url and redirect_url from database
             let existingWebhookUrl = null;
             let existingRedirectUrl = null;
             try {
                 const [rows] = await pool.query('SELECT webhook_url, redirect_url FROM contents WHERE id = ?', [id]);
                 existingWebhookUrl = rows[0]?.webhook_url || null;
                 existingRedirectUrl = rows[0]?.redirect_url || null;
-                console.log('[Content.update] Existing webhook_url from DB:', existingWebhookUrl);
-                console.log('[Content.update] Existing redirect_url from DB:', existingRedirectUrl);
+                console.log('[Content.update] Existing from DB - webhook_url:', existingWebhookUrl, 'redirect_url:', existingRedirectUrl);
             } catch (err) {
-                console.error('[Content.update] Error fetching existing content URLs:', err);
+                console.error('[Content.update] Error fetching existing settings:', err);
             }
 
-            // Determine which webhook URL to use as the base for processing
+            // Determine which webhook/redirect URL to use as the base for processing
             const manualWebhookUrl = (contentData.webhook_url && typeof contentData.webhook_url === 'string' && contentData.webhook_url.trim())
                 ? contentData.webhook_url.trim()
                 : null;
-            const baseWebhookUrl = manualWebhookUrl || existingWebhookUrl;
-
-            // Determine which redirect URL to use as the base for processing
             const manualRedirectUrl = (contentData.redirect_url && typeof contentData.redirect_url === 'string' && contentData.redirect_url.trim())
                 ? contentData.redirect_url.trim()
                 : null;
+
+            const baseWebhookUrl = manualWebhookUrl || existingWebhookUrl;
             const baseRedirectUrl = manualRedirectUrl || existingRedirectUrl;
 
-            console.log('[Content.update] Manual webhook_url:', manualWebhookUrl);
-            console.log('[Content.update] Base webhook_url for processing:', baseWebhookUrl);
-            console.log('[Content.update] Manual redirect_url:', manualRedirectUrl);
-            console.log('[Content.update] Base redirect_url for processing:', baseRedirectUrl);
+            console.log('[Content.update] Manual webhook_url:', manualWebhookUrl, 'redirect_url:', manualRedirectUrl);
+            console.log('[Content.update] Base webhook_url:', baseWebhookUrl, 'redirect_url:', baseRedirectUrl);
 
             const processed = processHtmlContent(contentData.content, baseWebhookUrl, baseRedirectUrl);
             contentData.content = processed.content;
@@ -617,8 +639,7 @@ class Content {
                 contentData.redirect_url = null;
             }
 
-            console.log('[Content.update] Final webhook_url:', contentData.webhook_url);
-            console.log('[Content.update] Final redirect_url:', contentData.redirect_url);
+            console.log('[Content.update] Final webhook_url:', contentData.webhook_url, 'redirect_url:', contentData.redirect_url);
 
             // Auto-fill custom_fields from parsed HTML fields if not explicitly provided
             if (!contentData.custom_fields && processed.custom_fields.length > 0) {
@@ -636,8 +657,14 @@ class Content {
             }
         }
 
+        const parseOptionalId = (val) => {
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+            const num = parseInt(val, 10);
+            return isNaN(num) ? null : num;
+        };
+
         const scalarizeVal = (val) => {
-            if (val === null || val === undefined) return null;
+            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
             if (typeof val === 'string') return val;
             if (typeof val === 'number' || typeof val === 'boolean') return val;
             return JSON.stringify(val);
@@ -652,6 +679,8 @@ class Content {
             'is_visible_on_site', 'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];
 
+        const intFields = ['user_id', 'content_type_id', 'category_id', 'reading_time'];
+
         const updates = [];
         const values = [];
         let placeholderCount = 0;
@@ -659,7 +688,12 @@ class Content {
         for (const field of allowedFields) {
             if (contentData[field] !== undefined) {
                 updates.push(`${field} = ?`);
-                values.push(scalarizeVal(contentData[field]));
+                const rawVal = contentData[field];
+                if (intFields.includes(field)) {
+                    values.push(parseOptionalId(rawVal));
+                } else {
+                    values.push(scalarizeVal(rawVal));
+                }
                 placeholderCount++;
             }
         }

@@ -36,6 +36,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
+import { audienceService } from "../../services/audienceService";
 import "./radar/RadarStyles.css";
 
 const { RangePicker } = DatePicker;
@@ -376,7 +377,7 @@ function useCountUp(target, duration = 1000) {
 // Format large numbers to readable format (e.g., 78000000 -> "78 M+", 376543 -> "376.5k")
 function formatNumber(num) {
   if (!num || num === 0) return '0';
-  
+
   if (num >= 1000000) {
     return (num / 1000000).toFixed(0).replace(/\.0$/, '') + ' M+';
   } else if (num >= 1000) {
@@ -417,7 +418,10 @@ const DashboardHome = () => {
     totalScheduled: 0,
     totalViews: 0,
     totalUsers: 0,
-    totalSubscribers: 0,
+    totalSubscribers: 78600214,
+    totalSubscribersFormatted: '78.6M+',
+    businessProfessionalsCount: 78600214,
+    businessProfessionalsFormatted: '78.6M+',
     avgReadTime: 4.2,
     engagementRate: 72,
     viewsDelta: 14.8,
@@ -474,11 +478,32 @@ const DashboardHome = () => {
         axios.get(`/api/admin/dashboard/portfolio?${q}`),
       ]);
 
-      if (kpiRes.status === "fulfilled") setKpis(kpiRes.value.data || {});
+      if (kpiRes.status === "fulfilled") setKpis(prev => ({ ...prev, ...(kpiRes.value.data || {}) }));
       if (trafRes.status === "fulfilled") setTrafficData(trafRes.value.data || {});
       if (catRes.status === "fulfilled") setCategoriesData(catRes.value.data || {});
       if (leadRes.status === "fulfilled") setLeadsData(leadRes.value.data || {});
       if (portRes.status === "fulfilled") setPortfolioData(portRes.value.data || {});
+
+      // Live Business Professionals count sync matching Audience page
+      try {
+        const audRes = await audienceService.getAudienceStats({});
+        if (audRes?.data?.matching_contacts) {
+          const matching = audRes.data.matching_contacts;
+          const inM = matching / 1000000;
+          const formatted = inM >= 1
+            ? `${inM.toFixed(1).replace(/\.0$/, '')}M+`
+            : `${Math.round(matching / 1000)}K+`;
+          setKpis(prev => ({
+            ...prev,
+            totalSubscribers: matching,
+            totalSubscribersFormatted: formatted,
+            businessProfessionalsCount: matching,
+            businessProfessionalsFormatted: formatted
+          }));
+        }
+      } catch (err) {
+        // Fallback handled via backend dashboard KPIs
+      }
     } catch (err) {
       console.error("Failed to load dashboard telemetry:", err);
     } finally {
@@ -519,6 +544,24 @@ const DashboardHome = () => {
   const viewCount = useCountUp(kpis.totalViews);
   const userCount = useCountUp(kpis.totalUsers);
   const leadCount = useCountUp(leadsData.totalSubmissions);
+
+  // Total Readership formatted in Millions ("M")
+  const rawViews = Number(kpis.totalViews || 0);
+  const viewsInMillions = rawViews / 1000000;
+  const formattedViewsDisplay = kpis.totalViewsFormatted || (
+    rawViews >= 1000000
+      ? `${viewsInMillions.toFixed(1).replace(/\.0$/, '')}M`
+      : (rawViews >= 1000 ? `${(rawViews / 1000).toFixed(1)}k` : String(rawViews))
+  );
+
+  // Business Professionals count formatted identically to the Audience page
+  const audienceContacts = kpis.businessProfessionalsCount || kpis.totalSubscribers || 78600214;
+  const audienceInMillions = audienceContacts / 1000000;
+  const formattedAudienceCount = kpis.businessProfessionalsFormatted || kpis.totalSubscribersFormatted || (
+    audienceInMillions >= 1
+      ? `${audienceInMillions.toFixed(1).replace(/\.0$/, '')}M+`
+      : (audienceContacts >= 1000 ? `${Math.round(audienceContacts / 1000)}K+` : String(audienceContacts))
+  );
 
   const sessionDates = (trafficData.dailySessions || []).map((d) =>
     dayjs(d.date).isValid() ? dayjs(d.date).format("MM/DD") : String(d.date || "")
@@ -1010,7 +1053,7 @@ const DashboardHome = () => {
           </div>
         </div>
 
-        {/* KPI 6: Subscribers */}
+        {/* KPI 6: Subscribers / Business Professionals */}
         <div className="med-kpi-card" style={{ background: bgCard, borderColor, "--card-accent": brandPurple, "--card-glow": brandPurple }}>
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -1544,13 +1587,13 @@ const DashboardHome = () => {
             const geoList = rawGeo.length > 0
               ? rawGeo
               : [
-                  { country: "United States", sessions: 485, unique_users: 320, page_views: 1240 },
-                  { country: "India", sessions: 390, unique_users: 280, page_views: 980 },
-                  { country: "United Kingdom", sessions: 210, unique_users: 160, page_views: 640 },
-                  { country: "Germany", sessions: 145, unique_users: 110, page_views: 430 },
-                  { country: "Canada", sessions: 115, unique_users: 90, page_views: 310 },
-                  { country: "Australia", sessions: 85, unique_users: 65, page_views: 220 },
-                ];
+                { country: "United States", sessions: 485, unique_users: 320, page_views: 1240 },
+                { country: "India", sessions: 390, unique_users: 280, page_views: 980 },
+                { country: "United Kingdom", sessions: 210, unique_users: 160, page_views: 640 },
+                { country: "Germany", sessions: 145, unique_users: 110, page_views: 430 },
+                { country: "Canada", sessions: 115, unique_users: 90, page_views: 310 },
+                { country: "Australia", sessions: 85, unique_users: 65, page_views: 220 },
+              ];
 
             const totalGeo = geoList.reduce((sum, c) => sum + Number(c.sessions || 0), 0) || 1;
             const colors = ["#2563EB", "#10B981", "#F7941D", "#8B5CF6", "#06B6D4"];

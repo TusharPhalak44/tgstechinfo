@@ -215,7 +215,7 @@ const LiveSignalsFeed = ({
           <button
             key={type}
             onClick={() => setFilterType(type)}
-            className={`px-2 py-1 rounded transition whitespace-nowrap ${
+            className={`px-2 py-1 rounded transition whitespace-nowrap flex-shrink-0 ${
               filterType === type 
                 ? (darkMode 
                     ? 'bg-cyan-500/25 text-cyan-300 font-bold border border-cyan-500/40 shadow-[0_0_8px_rgba(10,174,239,0.3)]' 

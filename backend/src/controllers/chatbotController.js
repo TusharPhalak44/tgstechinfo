@@ -590,13 +590,16 @@ exports.submitQuery = async (req, res) => {
 
         const chatbotQuery = await ChatbotQuery.create({ email, query });
 
-        // Send email notification to admin
-        const adminEmail = process.env.ADMIN_EMAIL || 'info@tgstechinfo.com';
+        // Send email notification to admin(s)
+        const adminEmailConfig = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'info@tgstechinfo.com';
+        const adminRecipients = adminEmailConfig.split(',').map(e => e.trim()).filter(Boolean);
         const submittedAt = new Date().toLocaleString();
         const emailHtml = chatbotQueryAdminTemplate(email, query, submittedAt);
         
         try {
-            await sendEmail(adminEmail, 'New Chatbot Query Received', emailHtml);
+            for (const adminTo of adminRecipients) {
+                await sendEmail(adminTo, 'New Chatbot Query Received', emailHtml);
+            }
         } catch (emailError) {
             console.error('Failed to send admin email notification:', emailError);
             // Don't fail the request if email fails

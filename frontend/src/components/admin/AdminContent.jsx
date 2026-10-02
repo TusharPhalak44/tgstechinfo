@@ -26,7 +26,7 @@ import { formatContentPublishDate } from '../../utils/dateHelper';
 // Format large numbers to readable format (e.g., 376543303 -> "376.5M", 1500000000 -> "1.5B")
 function formatNumber(num) {
   if (!num || num === 0) return '0';
-  
+
   if (num >= 1000000000) {
     return (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B';
   } else if (num >= 1000000) {
@@ -42,27 +42,27 @@ const { Option } = Select;
 
 // Content Type Definitions & Icons
 const CONTENT_TYPE_CONFIG = {
-  all:         { label: 'All Content',   color: '#0AAEEF', icon: <FileTextOutlined /> },
-  article:     { label: 'Articles',      color: '#3B82F6', icon: <FileTextOutlined /> },
-  blog:        { label: 'Blogs',         color: '#8B5CF6', icon: <BookOutlined /> },
-  news:        { label: 'News',          color: '#EC4899', icon: <ThunderboltOutlined /> },
-  whitepaper:  { label: 'Whitepapers',  color: '#10B981', icon: <FilePdfOutlined /> },
-  ebook:       { label: 'eBooks',        color: '#F59E0B', icon: <BookOutlined /> },
-  webinar:     { label: 'Webinars',      color: '#6366F1', icon: <VideoCameraOutlined /> },
-  event:       { label: 'Events',        color: '#14B8A6', icon: <CalendarOutlined /> },
-  interview:   { label: 'Interviews',    color: '#06B6D4', icon: <UserOutlined /> },
-  'case-study':{ label: 'Case Studies',  color: '#D946EF', icon: <StarOutlined /> },
-  report:      { label: 'Reports',       color: '#84CC16', icon: <FileTextOutlined /> },
-  guide:       { label: 'Guides',        color: '#F97316', icon: <CompassOutlined /> },
+  all: { label: 'All Content', color: '#0AAEEF', icon: <FileTextOutlined /> },
+  article: { label: 'Articles', color: '#3B82F6', icon: <FileTextOutlined /> },
+  blog: { label: 'Blogs', color: '#8B5CF6', icon: <BookOutlined /> },
+  news: { label: 'News', color: '#EC4899', icon: <ThunderboltOutlined /> },
+  whitepaper: { label: 'Whitepapers', color: '#10B981', icon: <FilePdfOutlined /> },
+  ebook: { label: 'eBooks', color: '#F59E0B', icon: <BookOutlined /> },
+  webinar: { label: 'Webinars', color: '#6366F1', icon: <VideoCameraOutlined /> },
+  event: { label: 'Events', color: '#14B8A6', icon: <CalendarOutlined /> },
+  interview: { label: 'Interviews', color: '#06B6D4', icon: <UserOutlined /> },
+  'case-study': { label: 'Case Studies', color: '#D946EF', icon: <StarOutlined /> },
+  report: { label: 'Reports', color: '#84CC16', icon: <FileTextOutlined /> },
+  guide: { label: 'Guides', color: '#F97316', icon: <CompassOutlined /> },
 };
 
 const STATUS_CONFIG = {
-  published:         { color: 'success',    label: 'Published',         badge: '#10B981', bgDark: 'rgba(16, 185, 129, 0.15)', bgLight: '#ECFDF5' },
-  draft:             { color: 'default',    label: 'Draft',             badge: '#94A3B8', bgDark: 'rgba(148, 163, 184, 0.15)', bgLight: '#F1F5F9' },
-  pending:           { color: 'processing', label: 'Pending Review',    badge: '#0AAEEF', bgDark: 'rgba(10, 174, 239, 0.15)', bgLight: '#E0F2FE' },
-  changes_requested: { color: 'warning',    label: 'Changes Requested', badge: '#F59E0B', bgDark: 'rgba(245, 158, 11, 0.15)', bgLight: '#FEF3C7' },
-  rejected:          { color: 'error',      label: 'Rejected',          badge: '#EF4444', bgDark: 'rgba(239, 68, 68, 0.15)', bgLight: '#FEE2E2' },
-  approved:          { color: 'cyan',       label: 'Approved',          badge: '#06B6D4', bgDark: 'rgba(6, 182, 212, 0.15)', bgLight: '#CFFAFE' },
+  published: { color: 'success', label: 'Published', badge: '#10B981', bgDark: 'rgba(16, 185, 129, 0.15)', bgLight: '#ECFDF5' },
+  draft: { color: 'default', label: 'Draft', badge: '#94A3B8', bgDark: 'rgba(148, 163, 184, 0.15)', bgLight: '#F1F5F9' },
+  pending: { color: 'processing', label: 'Pending Review', badge: '#0AAEEF', bgDark: 'rgba(10, 174, 239, 0.15)', bgLight: '#E0F2FE' },
+  changes_requested: { color: 'warning', label: 'Changes Requested', badge: '#F59E0B', bgDark: 'rgba(245, 158, 11, 0.15)', bgLight: '#FEF3C7' },
+  rejected: { color: 'error', label: 'Rejected', badge: '#EF4444', bgDark: 'rgba(239, 68, 68, 0.15)', bgLight: '#FEE2E2' },
+  approved: { color: 'cyan', label: 'Approved', badge: '#06B6D4', bgDark: 'rgba(6, 182, 212, 0.15)', bgLight: '#CFFAFE' },
 };
 
 const parseTags = (tags) => {
@@ -148,6 +148,34 @@ const contentDisplayStyles = `
     background: transparent;
     padding: 0;
   }
+  @media (max-width: 768px) {
+    .admin-content-root {
+      padding: 14px 10px !important;
+    }
+    .admin-content-header-panel {
+      padding: 14px 16px !important;
+      gap: 12px !important;
+    }
+  }
+  @media (max-width: 480px) {
+    .admin-content-root {
+      padding: 10px 6px !important;
+    }
+    .admin-content-header-panel {
+      padding: 12px 10px !important;
+      gap: 10px !important;
+    }
+    .admin-content-filters {
+      width: 100% !important;
+    }
+    .admin-content-filters > * {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .admin-drawer-stats {
+      grid-template-columns: 1fr !important;
+    }
+  }
 `;
 
 const formatImageUrl = (url) => {
@@ -185,7 +213,7 @@ const getContentImage = (item) => {
         const imgEl = elements.find(e => (e.type === 'image' || e.type === 'banner') && (e.src || e.url));
         if (imgEl) return formatImageUrl(imgEl.src || imgEl.url);
       }
-    } catch {}
+    } catch { }
   }
   return null;
 };
@@ -537,9 +565,10 @@ const AdminContent = () => {
   ];
 
   return (
-    <div className={`radar-dashboard-root ${darkMode ? 'dark' : 'light'} radar-grid-bg`} style={{ minHeight: '100vh', padding: '24px' }}>
+    <div className={`radar-dashboard-root admin-content-root ${darkMode ? 'dark' : 'light'} radar-grid-bg`} style={{ minHeight: '100vh', padding: '24px' }}>
+      <style>{contentDisplayStyles}</style>
       {/* ── 1. CYBER HEADER COMMAND BAR ── */}
-      <div className="radar-glass-panel" style={{ padding: '18px 24px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div className="radar-glass-panel admin-content-header-panel" style={{ padding: '18px 24px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {/* Live signal beacon */}
           <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, rgba(10, 174, 239, 0.25) 0%, rgba(16, 185, 129, 0.15) 100%)', border: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -585,7 +614,7 @@ const AdminContent = () => {
 
       {/* ── 2. EXECUTIVE METRICS KPI PANEL ── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor, borderLeft: '3px solid #F7941D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -602,7 +631,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -619,7 +648,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -636,7 +665,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor, borderLeft: '3px solid #0B1F4D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -690,7 +719,7 @@ const AdminContent = () => {
 
         {/* Bottom Tier: Search, Filters & View Mode */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 280 }}>
+          <div className="admin-content-filters" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
             {/* Cyber Search Input */}
             <Input
               prefix={<SearchOutlined style={{ color: '#0AAEEF' }} />}
@@ -972,13 +1001,14 @@ const AdminContent = () => {
         </Row>
       ) : (
         /* TABLE VIEW */
-        <div className="radar-glass-panel" style={{ padding: '16px', background: bgCard, borderColor }}>
+        <div className="radar-glass-panel" style={{ padding: '16px', background: bgCard, borderColor, width: '100%', minWidth: 0, overflowX: 'auto' }}>
           <Table
             dataSource={paginatedContents}
             columns={tableColumns}
             rowKey="id"
             pagination={false}
             size="middle"
+            scroll={{ x: 'max-content' }}
           />
         </div>
       )}
@@ -1030,7 +1060,7 @@ const AdminContent = () => {
           </div>
         }
         placement="right"
-        width={540}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '100%' : 540}
         onClose={() => setDrawerOpen(false)}
         open={drawerOpen}
         drawerStyle={{ background: darkMode ? '#0c1c38' : '#f8fafc', color: textPrimary }}
@@ -1048,179 +1078,179 @@ const AdminContent = () => {
                 </div>
               )}
 
-            {/* Title & Status */}
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <Tag color={STATUS_CONFIG[selectedArticle.status]?.color || 'default'}>
-                  {STATUS_CONFIG[selectedArticle.status]?.label || selectedArticle.status}
-                </Tag>
-                <span className="radar-chip" style={{ fontSize: '0.7rem' }}>
-                  {selectedArticle.content_type_name || selectedArticle.content_type || 'Article'}
-                </span>
-              </div>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: textPrimary, margin: 0 }}>
-                {selectedArticle.title}
-              </h2>
-            </div>
-
-            {/* Key Meta Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }} className="radar-glass-panel">
-              <div style={{ padding: 12, textAlign: 'center' }}>
-                <div style={{ fontSize: '0.7rem', color: textMuted }}>READERSHIP VIEWS</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0AAEEF', marginTop: 2 }}>
-                  {formatNumber(selectedArticle.view_count || 0)}
-                </div>
-              </div>
-              <div style={{ padding: 12, textAlign: 'center' }}>
-                <div style={{ fontSize: '0.7rem', color: textMuted }}>VISIBILITY</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: selectedArticle.is_visible !== 0 ? '#10B981' : '#F59E0B', marginTop: 4 }}>
-                  {selectedArticle.is_visible !== 0 ? 'Live Website' : 'Hidden'}
-                </div>
-              </div>
-              <div style={{ padding: 12, textAlign: 'center' }}>
-                <div style={{ fontSize: '0.7rem', color: textMuted }}>CATEGORY</div>
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: textPrimary, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {selectedArticle.category_name || 'General'}
-                </div>
-              </div>
-            </div>
-
-            {/* Short Description */}
-            {selectedArticle.short_description && (
+              {/* Title & Status */}
               <div>
-                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Short Description</h4>
-                <p style={{ fontSize: '0.86rem', color: textPrimary, lineHeight: '1.5' }}>
-                  {selectedArticle.short_description}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Tag color={STATUS_CONFIG[selectedArticle.status]?.color || 'default'}>
+                    {STATUS_CONFIG[selectedArticle.status]?.label || selectedArticle.status}
+                  </Tag>
+                  <span className="radar-chip" style={{ fontSize: '0.7rem' }}>
+                    {selectedArticle.content_type_name || selectedArticle.content_type || 'Article'}
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: textPrimary, margin: 0 }}>
+                  {selectedArticle.title}
+                </h2>
               </div>
-            )}
 
-            {/* Long Description / Full Content */}
-            {selectedArticle.content && (
-              <div>
-                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Long Description</h4>
-                <div 
-                  className="admin-content-display"
-                  style={{ 
-                    fontSize: '0.9rem', 
-                    color: textPrimary, 
-                    lineHeight: '1.6',
-                    padding: '16px',
-                    background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)',
-                    borderRadius: 8,
-                    border: `1px solid ${borderColor}`,
-                    maxHeight: '400px',
-                    overflowY: 'auto'
-                  }}
-                  dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
-                />
-              </div>
-            )}
-
-            {/* SEO Settings */}
-            <div className="radar-glass-panel" style={{ padding: '16px', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8, border: `1px solid ${borderColor}` }}>
-              <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em', marginBottom: 12 }}>SEO Settings</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {selectedArticle.seo_title && (
-                  <div>
-                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Title</Text>
-                    <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 600, display: 'block' }}>
-                      {selectedArticle.seo_title}
-                    </Text>
+              {/* Key Meta Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 12 }} className="radar-glass-panel admin-drawer-stats">
+                <div style={{ padding: 12, textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: textMuted }}>READERSHIP VIEWS</div>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0AAEEF', marginTop: 2 }}>
+                    {formatNumber(selectedArticle.view_count || 0)}
                   </div>
-                )}
-
-                {selectedArticle.seo_description && (
-                  <div>
-                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Description</Text>
-                    <Text style={{ fontSize: '0.9rem', color: textPrimary, lineHeight: '1.4', display: 'block' }}>
-                      {selectedArticle.seo_description}
-                    </Text>
+                </div>
+                <div style={{ padding: 12, textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: textMuted }}>VISIBILITY</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: selectedArticle.is_visible !== 0 ? '#10B981' : '#F59E0B', marginTop: 4 }}>
+                    {selectedArticle.is_visible !== 0 ? 'Live Website' : 'Hidden'}
                   </div>
-                )}
-
-                {selectedArticle.seo_keywords && (
-                  <div>
-                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Keywords</Text>
-                    <Text style={{ fontSize: '0.9rem', color: textPrimary, display: 'block' }}>
-                      {selectedArticle.seo_keywords}
-                    </Text>
+                </div>
+                <div style={{ padding: 12, textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.7rem', color: textMuted }}>CATEGORY</div>
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: textPrimary, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {selectedArticle.category_name || 'General'}
                   </div>
-                )}
-
-                {selectedArticle.slug && (
-                  <div>
-                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>URL Slug</Text>
-                    <Text style={{ fontSize: '0.9rem', color: '#0AAEEF', fontWeight: 600, display: 'block' }}>
-                      {selectedArticle.slug}
-                    </Text>
-                  </div>
-                )}
-
-                {selectedArticle.canonical_url && (
-                  <div>
-                    <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Canonical URL</Text>
-                    <Text style={{ fontSize: '0.9rem', color: textPrimary, display: 'block' }}>
-                      {selectedArticle.canonical_url}
-                    </Text>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Meta Tags */}
-            {parseTags(selectedArticle.tags).length > 0 && (
-              <div>
-                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Tags</h4>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {parseTags(selectedArticle.tags).map((tag, i) => (
-                    <span key={i} className="radar-chip" style={{ fontSize: '0.72rem' }}>
-                      #{tag}
-                    </span>
-                  ))}
                 </div>
               </div>
-            )}
 
-            <Divider style={{ borderColor }} />
-
-            {/* Quick Control Actions */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <Button
-                type="primary"
-                icon={<EditOutlined />}
-                block
-                onClick={() => { setDrawerOpen(false); navigate(`/dashboard/create-post/${selectedArticle.id}`); }}
-                style={{ borderRadius: 10, background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 60%, #F7941D 200%)', border: '1px solid rgba(247,148,29,0.35)', boxShadow: '0 4px 14px rgba(11,31,77,0.3)' }}
-              >
-                Edit Publication
-              </Button>
-
-              <Button
-                icon={selectedArticle.is_visible === 0 ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-                block
-                onClick={(e) => handleToggleVisibility(e, selectedArticle)}
-                loading={visibilityLoadingId === selectedArticle.id}
-                style={{ borderRadius: 10, borderColor }}
-              >
-                {selectedArticle.is_visible === 0 ? 'Make Visible on Site' : 'Hide from Public Site'}
-              </Button>
-
-              {selectedArticle.status === 'draft' && (
-                <Button
-                  icon={<SendOutlined />}
-                  block
-                  loading={submittingId === selectedArticle.id}
-                  onClick={(e) => handleSubmitForReview(e, selectedArticle.id)}
-                  style={{ borderRadius: 10, borderColor: '#F59E0B', color: '#F59E0B' }}
-                >
-                  Submit for Editorial Review
-                </Button>
+              {/* Short Description */}
+              {selectedArticle.short_description && (
+                <div>
+                  <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Short Description</h4>
+                  <p style={{ fontSize: '0.86rem', color: textPrimary, lineHeight: '1.5' }}>
+                    {selectedArticle.short_description}
+                  </p>
+                </div>
               )}
+
+              {/* Long Description / Full Content */}
+              {selectedArticle.content && (
+                <div>
+                  <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Long Description</h4>
+                  <div
+                    className="admin-content-display"
+                    style={{
+                      fontSize: '0.9rem',
+                      color: textPrimary,
+                      lineHeight: '1.6',
+                      padding: '16px',
+                      background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)',
+                      borderRadius: 8,
+                      border: `1px solid ${borderColor}`,
+                      maxHeight: '400px',
+                      overflowY: 'auto'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
+                  />
+                </div>
+              )}
+
+              {/* SEO Settings */}
+              <div className="radar-glass-panel" style={{ padding: '16px', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8, border: `1px solid ${borderColor}` }}>
+                <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em', marginBottom: 12 }}>SEO Settings</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {selectedArticle.seo_title && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Title</Text>
+                      <Text style={{ fontSize: '0.9rem', color: textPrimary, fontWeight: 600, display: 'block' }}>
+                        {selectedArticle.seo_title}
+                      </Text>
+                    </div>
+                  )}
+
+                  {selectedArticle.seo_description && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Description</Text>
+                      <Text style={{ fontSize: '0.9rem', color: textPrimary, lineHeight: '1.4', display: 'block' }}>
+                        {selectedArticle.seo_description}
+                      </Text>
+                    </div>
+                  )}
+
+                  {selectedArticle.seo_keywords && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>SEO Keywords</Text>
+                      <Text style={{ fontSize: '0.9rem', color: textPrimary, display: 'block' }}>
+                        {selectedArticle.seo_keywords}
+                      </Text>
+                    </div>
+                  )}
+
+                  {selectedArticle.slug && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>URL Slug</Text>
+                      <Text style={{ fontSize: '0.9rem', color: '#0AAEEF', fontWeight: 600, display: 'block' }}>
+                        {selectedArticle.slug}
+                      </Text>
+                    </div>
+                  )}
+
+                  {selectedArticle.canonical_url && (
+                    <div>
+                      <Text style={{ fontSize: '0.75rem', color: textMuted, display: 'block', marginBottom: 4 }}>Canonical URL</Text>
+                      <Text style={{ fontSize: '0.9rem', color: textPrimary, display: 'block' }}>
+                        {selectedArticle.canonical_url}
+                      </Text>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Meta Tags */}
+              {parseTags(selectedArticle.tags).length > 0 && (
+                <div>
+                  <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: textMuted, letterSpacing: '0.05em' }}>Tags</h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {parseTags(selectedArticle.tags).map((tag, i) => (
+                      <span key={i} className="radar-chip" style={{ fontSize: '0.72rem' }}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Divider style={{ borderColor }} />
+
+              {/* Quick Control Actions */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <Button
+                  type="primary"
+                  icon={<EditOutlined />}
+                  block
+                  onClick={() => { setDrawerOpen(false); navigate(`/dashboard/create-post/${selectedArticle.id}`); }}
+                  style={{ borderRadius: 10, background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 60%, #F7941D 200%)', border: '1px solid rgba(247,148,29,0.35)', boxShadow: '0 4px 14px rgba(11,31,77,0.3)' }}
+                >
+                  Edit Publication
+                </Button>
+
+                <Button
+                  icon={selectedArticle.is_visible === 0 ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                  block
+                  onClick={(e) => handleToggleVisibility(e, selectedArticle)}
+                  loading={visibilityLoadingId === selectedArticle.id}
+                  style={{ borderRadius: 10, borderColor }}
+                >
+                  {selectedArticle.is_visible === 0 ? 'Make Visible on Site' : 'Hide from Public Site'}
+                </Button>
+
+                {selectedArticle.status === 'draft' && (
+                  <Button
+                    icon={<SendOutlined />}
+                    block
+                    loading={submittingId === selectedArticle.id}
+                    onClick={(e) => handleSubmitForReview(e, selectedArticle.id)}
+                    style={{ borderRadius: 10, borderColor: '#F59E0B', color: '#F59E0B' }}
+                  >
+                    Submit for Editorial Review
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
       </Drawer>
     </div>
   );

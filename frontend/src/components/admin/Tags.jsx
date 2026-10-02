@@ -439,7 +439,7 @@ const Tags = () => {
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', flex: 1, minWidth: '200px', justifyContent: 'flex-end' }}>
               <div
                 style={{
                   display: 'flex',
@@ -449,7 +449,9 @@ const Tags = () => {
                   border: `1px solid ${D ? 'rgba(51, 65, 85, 0.8)' : 'rgba(203, 213, 225, 0.8)'}`,
                   borderRadius: 10,
                   padding: '6px 14px',
-                  width: 220,
+                  flex: 1,
+                  minWidth: 150,
+                  maxWidth: 220,
                 }}
               >
                 <SearchOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 14 }} />
@@ -514,6 +516,7 @@ const Tags = () => {
             dataSource={tags}
             rowKey="id"
             loading={loading}
+            scroll={{ x: 'max-content' }}
             pagination={{
               ...pagination,
               showTotal: (total) => <span style={{ fontSize: '0.78rem', color: D ? '#64748B' : '#94A3B8' }}>Total {total} tags</span>,

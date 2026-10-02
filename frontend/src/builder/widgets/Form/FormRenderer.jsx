@@ -74,6 +74,13 @@ export default function FormRenderer({ node, contentWebhookUrl }) {
           content_id: contentId,
           extra_fields: dbFields,
         });
+
+        const redirectTarget = res.data?.redirect_url || res.data?.page_url || dbFields.page_url || dbFields.redirect_url;
+        if (redirectTarget && typeof redirectTarget === 'string' && redirectTarget.trim() && redirectTarget.trim() !== '#' && !redirectTarget.trim().startsWith('javascript:')) {
+          antMessage.success('Redirecting...');
+          window.location.href = redirectTarget.trim();
+          return;
+        }
       } else if (apiUrl) {
         // Fallback for standalone preview mode without TGS backend content ID
         try {

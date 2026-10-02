@@ -44,7 +44,7 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
   useEffect(() => {
     // Calculate date range based on timeRange
     let dateParams = '';
-    
+
     if (timeRange !== 'all') {
       const endDate = new Date();
       const startDate = new Date();
@@ -69,10 +69,10 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
     ]).then(([searchRes, pagesRes]) => {
       console.log('SEOSection - Search API response:', searchRes.status, searchRes.value?.data);
       console.log('SEOSection - Pages API response:', pagesRes.status, pagesRes.value?.data);
-      
+
       const popularSearches = searchRes.status === 'fulfilled' && searchRes.value?.data ? (searchRes.value.data.popularSearches || []) : [];
       const searchAnalytics = searchRes.status === 'fulfilled' && searchRes.value?.data ? (searchRes.value.data.searchAnalytics || []) : [];
-      
+
       console.log('SEOSection - Popular searches fetched:', popularSearches.length);
       console.log('SEOSection - Search analytics fetched:', searchAnalytics.length);
       if (popularSearches.length > 0) {
@@ -134,14 +134,14 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
   const filteredQueries = useMemo(() => {
     if (activeFilter === 'all') return seoData.popularSearches;
     if (activeFilter === 'branded') {
-      return seoData.popularSearches.filter(q => 
-        q.query.toLowerCase().includes('tgs') || 
+      return seoData.popularSearches.filter(q =>
+        q.query.toLowerCase().includes('tgs') ||
         q.query.toLowerCase().includes('tech info')
       );
     }
     if (activeFilter === 'non-branded') {
-      return seoData.popularSearches.filter(q => 
-        !q.query.toLowerCase().includes('tgs') && 
+      return seoData.popularSearches.filter(q =>
+        !q.query.toLowerCase().includes('tgs') &&
         !q.query.toLowerCase().includes('tech info')
       );
     }
@@ -151,10 +151,10 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
   const maxSearchCount = Math.max(...filteredQueries.map(q => q.search_count), 1);
 
   const seoKpis = [
-    { label: 'Total Searches',    value: seoData.kpis?.totalSearches?.toLocaleString() || '0',   color: '#0AAEEF', icon: <SearchOutlined />, delta: null, up: true },
-    { label: 'Avg Results',       value: seoData.kpis?.avgResults || '0.0',                   color: '#10B981', icon: <LineChartOutlined />, delta: null, up: true },
-    { label: 'Avg Position',      value: seoData.kpis?.avgPosition || '0.0',                  color: '#8B5CF6', icon: <RiseOutlined />, delta: null, up: true },
-    { label: 'Query Types',      value: new Set(seoData.popularSearches.map(q => q.search_type)).size.toString(), color: '#F59E0B', icon: <BulbOutlined />, delta: null, up: true },
+    { label: 'Total Searches', value: seoData.kpis?.totalSearches?.toLocaleString() || '0', color: '#0AAEEF', icon: <SearchOutlined />, delta: null, up: true },
+    { label: 'Avg Results', value: seoData.kpis?.avgResults || '0.0', color: '#10B981', icon: <LineChartOutlined />, delta: null, up: true },
+    { label: 'Avg Position', value: seoData.kpis?.avgPosition || '0.0', color: '#8B5CF6', icon: <RiseOutlined />, delta: null, up: true },
+    { label: 'Query Types', value: new Set(seoData.popularSearches.map(q => q.search_type)).size.toString(), color: '#F59E0B', icon: <BulbOutlined />, delta: null, up: true },
   ];
 
   const pages = seoData.topPages.length > 0 ? seoData.topPages : [];
