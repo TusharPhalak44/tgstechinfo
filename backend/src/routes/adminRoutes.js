@@ -17,11 +17,15 @@ router.put('/notifications/:id/read', hasPermission('settings.update'), notifica
 router.get('/admin/notifications', hasPermission('settings.read'), notificationController.getAdminNotifications);
 router.put('/admin/notifications/:id/read', hasPermission('settings.update'), notificationController.markAdminAsRead);
 
+const fileLandingController = require('../controllers/fileLandingController');
+
 // Content management
 router.get('/content/all', adminController.getAllContent);
 router.get('/content/pending', adminController.getPendingContent);
 router.put('/content/:id/review', hasPermission('content.publish'), adminController.reviewContent);
 router.get('/content/:id', adminController.getContentDetails);
+router.get('/landing-pages', hasPermission('content.read'), fileLandingController.getAdminLandingPagesList);
+router.get('/file-landing-pages', hasPermission('content.read'), fileLandingController.getAdminLandingPagesList);
 
 // Admin content creation and submission
 router.post('/content',
@@ -66,6 +70,12 @@ router.get('/webinar-registrations', hasPermission('content.read'), adminControl
 // Data requests (DSAR + Do Not Sell)
 router.get('/data-requests', hasPermission('user.read'), adminController.getDataRequests);
 router.put('/data-requests/:id/status', hasPermission('user.update'), adminController.updateDataRequestStatus);
+
+// Newsletter subscriber management
+const newsletterController = require('../controllers/newsletterController');
+router.get('/newsletter', hasPermission('user.read'), newsletterController.getSubscribers);
+router.delete('/newsletter/:email', hasPermission('user.delete'), newsletterController.removeSubscriber);
+
 
 // Content editing and deletion
 router.put('/content/:id/edit',

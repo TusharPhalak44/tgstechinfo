@@ -242,11 +242,11 @@ export default function AudienceIntelligence() {
 
   return (
     <div className="audience-intel-root">
-      <div style={{ maxWidth: '1520px', margin: '0 auto', padding: '24px 24px 60px 24px' }}>
+      <div className="aud-main-container" style={{ maxWidth: '1520px', margin: '0 auto' }}>
         
         {/* ── Top Header Navigation Bar ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--aud-card-border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--aud-card-border)', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <Link to="/audience" style={{ textDecoration: 'none' }}>
               <Button
                 icon={<ArrowLeftOutlined />}
@@ -266,7 +266,7 @@ export default function AudienceIntelligence() {
               </Button>
             </Link>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.8125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#0AAEEF', textTransform: 'uppercase' }}>
                 {brandName}
               </span>
@@ -277,7 +277,7 @@ export default function AudienceIntelligence() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <div className="aud-live-pulse" style={{ display: 'none', md: 'inline-flex' }}>
               <span className="aud-live-dot" />
               <span>Data Updated: {lastUpdated}</span>

@@ -67,9 +67,14 @@ const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) =>
     <div style={{
       position: 'absolute',
       inset: 0,
+      width: '100%',
+      height: '100%',
+      maxWidth: '100%',
       overflow: 'hidden',
       pointerEvents: 'none',
-      zIndex: 0
+      zIndex: 0,
+      contain: 'paint',
+      clipPath: 'inset(0)'
     }}>
       <style>{`
         @keyframes lightSweep1 {
@@ -109,6 +114,7 @@ const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) =>
           top: '-40%',
           left: '-20%',
           width: '140%',
+          maxWidth: '140%',
           height: '180%',
           background: darkMode
             ? 'linear-gradient(120deg, transparent 20%, rgba(14, 165, 233, 0.35) 45%, rgba(59, 130, 246, 0.25) 55%, transparent 80%)'
@@ -126,6 +132,7 @@ const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) =>
           bottom: '-35%',
           right: '-15%',
           width: '130%',
+          maxWidth: '130%',
           height: '160%',
           background: darkMode
             ? 'linear-gradient(145deg, transparent 20%, rgba(99, 102, 241, 0.3) 50%, transparent 80%)'
@@ -142,8 +149,10 @@ const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) =>
           position: 'absolute',
           top: '5%',
           right: '5%',
-          width: 500,
-          height: 500,
+          width: 'min(500px, 80vw)',
+          height: 'min(500px, 80vw)',
+          maxWidth: '100%',
+          maxHeight: '100%',
           borderRadius: '50%',
           background: darkMode
             ? 'radial-gradient(circle, rgba(56, 189, 248, 0.3) 0%, transparent 70%)'
@@ -157,15 +166,14 @@ const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) =>
 };
 
 // ── Modern Executive Publishing Hero Header ─────────────────────────
-const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigate, darkMode, searchTerm, setSearchTerm }) => {
-  const isMobile = window.innerWidth < 768;
-
+const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigate, darkMode, searchTerm, setSearchTerm, isMobile, isTablet, isTabletOrMobile }) => {
   return (
     <div style={{
       position: 'relative',
       borderBottom: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #CBD5E1',
       padding: isMobile ? '36px 16px' : '52px 24px',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      contain: 'paint'
     }}>
       {/* Keyframe Badge Animation */}
       <style>{`
@@ -178,11 +186,11 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
       {/* ── Frosted Glass Light Band Animation Background ── */}
       <FrostedLightBandBackground accent={accent} darkMode={darkMode} />
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 32 }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1, width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: isTabletOrMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isTabletOrMobile ? 'flex-start' : 'center', gap: 32, width: '100%', boxSizing: 'border-box' }}>
           
           {/* Left Column: Publication Title & Search */}
-          <div style={{ flex: 1, maxWidth: featuredPost && !isMobile ? 620 : '100%' }}>
+          <div style={{ flex: 1, minWidth: 0, maxWidth: featuredPost && !isTabletOrMobile ? 620 : '100%', width: '100%', boxSizing: 'border-box' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
               <span style={{
                 background: darkMode ? 'rgba(10, 174, 239, 0.15)' : 'rgba(10, 174, 239, 0.1)',
@@ -229,7 +237,7 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
             </p>
 
             {/* Quick Filter Search Bar */}
-            <div style={{ display: 'flex', alignItems: 'center', maxWidth: 480, position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'center', maxWidth: 480, width: '100%', position: 'relative' }}>
               <input
                 type="text"
                 placeholder={`Search ${title.toLowerCase()} by keyword...`}
@@ -254,7 +262,7 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
           </div>
 
           {/* Right Column: Featured Spotlight Article / Webinar Hero Story */}
-          {featuredPost && !isMobile && (() => {
+          {featuredPost && (() => {
             const featuredType = (featuredPost.content_type || featuredPost.content_type_name || '').toLowerCase().trim();
             const isFeaturedWebinar = featuredType === 'webinar';
             const isFeaturedLiveWebinar = isFeaturedWebinar && (featuredPost.webinar_type === 'live' || (!featuredPost.webinar_type && featuredPost.webinar_date));
@@ -264,8 +272,10 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
               <div
                 onClick={() => navigateContentItem(featuredPost, navigate)}
                 style={{
-                  width: 440,
-                  flexShrink: 0,
+                  width: isTabletOrMobile ? '100%' : 440,
+                  maxWidth: 440,
+                  boxSizing: 'border-box',
+                  flexShrink: isTabletOrMobile ? 1 : 0,
                   background: darkMode ? 'rgba(15, 23, 42, 0.9)' : '#FFFFFF',
                   border: isFeaturedWebinar
                     ? (darkMode ? '2px solid #ef4444' : '2px solid #3b82f6')
@@ -395,8 +405,8 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
 };
 
 // ── Main List Article Item ───────────────────────────────────────────
-const ListItem = ({ item, navigate, accent, darkMode }) => {
-  const isMobile = window.innerWidth < 768;
+const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile }) => {
+  const isMobile = typeof propIsMobile === 'boolean' ? propIsMobile : (typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const isLandingPage = isHtmlBuilderContent(item);
   const isWebinar = (item.content_type_name || item.content_type || '').toLowerCase() === 'webinar';
   const isLive = isWebinar && (item.webinar_type === 'live' || (!item.webinar_type && item.webinar_date));
@@ -407,7 +417,8 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
       display: 'flex', gap: isMobile ? 12 : 20, padding: isMobile ? '16px 0' : '20px 0',
       borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer',
       transition: 'background .15s', borderRadius: 6,
-      flexDirection: isMobile ? 'column' : 'row'
+      flexDirection: isMobile ? 'column' : 'row',
+      width: '100%', maxWidth: '100%', boxSizing: 'border-box'
     }}
       className="cat-list-item"
       onClick={() => navigateContent(item, navigate)}
@@ -417,6 +428,7 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
       {/* Thumbnail */}
       <div style={{ 
         width: isMobile ? '100%' : 240, 
+        maxWidth: '100%',
         height: isMobile ? 180 : 155, 
         flexShrink: 0, 
         borderRadius: 10, 
@@ -425,6 +437,7 @@ const ListItem = ({ item, navigate, accent, darkMode }) => {
         position: 'relative',
         minHeight: isMobile ? 180 : 155,
         maxHeight: isMobile ? 180 : 155,
+        boxSizing: 'border-box'
       }} className="cat-list-item-thumb">
         {item.banner_image
           ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="cat-list-item-thumb-img" style={{ transition: 'transform .4s ease', width: '100%', height: '100%', objectFit: 'cover' }}
@@ -571,7 +584,7 @@ const CategoryList = () => {
   const slug = paramSlug || pathSlug;
   const navigate = useNavigate();
   const { darkMode } = useTheme();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const [contents, setContents] = useState([]);
   const [recentPosts, setRecentPosts] = useState([]);
@@ -583,10 +596,14 @@ const CategoryList = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  const isTabletOrMobile = windowWidth < 1024;
 
   const typeInfo = TYPE_MAP[slug];
   const accent = typeInfo?.accent || CATEGORY_ACCENT_MAP[slug] || '#0AAEEF';
@@ -661,21 +678,24 @@ const CategoryList = () => {
         darkMode={darkMode}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        isMobile={isMobile}
+        isTablet={isTablet}
+        isTabletOrMobile={isTabletOrMobile}
       />
 
       {/* ── Content Area ── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
-        <div style={{ display: 'flex', gap: isMobile ? 24 : 40, alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row' }} className="cat-layout">
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', gap: isMobile ? 24 : 40, alignItems: 'flex-start', flexDirection: isTabletOrMobile ? 'column' : 'row', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }} className="cat-layout">
 
           {/* ── Main List Column ── */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', width: isMobile ? '100%' : 'auto' }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
 
             {/* Horizontal Categories */}
-            <div style={{ marginBottom: isMobile ? 16 : 24 }}>
+            <div style={{ marginBottom: isMobile ? 16 : 24, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
               <div style={{ fontWeight: 700, fontSize: isMobile ? 13 : 14, color: darkMode ? '#94a3b8' : '#64748b', marginBottom: isMobile ? 10 : 12, textTransform: 'uppercase', letterSpacing: 1 }}>
                 Explore Topics & Categories
               </div>
-              <div style={{ display: 'flex', gap: isMobile ? 8 : 10, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'thin' }}>
+              <div style={{ display: 'flex', gap: isMobile ? 8 : 10, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'thin', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                 {loading
                   ? <Skeleton active paragraph={{ rows: 1 }} />
                   : categoriesTree.filter(parent => parent.count > 0).length === 0
@@ -721,7 +741,7 @@ const CategoryList = () => {
             </div>
 
             {/* Title & Count bar */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: isMobile ? 12 : 16, borderBottom: `3px solid ${accent}`, flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: isMobile ? 12 : 16, borderBottom: `3px solid ${accent}`, flexShrink: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
               <span style={{ fontWeight: 800, fontSize: isMobile ? 16 : 18, color: darkMode ? '#f1f5f9' : '#0f172a' }}>
                 {searchTerm ? `Search Results for "${searchTerm}"` : `Latest ${pageTitle}`}
               </span>
@@ -737,7 +757,7 @@ const CategoryList = () => {
                 : filteredContents.length === 0
                   ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>No articles matched your search query.</div>
                   : filteredContents.slice(0, visibleCount).map(item => (
-                    <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
+                    <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} isMobile={isMobile} />
                   ))
               }
             </div>
@@ -776,9 +796,9 @@ const CategoryList = () => {
             )}
           </div>
 
-          {/* ── Sidebar (Desktop Only) ── */}
+          {/* ── Sidebar (Tablet & Desktop) ── */}
           {!isMobile && (
-            <div style={{ width: 300, flexShrink: 0 }} className="cat-sidebar">
+            <div style={{ width: isTablet ? '100%' : 300, maxWidth: '100%', flexShrink: isTablet ? 1 : 0, boxSizing: 'border-box' }} className="cat-sidebar">
               {/* Newsletter Box */}
               <div style={{
                 background: 'linear-gradient(135deg, #0AAEEF 0%, #0284C7 50%, #0369A1 100%)',

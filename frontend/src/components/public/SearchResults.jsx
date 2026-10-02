@@ -72,9 +72,9 @@ const SearchResults = () => {
                 style={{ textDecoration: 'none' }}
               >
                 <div style={{
-                  background: '#fff', borderRadius: 10, padding: '16px 20px',
-                  border: '1px solid #e8e8e8', display: 'flex', gap: 16, alignItems: 'flex-start',
-                  transition: 'box-shadow 0.2s'
+                  background: '#fff', borderRadius: 10, padding: '16px 16px',
+                  border: '1px solid #e8e8e8', display: 'flex', gap: 14, alignItems: 'flex-start',
+                  transition: 'box-shadow 0.2s', width: '100%', boxSizing: 'border-box'
                 }}
                   onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
                   onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
@@ -83,13 +83,13 @@ const SearchResults = () => {
                     <img
                       src={`/uploads/${item.banner_image}`}
                       alt=""
-                      style={{ width: 90, height: 64, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
+                      style={{ width: 84, height: 60, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }}
                     />
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
-                      {item.category_name && <Tag color="blue" style={{ fontSize: 11 }}>{item.category_name}</Tag>}
-                      {item.content_type_name && <Tag color="geekblue" style={{ fontSize: 11 }}>{item.content_type_name}</Tag>}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
+                      {item.category_name && <Tag color="blue" style={{ fontSize: 11, marginInlineEnd: 0 }}>{item.category_name}</Tag>}
+                      {item.content_type_name && <Tag color="geekblue" style={{ fontSize: 11, marginInlineEnd: 0 }}>{item.content_type_name}</Tag>}
                     </div>
                     <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 4 }}>{item.title}</div>
                     {item.short_description && (

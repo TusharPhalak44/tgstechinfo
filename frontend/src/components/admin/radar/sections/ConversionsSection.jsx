@@ -102,6 +102,11 @@ const ConversionsSection = ({
       if (ctaRes.status === 'fulfilled' && ctaRes.value?.data) {
         data.ctaData = ctaRes.value.data.ctaClicks || ctaRes.value.data || [];
         data.totalConversions = ctaRes.value.data.totalConversions || 0;
+        
+        if (data.ctaData.length === 0) {
+           // No dummy data, just use empty array
+        }
+        
         console.log('ConversionsSection - CTA data parsed:', data.ctaData.length, 'items');
       }
 
@@ -119,8 +124,11 @@ const ConversionsSection = ({
           percentage: parseFloat(item.percentage) || 0
         }));
         
+        if (data.funnel.length === 0) {
+           // No dummy data
+        }
+        
         console.log('ConversionsSection - Funnel data parsed:', data.funnel.length, 'items, totalSessions:', data.totalSessions);
-        console.log('ConversionsSection - Funnel data structure:', JSON.stringify(data.funnel, null, 2));
       }
 
       setConversionData(data);
@@ -144,11 +152,7 @@ const ConversionsSection = ({
   // Use real data only - no fallbacks
   const funnelData = funnel.length > 0 ? funnel : [];
   const ctaDisplayData = ctaData.length > 0 ? ctaData.slice(0, 8) : [];
-  const maxClicks = ctaDisplayData.length > 0 ? Math.max(...ctaDisplayData.map(c => c.click_count || c.clicks || 0), 1) : 1;
-
-  console.log('ConversionsSection - Final funnelData:', funnelData);
-  console.log('ConversionsSection - funnelData.length:', funnelData.length);
-  console.log('ConversionsSection - funnelData.length > 0:', funnelData.length > 0);
+  const maxClicks = ctaDisplayData.length > 0 ? Math.max(...ctaDisplayData.map(c => c.click_count || c.clicks || c.total_clicks || 0), 1) : 1;
 
   // Empty state component
   const EmptyState = ({ message }) => (
@@ -282,7 +286,7 @@ const ConversionsSection = ({
                   </thead>
                   <tbody>
                     {ctaDisplayData.map((c, i) => {
-                      const clicks = c.click_count || c.clicks || 0;
+                      const clicks = c.click_count || c.clicks || c.total_clicks || 0;
                       const pct = Math.round((clicks / maxClicks) * 100);
                       const color = COLORS[i % COLORS.length];
                       const convR = c.conv_rate || c.conv || Math.round((clicks / Math.max(1, realSessions)) * 100);

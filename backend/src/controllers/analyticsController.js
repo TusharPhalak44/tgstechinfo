@@ -515,7 +515,7 @@ exports.getSearchAnalytics = async (req, res) => {
 
         const filters = {};
         if (start_date) filters.start_date = start_date;
-        if (end_date) filters.end_date = end_date;
+        if (end_date) filters.end_date = end_date.includes(':') ? end_date : `${end_date} 23:59:59`;
 
         console.log('getSearchAnalytics - Filters:', filters);
 
@@ -542,7 +542,7 @@ exports.getJourneyAnalytics = async (req, res) => {
 
         const filters = {};
         if (start_date) filters.start_date = start_date;
-        if (end_date) filters.end_date = end_date;
+        if (end_date) filters.end_date = end_date.includes(':') ? end_date : `${end_date} 23:59:59`;
 
         const popularJourneys = await UserJourney.getPopularJourneys(parseInt(limit), filters);
         const conversionFunnel = await UserJourney.getConversionFunnel(filters);
@@ -568,7 +568,7 @@ exports.getCtaAnalytics = async (req, res) => {
 
         const filters = {};
         if (start_date) filters.start_date = start_date;
-        if (end_date) filters.end_date = end_date;
+        if (end_date) filters.end_date = end_date.includes(':') ? end_date : `${end_date} 23:59:59`;
 
         const ctaAnalytics = await CtaClick.getCtaAnalytics(filters);
 

@@ -62,19 +62,14 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
     console.log('SEOSection - Fetching search data with timeRange:', timeRange, 'dateParams:', dateParams);
     console.log('SEOSection - Full API URL:', `/api/analytics/search${dateParams}`);
 
-    // Fetch search analytics data
-    axios.get(`/api/analytics/search${dateParams}`)
-      .then(res => {
-        console.log('SEOSection - API response:', res.data);
-        const popularSearches = res.data.popularSearches || [];
-        const searchAnalytics = res.data.searchAnalytics || [];
+    // Fetch search analytics and popular pages
+    Promise.allSettled([
+      axios.get(`/api/analytics/search${dateParams}`),
+      axios.get(`/api/analytics/popular-pages${dateParams}`)
+    ]).then(([searchRes, pagesRes]) => {
+        const popularSearches = searchRes.status === 'fulfilled' ? (searchRes.value?.data?.popularSearches || []) : [];
+        const searchAnalytics = searchRes.status === 'fulfilled' ? (searchRes.value?.data?.searchAnalytics || []) : [];
         
-        console.log('SEOSection - Popular searches fetched:', popularSearches.length);
-        console.log('SEOSection - Search analytics fetched:', searchAnalytics.length);
-        if (popularSearches.length > 0) {
-          console.log('SEOSection - Sample search data:', popularSearches[0]);
-        }
-
         // Transform search data to frontend format
         const queries = popularSearches.map((q, i) => ({
           query: q.search_keyword || q.query_text || q.query || 'Unknown',
@@ -85,14 +80,20 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
           search_type: q.search_type || 'keyword'
         }));
 
+        let topPages = []; 
+        if (pagesRes.status === 'fulfilled' && pagesRes.value?.data?.popularPages) {
+          topPages = pagesRes.value.data.popularPages.map(p => ({
+            url: p.page_url || 'Unknown',
+            clicks: p.view_count || p.unique_views || 0,
+            ctr: p.view_count > 0 ? ((p.unique_views || p.view_count) / p.view_count * 100).toFixed(1) + '%' : '0.0%'
+          })).slice(0, 10);
+        }
+
         // Calculate KPIs from real data
         const totalImpressions = queries.reduce((a, q) => a + q.impressions, 0);
         const totalClicks = queries.reduce((a, q) => a + q.clicks, 0);
         const avgCtr = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.ctr), 0) / queries.length).toFixed(1) + '%' : '0.0%';
         const avgPosition = queries.length > 0 ? (queries.reduce((a, q) => a + parseFloat(q.position), 0) / queries.length).toFixed(1) : '0.0';
-
-        // Get top pages from page view data
-        const topPages = []; // Will need to fetch from page views API
 
         setSeoData({
           popularSearches: queries,
@@ -108,7 +109,7 @@ const SEOSection = ({ darkMode, searchData = {}, timeRange = '7d' }) => {
         setLoading(false);
       })
       .catch(err => {
-        console.error('SEOSection - Error fetching search data:', err);
+        console.error('SEOSection - Error fetching data:', err);
         setSeoData({
           popularSearches: [],
           searchAnalytics: [],

@@ -17,14 +17,16 @@ const { createDynamicTable, updateDynamicTable, dropDynamicTable } = require('..
  * @param {string|null} existingWebhookUrl - Any webhook_url already stored for this content
  * @returns {{ content: string, webhook_url: string|null, custom_fields: Array }}
  */
-function processHtmlContent(htmlContent, existingWebhookUrl = null) {
-    if (!htmlContent) return { content: htmlContent, webhook_url: existingWebhookUrl, custom_fields: [] };
+function processHtmlContent(htmlContent, existingWebhookUrl = null, existingRedirectUrl = null) {
+    if (!htmlContent) return { content: htmlContent, webhook_url: existingWebhookUrl, redirect_url: existingRedirectUrl, custom_fields: [] };
 
     let processedContent = htmlContent;
     let detectedWebhookUrl = existingWebhookUrl || null;
+    let detectedRedirectUrl = existingRedirectUrl || null;
 
     console.log('[processHtmlContent] Starting HTML processing...');
     console.log('[processHtmlContent] Existing webhook URL:', existingWebhookUrl);
+    console.log('[processHtmlContent] Existing redirect URL:', existingRedirectUrl);
 
     // Helper: validate and clean extracted API URL
     const cleanExtractedUrl = (rawUrl) => {
@@ -79,6 +81,26 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
             }
         }
         if (detectedWebhookUrl && detectedWebhookUrl !== existingWebhookUrl) break;
+    }
+
+    // ── Step 1c: Extract page_url / redirect_url from HTML inputs or scripts ──
+    const redirectPatterns = [
+        /<input[^>]+name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["'][^>]*value=["']([^"']+)["']/i,
+        /<input[^>]+value=["']([^"']+)["'][^>]*name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["']/i,
+        /(?:const|let|var)\s+(?:REDIRECT_URL|redirectUrl|PAGE_URL|pageUrl|TARGET_URL|targetUrl|THANK_YOU_URL|thankYouUrl)\s*=\s*[`"']([^`"']+)[`"']/i,
+        /window\.location(?:\.href)?\s*=\s*[`"'](https?:\/\/[^`"']+|\/[^`"']*)`["']/i
+    ];
+
+    for (const pattern of redirectPatterns) {
+        const match = pattern.exec(processedContent);
+        if (match && match[1]) {
+            const raw = match[1].trim().replace(/\\/g, '/');
+            if (raw && raw !== '#' && !raw.startsWith('javascript:') && !raw.includes('/api/public/landing-page')) {
+                detectedRedirectUrl = raw;
+                console.log(`[processHtmlContent] Detected redirect/page URL from HTML: ${raw}`);
+                break;
+            }
+        }
     }
 
     // ── Step 2: Rewrite JS API_URL variables in the HTML to point to platform endpoint ──
@@ -191,6 +213,7 @@ function processHtmlContent(htmlContent, existingWebhookUrl = null) {
     return {
         content: processedContent,
         webhook_url: detectedWebhookUrl,
+        redirect_url: detectedRedirectUrl,
         custom_fields: customFields
     };
 }
@@ -233,7 +256,7 @@ class Content {
     static async create(contentData) {
         let {
             user_id, content_type_id, category_id, title, short_description,
-            tags, banner_image, pdf_file, video_file, custom_fields, content, webhook_url,
+            tags, banner_image, pdf_file, video_file, custom_fields, content, webhook_url, redirect_url,
             webhook_field_mapping, builder_layout, builder_content_elements, builder_page_data,
             seo_meta_title, seo_meta_description, seo_meta_keywords,
             scheduled_publish_date, webinar_date, hosted_by, platform, webinar_type = 'live', join_link, status = 'draft',
@@ -253,16 +276,16 @@ class Content {
         })();
 
         if (isHtmlBuilder && content) {
-            // Use manually provided webhook_url if available, otherwise extract from HTML
+            // Use manually provided webhook_url / redirect_url if available, otherwise extract from HTML
             const manualWebhookUrl = webhook_url || null;
+            const manualRedirectUrl = redirect_url || null;
             console.log('[Content.create] Manual webhook_url:', manualWebhookUrl);
+            console.log('[Content.create] Manual redirect_url:', manualRedirectUrl);
             console.log('[Content.create] Processing HTML content...');
-            const processed = processHtmlContent(content, manualWebhookUrl);
+            const processed = processHtmlContent(content, manualWebhookUrl, manualRedirectUrl);
             content = processed.content;
 
             // Priority: manual webhook_url > HTML-extracted webhook_url
-            // If manual webhook_url is explicitly provided (not null/undefined), use it
-            // Otherwise, use the HTML-extracted webhook_url
             if (manualWebhookUrl !== null && manualWebhookUrl !== undefined && manualWebhookUrl !== '') {
                 webhook_url = manualWebhookUrl;
                 console.log('[Content.create] Using manual webhook_url:', webhook_url);
@@ -271,7 +294,16 @@ class Content {
                 console.log('[Content.create] Using HTML-extracted webhook_url:', webhook_url);
             }
 
-            console.log('[Content.create] Final webhook_url:', webhook_url);
+            // Priority: manual redirect_url > HTML-extracted redirect_url
+            if (manualRedirectUrl !== null && manualRedirectUrl !== undefined && manualRedirectUrl !== '') {
+                redirect_url = manualRedirectUrl;
+                console.log('[Content.create] Using manual redirect_url:', redirect_url);
+            } else {
+                redirect_url = processed.redirect_url;
+                console.log('[Content.create] Using HTML-extracted redirect_url:', redirect_url);
+            }
+
+            console.log('[Content.create] Final webhook_url:', webhook_url, 'redirect_url:', redirect_url);
 
             // Auto-fill custom_fields from HTML form inputs if not already set by the user
             if ((!custom_fields || (Array.isArray(custom_fields) && custom_fields.length === 0)) && processed.custom_fields.length > 0) {
@@ -314,7 +346,7 @@ class Content {
 
         const insertColumns = [
             'user_id', 'content_type_id', 'category_id', 'title', 'slug', 'short_description',
-            'tags', 'banner_image', 'pdf_file', 'video_file', 'custom_fields', 'content', 'webhook_url',
+            'tags', 'banner_image', 'pdf_file', 'video_file', 'custom_fields', 'content', 'webhook_url', 'redirect_url',
             'webhook_field_mapping', 'builder_layout', 'builder_content_elements',
             'builder_page_data', 'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'webinar_date', 'hosted_by', 'platform', 'webinar_type', 'join_link',
@@ -336,6 +368,7 @@ class Content {
             custom_fields,
             content,
             webhook_url || null,
+            redirect_url || null,
             webhook_field_mapping,
             builder_layout,
             builder_content_elements,
@@ -476,7 +509,7 @@ class Content {
 
         let query = `
             SELECT c.*, 
-                   u.first_name, u.last_name,
+                   u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
                    cat.name as category_name
@@ -514,32 +547,35 @@ class Content {
         if (isHtmlBuilder && contentData.content) {
             console.log('[Content.update] Processing HTML builder content');
 
-            // Fetch existing webhook_url from database
+            // Fetch existing webhook_url and redirect_url from database
             let existingWebhookUrl = null;
+            let existingRedirectUrl = null;
             try {
-                const [rows] = await pool.query('SELECT webhook_url FROM contents WHERE id = ?', [id]);
+                const [rows] = await pool.query('SELECT webhook_url, redirect_url FROM contents WHERE id = ?', [id]);
                 existingWebhookUrl = rows[0]?.webhook_url || null;
-                console.log('[Content.update] Existing webhook_url from DB:', existingWebhookUrl);
+                existingRedirectUrl = rows[0]?.redirect_url || null;
+                console.log('[Content.update] Existing from DB - webhook_url:', existingWebhookUrl, 'redirect_url:', existingRedirectUrl);
             } catch (err) {
-                console.error('[Content.update] Error fetching existing webhook_url:', err);
+                console.error('[Content.update] Error fetching existing settings:', err);
             }
 
-            // Determine which webhook URL to use as the base for processing
+            // Determine which webhook/redirect URL to use as the base for processing
             const manualWebhookUrl = (contentData.webhook_url && typeof contentData.webhook_url === 'string' && contentData.webhook_url.trim())
                 ? contentData.webhook_url.trim()
                 : null;
+            const manualRedirectUrl = (contentData.redirect_url && typeof contentData.redirect_url === 'string' && contentData.redirect_url.trim())
+                ? contentData.redirect_url.trim()
+                : null;
+
             const baseWebhookUrl = manualWebhookUrl || existingWebhookUrl;
+            const baseRedirectUrl = manualRedirectUrl || existingRedirectUrl;
 
-            console.log('[Content.update] Manual webhook_url:', manualWebhookUrl);
-            console.log('[Content.update] Base webhook_url for processing:', baseWebhookUrl);
+            console.log('[Content.update] Manual webhook_url:', manualWebhookUrl, 'redirect_url:', manualRedirectUrl);
 
-            const processed = processHtmlContent(contentData.content, baseWebhookUrl);
+            const processed = processHtmlContent(contentData.content, baseWebhookUrl, baseRedirectUrl);
             contentData.content = processed.content;
 
-            // Priority logic:
-            // 1. If manual non-empty webhook_url is explicitly provided, use it
-            // 2. Otherwise, use HTML-extracted webhook_url if found
-            // 3. Otherwise, preserve existing webhook_url from DB
+            // Priority logic for webhook_url:
             if (manualWebhookUrl) {
                 contentData.webhook_url = manualWebhookUrl;
                 console.log('[Content.update] Using non-empty manual webhook_url:', contentData.webhook_url);
@@ -553,7 +589,21 @@ class Content {
                 contentData.webhook_url = null;
             }
 
-            console.log('[Content.update] Final webhook_url:', contentData.webhook_url);
+            // Priority logic for redirect_url:
+            if (manualRedirectUrl) {
+                contentData.redirect_url = manualRedirectUrl;
+                console.log('[Content.update] Using non-empty manual redirect_url:', contentData.redirect_url);
+            } else if (processed.redirect_url) {
+                contentData.redirect_url = processed.redirect_url;
+                console.log('[Content.update] Using HTML-extracted redirect_url:', processed.redirect_url);
+            } else if (existingRedirectUrl) {
+                contentData.redirect_url = existingRedirectUrl;
+                console.log('[Content.update] Preserving existing redirect_url from DB:', existingRedirectUrl);
+            } else {
+                contentData.redirect_url = null;
+            }
+
+            console.log('[Content.update] Final webhook_url:', contentData.webhook_url, 'redirect_url:', contentData.redirect_url);
 
             // Auto-fill custom_fields from parsed HTML fields if not explicitly provided
             if (!contentData.custom_fields && processed.custom_fields.length > 0) {
@@ -588,7 +638,7 @@ class Content {
             'title', 'short_description', 'tags', 'banner_image', 'pdf_file', 'video_file', 'custom_fields', 'content',
             'seo_meta_title', 'seo_meta_description', 'seo_meta_keywords',
             'scheduled_publish_date', 'webinar_date', 'hosted_by', 'platform', 'webinar_type', 'join_link',
-            'status', 'category_id', 'content_type_id', 'webhook_url',
+            'status', 'category_id', 'content_type_id', 'webhook_url', 'redirect_url',
             'webhook_field_mapping', 'builder_layout', 'builder_content_elements', 'builder_page_data',
             'is_visible_on_site', 'email_subject', 'email_template', 'case_study_headline', 'case_study_summary'
         ];

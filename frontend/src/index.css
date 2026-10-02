@@ -142,10 +142,10 @@ html, body { overflow-x: hidden; max-width: 100vw; }
 
 /* ── CategoryList: list+sidebar → stack on mobile ── */
 @media (max-width: 768px) {
-  .cat-layout { flex-direction: column !important; }
-  .cat-sidebar { width: 100% !important; }
-  .cat-list-item { flex-direction: column !important; }
-  .cat-list-item-thumb { width: 100% !important; height: 180px !important; }
+  .cat-layout { flex-direction: column !important; width: 100% !important; max-width: 100% !important; }
+  .cat-sidebar { width: 100% !important; max-width: 100% !important; }
+  .cat-list-item { flex-direction: column !important; width: 100% !important; max-width: 100% !important; }
+  .cat-list-item-thumb { width: 100% !important; max-width: 100% !important; height: 180px !important; }
   /* Hero banner stack */
   .cat-hero { flex-direction: column !important; height: auto !important; }
   .cat-hero > div { flex: none !important; height: 160px !important; }
@@ -245,6 +245,15 @@ img { max-width: 100%; height: auto; }
 /* ============================================================ */
 
 /* Ticker animation */
+.ticker-strip {
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+  overflow: hidden;
+  contain: paint;
+  clip-path: inset(0);
+}
+
 @keyframes ticker {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }

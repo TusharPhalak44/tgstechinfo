@@ -133,6 +133,34 @@ const contentDisplayStyles = `
     background: transparent;
     padding: 0;
   }
+  @media (max-width: 768px) {
+    .admin-content-root {
+      padding: 14px 10px !important;
+    }
+    .admin-content-header-panel {
+      padding: 14px 16px !important;
+      gap: 12px !important;
+    }
+  }
+  @media (max-width: 480px) {
+    .admin-content-root {
+      padding: 10px 6px !important;
+    }
+    .admin-content-header-panel {
+      padding: 12px 10px !important;
+      gap: 10px !important;
+    }
+    .admin-content-filters {
+      width: 100% !important;
+    }
+    .admin-content-filters > * {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    .admin-drawer-stats {
+      grid-template-columns: 1fr !important;
+    }
+  }
 `;
 
 const formatImageUrl = (url) => {
@@ -522,9 +550,10 @@ const AdminContent = () => {
   ];
 
   return (
-    <div className={`radar-dashboard-root ${darkMode ? 'dark' : 'light'} radar-grid-bg`} style={{ minHeight: '100vh', padding: '24px' }}>
+    <div className={`radar-dashboard-root admin-content-root ${darkMode ? 'dark' : 'light'} radar-grid-bg`} style={{ minHeight: '100vh', padding: '24px' }}>
+      <style>{contentDisplayStyles}</style>
       {/* ── 1. CYBER HEADER COMMAND BAR ── */}
-      <div className="radar-glass-panel" style={{ padding: '18px 24px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div className="radar-glass-panel admin-content-header-panel" style={{ padding: '18px 24px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {/* Live signal beacon */}
           <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, rgba(10, 174, 239, 0.25) 0%, rgba(16, 185, 129, 0.15) 100%)', border: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -570,7 +599,7 @@ const AdminContent = () => {
 
       {/* ── 2. EXECUTIVE METRICS KPI PANEL ── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor, borderLeft: '3px solid #F7941D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -578,7 +607,7 @@ const AdminContent = () => {
               </span>
               <FileTextOutlined style={{ fontSize: 18, color: '#F7941D' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: textPrimary, marginTop: 8 }}>
+            <div title={metrics.total.toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: textPrimary, marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {metrics.total.toLocaleString()}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#10B981', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -587,7 +616,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -595,7 +624,7 @@ const AdminContent = () => {
               </span>
               <CheckCircleOutlined style={{ fontSize: 18, color: '#10B981' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10B981', marginTop: 8 }}>
+            <div title={metrics.published.toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10B981', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {metrics.published.toLocaleString()}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
@@ -604,7 +633,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -612,7 +641,7 @@ const AdminContent = () => {
               </span>
               <ClockCircleOutlined style={{ fontSize: 18, color: '#F59E0B' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F59E0B', marginTop: 8 }}>
+            <div title={(metrics.drafts + metrics.inReview).toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F59E0B', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {(metrics.drafts + metrics.inReview).toLocaleString()}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
@@ -621,7 +650,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor, borderLeft: '3px solid #0B1F4D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -629,8 +658,8 @@ const AdminContent = () => {
               </span>
               <FireOutlined style={{ fontSize: 18, color: '#0AAEEF' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0AAEEF', marginTop: 8 }}>
-              {metrics.totalViews.toLocaleString()}
+            <div title={metrics.totalViews.toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0AAEEF', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(metrics.totalViews)}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
               Combined readership engagement
@@ -675,7 +704,7 @@ const AdminContent = () => {
 
         {/* Bottom Tier: Search, Filters & View Mode */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 280 }}>
+          <div className="admin-content-filters" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
             {/* Cyber Search Input */}
             <Input
               prefix={<SearchOutlined style={{ color: '#0AAEEF' }} />}
@@ -957,13 +986,14 @@ const AdminContent = () => {
         </Row>
       ) : (
         /* TABLE VIEW */
-        <div className="radar-glass-panel" style={{ padding: '16px', background: bgCard, borderColor }}>
+        <div className="radar-glass-panel" style={{ padding: '16px', background: bgCard, borderColor, width: '100%', minWidth: 0, overflowX: 'auto' }}>
           <Table
             dataSource={paginatedContents}
             columns={tableColumns}
             rowKey="id"
             pagination={false}
             size="middle"
+            scroll={{ x: 'max-content' }}
           />
         </div>
       )}
@@ -1015,7 +1045,7 @@ const AdminContent = () => {
           </div>
         }
         placement="right"
-        width={540}
+        width={typeof window !== 'undefined' && window.innerWidth < 640 ? '100%' : 540}
         onClose={() => setDrawerOpen(false)}
         open={drawerOpen}
         drawerStyle={{ background: darkMode ? '#0c1c38' : '#f8fafc', color: textPrimary }}
@@ -1049,7 +1079,7 @@ const AdminContent = () => {
             </div>
 
             {/* Key Meta Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }} className="radar-glass-panel">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 12 }} className="radar-glass-panel admin-drawer-stats">
               <div style={{ padding: 12, textAlign: 'center' }}>
                 <div style={{ fontSize: '0.7rem', color: textMuted }}>READERSHIP VIEWS</div>
                 <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0AAEEF', marginTop: 2 }}>

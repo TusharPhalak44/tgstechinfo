@@ -18,6 +18,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useTracking } from '../../context/TrackingContext';
 import useEngagementTracking from '../../hooks/useEngagementTracking';
 import WebinarCountdown from '../common/WebinarCountdown';
+import ArticleNewsletterBanner from './ArticleNewsletterBanner';
 
 const { Title, Text } = Typography;
 
@@ -293,6 +294,12 @@ const ArticleDetail = () => {
         content_id: content.id,
         extra_fields
       });
+
+      const redirectTarget = res.data?.redirect_url || res.data?.page_url || extra_fields.page_url || extra_fields.redirect_url;
+      if (redirectTarget && typeof redirectTarget === 'string' && redirectTarget.trim() && redirectTarget.trim() !== '#' && !redirectTarget.trim().startsWith('javascript:')) {
+        window.location.href = redirectTarget.trim();
+        return;
+      }
 
       localStorage.setItem(`article-access-${content.id}`, 'true');
       setHasAccess(true);
@@ -936,6 +943,9 @@ const ArticleDetail = () => {
         {/* Sidebar - 30% */}
         <Col xs={24} lg={7} style={{ order: 2 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* Newsletter Subscription Widget at Top of Right Sidebar */}
+            <ArticleNewsletterBanner darkMode={darkMode} contentTitle={content?.title} />
 
             {/* ── Get Access Card — only for webinar/whitepaper/event ── */}
             {requiresLanding && (

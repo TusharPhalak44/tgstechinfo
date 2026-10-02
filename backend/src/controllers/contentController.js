@@ -546,7 +546,7 @@ exports.submitForReview = async (req, res) => {
                 content_title: content.title,
                 category: category?.name || 'Uncategorized',
                 submitted_date: new Date().toLocaleDateString(),
-                dashboard_url: `${frontendUrl}/dashboard`
+                dashboard_url: `${frontendUrl}/user-dashboard`
             });
         } catch (emailError) {
             console.error('Content submission email error:', emailError);

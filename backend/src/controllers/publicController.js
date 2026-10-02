@@ -6,9 +6,11 @@ const DataRequest = require('../models/DataRequest');
 const ContactSubmission = require('../models/ContactSubmission');
 const Download = require('../models/Download');
 const { pool } = require('../config/database');
-const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail } = require('../config/email');
+const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail, escapeHtml } = require('../config/email');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Extract webhook URL (apiUrl) from Visual Builder JSON trees (builder_page_data or builder_layout)
@@ -205,11 +207,6 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
-        // Check if content is visible on site
-        if (content.is_visible_on_site === false || content.is_visible_on_site === 0) {
-            return res.status(404).json({ message: 'Content not found' });
-        }
-
         // Get related articles
         const relatedArticles = await Content.getRelatedArticles(content.id, content.category_id);
 
@@ -230,22 +227,48 @@ exports.submitLandingPage = async (req, res) => {
         
         let normalizedContentId = content_id ? Number(content_id) : null;
         if (normalizedContentId && Number.isNaN(normalizedContentId)) normalizedContentId = null;
-        
-        console.log('Normalized content_id:', normalizedContentId);
 
-        // If content_id is missing, try to resolve it from the Referer header slug
-        // Uses findBySlugAny so draft/pending pages also work (findBySlug is published-only)
-        if (!normalizedContentId) {
-            // Fallback 1: slug passed as a query param (?slug=my-page-slug)
-            const slugParam = req.query.slug;
-            if (slugParam) {
-                const c = await Content.findBySlugAny(slugParam);
-                if (c) normalizedContentId = c.id;
+        // Check if this submission is from a file-based landing page (/lp/:slug, landing_slug, or Referer /lp/:slug)
+        let fileLandingSlug = req.body.landing_slug || req.body.landingSlug || req.query.landing_slug || req.query.slug || req.params.slug;
+        if (!fileLandingSlug) {
+            const referer = req.headers.referer || req.headers.referrer;
+            if (referer) {
+                try {
+                    const url = new URL(referer);
+                    const parts = url.pathname.split('/');
+                    const lpIdx = parts.indexOf('lp');
+                    if (lpIdx !== -1 && parts[lpIdx + 1]) {
+                        fileLandingSlug = decodeURIComponent(parts[lpIdx + 1]);
+                    }
+                } catch (e) {}
             }
         }
 
-        if (!normalizedContentId) {
-            // Fallback 2: parse slug from the Referer header URL path (/content/:slug)
+        let content = null;
+
+        // 1. If this is a file-based landing page, automatically find or create its content record in `contents`
+        if (fileLandingSlug) {
+            const { getOrCreateContentForLandingPage } = require('../utils/landingPageHelper');
+            content = await getOrCreateContentForLandingPage(fileLandingSlug, req.body);
+            if (content) {
+                normalizedContentId = content.id;
+                console.log(`[submitLandingPage] Auto-resolved content #${content.id} for landing slug '${fileLandingSlug}'`);
+            }
+        }
+
+        // 2. If content_id was provided, look up by ID
+        if (!content && normalizedContentId) {
+            content = await Content.findById(normalizedContentId);
+        }
+
+        // 3. Fallback: slug passed as a query param (?slug=my-page-slug)
+        if (!content && !normalizedContentId && req.query.slug) {
+            content = await Content.findBySlugAny(req.query.slug);
+            if (content) normalizedContentId = content.id;
+        }
+
+        // 4. Fallback: parse slug from Referer URL path (/content/:slug)
+        if (!content && !normalizedContentId) {
             const referer = req.headers.referer || req.headers.referrer;
             if (referer) {
                 try {
@@ -254,17 +277,13 @@ exports.submitLandingPage = async (req, res) => {
                     const slugIndex = pathParts.indexOf('content');
                     if (slugIndex !== -1 && pathParts[slugIndex + 1]) {
                         const slug = pathParts[slugIndex + 1];
-                        // findBySlugAny works for any status (draft, pending, published)
-                        const c = await Content.findBySlugAny(slug);
-                        if (c) normalizedContentId = c.id;
+                        content = await Content.findBySlugAny(slug);
+                        if (content) normalizedContentId = content.id;
                     }
-                } catch (e) {
-                    console.error('Error parsing Referer header for slug:', e);
-                }
+                } catch (e) {}
             }
         }
 
-        const content = normalizedContentId ? await Content.findById(normalizedContentId) : null;
         if (!content) {
             return res.status(404).json({ message: 'Content not found or invalid content ID' });
         }
@@ -279,12 +298,11 @@ exports.submitLandingPage = async (req, res) => {
         }
         console.log('customFieldsDef:', JSON.stringify(customFieldsDef));
 
-        // Get extra data. If extra_fields is not provided, use rest of root-level request body as extra data.
-        let extraData = {};
+        // Get extra data. Merge rest of root-level request body with extra_fields so both root fields and extra_fields are preserved
+        let extraData = { ...rest };
         if (extra_fields) {
-            extraData = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
-        } else {
-            extraData = rest;
+            const parsedExtra = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
+            extraData = { ...extraData, ...parsedExtra };
         }
 
         // Normalize extraData keys to lowercase/sanitized form so lookup matches field name casing
@@ -293,9 +311,9 @@ exports.submitLandingPage = async (req, res) => {
             normalizedExtraData[sanitizeColumnName(key)] = val;
         }
 
-        // Validate required fields — only when customFieldsDef has entries
-        // HTML builder pages often have no custom_fields definition; skip validation for them
-        if (customFieldsDef.length > 0) {
+        // Validate required fields — only for standard CMS pages when customFieldsDef has entries
+        // HTML file-based landing pages have their own form structure and client-side validation
+        if (!fileLandingSlug && customFieldsDef.length > 0) {
             for (const field of customFieldsDef) {
                 const val = normalizedExtraData[field.name] ?? '';
                 if (field.required !== false && String(val).trim() === '') {
@@ -304,83 +322,33 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
-        // Find email field value for dedup check (use normalized names)
-        const emailField = customFieldsDef.find(f => f.type === 'email' || f.name === 'email' || (f.webhook_key || '').toLowerCase() === 'email');
-        const emailValue = emailField ? normalizedExtraData[emailField.name] : null;
+        // ── Store Form Submission in Database ─────────────────────────────────────
+        const leadDataWithMeta = {
+            ...normalizedExtraData,
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+        };
 
-        // Dedup: check the dynamic table first (primary storage).
-        // Only fall back to landing_page_submissions if the dynamic table doesn't exist yet.
-        let existing = null;
-        if (emailValue) {
+        let submissionRecord = null;
+        if (normalizedContentId) {
+            // 1. Always insert into the dedicated dynamic table (e.g. form_submissions_459)
             try {
-                const { pool: dbPool } = require('../config/database');
-                const dynTable = `form_submissions_${normalizedContentId}`;
-                const [dynTables] = await dbPool.query(`SHOW TABLES LIKE '${dynTable}'`);
-                if (dynTables.length > 0) {
-                    const [dupRows] = await dbPool.query(
-                        `SELECT id FROM ${dynTable} WHERE email = ? LIMIT 1`,
-                        [emailValue]
-                    );
-                    existing = dupRows[0] || null;
-                } else {
-                    // Dynamic table not yet created — check legacy JSON table
-                    existing = await LandingPage.findByEmailAndContent(emailValue, normalizedContentId);
-                }
-            } catch (dedupErr) {
-                // Non-fatal — if dedup check fails, allow the insert
-                console.warn('[submitLandingPage] Dedup check failed (non-fatal):', dedupErr.message);
-                existing = null;
-            }
-        }
-        if (!existing) {
-            console.log('No duplicate found, attempting to insert into dynamic table...');
-            // Store in dynamic table — auto-create it if it doesn't exist yet
-            try {
-                console.log('Calling insertIntoDynamicTable with contentId:', normalizedContentId);
-                console.log('Data to insert:', JSON.stringify({
-                    ...normalizedExtraData,
-                    ip_address: req.ip,
-                    user_agent: req.headers['user-agent']
-                }, null, 2));
-                
-                await insertIntoDynamicTable(normalizedContentId, {
-                    ...normalizedExtraData,
-                    ip_address: req.ip,
-                    user_agent: req.headers['user-agent']
-                });
-                console.log('✅ Successfully inserted into dynamic table!');
+                await insertIntoDynamicTable(normalizedContentId, leadDataWithMeta);
+                console.log(`✅ Successfully inserted into dynamic table form_submissions_${normalizedContentId}`);
             } catch (dynamicTableError) {
-                console.error('❌ Dynamic table insert failed:', dynamicTableError);
-                // Table doesn't exist — create it from submitted field names and retry
-                if (dynamicTableError.message && dynamicTableError.message.includes('does not exist')) {
-                    try {
-                        // Build field definitions from submitted data
-                        const autoFields = Object.keys(normalizedExtraData)
-                            .filter(k => !['ip_address', 'user_agent'].includes(k))
-                            .map(k => ({ name: k, label: k, type: 'text', required: false }));
-                        
-                        if (autoFields.length > 0) {
-                            const { createDynamicTable } = require('../utils/dynamicTable');
-                            await createDynamicTable(normalizedContentId, content.slug, autoFields);
-                        }
-                        
-                        // Retry the insert
-                        await insertIntoDynamicTable(normalizedContentId, {
-                            ...normalizedExtraData,
-                            ip_address: req.ip,
-                            user_agent: req.headers['user-agent']
-                        });
-                    } catch (retryError) {
-                        console.error('Auto-create table and retry failed, falling back to JSON:', retryError);
-                        await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
-                    }
-                } else {
-                    console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
-                    await LandingPage.create({ content_id: normalizedContentId, extra_fields: normalizedExtraData });
-                }
+                console.error(`❌ Dynamic table insert failed for form_submissions_${normalizedContentId}:`, dynamicTableError.message);
             }
-        } else {
-            console.log('⚠️ Duplicate found, skipping insert. Existing record:', existing);
+
+            // 2. Always ALSO insert into landing_page_submissions so it shows in Admin Panel and unified submissions
+            try {
+                submissionRecord = await LandingPage.create({
+                    content_id: normalizedContentId,
+                    extra_fields: leadDataWithMeta
+                });
+                console.log(`✅ Successfully recorded submission into landing_page_submissions for content ${normalizedContentId}`);
+            } catch (lpErr) {
+                console.warn(`[LandingPage.create] Note:`, lpErr.message);
+            }
         }
 
 
@@ -508,16 +476,39 @@ exports.submitLandingPage = async (req, res) => {
         }
 
         // Find name/email for email template
+        const emailField = customFieldsDef.find(f => f.type === 'email' || f.name === 'email' || (f.webhook_key || '').toLowerCase().includes('email'));
+        const emailValue = 
+            (emailField && (normalizedExtraData[emailField.name] || extraData[emailField.name])) ||
+            normalizedExtraData.email ||
+            normalizedExtraData.email_address ||
+            normalizedExtraData.work_email ||
+            extraData.email ||
+            extraData.email_address ||
+            extraData.work_email ||
+            req.body.email ||
+            null;
+
         const nameField = customFieldsDef.find(f => f.name === 'first_name' || f.name === 'name' || (f.webhook_key || '').toLowerCase().includes('name'));
-        const fullName = nameField ? (normalizedExtraData[nameField.name] || 'there') : 'there';
+        const fullName = 
+            (nameField && (normalizedExtraData[nameField.name] || extraData[nameField.name])) ||
+            normalizedExtraData.first_name ||
+            normalizedExtraData.name ||
+            normalizedExtraData.full_name ||
+            extraData.first_name ||
+            extraData.name ||
+            extraData.full_name ||
+            req.body.first_name ||
+            'there';
         const contentTitle = content?.title || 'the requested article';
 
-        try {
-            const emailHtml = accessGrantEmailTemplate(fullName, contentTitle);
-            const emailResult = await sendEmail(emailValue, 'Access Granted - TGS Tech Info', emailHtml);
-            if (emailResult?.skipped) console.warn('Email skipped:', emailResult.reason);
-        } catch (emailError) {
-            console.warn('Email send skipped:', emailError.message);
+        if (emailValue) {
+            try {
+                const emailHtml = accessGrantEmailTemplate(fullName, contentTitle);
+                const emailResult = await sendEmail(emailValue, 'Access Granted - TGS Tech Info', emailHtml);
+                if (emailResult?.skipped) console.warn('Email skipped:', emailResult.reason);
+            } catch (emailError) {
+                console.warn('Email send skipped:', emailError.message);
+            }
         }
 
         // Track download if PDF file exists
@@ -553,10 +544,62 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
+        // Determine redirect URL from multiple sources in priority order:
+        // 1. Submitted payload (page_url, redirect_url, thank_you_url, return_url)
+        // 2. Content record in DB (content.redirect_url)
+        // 3. Extracted from content.content HTML (<input name="page_url" value="...">)
+        const submittedRedirect = extraData.page_url || extraData.redirect_url || extraData.thank_you_url || extraData.return_url ||
+                                  rest.page_url || rest.redirect_url || rest.thank_you_url || rest.return_url ||
+                                  req.body.page_url || req.body.redirect_url || req.body.thank_you_url || req.body.return_url ||
+                                  normalizedExtraData.page_url || normalizedExtraData.redirect_url;
+        
+        let targetRedirectUrl = (submittedRedirect && typeof submittedRedirect === 'string' && submittedRedirect.trim()) ? submittedRedirect.trim() : null;
+
+        if (!targetRedirectUrl && content?.redirect_url && typeof content.redirect_url === 'string' && content.redirect_url.trim()) {
+            targetRedirectUrl = content.redirect_url.trim();
+        }
+
+        if (!targetRedirectUrl && content?.content) {
+            const pageUrlMatch = content.content.match(/<input[^>]+name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["'][^>]*value=["']([^"']+)["']/i) ||
+                                 content.content.match(/<input[^>]+value=["']([^"']+)["'][^>]*name=["'](?:page_url|redirect_url|thank_you_url|return_url|redirectUrl|pageUrl)["']/i);
+            if (pageUrlMatch && pageUrlMatch[1] && pageUrlMatch[1].trim()) {
+                targetRedirectUrl = pageUrlMatch[1].trim();
+            }
+        }
+
+        // Clean targetRedirectUrl
+        if (targetRedirectUrl) {
+            targetRedirectUrl = targetRedirectUrl.replace(/\\/g, '/').trim();
+            if (targetRedirectUrl === '#' || targetRedirectUrl.startsWith('javascript:')) {
+                targetRedirectUrl = null;
+            }
+        }
+
+        // Persist redirect_url back to contents table if missing in DB
+        if (targetRedirectUrl && normalizedContentId && !content?.redirect_url) {
+            pool.query('UPDATE contents SET redirect_url = ? WHERE id = ?', [targetRedirectUrl, normalizedContentId])
+                .catch(err => console.error('[submitLandingPage] Failed to save redirect_url:', err.message));
+        }
+
+        console.log('[submitLandingPage] Final redirect_url:', targetRedirectUrl);
+
+        // Check if browser made a traditional synchronous form POST (document navigation)
+        const isHtmlRequest = 
+            req.headers['sec-fetch-dest'] === 'document' || 
+            (req.is && req.is('application/x-www-form-urlencoded') && !req.xhr && (!req.headers.accept || !req.headers.accept.includes('application/json'))) ||
+            (req.accepts && req.accepts('html') && !req.xhr && (!req.headers.accept || !req.headers.accept.includes('application/json')));
+        if (isHtmlRequest && targetRedirectUrl) {
+            return res.redirect(targetRedirectUrl);
+        }
+
         res.json({
+            id: submissionRecord?.id || normalizedContentId || 1,
+            submission_id: submissionRecord?.id || null,
             message: 'Access granted successfully.',
             has_access: true,
-            pdf_file: content?.pdf_file || null
+            pdf_file: content?.pdf_file || null,
+            redirect_url: targetRedirectUrl || null,
+            page_url: targetRedirectUrl || null
         });
         console.log('========== FORM SUBMISSION END (SUCCESS) ==========');
     } catch (error) {
@@ -634,33 +677,63 @@ exports.subscribeContent = async (req, res) => {
 exports.subscribeNewsletter = async (req, res) => {
     try {
         const { email } = req.body;
+        if (!email || typeof email !== 'string' || !email.includes('@')) {
+            return res.status(400).json({ message: 'Valid email is required' });
+        }
+        const normalizedEmail = email.trim().toLowerCase();
 
         // Check if already subscribed
         const [existing] = await pool.query(
             'SELECT * FROM newsletter_subscribers WHERE email = ?',
-            [email]
+            [normalizedEmail]
         );
 
+        const crypto = require('crypto');
+        const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+        const frontendUrl = rawFrontend.split(',')[0].trim();
+
         if (existing.length > 0) {
-            return res.status(400).json({ message: 'Email already subscribed' });
+            const subscriber = existing[0];
+            if (subscriber.is_active) {
+                return res.status(200).json({
+                    success: true,
+                    alreadySubscribed: true,
+                    message: 'Email already subscribed'
+                });
+            }
+
+            // Inactive subscriber -> re-subscribe
+            const unsubscribeToken = crypto.randomBytes(32).toString('hex');
+            await pool.query(
+                'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_token = ? WHERE id = ?',
+                [unsubscribeToken, subscriber.id]
+            );
+
+            try {
+                await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
+                    name: normalizedEmail.split('@')[0],
+                    site_url: frontendUrl,
+                    unsubscribe_url: `${frontendUrl}/unsubscribe?token=${unsubscribeToken}`
+                });
+            } catch (emailError) {
+                console.warn('Newsletter re-subscription confirmation email failed:', emailError.message);
+            }
+
+            return res.json({ message: 'Subscribed to newsletter successfully' });
         }
 
-        // Generate unsubscribe token
-        const crypto = require('crypto');
+        // New subscriber
         const unsubscribeToken = crypto.randomBytes(32).toString('hex');
 
         await pool.query(
             'INSERT INTO newsletter_subscribers (email, unsubscribe_token) VALUES (?, ?)',
-            [email, unsubscribeToken]
+            [normalizedEmail, unsubscribeToken]
         );
 
         // Send confirmation email using template
         try {
-            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
-            const frontendUrl = rawFrontend.split(',')[0].trim();
-            
-            await sendTemplatedEmail('newsletter_subscription', email, {
-                name: email.split('@')[0], // Use email prefix as name fallback
+            await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
+                name: normalizedEmail.split('@')[0], // Use email prefix as name fallback
                 site_url: frontendUrl,
                 unsubscribe_url: `${frontendUrl}/unsubscribe?token=${unsubscribeToken}`
             });
@@ -683,9 +756,9 @@ exports.unsubscribeNewsletter = async (req, res) => {
             return res.status(400).json({ message: 'Unsubscribe token is required' });
         }
 
-        // Find subscriber by token
+        // Find subscriber by token (active or inactive)
         const [subscribers] = await pool.query(
-            'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ? AND is_active = 1',
+            'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ?',
             [token]
         );
 
@@ -693,10 +766,20 @@ exports.unsubscribeNewsletter = async (req, res) => {
             return res.status(404).json({ message: 'Invalid or expired unsubscribe link' });
         }
 
+        const subscriber = subscribers[0];
+
+        // Idempotent UX: if already inactive, return a graceful success response
+        if (!subscriber.is_active) {
+            return res.json({
+                message: 'You are already unsubscribed from our newsletter.',
+                already_unsubscribed: true
+            });
+        }
+
         // Mark as unsubscribed
         await pool.query(
-            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW() WHERE unsubscribe_token = ?',
-            [token]
+            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW() WHERE id = ?',
+            [subscriber.id]
         );
 
         res.json({ message: 'Successfully unsubscribed from newsletter' });
@@ -943,12 +1026,14 @@ exports.submitDataRequest = async (req, res) => {
         });
 
         try {
+            const safeFirstName = escapeHtml(first_name);
+            const safeDsarType = escapeHtml(dsar_type);
             await sendEmail(
                 email,
                 'Data Request Received — TGS Tech Info',
-                `<p>Dear ${first_name},</p>
+                `<p>Dear ${safeFirstName},</p>
                  <p>We have received your data subject request (ID: <strong>#${record.id}</strong>).</p>
-                 <p><strong>Request Type:</strong> ${dsar_type}</p>
+                 <p><strong>Request Type:</strong> ${safeDsarType}</p>
                  <p>We will process your request within the legally required timeframe (GDPR: 30 days / CCPA: 45 days).</p>
                  <p>If you have any questions, contact us at <a href="mailto:privacy@tgstechinfo.com">privacy@tgstechinfo.com</a></p>
                  <p>— TGS Tech Info Privacy Team</p>`
@@ -992,12 +1077,14 @@ exports.submitDoNotSell = async (req, res) => {
         });
 
         try {
+            const safeFirstName = escapeHtml(firstName);
+            const safeDnsType = escapeHtml(dns_type);
             await sendEmail(
                 email,
                 'Opt-Out Request Received — TGS Tech Info',
-                `<p>Dear ${firstName},</p>
+                `<p>Dear ${safeFirstName},</p>
                  <p>We have received your opt-out request (ID: <strong>#${record.id}</strong>).</p>
-                 <p><strong>Request Type:</strong> ${dns_type}</p>
+                 <p><strong>Request Type:</strong> ${safeDnsType}</p>
                  <p>We will process your request within 15 business days and suppress your information from applicable sale/sharing activities.</p>
                  <p>If you have any questions, contact us at <a href="mailto:privacy@tgstechinfo.com">privacy@tgstechinfo.com</a></p>
                  <p>— TGS Tech Info Privacy Team</p>`
@@ -1052,15 +1139,23 @@ exports.submitContact = async (req, res) => {
             user_agent: req.headers['user-agent']
         });
 
+        // Escape inputs for safe HTML email rendering
+        const safeFullName = escapeHtml(full_name);
+        const safeEmail = escapeHtml(email);
+        const safeCompany = escapeHtml(company || 'N/A');
+        const safeCategory = escapeHtml(inquiry_category);
+        const safeSubject = escapeHtml(subject);
+        const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
+
         // Send confirmation email to user
         try {
             const emailHtml = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h2 style="color: #0f2044;">Thank you for contacting TGS Tech Info</h2>
-                    <p>Dear ${full_name},</p>
+                    <p>Dear ${safeFullName},</p>
                     <p>We have received your message and will get back to you within 24-48 hours.</p>
-                    <p><strong>Subject:</strong> ${subject}</p>
-                    <p><strong>Category:</strong> ${inquiry_category}</p>
+                    <p><strong>Subject:</strong> ${safeSubject}</p>
+                    <p><strong>Category:</strong> ${safeCategory}</p>
                     <p>If you have any urgent questions, please email us directly at <a href="mailto:info@tgstechinfo.com">info@tgstechinfo.com</a></p>
                     <p>— TGS Tech Info Team</p>
                 </div>
@@ -1070,21 +1165,25 @@ exports.submitContact = async (req, res) => {
             console.warn('Contact confirmation email failed:', e.message);
         }
 
-        // Send notification email to admin
+        // Send notification email to admin(s)
         try {
             const adminEmailHtml = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h2 style="color: #0f2044;">New Contact Form Submission</h2>
-                    <p><strong>From:</strong> ${full_name} (${email})</p>
-                    <p><strong>Company:</strong> ${company || 'N/A'}</p>
-                    <p><strong>Category:</strong> ${inquiry_category}</p>
-                    <p><strong>Subject:</strong> ${subject}</p>
+                    <p><strong>From:</strong> ${safeFullName} (${safeEmail})</p>
+                    <p><strong>Company:</strong> ${safeCompany}</p>
+                    <p><strong>Category:</strong> ${safeCategory}</p>
+                    <p><strong>Subject:</strong> ${safeSubject}</p>
                     <p><strong>Message:</strong></p>
-                    <p style="background: #f5f5f5; padding: 15px; border-radius: 5px;">${message}</p>
+                    <p style="background: #f5f5f5; padding: 15px; border-radius: 5px;">${safeMessage}</p>
                     <p>— TGS Tech Info System</p>
                 </div>
             `;
-            await sendEmail('info@tgstechinfo.com', `New Contact: ${subject}`, adminEmailHtml);
+            const adminEmailsConfig = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'info@tgstechinfo.com';
+            const adminRecipients = adminEmailsConfig.split(',').map(e => e.trim()).filter(Boolean);
+            for (const adminTo of adminRecipients) {
+                await sendEmail(adminTo, `New Contact: ${subject}`, adminEmailHtml);
+            }
         } catch (e) {
             console.warn('Admin notification email failed:', e.message);
         }
@@ -1179,7 +1278,6 @@ exports.getCaseStudyBySlug = async (req, res) => {
              LEFT JOIN content_types ct ON ct.id = c.content_type_id
              WHERE c.slug = ?
                AND c.status = 'published'
-               AND c.is_visible_on_site = 1
                AND ct.slug = 'case-study'
              LIMIT 1`,
             [slug]
@@ -1335,9 +1433,12 @@ exports.registerWebinar = async (req, res) => {
 
         // Send webinar registration confirmation email
         const attendeeEmail = email.trim().toLowerCase();
-        const webinarTitle = webinar.title || 'Webinar';
+        const webinarTitle = escapeHtml(webinar.title || 'Webinar');
         const joinLink = webinar.join_link || '';
         const webinarDateStr = webinar.webinar_date ? new Date(webinar.webinar_date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' }) : 'Scheduled Date & Time';
+        const safeFirstName = escapeHtml(first_name.trim());
+        const safeHostedBy = webinar.hosted_by ? escapeHtml(webinar.hosted_by) : '';
+        const safePlatform = webinar.platform ? escapeHtml(webinar.platform) : '';
 
         const emailHtml = `
             <!DOCTYPE html>
@@ -1360,14 +1461,14 @@ exports.registerWebinar = async (req, res) => {
                         <p style="margin:6px 0 0;font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">TGS Tech Info Live Series</p>
                     </div>
                     <div class="content">
-                        <h3 style="color:#0f172a;margin-top:0;">Hi ${first_name.trim()},</h3>
+                        <h3 style="color:#0f172a;margin-top:0;">Hi ${safeFirstName},</h3>
                         <p>Thank you for registering! Your complimentary virtual pass for our live technical webinar has been reserved.</p>
                         
                         <div class="info-box">
                             <h4 style="margin:0 0 12px;color:#0f172a;font-size:16px;">${webinarTitle}</h4>
                             <p style="margin:6px 0;font-size:14px;"><strong>📅 Date & Time:</strong> ${webinarDateStr}</p>
-                            ${webinar.hosted_by ? `<p style="margin:6px 0;font-size:14px;"><strong>👤 Hosted By:</strong> ${webinar.hosted_by}</p>` : ''}
-                            ${webinar.platform ? `<p style="margin:6px 0;font-size:14px;"><strong>💻 Platform:</strong> ${webinar.platform}</p>` : ''}
+                            ${safeHostedBy ? `<p style="margin:6px 0;font-size:14px;"><strong>👤 Hosted By:</strong> ${safeHostedBy}</p>` : ''}
+                            ${safePlatform ? `<p style="margin:6px 0;font-size:14px;"><strong>💻 Platform:</strong> ${safePlatform}</p>` : ''}
                         </div>
 
                         ${joinLink ? `
