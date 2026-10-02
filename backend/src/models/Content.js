@@ -503,7 +503,7 @@ class Content {
 
         let query = `
             SELECT c.*, 
-                   u.first_name, u.last_name,
+                   u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
                    cat.name as category_name

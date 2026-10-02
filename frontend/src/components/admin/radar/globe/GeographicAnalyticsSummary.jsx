@@ -99,7 +99,7 @@ export default function GeographicAnalyticsSummary({
       </div>
 
       {/* 4 Core KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
         {/* Visitors */}
         <div
           style={{

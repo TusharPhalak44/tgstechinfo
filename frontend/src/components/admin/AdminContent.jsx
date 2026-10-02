@@ -599,7 +599,7 @@ const AdminContent = () => {
 
       {/* ── 2. EXECUTIVE METRICS KPI PANEL ── */}
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor, borderLeft: '3px solid #F7941D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -607,7 +607,7 @@ const AdminContent = () => {
               </span>
               <FileTextOutlined style={{ fontSize: 18, color: '#F7941D' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: textPrimary, marginTop: 8 }}>
+            <div title={metrics.total.toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: textPrimary, marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {metrics.total.toLocaleString()}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#10B981', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -616,7 +616,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -624,7 +624,7 @@ const AdminContent = () => {
               </span>
               <CheckCircleOutlined style={{ fontSize: 18, color: '#10B981' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10B981', marginTop: 8 }}>
+            <div title={metrics.published.toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: '#10B981', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {metrics.published.toLocaleString()}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
@@ -633,7 +633,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -641,7 +641,7 @@ const AdminContent = () => {
               </span>
               <ClockCircleOutlined style={{ fontSize: 18, color: '#F59E0B' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F59E0B', marginTop: 8 }}>
+            <div title={(metrics.drafts + metrics.inReview).toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: '#F59E0B', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {(metrics.drafts + metrics.inReview).toLocaleString()}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
@@ -650,7 +650,7 @@ const AdminContent = () => {
           </div>
         </Col>
 
-        <Col xs={12} sm={12} md={6} lg={6}>
+        <Col xs={24} sm={12} md={6} lg={6}>
           <div className="radar-glass-panel radar-card-hover" style={{ padding: '16px 20px', background: bgCard, borderColor, borderLeft: '3px solid #0B1F4D' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.75rem', fontWeight: 700, color: textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -658,8 +658,8 @@ const AdminContent = () => {
               </span>
               <FireOutlined style={{ fontSize: 18, color: '#0AAEEF' }} />
             </div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0AAEEF', marginTop: 8 }}>
-              {metrics.totalViews.toLocaleString()}
+            <div title={metrics.totalViews.toLocaleString()} style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0AAEEF', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(metrics.totalViews)}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
               Combined readership engagement

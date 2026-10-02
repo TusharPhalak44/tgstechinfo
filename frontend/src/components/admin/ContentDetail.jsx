@@ -158,6 +158,11 @@ const contentDisplayStyles = `
     background: transparent;
     padding: 0;
   }
+  .admin-content-display img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
 `;
 
 const ContentDetail = () => {
@@ -286,8 +291,8 @@ const ContentDetail = () => {
       <style>{contentDisplayStyles}</style>
       <div className={`radar-dashboard-root ${darkMode ? 'dark' : 'light'} radar-grid-bg`} style={{ minHeight: '100vh', padding: '24px' }}>
         {/* Header */}
-        <div className="radar-glass-panel" style={{ padding: '18px 24px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="radar-glass-panel flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 md:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <Button
               icon={<ArrowLeftOutlined />}
               onClick={() => isFromReviewQueue ? navigate('/dashboard/pending-review') : navigate('/dashboard/content')}
@@ -296,7 +301,7 @@ const ContentDetail = () => {
               {isFromReviewQueue ? 'Back to Review Queue' : 'Back to All Content'}
             </Button>
             <div>
-              <Title level={3} style={{ margin: 0, color: textPrimary, fontSize: '1.25rem' }}>
+              <Title level={3} style={{ margin: 0, color: textPrimary, fontSize: '1.25rem', whiteSpace: 'nowrap' }}>
                 Publication Details
               </Title>
               <Text style={{ color: textMuted, fontSize: '0.78rem' }}>
