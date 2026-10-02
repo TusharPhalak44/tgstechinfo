@@ -86,7 +86,7 @@ const forwardToWebhook = async (webhookUrl, payload) => {
             throw new Error('Invalid webhook URL protocol. Only HTTP and HTTPS are allowed.');
         }
 
-        if (isPrivateOrLoopbackHost(parsedUrl.hostname)) {
+        if (process.env.NODE_ENV === 'production' && isPrivateOrLoopbackHost(parsedUrl.hostname)) {
             throw new Error(`Webhook destination '${parsedUrl.hostname}' is prohibited (internal/private host).`);
         }
 
@@ -376,6 +376,29 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
+        // Always validate standard lead fields if present, or enforce basic presence for file-based landing pages
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        
+        // Find email field
+        let submittedEmail = normalizedExtraData.email || normalizedExtraData.email_address || normalizedExtraData.work_email || extraData.email;
+        
+        // Enforce required email for standard submissions if it's missing (unless customFieldsDef makes it optional)
+        if (!submittedEmail && fileLandingSlug) {
+            return res.status(400).json({ message: 'Email address is required' });
+        }
+
+        if (submittedEmail && !emailRegex.test(String(submittedEmail).trim())) {
+            return res.status(400).json({ message: 'Invalid email address format' });
+        }
+
+        // For file-based landing pages, enforce at least a name
+        if (fileLandingSlug) {
+            const hasName = normalizedExtraData.first_name || normalizedExtraData.last_name || normalizedExtraData.name || normalizedExtraData.full_name;
+            if (!hasName) {
+                return res.status(400).json({ message: 'Name is required' });
+            }
+        }
+
         // ── Store Form Submission in Database ─────────────────────────────────────
         const leadDataWithMeta = {
             ...normalizedExtraData,
@@ -429,6 +452,20 @@ exports.submitLandingPage = async (req, res) => {
                 // Save back to contents table in background so future lookups are immediate
                 if (normalizedContentId) {
                     pool.query('UPDATE contents SET webhook_url = ? WHERE id = ?', [targetWebhookUrl, normalizedContentId]).catch(err => console.error('[submitLandingPage] Failed to save extracted webhook_url:', err.message));
+                }
+            }
+        }
+
+        // Fallback 2: Extract webhook URL directly from the form submission body (common in HTML Builder)
+        if (extraData.webhook_url || extraData.apiUrl || req.body.webhook_url || req.body.apiUrl) {
+            const explicitWebhook = (extraData.webhook_url || extraData.apiUrl || req.body.webhook_url || req.body.apiUrl).trim();
+            if (explicitWebhook) {
+                targetWebhookUrl = explicitWebhook;
+                console.log('[submitLandingPage] Fallback 2: Extracted webhook_url from form submission:', targetWebhookUrl);
+                
+                // Update the content record so it's persisted for next time
+                if (normalizedContentId) {
+                    pool.query('UPDATE contents SET webhook_url = ? WHERE id = ?', [targetWebhookUrl, normalizedContentId]).catch(err => console.error('[submitLandingPage] Failed to save form-submitted webhook_url:', err.message));
                 }
             }
         }

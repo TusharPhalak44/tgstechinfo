@@ -706,7 +706,7 @@ const DashboardLayout = () => {
             top: 0,
             bottom: 0,
             borderRight: `1px solid ${borderColor}`,
-            zIndex: isMobile ? 999 : 100,
+            zIndex: isMobile ? 1001 : 100,
             transition: isMobile
               ? 'left 0.28s cubic-bezier(0.2,0.8,0.2,1)'
               : 'width 0.28s cubic-bezier(0.2,0.8,0.2,1)',

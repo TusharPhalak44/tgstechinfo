@@ -93,7 +93,10 @@ exports.getPageSeoAnalysis = async (req, res) => {
             }
 
             // Tags analysis (10 points)
-            const parsedTags = tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [];
+            let parsedTags = [];
+            if (tags) {
+                try { parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags; } catch { parsedTags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []; }
+            }
             if (parsedTags && parsedTags.length >= 3) {
                 score += 10;
             } else if (parsedTags && parsedTags.length > 0) {
@@ -205,7 +208,10 @@ exports.getSeoScore = async (req, res) => {
             }
 
             // Tags analysis (10 points)
-            const parsedTags = tags ? (typeof tags === 'string' ? JSON.parse(tags) : tags) : [];
+            let parsedTags = [];
+            if (tags) {
+                try { parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags; } catch { parsedTags = typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []; }
+            }
             if (parsedTags && parsedTags.length >= 3) {
                 score += 10;
             } else if (parsedTags && parsedTags.length > 0) {
@@ -286,7 +292,7 @@ exports.getSeoScore = async (req, res) => {
 // Generate sitemap
 exports.generateSitemap = async (req, res) => {
     try {
-        const { rows: content } = await Content.findAll({ status: 'published' });
+        const { rows: content } = await Content.findAll({ status: 'published', is_visible_on_site: 1 });
         const categories = await Category.findAll();
         
         const baseUrl = process.env.BASE_URL || 'https://tgstechinfo.com';

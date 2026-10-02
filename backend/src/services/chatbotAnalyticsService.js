@@ -243,7 +243,7 @@ class ChatbotAnalyticsService {
                 cat.slug as category_slug,
                 COUNT(*) as search_count
             FROM chatbot_search_logs csl
-            JOIN contents c ON csl.query LIKE CONCAT('%', c.title, '%')
+            JOIN contents c ON csl.query LIKE CONCAT('%', c.title COLLATE utf8mb4_unicode_ci, '%')
             LEFT JOIN categories cat ON c.category_id = cat.id
             WHERE 1=1
             ${dateFilter}

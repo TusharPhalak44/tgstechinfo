@@ -311,7 +311,13 @@ app.use('/api/admin/audience', require('./src/routes/adminAudienceRoutes'));
 // File-based Landing Pages (/lp/:slug and /lp/:slug/*)
 app.use('/lp', require('./src/routes/fileLandingRoutes'));
 
-
+// Public Search Engine Endpoints
+app.get('/sitemap.xml', require('./src/controllers/seoController').generateSitemap);
+app.get('/robots.txt', (req, res) => {
+    const baseUrl = process.env.BASE_URL || 'https://tgstechinfo.com';
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(`User-agent: *\nAllow: /\n\nSitemap: ${baseUrl}/sitemap.xml\n`);
+});
 
 app.use((err, req, res, next) => {
     console.error('[Error Middleware]', err.stack || err);

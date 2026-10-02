@@ -274,11 +274,39 @@ exports.createUser = async (req, res) => {
 // ✅ Get all users
 exports.getAllUsers = async (req, res) => {
     try {
+        const { limit, offset, search, role } = req.query;
+        const whereClauses = [];
+        const params = [];
+
+        if (search && String(search).trim() !== '') {
+            whereClauses.push('(first_name LIKE ? OR last_name LIKE ? OR email LIKE ?)');
+            const s = `%${String(search).trim()}%`;
+            params.push(s, s, s);
+        }
+
+        if (role && String(role).trim() !== '') {
+            whereClauses.push('role = ?');
+            params.push(String(role).trim());
+        }
+
+        const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+        let limitSql = '';
+        if (limit !== undefined && !isNaN(Number(limit))) {
+            const lim = Math.max(1, parseInt(limit, 10));
+            const off = offset !== undefined && !isNaN(Number(offset)) ? Math.max(0, parseInt(offset, 10)) : 0;
+            limitSql = 'LIMIT ? OFFSET ?';
+            params.push(lim, off);
+        }
+
         const [rows] = await pool.query(`
             SELECT id, first_name, last_name, email, job_title, company_name, country, role, is_active, created_at
             FROM users
+            ${whereSql}
             ORDER BY created_at DESC
-        `);
+            ${limitSql}
+        `, params);
+
         res.json(rows);
     } catch (error) {
         console.error('Get users error:', error);
@@ -866,13 +894,21 @@ exports.getDashboardKPIs = async (req, res) => {
             viewsDelta = 0;
         }
 
+        const rawViews = Number(totalViews || 0);
+        const viewsInMillions = rawViews / 1000000;
+        const totalViewsFormatted = rawViews >= 1000000
+            ? `${viewsInMillions.toFixed(1).replace(/\.0$/, '')}M`
+            : (rawViews >= 1000 ? `${(rawViews / 1000).toFixed(1)}k` : String(rawViews));
+        const viewsFormatted = totalViewsFormatted;
+
         res.json({
             totalPublished: published || 0,
             totalPending: pending || 0,
             totalDrafts: drafts || 0,
             totalScheduled: scheduled || 0,
-            totalViews: totalViews || 0,
+            totalViews: Number(totalViews) || 0,
             totalViewsFormatted: totalViewsFormatted,
+            viewsFormatted: viewsFormatted,
             totalUsers: totalUsers || 0,
             totalSubscribers: totalSubs || businessProfessionals || 0,
             avgReadTime: Math.round((avgTime || 4.2) * 10) / 10,
