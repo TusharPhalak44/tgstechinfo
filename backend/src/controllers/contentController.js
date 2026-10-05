@@ -23,6 +23,22 @@ const stripEmDash = (val) => {
     return val;
 };
 
+const parseOptionalId = (val) => {
+    if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+    const num = parseInt(val, 10);
+    return isNaN(num) ? null : num;
+};
+
+const safeJsonParse = (val) => {
+    if (!val) return null;
+    if (typeof val === 'object') return val;
+    try {
+        return JSON.parse(val);
+    } catch {
+        return null;
+    }
+};
+
 exports.createContent = async (req, res) => {
     try {
         const bannerFile = req.files?.banner_image?.[0];
@@ -34,22 +50,6 @@ exports.createContent = async (req, res) => {
                 console.warn('Banner media lookup failed; saving as a new media record:', mediaLookupError.message);
             }
         }
-
-        const parseOptionalId = (val) => {
-            if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
-            const num = parseInt(val, 10);
-            return isNaN(num) ? null : num;
-        };
-
-        const safeJsonParse = (val) => {
-            if (!val) return null;
-            if (typeof val === 'object') return val;
-            try {
-                return JSON.parse(val);
-            } catch {
-                return null;
-            }
-        };
 
         const contentData = stripEmDash({
             ...req.body,

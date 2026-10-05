@@ -47,3 +47,32 @@ test('normalizes plural content types to the route slug', () => {
 
   assert.deepEqual(route, { url: '/article/ai-trends', newTab: false });
 });
+
+test('resolves file-based landing page to /lp/:slug route', () => {
+  const route = resolveContentRoute({
+    slug: 'top-30-crm-software-comparison-battlecard-2025',
+    content_type: 'whitepaper',
+    builder_layout: JSON.stringify(['file-landing'])
+  });
+
+  assert.deepEqual(route, {
+    url: '/lp/top-30-crm-software-comparison-battlecard-2025',
+    newTab: false,
+    isFileLanding: true
+  });
+});
+
+test('resolves file landing page detected from content body text', () => {
+  const route = resolveContentRoute({
+    slug: 'payroll-report',
+    content_type: 'whitepaper',
+    content: '<p>File-based landing page: Payroll Report</p>'
+  });
+
+  assert.deepEqual(route, {
+    url: '/lp/payroll-report',
+    newTab: false,
+    isFileLanding: true
+  });
+});
+

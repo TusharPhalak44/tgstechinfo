@@ -13,7 +13,7 @@ import moment from 'moment';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { useTheme } from '../../context/ThemeContext';
-import { navigateContentItem } from '../../lib/contentRoute';
+import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import { formatContentPublishDate, sortContentByDate } from '../../utils/dateHelper';
 
 // Newsletter Subscribe Form Component
@@ -354,13 +354,17 @@ const StatsBar = ({ stats, darkMode = false }) => {
   );
 };
 
-// ── Helper: detect HTML builder content ──────────────────────────
+// ── Helper: detect HTML builder or file-based landing page content ──────────────────────────
 const isHtmlBuilderContent = (item) => {
   try {
+    if (!item) return false;
+    if (item.is_file_landing_page) return true;
     const layout = item.builder_layout
       ? (typeof item.builder_layout === 'string' ? JSON.parse(item.builder_layout) : item.builder_layout)
       : null;
-    if (Array.isArray(layout) && layout[0] === 'html') return true;
+    if (Array.isArray(layout) && (layout[0] === 'html' || layout.includes('file-landing') || layout[0] === 'file-landing')) return true;
+    if (typeof item.content === 'string' && item.content.includes('File-based landing page')) return true;
+    if (typeof item.url === 'string' && item.url.startsWith('/lp/')) return true;
     return ['landing-page', 'landing page'].includes(
       (item.content_type || item.content_type_name || '').toLowerCase().trim()
     );
@@ -1638,27 +1642,12 @@ const SectionHead = ({ icon, label, viewAllTo, accent = 'var(--color-primary)' }
 
 // ── Helper function to determine route based on content type ─────────
 const getArticleRoute = (article) => {
-  try {
-    const layout = typeof article.builder_layout === 'string' ? JSON.parse(article.builder_layout) : article.builder_layout;
-    const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-    const isLandingPageType = ['landing-page', 'landing page'].includes(
-      (article.content_type || article.content_type_name || '').toLowerCase().trim()
-    );
-    const isStandalone = isHtmlBuilder || isLandingPageType;
-    return { url: isStandalone ? `/content/${article.slug}` : `/article/${article.slug}`, newTab: isStandalone };
-  } catch {
-    return { url: `/article/${article.slug}`, newTab: false };
-  }
+  return resolveContentRoute(article);
 };
 
 // ── Helper to navigate or open new tab ──────────────────────────
 const navigateArticle = (article, navigate) => {
-  const { url, newTab } = getArticleRoute(article);
-  if (newTab) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  } else {
-    navigate(url);
-  }
+  navigateContentItem(article, navigate);
 };
 
 // ── Magazine HeroCard ────────────────────────────────────────────

@@ -21,6 +21,7 @@ import useEngagementTracking from '../../hooks/useEngagementTracking';
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatDateForLongDisplay, formatDateForDisplay, DATE_FORMATS } from '../../utils/dateHelper';
 import ArticleNewsletterBanner from './ArticleNewsletterBanner';
+import { navigateContentItem } from '../../lib/contentRoute';
 
 const { Title, Text } = Typography;
 
@@ -193,6 +194,19 @@ const ArticleDetail = () => {
           const layout = typeof c.builder_layout === 'string'
             ? JSON.parse(c.builder_layout)
             : c.builder_layout;
+
+          // File-based landing pages uploaded to backend/landing-pages/
+          const isFileLanding = Boolean(
+            c.is_file_landing_page ||
+            (Array.isArray(layout) && (layout.includes('file-landing') || layout[0] === 'file-landing')) ||
+            (typeof c.content === 'string' && c.content.includes('File-based landing page')) ||
+            (c.url && (c.url.startsWith('/lp/') || c.url.includes('/lp/')))
+          );
+          if (isFileLanding) {
+            window.location.href = `/lp/${encodeURIComponent(c.slug)}`;
+            return;
+          }
+
           const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
           // Visual Builder pages have builder_page_data set
           const isVisualBuilder = !!c.builder_page_data;
@@ -1368,20 +1382,7 @@ const ArticleDetail = () => {
                   {relatedArticles.map(article => (
                     <div
                       key={article.id}
-                      onClick={() => {
-                        try {
-                          const layout = typeof article.builder_layout === 'string'
-                            ? JSON.parse(article.builder_layout)
-                            : article.builder_layout;
-                          const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-                          const isVisualBuilder = !!article.builder_page_data;
-                          if (isHtmlBuilder || isVisualBuilder) {
-                            navigate(`/content/${encodeURIComponent(article.slug)}`);
-                            return;
-                          }
-                        } catch { /* fall through */ }
-                        navigate(`/article/${article.slug}`);
-                      }}
+                      onClick={() => navigateContentItem(article, navigate)}
                       style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 10, border: darkMode ? '1px solid #334155' : '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
                       onMouseEnter={e => e.currentTarget.style.boxShadow = darkMode ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.08)'}
                       onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}

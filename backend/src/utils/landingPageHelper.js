@@ -204,14 +204,15 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
 
         // 3. Insert newly auto-provisioned content row into `contents`
         const [insertRes] = await pool.query(
-            `INSERT INTO contents (title, slug, content_type_id, category_id, status, webhook_url, redirect_url, content)
-             VALUES (?, ?, 10, 1, 'published', ?, ?, ?)`,
+            `INSERT INTO contents (title, slug, content_type_id, category_id, status, webhook_url, redirect_url, content, builder_layout)
+             VALUES (?, ?, 10, 1, 'published', ?, ?, ?, ?)`,
             [
                 title,
                 dbSlug,
                 webhookUrl || null,
                 redirectUrl || null,
-                `<p>File-based landing page: ${title}</p>`
+                `<p>File-based landing page: ${title}</p>`,
+                JSON.stringify(['file-landing'])
             ]
         );
 
@@ -230,10 +231,63 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
                 `SELECT * FROM contents WHERE slug = ? OR LOWER(slug) IN (${placeholders}) LIMIT 1`,
                 [dbSlug, ...allQuerySlugs]
             );
-            return retryRows[0] || null;
+            if (retryRows && retryRows[0]) {
+                const found = retryRows[0];
+                if (!found.builder_layout || !found.builder_layout.includes('file-landing')) {
+                    await pool.query(
+                        `UPDATE contents SET builder_layout = '["file-landing"]' WHERE id = ?`,
+                        [found.id]
+                    ).catch(() => {});
+                    found.builder_layout = JSON.stringify(['file-landing']);
+                }
+                return found;
+            }
+            return null;
         } catch (e) {
             return null;
         }
+    }
+}
+
+/**
+ * Scans backend/landing-pages directory and ensures every landing page folder has
+ * an auto-provisioned row in `contents` table with builder_layout = '["file-landing"]'.
+ */
+async function syncAllFileLandingPages() {
+    try {
+        const root = getLandingPagesRoot();
+        if (!fs.existsSync(root)) return [];
+
+        const entries = fs.readdirSync(root, { withFileTypes: true });
+        const results = [];
+
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            const folderName = entry.name;
+            const indexPath = path.join(root, folderName, 'index.html');
+            if (fs.existsSync(indexPath)) {
+                try {
+                    const row = await getOrCreateContentForLandingPage(folderName);
+                    if (row) results.push(row);
+                } catch (err) {
+                    console.warn(`[LandingPageHelper] sync error for ${folderName}:`, err.message);
+                }
+            }
+        }
+
+        // Also ensure any content records representing file-based landing pages have builder_layout set
+        await pool.query(
+            `UPDATE contents 
+             SET builder_layout = '["file-landing"]' 
+             WHERE (content LIKE '%File-based landing page%') 
+               AND (builder_layout IS NULL OR builder_layout = '' OR builder_layout = 'null')`
+        ).catch(() => {});
+
+        console.log(`[LandingPageHelper] Synced ${results.length} file landing page(s) successfully.`);
+        return results;
+    } catch (e) {
+        console.error('[LandingPageHelper] Error in syncAllFileLandingPages:', e.message);
+        return [];
     }
 }
 
@@ -243,5 +297,7 @@ module.exports = {
     getFileLandingPageUrl,
     getMimeType,
     getOrCreateContentForLandingPage,
+    syncAllFileLandingPages,
     EXT_MIME_MAP
 };
+

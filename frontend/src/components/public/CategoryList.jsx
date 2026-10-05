@@ -9,13 +9,17 @@ import { navigateContentItem } from '../../lib/contentRoute';
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatWebinarDate } from '../../utils/dateHelper';
 
-// Detect HTML builder (landing page) content by builder_layout OR content type
+// Detect HTML builder or file-based landing page content
 const isHtmlBuilderContent = (item) => {
   try {
+    if (!item) return false;
+    if (item.is_file_landing_page) return true;
     const layout = item.builder_layout
       ? (typeof item.builder_layout === 'string' ? JSON.parse(item.builder_layout) : item.builder_layout)
       : null;
-    if (Array.isArray(layout) && layout[0] === 'html') return true;
+    if (Array.isArray(layout) && (layout[0] === 'html' || layout.includes('file-landing') || layout[0] === 'file-landing')) return true;
+    if (typeof item.content === 'string' && item.content.includes('File-based landing page')) return true;
+    if (typeof item.url === 'string' && item.url.startsWith('/lp/')) return true;
     return ['landing-page', 'landing page'].includes(
       (item.content_type || item.content_type_name || '').toLowerCase().trim()
     );

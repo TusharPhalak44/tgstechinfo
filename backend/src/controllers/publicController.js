@@ -228,7 +228,21 @@ exports.getPublishedContent = async (req, res) => {
         filters.offset = parsedOffset;
 
         const { rows, total } = await Content.findAll(filters);
-        res.json({ data: rows, total });
+        const enrichedRows = rows.map(item => {
+            const isFileLanding = Boolean(
+                (item.builder_layout && typeof item.builder_layout === 'string' && item.builder_layout.includes('file-landing')) ||
+                (item.content && typeof item.content === 'string' && item.content.includes('File-based landing page'))
+            );
+            if (isFileLanding) {
+                return {
+                    ...item,
+                    is_file_landing_page: true,
+                    url: `/lp/${item.slug}`
+                };
+            }
+            return item;
+        });
+        res.json({ data: enrichedRows, total });
     } catch (error) {
         console.error('Get published content error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -261,10 +275,33 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
+        const isFileLanding = Boolean(
+            (content.builder_layout && typeof content.builder_layout === 'string' && content.builder_layout.includes('file-landing')) ||
+            (content.content && typeof content.content === 'string' && content.content.includes('File-based landing page'))
+        );
+        if (isFileLanding) {
+            content.is_file_landing_page = true;
+            content.url = `/lp/${content.slug}`;
+        }
+
         // Get related articles
         const relatedArticles = await Content.getRelatedArticles(content.id, content.category_id);
+        const enrichedRelated = (relatedArticles || []).map(item => {
+            const isRelFileLanding = Boolean(
+                (item.builder_layout && typeof item.builder_layout === 'string' && item.builder_layout.includes('file-landing')) ||
+                (item.content && typeof item.content === 'string' && item.content.includes('File-based landing page'))
+            );
+            if (isRelFileLanding) {
+                return {
+                    ...item,
+                    is_file_landing_page: true,
+                    url: `/lp/${item.slug}`
+                };
+            }
+            return item;
+        });
 
-        res.json({ content, relatedArticles });
+        res.json({ content, relatedArticles: enrichedRelated });
     } catch (error) {
         console.error('Get content by slug error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -652,6 +689,34 @@ exports.submitLandingPage = async (req, res) => {
                 redirectUrl.startsWith('javascript:')
             ) {
                 redirectUrl = null;
+            }
+        }
+
+        // Determine if request is an AJAX/fetch call or standard browser form navigation
+        const contentType = req.headers['content-type'] || '';
+        const acceptHeader = req.headers.accept || '';
+        const isJson = (typeof req.is === 'function' ? req.is('json') : false) || contentType.includes('application/json');
+
+        const isAjaxOrFetch = Boolean(
+            req.xhr ||
+            req.headers['x-requested-with'] === 'XMLHttpRequest' ||
+            (acceptHeader.includes('application/json') && !acceptHeader.includes('text/html')) ||
+            isJson ||
+            req.headers['sec-fetch-dest'] === 'empty'
+        );
+
+        const isBrowserNavigation = req.headers['sec-fetch-mode'] === 'navigate' ||
+            req.headers['sec-fetch-dest'] === 'document' ||
+            (acceptHeader.includes('text/html') && !isAjaxOrFetch);
+
+        if (isBrowserNavigation || !isAjaxOrFetch) {
+            if (redirectUrl) {
+                console.log('[submitLandingPage] Browser form navigation detected: redirecting to', redirectUrl);
+                return res.redirect(302, redirectUrl);
+            }
+            const referer = req.headers.referer || req.headers.referrer;
+            if (referer) {
+                return res.redirect(302, `${referer}${referer.includes('?') ? '&' : '?'}submitted=true`);
             }
         }
 

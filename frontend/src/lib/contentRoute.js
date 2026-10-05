@@ -33,6 +33,19 @@ export const resolveContentRoute = (item = {}) => {
   const parsedLayout = parseLayout(layout);
   const isHtmlBuilder = Array.isArray(parsedLayout) && parsedLayout[0] === 'html';
   const isLandingPageType = ['landing-page', 'landing page'].includes((contentType || contentTypeName || '').toLowerCase().trim());
+  const isFileLanding = Boolean(
+    item?.is_file_landing_page ||
+    (Array.isArray(parsedLayout) && (parsedLayout.includes('file-landing') || parsedLayout[0] === 'file-landing')) ||
+    (typeof item?.content === 'string' && item.content.includes('File-based landing page')) ||
+    (rawUrl && (rawUrl.startsWith('/lp/') || rawUrl.includes('/lp/')))
+  );
+
+  if (isFileLanding) {
+    const targetSlug = slug || (rawUrl ? rawUrl.replace(/^\/lp\//, '') : '');
+    const url = targetSlug ? `/lp/${encodeURIComponent(targetSlug)}` : (rawUrl || '/lp');
+    return { url, newTab: false, isFileLanding: true };
+  }
+
   const isStandalone = Boolean(isHtmlBuilder || isLandingPageType);
   const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : 'http://localhost';
 
@@ -59,15 +72,26 @@ export const resolveContentRoute = (item = {}) => {
   }
 
   if (isStandalone) {
-    return { url: `/content/${slug}`, newTab: true };
+    return { url: `/content/${encodeURIComponent(slug)}`, newTab: true };
   }
 
-  return { url: `/${normalizeContentType(contentType || contentTypeName || 'article')}/${slug}`, newTab: false };
+  return { url: `/${normalizeContentType(contentType || contentTypeName || 'article')}/${encodeURIComponent(slug)}`, newTab: false };
 };
 
 export const navigateContentItem = (item, navigate, options = {}) => {
   const resolved = resolveContentRoute(item);
   const shouldOpenNewTab = options.newTab ?? resolved.newTab;
+
+  // File-based landing pages are served directly by Express via /lp/:slug
+  // Use browser navigation to ensure static assets load properly
+  if (resolved.isFileLanding || resolved.url.startsWith('/lp/')) {
+    if (shouldOpenNewTab) {
+      window.open(resolved.url, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.href = resolved.url;
+    }
+    return;
+  }
 
   if (shouldOpenNewTab) {
     window.open(resolved.url, '_blank', 'noopener,noreferrer');

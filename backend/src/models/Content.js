@@ -321,7 +321,8 @@ class Content {
                 console.log('[Content.create] Using HTML-extracted redirect_url:', redirect_url);
             }
 
-            console.log('[Content.create] Final webhook_url:', webhook_url, 'redirect_url:', redirect_url);
+            console.log('[Content.create] Final webhook_url:', webhook_url);
+            console.log('[Content.create] Final redirect_url:', redirect_url);
 
             // Auto-fill custom_fields from HTML form inputs if not already set by the user
             if ((!custom_fields || (Array.isArray(custom_fields) && custom_fields.length === 0)) && processed.custom_fields.length > 0) {
@@ -589,9 +590,10 @@ class Content {
                 const [rows] = await pool.query('SELECT webhook_url, redirect_url FROM contents WHERE id = ?', [id]);
                 existingWebhookUrl = rows[0]?.webhook_url || null;
                 existingRedirectUrl = rows[0]?.redirect_url || null;
-                console.log('[Content.update] Existing from DB - webhook_url:', existingWebhookUrl, 'redirect_url:', existingRedirectUrl);
+                console.log('[Content.update] Existing webhook_url from DB:', existingWebhookUrl);
+                console.log('[Content.update] Existing redirect_url from DB:', existingRedirectUrl);
             } catch (err) {
-                console.error('[Content.update] Error fetching existing settings:', err);
+                console.error('[Content.update] Error fetching existing content URLs:', err);
             }
 
             // Determine which webhook/redirect URL to use as the base for processing
@@ -605,8 +607,11 @@ class Content {
             const baseWebhookUrl = manualWebhookUrl || existingWebhookUrl;
             const baseRedirectUrl = manualRedirectUrl || existingRedirectUrl;
 
-            console.log('[Content.update] Manual webhook_url:', manualWebhookUrl, 'redirect_url:', manualRedirectUrl);
-            console.log('[Content.update] Base webhook_url:', baseWebhookUrl, 'redirect_url:', baseRedirectUrl);
+
+            console.log('[Content.update] Manual webhook_url:', manualWebhookUrl);
+            console.log('[Content.update] Base webhook_url for processing:', baseWebhookUrl);
+            console.log('[Content.update] Manual redirect_url:', manualRedirectUrl);
+            console.log('[Content.update] Base redirect_url for processing:', baseRedirectUrl);
 
             const processed = processHtmlContent(contentData.content, baseWebhookUrl, baseRedirectUrl);
             contentData.content = processed.content;
@@ -639,7 +644,8 @@ class Content {
                 contentData.redirect_url = null;
             }
 
-            console.log('[Content.update] Final webhook_url:', contentData.webhook_url, 'redirect_url:', contentData.redirect_url);
+            console.log('[Content.update] Final webhook_url:', contentData.webhook_url);
+            console.log('[Content.update] Final redirect_url:', contentData.redirect_url);
 
             // Auto-fill custom_fields from parsed HTML fields if not explicitly provided
             if (!contentData.custom_fields && processed.custom_fields.length > 0) {

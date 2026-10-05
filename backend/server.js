@@ -376,6 +376,13 @@ app.listen(PORT, () => {
     const scheduledPublisherInterval = setInterval(runScheduledPublisher, 60 * 1000);
     if (scheduledPublisherInterval.unref) scheduledPublisherInterval.unref();
 
+    // Auto-sync file-based landing pages from backend/landing-pages directory
+    try {
+        const { syncAllFileLandingPages } = require('./src/utils/landingPageHelper');
+        syncAllFileLandingPages().catch(e => console.warn('[Startup] Landing pages sync notice:', e.message));
+    } catch (e) {
+        console.warn('[Startup] Landing pages helper error:', e.message);
+    }
 });
 
 

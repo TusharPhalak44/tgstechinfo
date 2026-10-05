@@ -47,6 +47,21 @@ const StandaloneLandingPage = () => {
 
       // Verify this is an HTML Builder page, Visual Builder page, or Landing Page content type
       const builderLayout = data.builder_layout ? (typeof data.builder_layout === 'string' ? JSON.parse(data.builder_layout) : data.builder_layout) : null;
+
+      // Check if file-based landing page (uploaded to backend/landing-pages)
+      const isFileLanding = Boolean(
+        data.is_file_landing_page ||
+        (Array.isArray(builderLayout) && (builderLayout.includes('file-landing') || builderLayout[0] === 'file-landing')) ||
+        (typeof data.content === 'string' && data.content.includes('File-based landing page')) ||
+        (data.url && (data.url.startsWith('/lp/') || data.url.includes('/lp/')))
+      );
+
+      if (isFileLanding) {
+        console.log('🔄 File-based landing page detected - hard redirecting to /lp/' + data.slug);
+        window.location.href = `/lp/${encodeURIComponent(data.slug)}`;
+        return;
+      }
+
       const isHtmlBuilder = Array.isArray(builderLayout) && builderLayout[0] === 'html';
       const isVisualBuilder = !!data.builder_page_data;
       const isLandingPageType = ['landing-page', 'landing page'].includes(
