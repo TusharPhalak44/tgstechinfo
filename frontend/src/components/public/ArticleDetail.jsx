@@ -20,6 +20,7 @@ import { useTracking } from '../../context/TrackingContext';
 import useEngagementTracking from '../../hooks/useEngagementTracking';
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatDateForLongDisplay, formatDateForDisplay, DATE_FORMATS } from '../../utils/dateHelper';
+import ArticleNewsletterBanner from './ArticleNewsletterBanner';
 
 const { Title, Text } = Typography;
 
@@ -1357,63 +1358,6 @@ const ArticleDetail = () => {
                   </div>
                 </Card>
               )}
-
-              {/* ── Newsletter Box ── */}
-              <div style={{
-                background: 'linear-gradient(135deg, #0AAEEF 0%, #0284C7 50%, #0369A1 100%)',
-                borderRadius: 16,
-                padding: '24px',
-                boxShadow: '0 4px 20px rgba(10, 174, 239, 0.3)',
-                position: 'relative',
-                overflow: 'hidden',
-                marginBottom: 24
-              }}>
-                <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <ReadOutlined style={{ color: '#fff', fontSize: 18 }} />
-                  <span style={{ fontWeight: 800, fontSize: 13, color: '#fff', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                    Subscribe the Newsletter
-                  </span>
-                </div>
-
-                <form onSubmit={handleNewsletterSubscribe} style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8 }}>
-                  <input
-                    type="email"
-                    value={newsletterEmail}
-                    onChange={(e) => setNewsletterEmail(e.target.value)}
-                    placeholder="Enter corporate email..."
-                    required
-                    disabled={newsletterSubscribing}
-                    style={{
-                      flex: 1,
-                      padding: '10px 14px',
-                      borderRadius: 8,
-                      border: 'none',
-                      background: 'rgba(255,255,255,0.95)',
-                      color: '#1f2937',
-                      fontSize: 12,
-                      outline: 'none',
-                      fontWeight: 500
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={newsletterSubscribing}
-                    style={{
-                      padding: '10px 16px',
-                      background: '#0F172A',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 8,
-                      cursor: newsletterSubscribing ? 'not-allowed' : 'pointer',
-                      fontWeight: 700,
-                      fontSize: 12,
-                      opacity: newsletterSubscribing ? 0.6 : 1
-                    }}
-                  >
-                    {newsletterSubscribing ? 'Joining...' : 'Join'}
-                  </button>
-                </form>
-              </div>
 
               {/* ── Related Articles — below landing card ── */}
               {relatedArticles.length > 0 && (
