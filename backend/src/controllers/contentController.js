@@ -58,6 +58,9 @@ exports.createContent = async (req, res) => {
             category_id: parseOptionalId(req.body.category_id),
             reading_time: parseOptionalId(req.body.reading_time),
             status: String(req.body.status || 'draft').trim(),
+            scheduled_publish_date: req.body.scheduled_publish_date || null,
+            published_date: req.body.published_date || (req.body.status === 'published' ? (req.body.scheduled_publish_date || new Date()) : (req.body.scheduled_publish_date || null)),
+            created_at: req.body.scheduled_publish_date || req.body.published_date || req.body.created_at || undefined,
             banner_image: existingBanner?.filename || bannerFile?.filename || null,
             pdf_file: req.files?.pdf_file?.[0]?.filename || null,
             video_file: req.files?.video_file?.[0]?.filename || null,
@@ -356,6 +359,12 @@ exports.updateContent = async (req, res) => {
             }
         }
         if (req.body.tags) updateData.tags = req.body.tags.split(',').map(t => t.trim()).filter(Boolean);
+        if (req.body.scheduled_publish_date) {
+            updateData.scheduled_publish_date = req.body.scheduled_publish_date;
+            if (content.status === 'published' || req.body.status === 'published') {
+                updateData.published_date = req.body.scheduled_publish_date;
+            }
+        }
         updateData = stripEmDash(updateData);
 
         await Content.update(id, updateData);

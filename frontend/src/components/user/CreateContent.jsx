@@ -102,6 +102,7 @@ const CreateContent = () => {
   const [builderContent, setBuilderContent] = useState('');
   const [htmlContent, setHtmlContent] = useState('');
   const htmlEditorRef = useRef(null);
+  const savedHtmlSelectionRef = useRef(null);
   const [editContentType, setEditContentType] = useState(null); // Store content type for back navigation
   const [builderSections, setBuilderSections] = useState([
     { id: 'sec-1', type: 'content_type_category' },
@@ -188,7 +189,7 @@ const CreateContent = () => {
         seo_meta_keywords: data.seo_meta_keywords
           ? data.seo_meta_keywords.split(',').map(k => k.trim()).filter(Boolean)
           : [],
-        scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null,
+        scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : (data.published_date ? moment(data.published_date) : null),
         hosted_by: data.hosted_by || '',
         platform: data.platform || 'Zoom',
         webinar_type: data.webinar_type || 'live',
@@ -452,27 +453,16 @@ const CreateContent = () => {
   const handleInsertMediaToHtml = (url, item) => {
     if (!url) return;
 
-    // Determine media type and alt text
-    const fileType = item?.type || '';
-    const fileName = item?.name || item?.filename || 'Media';
+    // Insert only the direct media link/URL into the HTML code editor
+    const mediaUrl = url.trim();
 
-    let htmlSnippet = '';
-    if (fileType.includes('image') || /\.(jpg|jpeg|png|gif|webp)$/i.test(url)) {
-      htmlSnippet = `<img src="${url}" alt="${fileName}" style="max-width: 100%; height: auto;" />`;
-    } else if (fileType.includes('video') || /\.(mp4|mov|avi)$/i.test(url)) {
-      htmlSnippet = `<video src="${url}" controls style="max-width: 100%; height: auto;"></video>`;
-    } else if (fileType.includes('document') || /\.(pdf|doc|docx)$/i.test(url)) {
-      htmlSnippet = `<a href="${url}" target="_blank" rel="noopener noreferrer">${fileName}</a>`;
-    } else {
-      htmlSnippet = `<a href="${url}" target="_blank" rel="noopener noreferrer">${fileName}</a>`;
-    }
-
-    // Attempt insertion at Monaco cursor position
+    // Attempt insertion at Monaco cursor position or selection
     if (htmlEditorRef.current) {
       const editor = htmlEditorRef.current;
       const position = editor.getPosition();
-      const selection = editor.getSelection();
-      if (position) {
+      const selection = savedHtmlSelectionRef.current || editor.getSelection();
+      savedHtmlSelectionRef.current = null;
+      if (position || selection) {
         editor.executeEdits('media-insert', [
           {
             range: selection || {
@@ -481,13 +471,13 @@ const CreateContent = () => {
               endLineNumber: position.lineNumber,
               endColumn: position.column
             },
-            text: htmlSnippet,
+            text: mediaUrl,
             forceMoveMarkers: true
           }
         ]);
         editor.pushUndoStop();
         editor.focus();
-        message.success('Media inserted into HTML Content');
+        message.success('Media link inserted into HTML Content');
         return;
       }
     }
@@ -495,9 +485,9 @@ const CreateContent = () => {
     // Fallback: append to htmlContent
     setHtmlContent(prev => {
       const trimmed = (prev || '').trim();
-      return trimmed ? `${trimmed}\n\n${htmlSnippet}` : htmlSnippet;
+      return trimmed ? `${trimmed}\n\n${mediaUrl}` : mediaUrl;
     });
-    message.success('Media inserted into HTML Content');
+    message.success('Media link inserted into HTML Content');
   };
 
   const buildFormData = (values) => {
@@ -521,6 +511,10 @@ const CreateContent = () => {
       // Webinar date
       if (values.webinar_date) {
         formData.append('webinar_date', values.webinar_date.format('YYYY-MM-DD HH:mm:ss'));
+      }
+
+      if (values.scheduled_publish_date) {
+        formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
       }
 
       // Banner image for webinar
@@ -2296,7 +2290,7 @@ const CreateContent = () => {
                             size="small"
                             icon={<PictureOutlined />}
                             onClick={() => {
-                              if (htmlEditorRef.current) {
+                              if (htmlEditorRef.current && typeof htmlEditorRef.current.getSelection === 'function') {
                                 savedHtmlSelectionRef.current = htmlEditorRef.current.getSelection();
                               }
                               setMediaLibraryVisible(true);
