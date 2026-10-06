@@ -558,7 +558,7 @@ class Content {
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            ${baseWhere} ORDER BY COALESCE(NULLIF(c.updated_at, '0000-00-00 00:00:00'), NULLIF(c.created_at, '0000-00-00 00:00:00')) DESC, c.id DESC
+            ${baseWhere} ORDER BY COALESCE(c.updated_at, c.created_at) DESC, c.id DESC
         `;
 
         const pageValues = [...values];
