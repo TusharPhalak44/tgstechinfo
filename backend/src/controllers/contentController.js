@@ -101,7 +101,7 @@ exports.createContent = async (req, res) => {
                 if (!existingBanner) {
                     const ext = bannerFile.filename.split('.').pop().toLowerCase();
                     const fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other';
-                    const fileData = bannerFile.buffer || require('fs').readFileSync(bannerFile.path);
+                    const fileData = bannerFile.buffer || (bannerFile.path && require('fs').existsSync(bannerFile.path) ? require('fs').readFileSync(bannerFile.path) : null);
                     await Media.create({
                         filename: bannerFile.filename,
                         original_name: bannerFile.originalname,
@@ -113,6 +113,9 @@ exports.createContent = async (req, res) => {
                         uploaded_by: req.user.id,
                         file_data: fileData
                     });
+                    if (bannerFile.path && require('fs').existsSync(bannerFile.path)) {
+                        try { require('fs').unlinkSync(bannerFile.path); } catch (e) {}
+                    }
                     console.log('✓ Banner image added to media_files table:', bannerFile.filename);
                 } else {
                     console.log('Banner image with same original name already exists in media_files table:', bannerFile.originalname);
@@ -131,7 +134,7 @@ exports.createContent = async (req, res) => {
                 // Check if file with same original name already exists in media_files table
                 const existingMedia = await Media.findByOriginalName(pdfFile.originalname);
                 if (!existingMedia) {
-                    const fileData = require('fs').readFileSync(pdfFile.path);
+                    const fileData = pdfFile.buffer || (pdfFile.path && require('fs').existsSync(pdfFile.path) ? require('fs').readFileSync(pdfFile.path) : null);
                     await Media.create({
                         filename: pdfFile.filename,
                         original_name: pdfFile.originalname,
@@ -143,6 +146,9 @@ exports.createContent = async (req, res) => {
                         uploaded_by: req.user.id,
                         file_data: fileData
                     });
+                    if (pdfFile.path && require('fs').existsSync(pdfFile.path)) {
+                        try { require('fs').unlinkSync(pdfFile.path); } catch (e) {}
+                    }
                     console.log('✓ PDF file added to media_files table:', pdfFile.filename);
                 } else {
                     console.log('PDF file with same original name already exists in media_files table:', pdfFile.originalname);
@@ -162,7 +168,7 @@ exports.createContent = async (req, res) => {
                 const existingMedia = await Media.findByOriginalName(videoFile.originalname);
                 if (!existingMedia) {
                     // Store video file data in database (no size limit for videos)
-                    const fileData = require('fs').readFileSync(videoFile.path);
+                    const fileData = videoFile.buffer || (videoFile.path && require('fs').existsSync(videoFile.path) ? require('fs').readFileSync(videoFile.path) : null);
                     await Media.create({
                         filename: videoFile.filename,
                         original_name: videoFile.originalname,
@@ -177,11 +183,13 @@ exports.createContent = async (req, res) => {
                     console.log('✓ Video file added to media_files table with database storage:', videoFile.filename);
                     
                     // Clean up the uploaded file from filesystem since it's now in database
-                    try {
-                        require('fs').unlinkSync(videoFile.path);
-                        console.log('✓ Cleaned up video file from filesystem:', videoFile.path);
-                    } catch (cleanupError) {
-                        console.warn('Could not clean up video file from filesystem:', cleanupError.message);
+                    if (videoFile.path && require('fs').existsSync(videoFile.path)) {
+                        try {
+                            require('fs').unlinkSync(videoFile.path);
+                            console.log('✓ Cleaned up video file from filesystem:', videoFile.path);
+                        } catch (cleanupError) {
+                            console.warn('Could not clean up video file from filesystem:', cleanupError.message);
+                        }
                     }
                 } else {
                     console.log('Video file with same original name already exists in media_files table:', videoFile.originalname);
@@ -377,7 +385,7 @@ exports.updateContent = async (req, res) => {
                 if (!existingMedia) {
                     const ext = bannerFile.filename.split('.').pop().toLowerCase();
                     const fileType = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? 'image' : 'other';
-                    const fileData = bannerFile.buffer || require('fs').readFileSync(bannerFile.path);
+                    const fileData = bannerFile.buffer || (bannerFile.path && require('fs').existsSync(bannerFile.path) ? require('fs').readFileSync(bannerFile.path) : null);
                     await Media.create({
                         filename: bannerFile.filename,
                         original_name: bannerFile.originalname,
@@ -389,6 +397,9 @@ exports.updateContent = async (req, res) => {
                         uploaded_by: req.user.id,
                         file_data: fileData
                     });
+                    if (bannerFile.path && require('fs').existsSync(bannerFile.path)) {
+                        try { require('fs').unlinkSync(bannerFile.path); } catch (e) {}
+                    }
                     console.log('✓ Banner image added to media_files table on update:', bannerFile.filename);
                 } else {
                     console.log('Banner image with same original name already exists in media_files table on update:', bannerFile.originalname);
@@ -409,7 +420,7 @@ exports.updateContent = async (req, res) => {
                 // Check if file with same original name already exists in media_files table
                 const existingMedia = await Media.findByOriginalName(pdfFile.originalname);
                 if (!existingMedia) {
-                    const fileData = require('fs').readFileSync(pdfFile.path);
+                    const fileData = pdfFile.buffer || (pdfFile.path && require('fs').existsSync(pdfFile.path) ? require('fs').readFileSync(pdfFile.path) : null);
                     await Media.create({
                         filename: pdfFile.filename,
                         original_name: pdfFile.originalname,
@@ -421,6 +432,9 @@ exports.updateContent = async (req, res) => {
                         uploaded_by: req.user.id,
                         file_data: fileData
                     });
+                    if (pdfFile.path && require('fs').existsSync(pdfFile.path)) {
+                        try { require('fs').unlinkSync(pdfFile.path); } catch (e) {}
+                    }
                     console.log('✓ PDF file added to media_files table on update:', pdfFile.filename);
                 } else {
                     console.log('PDF file with same original name already exists in media_files table on update:', pdfFile.originalname);
@@ -440,7 +454,7 @@ exports.updateContent = async (req, res) => {
                 const existingMedia = await Media.findByOriginalName(videoFile.originalname);
                 if (!existingMedia) {
                     // Store video file data in database (no size limit for videos)
-                    const fileData = require('fs').readFileSync(videoFile.path);
+                    const fileData = videoFile.buffer || (videoFile.path && require('fs').existsSync(videoFile.path) ? require('fs').readFileSync(videoFile.path) : null);
                     await Media.create({
                         filename: videoFile.filename,
                         original_name: videoFile.originalname,
@@ -455,11 +469,13 @@ exports.updateContent = async (req, res) => {
                     console.log('✓ Video file added to media_files table on update with database storage:', videoFile.filename);
                     
                     // Clean up the uploaded file from filesystem since it's now in database
-                    try {
-                        require('fs').unlinkSync(videoFile.path);
-                        console.log('✓ Cleaned up video file from filesystem on update:', videoFile.path);
-                    } catch (cleanupError) {
-                        console.warn('Could not clean up video file from filesystem on update:', cleanupError.message);
+                    if (videoFile.path && require('fs').existsSync(videoFile.path)) {
+                        try {
+                            require('fs').unlinkSync(videoFile.path);
+                            console.log('✓ Cleaned up video file from filesystem on update:', videoFile.path);
+                        } catch (cleanupError) {
+                            console.warn('Could not clean up video file from filesystem on update:', cleanupError.message);
+                        }
                     }
                 } else {
                     console.log('Video file with same original name already exists in media_files table on update:', videoFile.originalname);

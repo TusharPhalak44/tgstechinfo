@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Table, 
   Button, 
@@ -39,7 +39,7 @@ import api from '../../services/api';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import { formatDateForTableWithDraft } from '../../utils/dateHelper';
+import { formatDateForTable, formatDateForTableWithDraft } from '../../utils/dateHelper';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -116,13 +116,10 @@ const ContentReview = () => {
   const { darkMode } = useTheme();
   const D = darkMode;
 
-  const [contents, setContents] = useState([]);
   const [allContents, setAllContents] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchText, setSearchText] = useState('');
-  const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [publishingId, setPublishingId] = useState(null);
@@ -145,27 +142,8 @@ const ContentReview = () => {
     rejected: 0
   });
 
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchContents();
-    fetchStatusCounts();
-  }, [activeTab, filterStatus]);
-
-  useEffect(() => {
-    fetchContents();
-  }, [currentPage, pageSize]);
-
-  // Real-time data polling - fetch every 30 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchContents();
-      fetchStatusCounts();
-    }, 30000); // 30 seconds
-
-    return () => clearInterval(interval);
-  }, [activeTab, filterStatus, currentPage, pageSize]);
-
-  useEffect(() => {
+  // Filtered content computed in memory
+  const contents = useMemo(() => {
     let filtered = [...allContents];
     if (searchText && searchText.trim()) {
       const searchLower = searchText.toLowerCase().trim();
@@ -182,13 +160,44 @@ const ContentReview = () => {
       filtered = filtered.filter(item => {
         if (!item.published_date) return false;
         const publishDate = moment(item.published_date);
-        return publishDate.isAfter(startDate.subtract(1, 'day')) && publishDate.isBefore(endDate.add(1, 'day'));
+        return publishDate.isAfter(moment(startDate).startOf('day').subtract(1, 'second')) && 
+               publishDate.isBefore(moment(endDate).endOf('day').add(1, 'second'));
       });
     }
-    setContents(filtered);
-    setTotalItems(filtered.length);
+    // Always ensure newest submissions appear at the very top
+    filtered.sort((a, b) => {
+      const timeA = new Date(a.updated_at || a.created_at || a.published_date || 0).getTime() || 0;
+      const timeB = new Date(b.updated_at || b.created_at || b.published_date || 0).getTime() || 0;
+      if (timeB !== timeA) return timeB - timeA;
+      return (b.id || 0) - (a.id || 0);
+    });
+
+    return filtered;
+  }, [allContents, searchText, dateRange]);
+
+  // Keep currentPage within valid bounds if content length shrinks
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(contents.length / pageSize));
+    if (currentPage > maxPage) {
+      setCurrentPage(maxPage);
+    }
+  }, [contents.length, pageSize, currentPage]);
+
+  useEffect(() => {
     setCurrentPage(1);
-  }, [searchText, allContents, dateRange]);
+    fetchContents();
+    fetchStatusCounts();
+  }, [filterStatus]);
+
+  // Real-time data polling - fetch every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchContents();
+      fetchStatusCounts();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [filterStatus]);
 
   useEffect(() => {
     if (reviewId && contents.length > 0) {
@@ -204,14 +213,11 @@ const ContentReview = () => {
     try {
       // Always fetch all content without pagination limits
       const params = {};
-      const statusToFetch = filterStatus !== 'all' ? filterStatus : (activeTab !== 'all' ? activeTab : null);
-      if (statusToFetch) params.status = statusToFetch;
+      if (filterStatus !== 'all') params.status = filterStatus;
 
       const response = await api.get('/api/admin/content/pending', { params });
       const result = response.data?.data || response.data || [];
       setAllContents(Array.isArray(result) ? result : []);
-      setContents(Array.isArray(result) ? result : []);
-      setTotalItems(Array.isArray(result) ? result.length : 0);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Fetch error:', error);
@@ -470,13 +476,15 @@ const ContentReview = () => {
     },
     {
       title: 'Submission Date',
-      dataIndex: 'published_date',
-      key: 'published_date',
-      render: (date) => (
-        <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
-          {formatDateForTableWithDraft(date)}
-        </span>
-      ),
+      key: 'submission_date',
+      render: (_, record) => {
+        const dateVal = record.updated_at || record.created_at || record.published_date;
+        return (
+          <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
+            {dateVal ? formatDateForTable(dateVal) : 'Recently'}
+          </span>
+        );
+      },
     },
     {
       title: 'Actions',
@@ -691,7 +699,10 @@ const ContentReview = () => {
                   type="text"
                   placeholder="Filter articles..."
                   value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
+                  onChange={(e) => {
+                    setSearchText(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   style={{
                     border: 'none',
                     outline: 'none',
@@ -707,7 +718,10 @@ const ContentReview = () => {
               <Tooltip title="Reload Pending Reviews">
                 <Button
                   icon={<ReloadOutlined />}
-                  onClick={fetchContents}
+                  onClick={() => {
+                    fetchContents();
+                    fetchStatusCounts();
+                  }}
                   style={{
                     borderRadius: 10,
                     border: `1px solid ${D ? 'rgba(51, 65, 85, 0.8)' : 'rgba(203, 213, 225, 0.8)'}`,
@@ -724,12 +738,22 @@ const ContentReview = () => {
             dataSource={contents}
             rowKey="id"
             loading={loading}
+            scroll={{ x: 'max-content' }}
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: totalItems,
+              total: contents.length,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
               showTotal: (total) => <span style={{ fontSize: '0.78rem', color: D ? '#64748B' : '#94A3B8' }}>Total {total} submissions</span>,
-              onChange: (p, s) => { setCurrentPage(p); setPageSize(s); },
+              onChange: (p, s) => {
+                if (s !== pageSize) {
+                  setPageSize(s);
+                  setCurrentPage(1);
+                } else {
+                  setCurrentPage(p);
+                }
+              },
             }}
           />
         </div>

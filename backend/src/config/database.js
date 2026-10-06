@@ -14,14 +14,17 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME || 'publishing_platform',
     waitForConnections: true,
     connectionLimit: 20,
-    queueLimit: 0
+    queueLimit: 0,
+    timezone: '+05:30',
+    dateStrings: true
 });
 
 const testConnection = async (retries = 15, delay = 3000) => {
     for (let i = 0; i < retries; i++) {
         try {
             const conn = await pool.getConnection();
-            console.log(`✅ Connected to MySQL database [${process.env.DB_NAME || 'publishing_platform'}] successfully`);
+            await conn.query("SET time_zone = '+05:30'");
+            console.log(`✅ Connected to MySQL database [${process.env.DB_NAME || 'publishing_platform'}] successfully (Timezone: +05:30 IST)`);
             conn.release();
             return true;
         } catch (err) {

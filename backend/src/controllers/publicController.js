@@ -1583,10 +1583,12 @@ exports.registerWebinar = async (req, res) => {
             return res.status(404).json({ message: 'Webinar not found' });
         }
 
+        const { getNowInIST } = require('../utils/dateHelper');
+        const registeredAt = getNowInIST();
         const [result] = await pool.query(
             `INSERT INTO webinar_registrations 
-            (webinar_id, first_name, last_name, email, job_title, company_name, contact_number) 
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            (webinar_id, first_name, last_name, email, job_title, company_name, contact_number, registered_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 id,
                 first_name.trim(),
@@ -1594,7 +1596,8 @@ exports.registerWebinar = async (req, res) => {
                 email.trim().toLowerCase(),
                 job_title ? job_title.trim() : null,
                 company_name ? company_name.trim() : null,
-                contact_number ? contact_number.trim() : null
+                contact_number ? contact_number.trim() : null,
+                registeredAt
             ]
         );
 

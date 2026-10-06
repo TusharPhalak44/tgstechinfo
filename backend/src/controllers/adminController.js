@@ -448,7 +448,7 @@ exports.adminEditContent = async (req, res) => {
         // Persist the banner first so the content can never reference a missing media row.
         if (bannerFile) {
             const ext = bannerFile.filename.split('.').pop().toLowerCase();
-            const fileData = bannerFile.buffer || (bannerFile.path ? require('fs').readFileSync(bannerFile.path) : null);
+            const fileData = bannerFile.buffer || (bannerFile.path && require('fs').existsSync(bannerFile.path) ? require('fs').readFileSync(bannerFile.path) : null);
             if (!fileData) throw new Error('Uploaded banner image data is missing');
             await Media.create({
                 filename: bannerFile.filename,
@@ -461,6 +461,9 @@ exports.adminEditContent = async (req, res) => {
                 uploaded_by: req.user.id,
                 file_data: fileData
             });
+            if (bannerFile.path && require('fs').existsSync(bannerFile.path)) {
+                try { require('fs').unlinkSync(bannerFile.path); } catch (e) {}
+            }
             updateData.banner_image = bannerFile.filename;
         }
 
@@ -471,7 +474,7 @@ exports.adminEditContent = async (req, res) => {
             try {
                 const pdfFile = req.files.pdf_file[0];
                 const Media = require('../models/Media');
-                const fileData = require('fs').readFileSync(pdfFile.path);
+                const fileData = pdfFile.buffer || (pdfFile.path && require('fs').existsSync(pdfFile.path) ? require('fs').readFileSync(pdfFile.path) : null);
                 await Media.create({
                     filename: pdfFile.filename,
                     original_name: pdfFile.originalname,
@@ -483,13 +486,16 @@ exports.adminEditContent = async (req, res) => {
                     uploaded_by: req.user.id,
                     file_data: fileData
                 });
+                if (pdfFile.path && require('fs').existsSync(pdfFile.path)) {
+                    try { require('fs').unlinkSync(pdfFile.path); } catch (e) {}
+                }
             } catch (e) { console.error('Media save error:', e.message); }
         }
         if (req.files?.video_file?.[0]) {
             try {
                 const videoFile = req.files.video_file[0];
                 const Media = require('../models/Media');
-                const fileData = require('fs').readFileSync(videoFile.path);
+                const fileData = videoFile.buffer || (videoFile.path && require('fs').existsSync(videoFile.path) ? require('fs').readFileSync(videoFile.path) : null);
                 await Media.create({
                     filename: videoFile.filename,
                     original_name: videoFile.originalname,
@@ -504,11 +510,13 @@ exports.adminEditContent = async (req, res) => {
                 console.log('✓ Video file added to media_files table (admin) with database storage:', videoFile.filename);
 
                 // Clean up the uploaded file from filesystem since it's now in database
-                try {
-                    require('fs').unlinkSync(videoFile.path);
-                    console.log('✓ Cleaned up video file from filesystem (admin):', videoFile.path);
-                } catch (cleanupError) {
-                    console.warn('Could not clean up video file from filesystem (admin):', cleanupError.message);
+                if (videoFile.path && require('fs').existsSync(videoFile.path)) {
+                    try {
+                        require('fs').unlinkSync(videoFile.path);
+                        console.log('✓ Cleaned up video file from filesystem (admin):', videoFile.path);
+                    } catch (cleanupError) {
+                        console.warn('Could not clean up video file from filesystem (admin):', cleanupError.message);
+                    }
                 }
             } catch (e) { console.error('Media save error:', e.message); }
         }

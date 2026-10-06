@@ -3,6 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const Media = require('../models/Media');
 
+const uploadDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Configure multer for file uploads directly in memory (zero disk touches)
 const storage = multer.memoryStorage();
 
@@ -56,7 +61,7 @@ exports.uploadFile = async (req, res) => {
 
         // Generate unique filename since memoryStorage keeps file in RAM
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const filename = req.file.filename || (uniqueSuffix + path.extname(req.file.originalname));
+        const filename = uniqueSuffix + path.extname(req.file.originalname);
         req.file.filename = filename;
 
         console.log('File uploaded to memory:', req.file.filename);
@@ -77,9 +82,12 @@ exports.uploadFile = async (req, res) => {
             folder = 'Documents';
         }
 
-        // Save to database with physical disk persistence (avoids memory exhaustion)
+        const relativeUrl = `/uploads/${filename}`;
+        const fullUrl = buildPublicUrl(req, relativeUrl);
+
+        // Save to database
         const mediaData = {
-            filename: req.file.filename,
+            filename: filename,
             original_name: req.file.originalname,
             file_path: relativeUrl,
             file_type: fileType,
@@ -87,17 +95,28 @@ exports.uploadFile = async (req, res) => {
             mime_type: req.file.mimetype,
             folder: folder,
             uploaded_by: req.user ? req.user.id : null,
-            file_data: null
+            file_data: req.file.buffer || null
         };
 
-        const savedMedia = await Media.create(mediaData);
+        let savedMedia;
+        try {
+            savedMedia = await Media.create(mediaData);
+        } catch (dbErr) {
+            if (dbErr.code === 'ER_NET_PACKET_TOO_LARGE' || dbErr.message?.includes('max_allowed_packet')) {
+                console.warn('Packet too large for MySQL BLOB, saving with file_data: null (disk-backed)');
+                mediaData.file_data = null;
+                savedMedia = await Media.create(mediaData);
+            } else {
+                throw dbErr;
+            }
+        }
         console.log('Media saved to database and persisted to disk:', savedMedia.filename);
 
         res.json({
             message: 'File uploaded successfully',
             file: {
                 id: savedMedia.id,
-                filename: req.file.filename,
+                filename: filename,
                 originalname: req.file.originalname,
                 mimetype: req.file.mimetype,
                 size: req.file.size,
@@ -265,16 +284,7 @@ exports.serveFile = async (req, res) => {
         const filename = path.basename(req.params.filename);
         const { download } = req.query;
 
-        // First check disk filesystem (streaming, zero memory buffering)
-        const filePath = path.join(uploadDir, filename);
-        if (fs.existsSync(filePath)) {
-            if (download === '1') {
-                return res.download(filePath, filename);
-            }
-            return res.sendFile(filePath);
-        }
-
-        // Fallback: check database if old file was stored only in DB blob
+        // 1. Serve directly from database BLOB first (pure database delivery)
         const [rows] = await require('../config/database').pool.query(
             'SELECT file_data, mime_type, original_name FROM media_files WHERE filename = ? LIMIT 1',
             [filename]
@@ -288,6 +298,15 @@ exports.serveFile = async (req, res) => {
                 res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
             }
             return res.send(rows[0].file_data);
+        }
+
+        // 2. Fallback: check disk filesystem if legacy file was on disk
+        const filePath = path.join(uploadDir, filename);
+        if (fs.existsSync(filePath)) {
+            if (download === '1') {
+                return res.download(filePath, filename);
+            }
+            return res.sendFile(filePath);
         }
 
         return res.status(404).json({ message: 'File not found' });

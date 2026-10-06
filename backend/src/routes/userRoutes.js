@@ -23,8 +23,8 @@ router.post('/avatar', upload.single('avatar'), async (req, res) => {
         
         const avatarUrl = `/uploads/${req.file.filename}`;
 
-        // Read binary file data and store in media_files database table
-        const fileData = fs.readFileSync(req.file.path);
+        // Read binary file data from memory buffer and store in media_files database table
+        const fileData = req.file.buffer || (req.file.path && fs.existsSync(req.file.path) ? fs.readFileSync(req.file.path) : null);
         await Media.create({
             filename: req.file.filename,
             original_name: req.file.originalname,

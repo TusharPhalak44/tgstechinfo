@@ -357,8 +357,17 @@ class Content {
             return isNaN(num) ? null : num;
         };
 
+        const toMySqlDateTime = (d) => {
+            if (!d) return null;
+            const dateObj = d instanceof Date ? d : new Date(d);
+            if (isNaN(dateObj.getTime())) return typeof d === 'string' ? d : null;
+            const pad = n => String(n).padStart(2, '0');
+            return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
+        };
+
         const scalarize = (val) => {
             if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+            if (val instanceof Date) return toMySqlDateTime(val);
             if (typeof val === 'string') return val;
             if (typeof val === 'number' || typeof val === 'boolean') return val;
             return JSON.stringify(val);
@@ -549,7 +558,7 @@ class Content {
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            ${baseWhere} ORDER BY c.created_at DESC
+            ${baseWhere} ORDER BY COALESCE(NULLIF(c.updated_at, '0000-00-00 00:00:00'), NULLIF(c.created_at, '0000-00-00 00:00:00')) DESC, c.id DESC
         `;
 
         const pageValues = [...values];
@@ -673,8 +682,17 @@ class Content {
             return isNaN(num) ? null : num;
         };
 
+        const toMySqlDateTime = (d) => {
+            if (!d) return null;
+            const dateObj = d instanceof Date ? d : new Date(d);
+            if (isNaN(dateObj.getTime())) return typeof d === 'string' ? d : null;
+            const pad = n => String(n).padStart(2, '0');
+            return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
+        };
+
         const scalarizeVal = (val) => {
             if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
+            if (val instanceof Date) return toMySqlDateTime(val);
             if (typeof val === 'string') return val;
             if (typeof val === 'number' || typeof val === 'boolean') return val;
             return JSON.stringify(val);

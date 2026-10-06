@@ -189,20 +189,31 @@ const insertIntoDynamicTable = async (contentId, formData) => {
             }
         }
         
-        // Build INSERT query
-        const dynamicColumns = Object.keys(filteredData);
-        const placeholders = dynamicColumns.map(() => '?').join(', ');
+        // Build INSERT query with exact IST submission timestamp
+        const { getNowInIST } = require('./dateHelper');
+        const currentIstTime = getNowInIST();
+
+        const insertColumns = [...Object.keys(filteredData)];
+        const insertVals = [...Object.values(filteredData)];
+
+        if (columnNames.includes('created_at')) {
+            insertColumns.push('created_at');
+            insertVals.push(currentIstTime);
+        }
+
         const numContentId = Number(contentId);
         const validContentId = (!isNaN(numContentId) && numContentId > 0) ? numContentId : null;
-        const values = [...Object.values(filteredData), validContentId];
-        
+        insertColumns.push('content_id');
+        insertVals.push(validContentId);
+
+        const placeholders = insertColumns.map(() => '?').join(', ');
         const insertSQL = `
-            INSERT INTO ${tableName} (${dynamicColumns.join(', ')}, content_id)
-            VALUES (${placeholders}, ?)
+            INSERT INTO ${tableName} (${insertColumns.join(', ')})
+            VALUES (${placeholders})
         `;
         
-        const [result] = await pool.query(insertSQL, values);
-        console.log(`Inserted form submission into ${tableName} with ID ${result.insertId}`);
+        const [result] = await pool.query(insertSQL, insertVals);
+        console.log(`Inserted form submission into ${tableName} with ID ${result.insertId} at ${currentIstTime} (IST)`);
         
         return { success: true, insertId: result.insertId, tableName };
     } catch (error) {

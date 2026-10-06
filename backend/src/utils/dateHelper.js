@@ -209,6 +209,32 @@ function isDateInRange(date, rangeStart, rangeEnd) {
     return checkDate.isBetween(start, end, null, '[]');
 }
 
+/**
+ * Get current timestamp in India Standard Time (IST / Asia/Kolkata)
+ * Returns 'YYYY-MM-DD HH:mm:ss' formatted string for MySQL DATETIME / TIMESTAMP storage
+ */
+function getNowInIST() {
+    try {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: process.env.APP_TIMEZONE || 'Asia/Kolkata',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        return formatter.format(new Date()).replace(', ', ' ');
+    } catch {
+        const now = new Date();
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istDate = new Date(now.getTime() + istOffset + (now.getTimezoneOffset() * 60 * 1000));
+        const pad = n => String(n).padStart(2, '0');
+        return `${istDate.getFullYear()}-${pad(istDate.getMonth() + 1)}-${pad(istDate.getDate())} ${pad(istDate.getHours())}:${pad(istDate.getMinutes())}:${pad(istDate.getSeconds())}`;
+    }
+}
+
 module.exports = {
     // Date format constants
     DATE_FORMATS,
@@ -221,6 +247,7 @@ module.exports = {
     formatDateForEmail,
     formatWebinarDate,
     formatDateForTable,
+    getNowInIST,
     
     // Utility functions
     sortContentByDate,

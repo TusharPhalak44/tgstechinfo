@@ -3,28 +3,14 @@ const path = require('path');
 const fs = require('fs');
 
 const uploadDir = path.join(__dirname, '../../uploads');
-console.log('Upload middleware uploadDir:', uploadDir);
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// ── Disk storage for files that are not stored in the database ────────────────
-const diskStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-// Banner images are persisted in media_files.file_data, so keep them in memory
-// and never create a permanent copy in the uploads directory.
-const contentStorage = {
+// ── In-Memory Storage for all uploads (Zero disk touches) ───────────────────
+// All media files are persisted directly in media_files.file_data in the database.
+const memoryStorage = {
     _handleFile: (req, file, cb) => {
-        if (file.fieldname !== 'banner_image') {
-            return diskStorage._handleFile(req, file, cb);
-        }
-
         const filename = `${file.fieldname}-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
         const chunks = [];
         let size = 0;
@@ -40,9 +26,6 @@ const contentStorage = {
         }));
     },
     _removeFile: (req, file, cb) => {
-        if (file.fieldname !== 'banner_image') {
-            return diskStorage._removeFile(req, file, cb);
-        }
         delete file.buffer;
         cb(null);
     }
@@ -50,37 +33,35 @@ const contentStorage = {
 
 // ── File filters ──────────────────────────────────────────────────────────────
 const imageFilter = (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp/;
+    const allowed = /jpeg|jpg|png|gif|webp|svg/;
     if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype))
         return cb(null, true);
     cb(new Error('Only image files are allowed'));
 };
 
 const anyFileFilter = (req, file, cb) => {
-    const allowed = /jpeg|jpg|png|gif|webp|pdf|mp4|webm|mov|avi|mkv/;
+    const allowed = /jpeg|jpg|png|gif|webp|svg|pdf|mp4|webm|mov|avi|mkv/;
     if (allowed.test(path.extname(file.originalname).toLowerCase()))
         return cb(null, true);
     cb(new Error('Only image, PDF, or video files are allowed'));
 };
 
-// ── Combined upload: banner_image + pdf_file + video_file ──────────────────────────────────
-// Uses disk storage for PDFs/videos and memory storage for banners.
-// Banner bytes are persisted by the controllers in media_files.file_data.
+// ── Combined upload: banner_image + pdf_file + video_file ──────────────────────
+// Uses in-memory storage for all files (saved directly into database BLOB).
 const uploadWithPdfBase = multer({
-    storage: contentStorage,
-    limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB for videos
+    storage: memoryStorage,
+    limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB
     fileFilter: anyFileFilter
 });
 
-// Wrapper that matches the { fields: [...] } call signature used in routes
 const uploadWithPdf = {
     fields: (fieldsConfig) => uploadWithPdfBase.fields(fieldsConfig)
 };
 
-// ── Simple image-only upload ──────────────────────────────────────────────────
+// ── Simple image-only upload (avatars, etc.) ───────────────────────────────────
 const upload = multer({
-    storage: diskStorage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+    storage: memoryStorage,
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
     fileFilter: imageFilter
 });
 
