@@ -572,7 +572,10 @@ exports.getCtaAnalytics = async (req, res) => {
         const ctaAnalytics = await CtaClick.getCtaAnalytics(filters);
 
         // Calculate total conversions from actual conversion actions (form_submit, download)
-        const totalConversions = ctaAnalytics.reduce((sum, cta) => sum + (cta.conversions || 0), 0);
+        const totalConversions = ctaAnalytics
+            .filter(cta => ['Form Submission', 'File Download'].includes(cta.cta_type))
+            .reduce((sum, cta) => sum + (Number(cta.conversions || cta.click_count) || 0), 0)
+            || ctaAnalytics.reduce((sum, cta) => sum + (Number(cta.conversions) || 0), 0);
 
         console.log('getCtaAnalytics - Returning (Real User Journey Data):', { 
             ctaClicks: ctaAnalytics,

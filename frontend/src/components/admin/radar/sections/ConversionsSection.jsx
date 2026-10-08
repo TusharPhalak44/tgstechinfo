@@ -347,9 +347,13 @@ const ConversionsSection = ({
                     {ctaDisplayData.map((c, i) => {
                       const clicks = c.click_count || c.clicks || 0;
                       const uniqueClicks = c.unique_clicks || 0;
-                      const pct = Math.round((clicks / maxClicks) * 100);
                       const color = COLORS[i % COLORS.length];
-                      const convR = c.conv_rate || c.conv || 0;
+                      const rawConv = c.conv_rate !== undefined && c.conv_rate !== null ? c.conv_rate : c.conv;
+                      const convR = rawConv !== undefined && rawConv !== null ? parseFloat(rawConv) : (realSessions > 0 ? ((clicks / realSessions) * 100) : 0);
+                      const conversionsCount = Number(c.conversions || 0);
+                      const pct = Number.isFinite(convR) && convR > 0
+                        ? Math.min(100, Math.max(0, Math.round(convR)))
+                        : 0;
 
                       return (
                         <tr
@@ -369,38 +373,74 @@ const ConversionsSection = ({
                             {uniqueClicks.toLocaleString()}
                           </td>
                           <td style={{ padding: '12px 14px' }}>
-                            <span
-                              style={{
-                                fontSize: 11,
-                                fontWeight: 700,
-                                padding: '2px 8px',
-                                borderRadius: 4,
-                                background: darkMode ? `${color}20` : `${color}15`,
-                                color,
-                                fontFamily: 'monospace',
-                              }}
-                            >
-                              {convR}%
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 700,
+                                  padding: '2px 8px',
+                                  borderRadius: 4,
+                                  background: darkMode ? `${color}20` : `${color}15`,
+                                  color,
+                                  fontFamily: 'monospace',
+                                }}
+                              >
+                                {Number.isFinite(convR) ? convR.toFixed(1) : '0.0'}%
+                              </span>
+                              {conversionsCount > 0 && (
+                                <span
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    color: darkMode ? '#94A3B8' : '#64748B',
+                                    fontFamily: 'monospace',
+                                  }}
+                                  title={`${conversionsCount.toLocaleString()} converted sessions`}
+                                >
+                                  ({conversionsCount.toLocaleString()})
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td style={{ padding: '12px 14px', minWidth: 140 }}>
                             <div
                               style={{
-                                height: 6,
-                                borderRadius: 3,
-                                background: darkMode ? '#1E293B' : '#E2E8F0',
-                                overflow: 'hidden',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
                               }}
                             >
                               <div
                                 style={{
-                                  height: '100%',
-                                  width: `${pct}%`,
+                                  flex: 1,
+                                  height: 6,
                                   borderRadius: 3,
-                                  background: color,
-                                  transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                                  background: darkMode ? '#1E293B' : '#E2E8F0',
+                                  overflow: 'hidden',
                                 }}
-                              />
+                              >
+                                <div
+                                  style={{
+                                    height: '100%',
+                                    width: `${pct}%`,
+                                    borderRadius: 3,
+                                    background: color,
+                                    transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                                  }}
+                                />
+                              </div>
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 600,
+                                  color: darkMode ? '#94A3B8' : '#64748B',
+                                  fontFamily: 'monospace',
+                                  minWidth: 32,
+                                  textAlign: 'right',
+                                }}
+                              >
+                                {pct}%
+                              </span>
                             </div>
                           </td>
                         </tr>
