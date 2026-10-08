@@ -58,6 +58,21 @@ const uploadWithPdf = {
     fields: (fieldsConfig) => uploadWithPdfBase.fields(fieldsConfig)
 };
 
+// ── Zip-only upload (Landing pages zip packages) ───────────────────────────
+const zipFilter = (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ext === '.zip' || file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed' || file.mimetype === 'application/octet-stream') {
+        return cb(null, true);
+    }
+    cb(new Error('Only ZIP archives (.zip) are allowed'));
+};
+
+const uploadZip = multer({
+    storage: memoryStorage,
+    limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
+    fileFilter: zipFilter
+});
+
 // ── Simple image-only upload (avatars, etc.) ───────────────────────────────────
 const upload = multer({
     storage: memoryStorage,
@@ -65,4 +80,4 @@ const upload = multer({
     fileFilter: imageFilter
 });
 
-module.exports = { upload, uploadWithPdf };
+module.exports = { upload, uploadWithPdf, uploadZip };

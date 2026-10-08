@@ -1711,9 +1711,10 @@ const ListCard = ({ article, navigate, onImgClick, isLast }) => (
 );
 
 // ── Latest Posts Section ─────────────────────────────────────────
-const LatestArticlesSection = ({ articles, blogs, navigate }) => {
-  const combined = sortContentByDate([...(articles || []), ...(blogs || [])])
-    .slice(0, 4);
+const LatestArticlesSection = ({ items, articles, blogs, navigate }) => {
+  const combined = (items && items.length > 0)
+    ? items.slice(0, 4)
+    : sortContentByDate([...(articles || []), ...(blogs || [])]).slice(0, 4);
   const [ref, visible] = useReveal();
   if (!combined.length) return null;
   return (
@@ -1781,7 +1782,7 @@ const LatestArticlesSection = ({ articles, blogs, navigate }) => {
                 {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 10.5px)', fontWeight: 700, color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
                 <h3 style={{ fontWeight: 700, fontSize: 'clamp(14px, 1vw, 14.5px)', lineHeight: 1.5, color: 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</h3>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><EyeOutlined />{article.view_count || 0} views</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined style={{ fontSize: 11 }} />{formatContentPublishDate(article)}</span>
                   <span style={{ color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3 }}>Read more <ArrowRightOutlined style={{ fontSize: 9 }} /></span>
                 </div>
               </CardContent>
@@ -1926,7 +1927,7 @@ const TrendingTopicsSection = ({ items, navigate, darkMode = false }) => {
 const Home = () => {
   const navigate = useNavigate();
   const { darkMode } = useTheme();
-  const [data, setData] = useState({ articles: [], blogs: [], news: [], interviews: [] });
+  const [data, setData] = useState({ latest: [], articles: [], blogs: [], news: [], interviews: [] });
   const [stats, setStats] = useState({ totalPublished: 0, totalViews: 0, totalAuthors: 0, totalCategories: 0 });
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState(null);
@@ -1937,13 +1938,20 @@ const Home = () => {
   const catSectionRef = useRef(null);
 
   const trendingTopics = React.useMemo(() => {
-    const combined = [...data.articles, ...data.blogs, ...data.news];
+    const combined = [
+      ...(data.latest || []),
+      ...(data.articles || []),
+      ...(data.blogs || []),
+      ...(data.news || [])
+    ];
     if (!combined.length) return [];
-    return combined
-      .map(item => ({ item, sort: Math.sin((item.id || 0) + 7) }))
-      .sort((a, b) => a.sort - b.sort)
-      .slice(0, 3)
-      .map(x => x.item);
+    const uniqueMap = new Map();
+    combined.forEach(item => {
+      if (item && item.id && !uniqueMap.has(item.id)) {
+        uniqueMap.set(item.id, item);
+      }
+    });
+    return sortContentByDate(Array.from(uniqueMap.values()), 'desc').slice(0, 3);
   }, [data]);
 
   useEffect(() => { fetchHomeData(); }, []);
@@ -1991,14 +1999,21 @@ const Home = () => {
   const fetchHomeData = async () => {
     setLoading(true);
     try {
-      const [aR, bR, nR, iR, sR] = await Promise.all([
+      const [latestRes, aR, bR, nR, iR, sR] = await Promise.all([
+        axios.get('/api/public/content?status=published&limit=8'),
         axios.get('/api/public/content?status=published&content_type=article&limit=6'),
         axios.get('/api/public/content?status=published&content_type=blog&limit=4'),
         axios.get('/api/public/content?status=published&content_type=news&limit=4'),
         axios.get('/api/public/content?status=published&content_type=interview&limit=4'),
         axios.get('/api/public/stats'),
       ]);
-      setData({ articles: aR.data?.data || [], blogs: bR.data?.data || [], news: nR.data?.data || [], interviews: iR.data?.data || [] });
+      setData({
+        latest: latestRes.data?.data || [],
+        articles: aR.data?.data || [],
+        blogs: bR.data?.data || [],
+        news: nR.data?.data || [],
+        interviews: iR.data?.data || []
+      });
       setStats(sR.data || {});
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -2030,7 +2045,7 @@ const Home = () => {
       }}>
 
         {/* Latest Posts */}
-        <LatestArticlesSection articles={data.articles} blogs={data.blogs} navigate={navigate} />
+        <LatestArticlesSection items={data.latest} articles={data.articles} blogs={data.blogs} navigate={navigate} />
 
         {/* Category chips */}
         <CategoryNav activeTab={activeTab} setActiveTab={setActiveTab} dynamicCategories={dynamicCategories} />

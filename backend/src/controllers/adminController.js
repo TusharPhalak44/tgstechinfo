@@ -833,39 +833,121 @@ exports.getContentByStatus = async (req, res) => {
 exports.getDashboardKPIs = async (req, res) => {
     try {
         const { period = '30d', start_date, end_date } = req.query;
+        const isAll = (period === 'all' && !start_date && !end_date);
+
+        const contentDateCol = "COALESCE(published_date, created_at, updated_at)";
+        let contentDateCondition = "1=1";
+        let contentDateParams = [];
+
         let dateCondition = "updated_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        let dateParams = [];
+        let userCondition = "created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        let userParams = [30];
         let pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
         let vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        let dateParams = [];
-        let pvParams = [];
-        let vsParams = [];
+        let pvParams = [30];
+        let vsParams = [30];
+        let deltaDays = 30;
 
         if (start_date && end_date) {
+            contentDateCondition = `${contentDateCol} BETWEEN ? AND ?`;
+            contentDateParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+
             dateCondition = "updated_at BETWEEN ? AND ?";
-            pvCondition = "entered_at BETWEEN ? AND ?";
-            vsCondition = "session_start BETWEEN ? AND ?";
             dateParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+
+            userCondition = "created_at BETWEEN ? AND ?";
+            userParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+
+            pvCondition = "entered_at BETWEEN ? AND ?";
             pvParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+
+            vsCondition = "session_start BETWEEN ? AND ?";
             vsParams = [`${start_date} 00:00:00`, `${end_date} 23:59:59`];
+        } else if (isAll) {
+            contentDateCondition = "1=1";
+            contentDateParams = [];
+
+            dateCondition = "1=1";
+            dateParams = [];
+
+            userCondition = "1=1";
+            userParams = [];
+
+            pvCondition = "1=1";
+            pvParams = [];
+
+            vsCondition = "1=1";
+            vsParams = [];
+        } else if (period === 'today') {
+            contentDateCondition = `${contentDateCol} >= CURDATE()`;
+            contentDateParams = [];
+
+            dateCondition = "updated_at >= CURDATE()";
+            dateParams = [];
+
+            userCondition = "created_at >= CURDATE()";
+            userParams = [];
+
+            pvCondition = "entered_at >= CURDATE()";
+            pvParams = [];
+
+            vsCondition = "session_start >= CURDATE()";
+            vsParams = [];
+            deltaDays = 1;
+        } else if (period === 'ytd') {
+            contentDateCondition = `${contentDateCol} >= MAKEDATE(YEAR(NOW()), 1)`;
+            contentDateParams = [];
+
+            dateCondition = "updated_at >= MAKEDATE(YEAR(NOW()), 1)";
+            dateParams = [];
+
+            userCondition = "created_at >= MAKEDATE(YEAR(NOW()), 1)";
+            userParams = [];
+
+            pvCondition = "entered_at >= MAKEDATE(YEAR(NOW()), 1)";
+            pvParams = [];
+
+            vsCondition = "session_start >= MAKEDATE(YEAR(NOW()), 1)";
+            vsParams = [];
+            deltaDays = 365;
         } else {
-            const periodMap = { 'today': 1, '7d': 7, '30d': 30, '90d': 90, 'ytd': 365, 'all': 36500 };
+            const periodMap = { '7d': 7, '30d': 30, '90d': 90 };
             const days = periodMap[period] || 30;
+            deltaDays = days;
+
+            contentDateCondition = `${contentDateCol} >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
+            contentDateParams = [days];
+
             dateCondition = "updated_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
-            vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL ? DAY)";
             dateParams = [days];
+
+            userCondition = "created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
+            userParams = [days];
+
+            pvCondition = "entered_at >= DATE_SUB(NOW(), INTERVAL ? DAY)";
             pvParams = [days];
+
+            vsCondition = "session_start >= DATE_SUB(NOW(), INTERVAL ? DAY)";
             vsParams = [days];
         }
 
-        // Get content counts filtered by selected period
-        const [[{ published }]] = await pool.query(`SELECT COUNT(*) as published FROM contents WHERE status='published' AND ${dateCondition}`, dateParams);
+        // Content counts: All-time cumulative library totals to match All Content page & database
+        const [[{ allTimePublished }]] = await pool.query(`SELECT COUNT(*) as allTimePublished FROM contents WHERE status='published'`);
+        const [[{ totalContent }]] = await pool.query(`SELECT COUNT(*) as totalContent FROM contents`);
+        const [[{ periodPublished }]] = await pool.query(
+            `SELECT COUNT(*) as periodPublished FROM contents WHERE status='published' AND ${contentDateCondition}`,
+            contentDateParams
+        );
         const [[{ pending }]] = await pool.query(`SELECT COUNT(*) as pending FROM contents WHERE status='pending' OR status='review'`);
         const [[{ drafts }]] = await pool.query(`SELECT COUNT(*) as drafts FROM contents WHERE status='draft' OR status='changes_requested' OR status='' OR status IS NULL`);
-        const [[{ scheduled }]] = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled' AND ${dateCondition}`, dateParams);
+        const [[{ scheduled }]] = await pool.query(`SELECT COUNT(*) as scheduled FROM contents WHERE status='scheduled'`);
         // Total views - all-time cumulative view count (not filtered by date to match database and publishing website)
         const [[{ totalViews }]] = await pool.query(`SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents`);
-        const [[{ totalUsers }]] = await pool.query(`SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`, dateParams);
+        const [[{ totalUsers }]] = await pool.query(
+            `SELECT COUNT(*) as totalUsers FROM users WHERE is_active=1 AND ${userCondition}`,
+            userParams
+        ).catch(() => [[{ totalUsers: 0 }]]);
         const [[{ totalSubs }]] = await pool.query(`SELECT COUNT(*) as totalSubs FROM newsletter_subscribers WHERE is_active=1`).catch(() => [[{ totalSubs: 0 }]]);
 
         // Get Business Professionals count from audience statistics
@@ -882,7 +964,6 @@ exports.getDashboardKPIs = async (req, res) => {
         // Dynamic views delta calculation comparing current period vs prior period
         let viewsDelta = 0;
         try {
-            const deltaDays = typeof days === 'number' ? days : 30;
             const [[{ curPeriodViews }]] = await pool.query(
                 `SELECT COALESCE(SUM(view_count), 0) as curPeriodViews FROM contents WHERE updated_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`,
                 [deltaDays]
@@ -909,8 +990,15 @@ exports.getDashboardKPIs = async (req, res) => {
             : (rawViews >= 1000 ? `${(rawViews / 1000).toFixed(1)}k` : String(rawViews));
         const viewsFormatted = totalViewsFormatted;
 
+        const totalPublished = isAll ? (allTimePublished || 0) : (periodPublished || 0);
+
         res.json({
-            totalPublished: published || 0,
+            totalPublished: totalPublished || 0,
+            allTimePublished: allTimePublished || 0,
+            periodPublished: periodPublished || 0,
+            totalContent: totalContent || 0,
+            period: period,
+            isFiltered: !isAll,
             totalPending: pending || 0,
             totalDrafts: drafts || 0,
             totalScheduled: scheduled || 0,

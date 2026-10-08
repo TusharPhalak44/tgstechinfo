@@ -27,6 +27,12 @@ const StandaloneLandingPage = () => {
   });
 
   useEffect(() => {
+    // If arriving at /lp/:slug via client-side routing, trigger a hard browser navigation
+    // so Express can serve the standalone HTML page and its static assets directly
+    if (window.location.pathname.startsWith('/lp/')) {
+      window.location.replace(window.location.pathname + window.location.search);
+      return;
+    }
     fetchContent();
   }, [slug]);
 
@@ -58,7 +64,7 @@ const StandaloneLandingPage = () => {
 
       if (isFileLanding) {
         console.log('🔄 File-based landing page detected - hard redirecting to /lp/' + data.slug);
-        window.location.href = `/lp/${encodeURIComponent(data.slug)}`;
+        window.location.replace(`/lp/${encodeURIComponent(data.slug)}`);
         return;
       }
 
@@ -147,6 +153,10 @@ const StandaloneLandingPage = () => {
     } catch (err) {
       console.error('❌ Error fetching content:', err);
       console.error('Error response:', err.response?.data);
+      if (window.location.pathname.startsWith('/lp/')) {
+        window.location.replace(window.location.pathname + window.location.search);
+        return;
+      }
       setError(err.response?.data?.message || 'Content not found');
     } finally {
       setLoading(false);

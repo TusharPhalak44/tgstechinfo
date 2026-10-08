@@ -6,7 +6,7 @@ const notificationController = require('../controllers/notificationController');
 const Category = require('../models/Category');
 const { authenticate } = require('../middleware/auth');
 const { hasPermission, hasAnyPermission } = require('../middleware/permissions');
-const { upload, uploadWithPdf } = require('../middleware/upload');
+const { upload, uploadWithPdf, uploadZip } = require('../middleware/upload');
 
 // All admin routes require authentication
 router.use(authenticate);
@@ -18,6 +18,21 @@ router.get('/admin/notifications', hasPermission('settings.read'), notificationC
 router.put('/admin/notifications/:id/read', hasPermission('settings.update'), notificationController.markAdminAsRead);
 
 const fileLandingController = require('../controllers/fileLandingController');
+
+// Landing page zip upload & management
+router.post('/landing-pages/upload-zip',
+    hasPermission('content.publish'),
+    uploadZip.single('zip_file'),
+    fileLandingController.uploadZipLandingPage
+);
+router.post('/landing-pages/sync',
+    hasPermission('content.publish'),
+    fileLandingController.syncAdminLandingPages
+);
+router.get('/landing-pages',
+    hasPermission('content.read'),
+    fileLandingController.getAdminLandingPagesList
+);
 
 // Content management
 router.get('/content/all', hasPermission('content.publish'), adminController.getAllContent);

@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { getLandingPagesRoot, isValidSlug, getFileLandingPageUrl, getMimeType } = require('../utils/landingPageHelper');
+const { getLandingPagesRoot, isValidSlug, getFileLandingPageUrl, getLandingPageShareUrl, getMimeType, resolveLandingFolder, resolveAssetFile } = require('../utils/landingPageHelper');
 const { pool } = require('../config/database');
 
 // Blacklist of forbidden filenames or paths within landing pages
@@ -142,7 +142,8 @@ async function recordPageViewAsync(req, slug, title) {
  */
 exports.serveLandingPageOrAsset = async (req, res) => {
     try {
-        const slug = (req.params.slug || '').trim();
+        const rawSlug = (req.params.slug || '').trim();
+        const slug = decodeURIComponent(rawSlug);
 
         // 1. Validate slug syntax
         if (!isValidSlug(slug)) {
@@ -156,23 +157,13 @@ exports.serveLandingPageOrAsset = async (req, res) => {
             fs.mkdirSync(landingPagesRoot, { recursive: true });
         }
 
-        // 2. Resolve landing page folder
-        const pageDir = path.resolve(landingPagesRoot, slug);
-
-        // Security: pageDir must be strictly inside landingPagesRoot
-        if (!pageDir.startsWith(landingPagesRoot + path.sep)) {
-            return res.status(403).send('Forbidden');
-        }
-
-        // Check if landing page folder exists
-        if (!fs.existsSync(pageDir)) {
+        // 2. Resolve landing page folder (handles exact match, case-insensitivity, and slug normalization on Linux)
+        const resolvedFolder = resolveLandingFolder(landingPagesRoot, slug);
+        if (!resolvedFolder) {
             return sendNotFound(res, slug);
         }
 
-        const pageStat = fs.statSync(pageDir);
-        if (!pageStat.isDirectory()) {
-            return sendNotFound(res, slug);
-        }
+        const pageDir = resolvedFolder.fullPath;
 
         // 3. Extract subpath if any (e.g. css/style.css, assets/banner.jpg)
         const rawSubpath = req.params.subpath;
@@ -188,11 +179,15 @@ exports.serveLandingPageOrAsset = async (req, res) => {
 
         // 4. Case A: Root landing page requested (index.html)
         if (!relativeSubpath || relativeSubpath === 'index.html') {
-            const indexPath = path.join(pageDir, 'index.html');
+            let indexPath = path.join(pageDir, 'index.html');
 
             if (!fs.existsSync(indexPath) || !fs.statSync(indexPath).isFile()) {
-                // Section 4: If the folder exists but index.html does not exist -> 404
-                return sendNotFound(res, slug);
+                const altIndex = path.join(pageDir, 'index.htm');
+                if (fs.existsSync(altIndex) && fs.statSync(altIndex).isFile()) {
+                    indexPath = altIndex;
+                } else {
+                    return sendNotFound(res, slug);
+                }
             }
 
             // Check optional landing.json metadata
@@ -219,7 +214,10 @@ exports.serveLandingPageOrAsset = async (req, res) => {
             const { getOrCreateContentForLandingPage } = require('../utils/landingPageHelper');
             let contentRecord = null;
             try {
-                contentRecord = await getOrCreateContentForLandingPage(slug);
+                contentRecord = await getOrCreateContentForLandingPage(resolvedFolder.folderName);
+                if (!contentRecord && slug !== resolvedFolder.folderName) {
+                    contentRecord = await getOrCreateContentForLandingPage(slug);
+                }
             } catch (e) {
                 console.warn('[serveLandingPage] Auto-provision note:', e.message);
             }
@@ -230,7 +228,7 @@ exports.serveLandingPageOrAsset = async (req, res) => {
             // so relative URLs (css/style.css, assets/banner.jpg) resolve seamlessly
             // whether visited at /lp/slug or /lp/slug/
             if (!/<base\b/i.test(htmlContent)) {
-                const baseTag = `\n    <base href="/lp/${slug}/">`;
+                const baseTag = `\n    <base href="/lp/${encodeURIComponent(slug)}/">`;
                 if (/<head[^>]*>/i.test(htmlContent)) {
                     htmlContent = htmlContent.replace(/(<head[^>]*>)/i, `$1${baseTag}`);
                 } else {
@@ -345,7 +343,7 @@ exports.serveLandingPageOrAsset = async (req, res) => {
             return res.send(htmlContent);
         }
 
-        // 5. Case B: Static asset requested (must reside inside assets/)
+        // 5. Case B: Static asset requested
         let decodedSubpath;
         try {
             decodedSubpath = decodeURIComponent(relativeSubpath);
@@ -353,38 +351,13 @@ exports.serveLandingPageOrAsset = async (req, res) => {
             return res.status(400).send('Bad Request');
         }
 
-        // Reject null bytes, traversal segments, or blacklisted files
-        if (decodedSubpath.includes('\0') || decodedSubpath.includes('..')) {
-            return res.status(403).send('Forbidden');
-        }
-
-        const baseFileName = path.basename(decodedSubpath).toLowerCase();
-        if (baseFileName.startsWith('.') || FORBIDDEN_FILENAMES.has(baseFileName) || baseFileName.endsWith('.env')) {
-            return res.status(403).send('Forbidden');
-        }
-
-        // Simplified standard: all landing page assets must be inside the assets/ directory
-        const normalizedSubpath = decodedSubpath.replace(/\\/g, '/');
-        if (!normalizedSubpath.startsWith('assets/')) {
-            return res.status(404).send('Asset Not Found');
-        }
-
-        const assetsDir = path.resolve(pageDir, 'assets');
-        const targetFilePath = path.resolve(pageDir, normalizedSubpath);
-
-        // Crucial security check: targetFilePath must be strictly inside assetsDir
-        if (!targetFilePath.startsWith(assetsDir + path.sep)) {
-            return res.status(403).send('Forbidden');
-        }
-
-        // Check if asset file exists
-        if (!fs.existsSync(targetFilePath)) {
+        const targetFilePath = resolveAssetFile(pageDir, decodedSubpath);
+        if (!targetFilePath || !fs.existsSync(targetFilePath)) {
             return res.status(404).send('Asset Not Found');
         }
 
         const stat = fs.statSync(targetFilePath);
         if (!stat.isFile()) {
-            // Never expose directory listings!
             return res.status(404).send('Not Found');
         }
 
@@ -417,6 +390,14 @@ exports.serveLandingPageOrAsset = async (req, res) => {
 exports.getAdminLandingPagesList = async (req, res) => {
     try {
         const landingPagesRoot = getLandingPagesRoot();
+
+        // Auto-sync folders into MySQL contents table
+        const { syncAllFileLandingPages } = require('../utils/landingPageHelper');
+        try {
+            await syncAllFileLandingPages();
+        } catch (e) {
+            console.warn('[getAdminLandingPagesList] sync warning:', e.message);
+        }
 
         if (!fs.existsSync(landingPagesRoot)) {
             fs.mkdirSync(landingPagesRoot, { recursive: true });
@@ -452,6 +433,8 @@ exports.getAdminLandingPagesList = async (req, res) => {
                 list.push({
                     slug,
                     url: getFileLandingPageUrl(slug),
+                    shareUrl: getLandingPageShareUrl(slug),
+                    relativeUrl: `/content/${slug}`,
                     hasIndex,
                     title: metadata.title,
                     description: metadata.description,
@@ -471,6 +454,164 @@ exports.getAdminLandingPagesList = async (req, res) => {
     } catch (err) {
         console.error('Admin landing pages error:', err);
         return res.status(500).json({ success: false, message: 'Failed to retrieve landing pages' });
+    }
+};
+
+/**
+ * Protected Admin Endpoint
+ * POST /api/admin/landing-pages/upload-zip
+ * Uploads a landing page .zip archive, extracts to backend/landing-pages/<slug>,
+ * and auto-inserts or updates the record in MySQL contents table with status='published'.
+ */
+exports.uploadZipLandingPage = async (req, res) => {
+    try {
+        if (!req.file || !req.file.buffer) {
+            return res.status(400).json({ success: false, message: 'Please select a .zip file to upload.' });
+        }
+
+        const AdmZip = require('adm-zip');
+        const landingPagesRoot = getLandingPagesRoot();
+        if (!fs.existsSync(landingPagesRoot)) {
+            fs.mkdirSync(landingPagesRoot, { recursive: true });
+        }
+
+        // 1. Determine clean slug
+        let rawSlug = (req.body.slug || '').trim();
+        if (!rawSlug) {
+            rawSlug = path.basename(req.file.originalname, path.extname(req.file.originalname));
+        }
+
+        let cleanSlug = rawSlug
+            .trim()
+            .replace(/['"’`]/g, '')
+            .replace(/[^a-zA-Z0-9\-_]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '');
+
+        if (!cleanSlug) {
+            cleanSlug = `landing-page-${Date.now()}`;
+        }
+
+        const targetDir = path.join(landingPagesRoot, cleanSlug);
+
+        // 2. Parse & validate ZIP archive
+        let zip;
+        try {
+            zip = new AdmZip(req.file.buffer);
+        } catch (zipErr) {
+            return res.status(400).json({ success: false, message: 'Invalid or corrupted ZIP archive: ' + zipErr.message });
+        }
+
+        const zipEntries = zip.getEntries();
+        if (!zipEntries || zipEntries.length === 0) {
+            return res.status(400).json({ success: false, message: 'The uploaded ZIP archive is empty.' });
+        }
+
+        // Validate paths for security
+        for (const entry of zipEntries) {
+            if (entry.entryName.includes('..') || entry.entryName.startsWith('/') || entry.entryName.startsWith('\\')) {
+                return res.status(400).json({ success: false, message: 'ZIP contains invalid or unsafe file paths.' });
+            }
+        }
+
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        // Extract files
+        zip.extractAllTo(targetDir, true);
+
+        // 3. Handle redundant single-folder wrapper inside zip
+        let mainIndexPath = path.join(targetDir, 'index.html');
+        if (!fs.existsSync(mainIndexPath) && !fs.existsSync(path.join(targetDir, 'index.htm'))) {
+            const subEntries = fs.readdirSync(targetDir, { withFileTypes: true });
+            const subDirs = subEntries.filter(e => e.isDirectory());
+            if (subDirs.length === 1) {
+                const nestedDir = path.join(targetDir, subDirs[0].name);
+                const nestedIndex = path.join(nestedDir, 'index.html');
+                const nestedIndexHtm = path.join(nestedDir, 'index.htm');
+                if (fs.existsSync(nestedIndex) || fs.existsSync(nestedIndexHtm)) {
+                    const innerItems = fs.readdirSync(nestedDir);
+                    for (const item of innerItems) {
+                        const fromPath = path.join(nestedDir, item);
+                        const toPath = path.join(targetDir, item);
+                        if (fs.existsSync(toPath)) {
+                            fs.rmSync(toPath, { recursive: true, force: true });
+                        }
+                        fs.renameSync(fromPath, toPath);
+                    }
+                    try { fs.rmdirSync(nestedDir); } catch (e) {}
+                }
+            }
+        }
+
+        // Check that index.html exists
+        if (!fs.existsSync(path.join(targetDir, 'index.html')) && !fs.existsSync(path.join(targetDir, 'index.htm'))) {
+            return res.status(400).json({
+                success: false,
+                message: 'No index.html found in the root of the ZIP file. Please ensure your landing page contains an index.html file.'
+            });
+        }
+
+        // 4. Auto-provision in MySQL contents table
+        const { getOrCreateContentForLandingPage } = require('../utils/landingPageHelper');
+        let contentRecord = await getOrCreateContentForLandingPage(cleanSlug, {
+            title: req.body.title || '',
+            category_id: req.body.category_id || null
+        });
+
+        // Ensure status is published and visible
+        if (contentRecord) {
+            await pool.query(
+                `UPDATE contents SET status = 'published', is_visible_on_site = 1 WHERE id = ?`,
+                [contentRecord.id]
+            ).catch(() => {});
+            contentRecord.status = 'published';
+            contentRecord.is_visible_on_site = 1;
+        }
+
+        const shareUrl = getLandingPageShareUrl(cleanSlug);
+
+        return res.json({
+            success: true,
+            message: `Landing page "${cleanSlug}" uploaded and stored in database successfully!`,
+            slug: cleanSlug,
+            shareUrl,
+            relativeUrl: `/content/${cleanSlug}`,
+            content: contentRecord
+        });
+
+    } catch (err) {
+        console.error('[uploadZipLandingPage] Error:', err);
+        return res.status(500).json({ success: false, message: 'Failed to upload landing page: ' + err.message });
+    }
+};
+
+/**
+ * Protected Admin Endpoint
+ * POST /api/admin/landing-pages/sync
+ * Manually synchronize all physical folders in backend/landing-pages with MySQL contents table.
+ */
+exports.syncAdminLandingPages = async (req, res) => {
+    try {
+        const { syncAllFileLandingPages } = require('../utils/landingPageHelper');
+        const synced = await syncAllFileLandingPages();
+        return res.json({
+            success: true,
+            message: `Successfully synchronized ${synced.length} landing page(s) with database.`,
+            count: synced.length,
+            landingPages: synced.map(item => ({
+                id: item.id,
+                title: item.title,
+                slug: item.slug,
+                shareUrl: getLandingPageShareUrl(item.slug),
+                relativeUrl: `/content/${item.slug}`,
+                status: item.status
+            }))
+        });
+    } catch (err) {
+        console.error('[syncAdminLandingPages] Error:', err);
+        return res.status(500).json({ success: false, message: 'Sync failed: ' + err.message });
     }
 };
 

@@ -480,7 +480,7 @@ class Content {
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            WHERE c.slug = ? AND c.status = 'published' AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL) AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
+            WHERE c.slug = ? AND c.status = 'published' AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
         `;
         const [rows] = await pool.query(query, [slug]);
         return rows[0];
@@ -558,12 +558,12 @@ class Content {
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            ${baseWhere} ORDER BY COALESCE(c.updated_at, c.created_at) DESC, c.id DESC
+            ${baseWhere} ORDER BY COALESCE(c.published_date, c.created_at) DESC, c.id DESC
         `;
 
         const pageValues = [...values];
         if (filters.limit) {
-            const safeLimit = Math.max(1, Math.min(100, parseInt(filters.limit, 10) || 10));
+            const safeLimit = Math.max(1, Math.min(10000, parseInt(filters.limit, 10) || 10));
             query += ' LIMIT ?';
             pageValues.push(safeLimit);
         }

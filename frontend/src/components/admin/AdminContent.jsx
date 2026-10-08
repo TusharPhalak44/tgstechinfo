@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Row, Col, Card, Button, Space, Tag, Badge, message, Popconfirm,
   Typography, Tabs, Empty, Spin, Avatar, Pagination, ConfigProvider,
-  Input, Select, Tooltip, Switch, Drawer, Table, Modal, Divider
+  Input, Select, Tooltip, Switch, Drawer, Table, Modal, Divider,
+  Upload, Alert
 } from 'antd';
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
@@ -13,7 +14,8 @@ import {
   FilterOutlined, ReloadOutlined, CompassOutlined, BookOutlined,
   VideoCameraOutlined, FilePdfOutlined, StarOutlined, LinkOutlined,
   ThunderboltOutlined, RiseOutlined, FireOutlined,
-  EyeInvisibleOutlined, SafetyCertificateOutlined, CodeOutlined
+  EyeInvisibleOutlined, SafetyCertificateOutlined, CodeOutlined,
+  CloudUploadOutlined, CopyOutlined, SyncOutlined, CheckCircleFilled
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -43,6 +45,7 @@ const { Option } = Select;
 // Content Type Definitions & Icons
 const CONTENT_TYPE_CONFIG = {
   all: { label: 'All Content', color: '#0AAEEF', icon: <FileTextOutlined /> },
+  'landing-page': { label: 'Landing Pages', color: '#6366F1', icon: <GlobalOutlined /> },
   article: { label: 'Articles', color: '#3B82F6', icon: <FileTextOutlined /> },
   blog: { label: 'Blogs', color: '#8B5CF6', icon: <BookOutlined /> },
   news: { label: 'News', color: '#EC4899', icon: <ThunderboltOutlined /> },
@@ -148,6 +151,34 @@ const contentDisplayStyles = `
     background: transparent;
     padding: 0;
   }
+  .admin-content-header-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .admin-content-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  @media (max-width: 1380px) {
+    .admin-content-header-panel {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 16px !important;
+    }
+    .admin-content-header-actions {
+      width: 100% !important;
+      justify-content: flex-start !important;
+      border-top: 1px solid rgba(10, 174, 239, 0.15);
+      padding-top: 14px;
+    }
+  }
   @media (max-width: 768px) {
     .admin-content-root {
       padding: 14px 10px !important;
@@ -155,6 +186,9 @@ const contentDisplayStyles = `
     .admin-content-header-panel {
       padding: 14px 16px !important;
       gap: 12px !important;
+    }
+    .admin-content-header-actions {
+      gap: 8px !important;
     }
   }
   @media (max-width: 480px) {
@@ -245,6 +279,87 @@ const AdminContent = () => {
   // Quick Inspection Drawer
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Landing Page ZIP Upload & Sync State
+  const [zipModalVisible, setZipModalVisible] = useState(false);
+  const [zipFileList, setZipFileList] = useState([]);
+  const [zipUploading, setZipUploading] = useState(false);
+  const [zipTitle, setZipTitle] = useState('');
+  const [zipSlug, setZipSlug] = useState('');
+  const [uploadSuccessResult, setUploadSuccessResult] = useState(null);
+  const [syncingFolders, setSyncingFolders] = useState(false);
+
+  const handleCopyShareUrl = (slug) => {
+    if (!slug) return;
+    const cleanSlug = encodeURIComponent(slug.trim());
+    const shareUrl = `${window.location.origin}/content/${cleanSlug}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        message.success(`Copied: ${shareUrl}`);
+      }).catch(() => {
+        message.info(shareUrl);
+      });
+    } else {
+      message.info(shareUrl);
+    }
+  };
+
+  const handleUploadZip = async () => {
+    if (zipFileList.length === 0) {
+      message.error('Please select a .zip file to upload');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('zip_file', zipFileList[0]);
+    if (zipTitle.trim()) formData.append('title', zipTitle.trim());
+    if (zipSlug.trim()) formData.append('slug', zipSlug.trim());
+
+    try {
+      setZipUploading(true);
+      const res = await axios.post('/api/admin/landing-pages/upload-zip', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      if (res.data.success) {
+        message.success(res.data.message || 'Landing page published successfully!');
+        const liveOrigin = window.location.origin;
+        const relativePath = res.data.relativeUrl || `/content/${res.data.slug}`;
+        const finalShareUrl = `${liveOrigin}${relativePath}`;
+
+        setUploadSuccessResult({
+          slug: res.data.slug,
+          shareUrl: finalShareUrl,
+          relativePath
+        });
+        setZipFileList([]);
+        setZipTitle('');
+        setZipSlug('');
+        fetchContents();
+      }
+    } catch (err) {
+      console.error('ZIP upload error:', err);
+      message.error(err.response?.data?.message || 'Failed to upload landing page archive');
+    } finally {
+      setZipUploading(false);
+    }
+  };
+
+  const handleSyncFolders = async () => {
+    try {
+      setSyncingFolders(true);
+      const res = await axios.post('/api/admin/landing-pages/sync');
+      if (res.data.success) {
+        message.success(res.data.message || `Synchronized ${res.data.count} landing page(s)!`);
+        fetchContents();
+      }
+    } catch (err) {
+      console.error('Sync error:', err);
+      message.error('Failed to sync folders: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setSyncingFolders(false);
+    }
+  };
 
   // Load Content on Mount
   useEffect(() => {
@@ -365,10 +480,16 @@ const AdminContent = () => {
       return true;
     }).sort((a, b) => {
       if (sortBy === 'newest') {
-        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+        const dateA = new Date(a.published_date || a.created_at || 0).getTime();
+        const dateB = new Date(b.published_date || b.created_at || 0).getTime();
+        if (dateB !== dateA) return dateB - dateA;
+        return (b.id || 0) - (a.id || 0);
       }
       if (sortBy === 'oldest') {
-        return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+        const dateA = new Date(a.published_date || a.created_at || 0).getTime();
+        const dateB = new Date(b.published_date || b.created_at || 0).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        return (a.id || 0) - (b.id || 0);
       }
       if (sortBy === 'views') {
         return (b.view_count || 0) - (a.view_count || 0);
@@ -376,7 +497,7 @@ const AdminContent = () => {
       if (sortBy === 'title') {
         return (a.title || '').localeCompare(b.title || '');
       }
-      return 0;
+      return (b.id || 0) - (a.id || 0);
     });
   }, [allContents, activeTypeTab, statusFilter, categoryFilter, searchQuery, sortBy]);
 
@@ -519,6 +640,15 @@ const AdminContent = () => {
       width: 160,
       render: (_, record) => (
         <Space size="small">
+          <Tooltip title="Copy Public Link">
+            <Button
+              type="text"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => handleCopyShareUrl(record.slug)}
+              style={{ color: '#10B981' }}
+            />
+          </Tooltip>
           <Tooltip title="Quick Inspect">
             <Button
               type="text"
@@ -568,44 +698,95 @@ const AdminContent = () => {
     <div className={`radar-dashboard-root admin-content-root ${darkMode ? 'dark' : 'light'} radar-grid-bg`} style={{ minHeight: '100vh', padding: '24px' }}>
       <style>{contentDisplayStyles}</style>
       {/* ── 1. CYBER HEADER COMMAND BAR ── */}
-      <div className="radar-glass-panel admin-content-header-panel" style={{ padding: '18px 24px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div className="radar-glass-panel admin-content-header-panel">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 260 }}>
           {/* Live signal beacon */}
-          <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, rgba(10, 174, 239, 0.25) 0%, rgba(16, 185, 129, 0.15) 100%)', border: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, rgba(10, 174, 239, 0.25) 0%, rgba(16, 185, 129, 0.15) 100%)', border: `1px solid ${borderColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
             <span className="live-indicator-dot" style={{ width: 10, height: 10, borderRadius: '50%', background: '#0AAEEF', display: 'inline-block' }}></span>
-            <div className="pulse-beacon" style={{ position: 'absolute', width: 24, height: 24, borderRadius: '50%', border: '2px solid #0AAEEF', pointerEvents: 'none' }}></div>
+            <div className="pulse-beacon" style={{ position: 'absolute', width: 26, height: 26, borderRadius: '50%', border: '2px solid #0AAEEF', pointerEvents: 'none' }}></div>
           </div>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: textPrimary, letterSpacing: '-0.02em' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: textPrimary, letterSpacing: '-0.02em', lineHeight: 1.25 }}>
                 All Contents & Global Publications
               </h1>
-              <span className="radar-chip" style={{ fontSize: '0.7rem' }}>
+              <span className="radar-chip" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
                 <ThunderboltOutlined style={{ color: '#0AAEEF' }} /> LIVE ENGINE
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: textMuted }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: textMuted }}>
               Centralized repository for articles, blogs, whitepapers, case studies, and corporate media.
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="admin-content-header-actions">
+          <Tooltip title="Scan backend/landing-pages folders and auto-insert into database">
+            <Button
+              type="default"
+              icon={<SyncOutlined spin={syncingFolders} />}
+              onClick={handleSyncFolders}
+              loading={syncingFolders}
+              style={{
+                borderRadius: 10,
+                fontWeight: 600,
+                borderColor,
+                background: darkMode ? 'rgba(15,23,42,0.6)' : '#fff',
+                color: textPrimary,
+                height: 38
+              }}
+            >
+              Sync Folders
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Refresh publications library">
+            <Button
+              type="default"
+              icon={<ReloadOutlined spin={loading} />}
+              onClick={fetchContents}
+              style={{
+                borderRadius: 10,
+                fontWeight: 600,
+                borderColor,
+                background: darkMode ? 'rgba(15,23,42,0.6)' : '#fff',
+                color: textPrimary,
+                height: 38
+              }}
+            >
+              Refresh
+            </Button>
+          </Tooltip>
+
           <Button
             type="default"
-            icon={<ReloadOutlined spin={loading} />}
-            onClick={fetchContents}
-            style={{ borderRadius: 10, fontWeight: 600, borderColor, background: darkMode ? 'rgba(15,23,42,0.6)' : '#fff', color: textPrimary }}
+            icon={<CloudUploadOutlined style={{ color: '#0AAEEF' }} />}
+            onClick={() => { setZipModalVisible(true); setUploadSuccessResult(null); }}
+            style={{
+              borderRadius: 10,
+              fontWeight: 700,
+              borderColor: '#0AAEEF',
+              color: '#0AAEEF',
+              background: darkMode ? 'rgba(10,174,239,0.1)' : '#f0f9ff',
+              height: 38
+            }}
           >
-            Refresh
+            Upload Landing Page (.zip)
           </Button>
 
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/dashboard/create-post')}
-            style={{ borderRadius: 10, fontWeight: 700, background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 60%, #F7941D 200%)', border: '1px solid rgba(247,148,29,0.35)', boxShadow: '0 4px 14px rgba(11,31,77,0.28)' }}
+            style={{
+              borderRadius: 10,
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 60%, #F7941D 200%)',
+              border: '1px solid rgba(247,148,29,0.35)',
+              boxShadow: '0 4px 14px rgba(11,31,77,0.28)',
+              height: 38
+            }}
           >
             Create Publication
           </Button>
@@ -961,6 +1142,16 @@ const AdminContent = () => {
                     </Button>
 
                     <Space size="small">
+                      <Tooltip title="Copy Public Link">
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<CopyOutlined />}
+                          onClick={() => handleCopyShareUrl(item.slug)}
+                          style={{ color: '#10B981' }}
+                        />
+                      </Tooltip>
+
                       <Tooltip title="Edit">
                         <Button
                           type="text"
@@ -1252,6 +1443,234 @@ const AdminContent = () => {
           );
         })()}
       </Drawer>
+
+      {/* ── 6. UPLOAD LANDING PAGE (.ZIP) MODAL ── */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(10, 174, 239, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CloudUploadOutlined style={{ color: '#0AAEEF', fontSize: 18 }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1rem', color: textPrimary }}>
+                Upload Landing Page Package (.zip)
+              </div>
+              <div style={{ fontSize: '0.75rem', color: textMuted, fontWeight: 400 }}>
+                Automatic extraction, database persistence & direct link generation
+              </div>
+            </div>
+          </div>
+        }
+        open={zipModalVisible}
+        onCancel={() => {
+          if (!zipUploading) {
+            setZipModalVisible(false);
+            setUploadSuccessResult(null);
+            setZipFileList([]);
+          }
+        }}
+        footer={null}
+        width={560}
+        destroyOnClose
+      >
+        <div style={{ paddingTop: 12 }}>
+          {uploadSuccessResult ? (
+            /* SUCCESS STATE */
+            <div>
+              <div style={{
+                textAlign: 'center',
+                padding: '24px 16px',
+                background: darkMode ? 'rgba(16, 185, 129, 0.1)' : '#f0fdf4',
+                borderRadius: 12,
+                border: '1px solid #10B98140',
+                marginBottom: 20
+              }}>
+                <CheckCircleFilled style={{ fontSize: 48, color: '#10B981', marginBottom: 12 }} />
+                <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 800, color: textPrimary }}>
+                  Landing Page Published & Stored!
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: textMuted }}>
+                  Folder extracted and automatically added to the MySQL database with <strong>Published</strong> status.
+                </p>
+              </div>
+
+              {/* Direct Link Banner */}
+              <div style={{
+                background: darkMode ? '#1e293b' : '#f8fafc',
+                border: '1px solid #0AAEEF60',
+                borderRadius: 12,
+                padding: '16px',
+                marginBottom: 20
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0AAEEF', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    🔗 Direct Public URL
+                  </span>
+                  <Tag color="cyan" style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700 }}>LIVE</Tag>
+                </div>
+                <div style={{
+                  fontSize: '0.95rem',
+                  fontWeight: 700,
+                  color: textPrimary,
+                  wordBreak: 'break-all',
+                  padding: '8px 10px',
+                  background: darkMode ? 'rgba(15,23,42,0.6)' : '#fff',
+                  borderRadius: 8,
+                  border: `1px solid ${borderColor}`,
+                  marginBottom: 10
+                }}>
+                  {uploadSuccessResult.shareUrl}
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Button
+                    type="primary"
+                    icon={<CopyOutlined />}
+                    onClick={() => {
+                      navigator.clipboard.writeText(uploadSuccessResult.shareUrl);
+                      message.success('Link copied to clipboard!');
+                    }}
+                    style={{ flex: 1, borderRadius: 8, fontWeight: 600, background: '#10B981', borderColor: '#10B981' }}
+                  >
+                    Copy Link
+                  </Button>
+                  <Button
+                    icon={<GlobalOutlined />}
+                    onClick={() => window.open(uploadSuccessResult.shareUrl, '_blank')}
+                    style={{ flex: 1, borderRadius: 8, fontWeight: 600 }}
+                  >
+                    Open Live Page
+                  </Button>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <Button
+                  onClick={() => {
+                    setUploadSuccessResult(null);
+                    setZipFileList([]);
+                    setZipTitle('');
+                    setZipSlug('');
+                  }}
+                  style={{ borderRadius: 8 }}
+                >
+                  Upload Another
+                </Button>
+                <Button
+                  type="primary"
+                  onClick={() => setZipModalVisible(false)}
+                  style={{ borderRadius: 8, background: '#0B1F4D' }}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* UPLOAD FORM */
+            <div>
+              <div style={{ marginBottom: 16 }}>
+                <Upload.Dragger
+                  accept=".zip"
+                  maxCount={1}
+                  fileList={zipFileList}
+                  beforeUpload={(file) => {
+                    setZipFileList([file]);
+                    if (!zipSlug) {
+                      const derivedSlug = file.name.replace(/\.zip$/i, '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                      setZipSlug(derivedSlug);
+                    }
+                    return false;
+                  }}
+                  onRemove={() => {
+                    setZipFileList([]);
+                  }}
+                  style={{
+                    padding: '24px 16px',
+                    borderRadius: 12,
+                    background: darkMode ? 'rgba(15, 23, 42, 0.4)' : '#fafafa',
+                    borderColor: '#0AAEEF80'
+                  }}
+                >
+                  <p className="ant-upload-drag-icon" style={{ marginBottom: 10 }}>
+                    <CloudUploadOutlined style={{ fontSize: 36, color: '#0AAEEF' }} />
+                  </p>
+                  <p className="ant-upload-text" style={{ fontWeight: 700, fontSize: '0.95rem', color: textPrimary, marginBottom: 4 }}>
+                    Click or drag your landing page <code>.zip</code> file here
+                  </p>
+                  <p className="ant-upload-hint" style={{ fontSize: '0.78rem', color: textMuted }}>
+                    The zip should contain <code>index.html</code> and related CSS, JS, or images.
+                  </p>
+                </Upload.Dragger>
+              </div>
+
+              {/* Title & Slug Form Inputs */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: textPrimary, marginBottom: 6 }}>
+                  Landing Page Title <span style={{ color: textMuted, fontWeight: 400 }}>(Optional - auto-read from index.html)</span>
+                </label>
+                <Input
+                  placeholder="e.g. Top 30 CRM Software Comparison BattleCard 2025"
+                  value={zipTitle}
+                  onChange={(e) => setZipTitle(e.target.value)}
+                  style={{ borderRadius: 8 }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: textPrimary, marginBottom: 6 }}>
+                  URL Slug <span style={{ color: textMuted, fontWeight: 400 }}>(e.g. top-30-crm-software-comparison)</span>
+                </label>
+                <Input
+                  placeholder="top-30-crm-software-comparison"
+                  value={zipSlug}
+                  onChange={(e) => setZipSlug(e.target.value)}
+                  style={{ borderRadius: 8 }}
+                />
+              </div>
+
+              {/* URL Preview */}
+              <div style={{
+                background: darkMode ? 'rgba(10, 174, 239, 0.1)' : '#f0f9ff',
+                padding: '10px 14px',
+                borderRadius: 8,
+                border: '1px solid #0AAEEF30',
+                fontSize: '0.8rem',
+                marginBottom: 20
+              }}>
+                <span style={{ color: textMuted, fontWeight: 600 }}>Public URL will be: </span>
+                <span style={{ color: '#0AAEEF', fontWeight: 700 }}>
+                  {window.location.origin}/content/{zipSlug || 'your-landing-slug'}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+                <Button
+                  onClick={() => setZipModalVisible(false)}
+                  disabled={zipUploading}
+                  style={{ borderRadius: 8 }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<CloudUploadOutlined />}
+                  onClick={handleUploadZip}
+                  loading={zipUploading}
+                  disabled={zipFileList.length === 0}
+                  style={{
+                    borderRadius: 8,
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #0B1F4D 0%, #1D3D8F 60%, #F7941D 200%)',
+                    border: 'none'
+                  }}
+                >
+                  {zipUploading ? 'Extracting & Saving...' : 'Upload & Store in Database'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 };

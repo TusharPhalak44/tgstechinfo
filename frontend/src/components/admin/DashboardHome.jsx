@@ -948,14 +948,14 @@ const DashboardHome = () => {
         marginBottom: 22
       }}>
         {/* KPI 1: Published Articles */}
-        <div className="med-kpi-card" style={{ background: bgCard, borderColor, "--card-accent": brandEmerald, "--card-glow": brandEmerald }}>
+        <div className="med-kpi-card" style={{ background: bgCard, borderColor, cursor: "pointer", "--card-accent": brandEmerald, "--card-glow": brandEmerald }} onClick={() => navigate("/dashboard/content")}>
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 4 : 6 }}>
               <span style={{ fontSize: isMobile ? "0.66rem" : "0.72rem", fontWeight: 600, color: textMuted, textTransform: "uppercase", letterSpacing: "0.04em" }}>
                 Published Content
               </span>
               <span style={{ fontSize: isMobile ? "0.6rem" : "0.66rem", fontWeight: 600, color: brandEmerald, background: "rgba(16, 185, 129, 0.15)", padding: "2px 7px", borderRadius: 100, border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-                Live
+                {customRange ? "Filtered" : period === "all" ? "All Time" : (period === "today" ? "Today" : period === "ytd" ? "YTD" : `Last ${period.replace('d', ' Days')}`)}
               </span>
             </div>
             <div style={{ fontSize: isMobile ? "1.4rem" : "1.75rem", fontWeight: 700, color: textPrimary, letterSpacing: "-0.02em" }}>
@@ -963,8 +963,12 @@ const DashboardHome = () => {
             </div>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: isMobile ? 6 : 8, paddingTop: isMobile ? 6 : 8, borderTop: `1px solid ${borderColor}`, fontSize: isMobile ? "0.64rem" : "0.7rem", color: textMuted }}>
-            <span>Resources & Insights</span>
-            <span style={{ color: brandEmerald, fontWeight: 500 }}>Active Hub</span>
+            <span>
+              {period === "all" && !customRange
+                ? `Total: ${kpis.totalContent || kpis.allTimePublished || pubCount} items`
+                : `All-Time: ${kpis.allTimePublished || kpis.totalContent || pubCount} live`}
+            </span>
+            <span style={{ color: brandEmerald, fontWeight: 500 }}>All Content →</span>
           </div>
         </div>
 

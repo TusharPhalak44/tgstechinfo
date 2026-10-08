@@ -108,6 +108,36 @@ const reviewStyles = `
   .rev-kpi-card:hover {
     transform: translateY(-3px);
   }
+
+  /* Table styling to eliminate horizontal scroll and fit the full page */
+  .rev-table-container .ant-table-wrapper {
+    width: 100%;
+    overflow-x: hidden;
+  }
+  .rev-table-container .ant-table {
+    width: 100% !important;
+    table-layout: fixed;
+  }
+  .rev-table-container .ant-table-container {
+    overflow-x: hidden !important;
+  }
+  .rev-table-container .ant-table-content {
+    overflow-x: hidden !important;
+  }
+  .rev-table-container .ant-table-thead > tr > th {
+    white-space: nowrap;
+    padding: 12px 10px !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+  }
+  .rev-table-container .ant-table-tbody > tr > td {
+    padding: 12px 10px !important;
+    vertical-align: middle;
+  }
+  .rev-table-container .ant-table-pagination {
+    padding: 12px 16px !important;
+    margin: 0 !important;
+  }
 `;
 
 const ContentReview = () => {
@@ -412,12 +442,26 @@ const ContentReview = () => {
       title: 'Article Title',
       dataIndex: 'title',
       key: 'title',
+      ellipsis: false,
       render: (text, record) => (
-        <div>
-          <span style={{ fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A', fontSize: '0.86rem', display: 'block' }}>
+        <div style={{ minWidth: 160, maxWidth: '100%' }}>
+          <span
+            title={text}
+            style={{
+              fontWeight: 800,
+              color: D ? '#F8FAFC' : '#0F172A',
+              fontSize: '0.84rem',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              lineHeight: 1.35,
+              wordBreak: 'break-word',
+            }}
+          >
             {text}
           </span>
-          <span style={{ fontSize: '0.72rem', color: D ? '#64748B' : '#94A3B8' }}>
+          <span style={{ fontSize: '0.72rem', color: D ? '#64748B' : '#94A3B8', marginTop: 2, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {record.category_name || 'General'} • {record.content_type_name || 'Article'}
           </span>
         </div>
@@ -426,44 +470,62 @@ const ContentReview = () => {
     {
       title: 'Author',
       key: 'author',
-      render: (_, record) => (
-        <Space size={8}>
-          <Avatar size={30} icon={<UserOutlined />} style={{ background: D ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.1)', color: '#3B82F6' }} />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.8rem', color: D ? '#F8FAFC' : '#0F172A' }}>
-              {record.first_name ? `${record.first_name} ${record.last_name || ''}` : 'Editorial Contributor'}
+      width: 155,
+      render: (_, record) => {
+        const authorName = record.first_name ? `${record.first_name} ${record.last_name || ''}`.trim() : 'Editorial Contributor';
+        const authorEmail = record.author_email || 'staff@tgstechinfo.com';
+        return (
+          <Space size={8} style={{ width: '100%', overflow: 'hidden' }}>
+            <Avatar size={28} icon={<UserOutlined />} style={{ flexShrink: 0, background: D ? 'rgba(59, 130, 246, 0.2)' : 'rgba(37, 99, 235, 0.1)', color: '#3B82F6' }} />
+            <div style={{ overflow: 'hidden', minWidth: 0, flex: 1 }}>
+              <div
+                title={authorName}
+                style={{ fontWeight: 700, fontSize: '0.78rem', color: D ? '#F8FAFC' : '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {authorName}
+              </div>
+              <div
+                title={authorEmail}
+                style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {authorEmail}
+              </div>
             </div>
-            <div style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8' }}>{record.author_email || 'staff@tgstechinfo.com'}</div>
-          </div>
-        </Space>
-      ),
-    },
-    {
-      title: 'Review Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        const map = {
-          draft: { color: 'default', text: 'Draft' },
-          pending: { color: 'gold', text: 'Pending Review' },
-          approved: { color: 'green', text: 'Approved' },
-          published: { color: 'blue', text: 'Published' },
-          rejected: { color: 'red', text: 'Rejected' },
-          changes_requested: { color: 'orange', text: 'Changes Requested' }
-        };
-        const s = map[status] || { color: 'default', text: status };
-        return <Tag color={s.color} style={{ borderRadius: 6, fontWeight: 700, padding: '2px 8px', fontSize: '0.72rem' }}>{s.text}</Tag>;
+          </Space>
+        );
       },
     },
     {
-      title: 'Visible On Site',
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 115,
+      align: 'center',
+      render: (status) => {
+        const map = {
+          draft: { color: 'default', text: 'Draft' },
+          pending: { color: 'gold', text: 'Pending' },
+          approved: { color: 'green', text: 'Approved' },
+          published: { color: 'blue', text: 'Published' },
+          rejected: { color: 'red', text: 'Rejected' },
+          changes_requested: { color: 'orange', text: 'Changes Req.' }
+        };
+        const s = map[status] || { color: 'default', text: status };
+        return <Tag color={s.color} style={{ borderRadius: 6, fontWeight: 700, padding: '2px 7px', fontSize: '0.7rem', margin: 0 }}>{s.text}</Tag>;
+      },
+    },
+    {
+      title: 'Visibility',
       dataIndex: 'is_visible_on_site',
       key: 'is_visible_on_site',
+      width: 85,
+      align: 'center',
       render: (isVisible, record) => {
         const isVisibleBool = isVisible === 1 || isVisible === true;
         return (
-          <Tooltip title={isVisibleBool ? 'Visible on platform' : 'Hidden from public feed'}>
+          <Tooltip title={isVisibleBool ? 'Visible on website' : 'Hidden from website'}>
             <Switch
+              size="small"
               checked={isVisibleBool}
               loading={togglingVisibility === record.id}
               onChange={(checked, event) => handleToggleVisibility(record.id, isVisibleBool, event)}
@@ -475,13 +537,15 @@ const ContentReview = () => {
       },
     },
     {
-      title: 'Submission Date',
+      title: 'Date',
       key: 'submission_date',
+      width: 105,
+      align: 'center',
       render: (_, record) => {
         const dateVal = record.updated_at || record.created_at || record.published_date;
         return (
-          <span style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600 }}>
-            {dateVal ? formatDateForTable(dateVal) : 'Recently'}
+          <span style={{ fontSize: '0.75rem', color: D ? '#94A3B8' : '#64748B', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            {dateVal ? moment(dateVal).format('DD MMM YYYY') : 'Recently'}
           </span>
         );
       },
@@ -489,10 +553,10 @@ const ContentReview = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 180,
+      width: 165,
       align: 'right',
       render: (_, record) => (
-        <Space size={6}>
+        <Space size={4} style={{ whiteSpace: 'nowrap' }}>
           {record.status === 'pending' ? (
             <>
               <Button
@@ -501,10 +565,13 @@ const ContentReview = () => {
                 icon={<CheckCircleOutlined />}
                 onClick={() => navigate(`/dashboard/content-review/${record.id}`)}
                 style={{
-                  borderRadius: 8,
+                  borderRadius: 6,
                   background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)',
                   border: 'none',
                   fontWeight: 700,
+                  fontSize: '0.72rem',
+                  padding: '0 8px',
+                  height: 28,
                 }}
               >
                 Approve
@@ -517,13 +584,16 @@ const ContentReview = () => {
                   setEditRequestModal(true);
                 }}
                 style={{ 
-                  borderRadius: 8, 
+                  borderRadius: 6, 
                   background: D ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.06)', 
                   color: '#F59E0B',
-                  borderColor: '#F59E0B'
+                  borderColor: '#F59E0B',
+                  fontSize: '0.72rem',
+                  padding: '0 8px',
+                  height: 28,
                 }}
               >
-                Request Edit
+                Edit
               </Button>
             </>
           ) : record.status === 'approved' ? (
@@ -534,10 +604,13 @@ const ContentReview = () => {
               loading={publishingId === record.id}
               onClick={() => handleDirectPublish(record.id)}
               style={{ 
-                borderRadius: 8,
+                borderRadius: 6,
                 background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
                 border: 'none',
                 fontWeight: 700,
+                fontSize: '0.72rem',
+                padding: '0 10px',
+                height: 28,
               }}
             >
               Publish
@@ -550,14 +623,14 @@ const ContentReview = () => {
                 const contentType = (record.content_type_name || record.content_type || 'article').toLowerCase().replace(/\s+/g, '-');
                 navigate(`/dashboard/${contentType}/${record.id}`);
               }}
-              style={{ borderRadius: 8, background: D ? 'rgba(59, 130, 246, 0.1)' : 'rgba(37, 99, 235, 0.06)', color: '#3B82F6' }}
+              style={{ borderRadius: 6, background: D ? 'rgba(59, 130, 246, 0.1)' : 'rgba(37, 99, 235, 0.06)', color: '#3B82F6', fontSize: '0.72rem', padding: '0 8px', height: 28 }}
             >
               Inspect
             </Button>
           )}
 
           <Popconfirm title="Delete item?" onConfirm={() => handleDelete(record.id)} okText="Delete" okButtonProps={{ danger: true }}>
-            <Button type="text" danger icon={<DeleteOutlined />} style={{ borderRadius: 8 }} />
+            <Button type="text" danger size="small" icon={<DeleteOutlined />} style={{ borderRadius: 6, height: 28, width: 28, padding: 0 }} />
           </Popconfirm>
         </Space>
       ),
@@ -651,13 +724,14 @@ const ContentReview = () => {
 
         {/* ── MAIN TABLE CONTAINER ── */}
         <div
-          className="rev-stagger-3"
+          className="rev-stagger-3 rev-table-container"
           style={{
             background: D ? 'rgba(15, 23, 42, 0.8)' : '#FFFFFF',
             borderRadius: 16,
             border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`,
             overflow: 'hidden',
             boxShadow: D ? '0 10px 30px -5px rgba(0, 0, 0, 0.3)' : '0 10px 30px -5px rgba(11, 31, 77, 0.05)',
+            width: '100%',
           }}
         >
           {/* Action Bar */}
@@ -738,7 +812,7 @@ const ContentReview = () => {
             dataSource={contents}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 'max-content' }}
+            tableLayout="fixed"
             pagination={{
               current: currentPage,
               pageSize: pageSize,

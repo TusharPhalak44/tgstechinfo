@@ -254,7 +254,17 @@ exports.getContentBySlug = async (req, res) => {
         const { slug } = req.params;
         // Decode the slug if it was URL-encoded
         const decodedSlug = decodeURIComponent(slug);
-        const content = await Content.findBySlugAny(decodedSlug);
+        let content = await Content.findBySlugAny(decodedSlug);
+
+        // Fallback: Check if this corresponds to a file-based landing page in landing-pages/
+        if (!content) {
+            const { getOrCreateContentForLandingPage } = require('../utils/landingPageHelper');
+            try {
+                content = await getOrCreateContentForLandingPage(decodedSlug);
+            } catch (e) {
+                console.warn('[getContentBySlug] Landing page auto-provision warning:', e.message);
+            }
+        }
 
         if (!content) {
             return res.status(404).json({ message: 'Content not found' });
@@ -262,11 +272,6 @@ exports.getContentBySlug = async (req, res) => {
 
         // Public content must be published
         if (content.status !== 'published') {
-            return res.status(404).json({ message: 'Content not found' });
-        }
-
-        // Check if content is visible on site
-        if (content.is_visible_on_site === false || content.is_visible_on_site === 0) {
             return res.status(404).json({ message: 'Content not found' });
         }
 

@@ -39,6 +39,20 @@ function getFileLandingPageUrl(slug) {
 }
 
 /**
+ * Constructs the canonical public shareable URL for a file-based landing page,
+ * targeting https://tgstechinfo.net/content/<slug> (or current domain without double protocol).
+ * @param {string} slug
+ * @returns {string} E.g., 'https://tgstechinfo.net/content/top-30-crm-software-comparison'
+ */
+function getLandingPageShareUrl(slug) {
+    if (!slug) return '';
+    const cleanSlug = slug.replace(/^\/+|\/+$/g, '').trim();
+    const rawDomain = (process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.net').split(',')[0].trim();
+    const cleanBase = rawDomain.replace(/\/+$/, '');
+    return `${cleanBase}/content/${encodeURIComponent(cleanSlug)}`;
+}
+
+/**
  * Maps common file extensions to safe MIME types.
  */
 const EXT_MIME_MAP = {
@@ -72,6 +86,128 @@ const EXT_MIME_MAP = {
 function getMimeType(filePath) {
     const ext = path.extname(filePath).toLowerCase();
     return EXT_MIME_MAP[ext] || 'application/octet-stream';
+}
+
+const FORBIDDEN_FILENAMES = new Set([
+    '.env', '.env.local', '.env.production', 'package.json', 'package-lock.json',
+    '.git', '.gitignore', 'dockerfile', 'docker-compose.yml', 'server.js', 'node_modules'
+]);
+
+/**
+ * Resolves the physical folder on disk for a landing page slug,
+ * supporting exact match, case-insensitivity, and normalized slug matching on Linux.
+ */
+function resolveLandingFolder(landingPagesRoot, requestedSlug) {
+    if (!requestedSlug || typeof requestedSlug !== 'string') return null;
+    const cleanReq = requestedSlug.trim();
+    if (!cleanReq) return null;
+
+    // 1. Direct path check
+    const directPath = path.resolve(landingPagesRoot, cleanReq);
+    if (fs.existsSync(directPath)) {
+        try {
+            if (fs.statSync(directPath).isDirectory()) {
+                return { folderName: cleanReq, fullPath: directPath };
+            }
+        } catch (e) {}
+    }
+
+    // Normalization helper
+    const normalize = (s) => (s || '')
+        .toLowerCase()
+        .replace(/['"’`]/g, '')
+        .replace(/&/g, 'and')
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+    const targetNorm = normalize(cleanReq);
+    const targetLower = cleanReq.toLowerCase();
+
+    try {
+        if (!fs.existsSync(landingPagesRoot)) return null;
+        const entries = fs.readdirSync(landingPagesRoot, { withFileTypes: true });
+
+        // 2a. Case-insensitive exact match
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            if (entry.name.toLowerCase() === targetLower) {
+                return { folderName: entry.name, fullPath: path.resolve(landingPagesRoot, entry.name) };
+            }
+        }
+
+        // 2b. Normalized slug match
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            if (normalize(entry.name) === targetNorm) {
+                return { folderName: entry.name, fullPath: path.resolve(landingPagesRoot, entry.name) };
+            }
+        }
+    } catch (err) {
+        console.error('[resolveLandingFolder] Directory read error:', err.message);
+    }
+
+    return null;
+}
+
+/**
+ * Resolves an asset file within a landing page directory,
+ * supporting case-insensitivity, assets/ subdirectory fallback, and common asset paths.
+ */
+function resolveAssetFile(pageDir, requestedSubpath) {
+    if (!requestedSubpath || typeof requestedSubpath !== 'string') return null;
+    const cleanSub = requestedSubpath.replace(/^\/+|\/+$/g, '').replace(/\\/g, '/');
+
+    if (cleanSub.includes('..') || cleanSub.includes('\0')) return null;
+
+    const baseFileName = path.basename(cleanSub).toLowerCase();
+    if (baseFileName.startsWith('.') || FORBIDDEN_FILENAMES.has(baseFileName) || baseFileName.endsWith('.env')) {
+        return null;
+    }
+
+    // 1. Direct check in pageDir
+    const directTarget = path.resolve(pageDir, cleanSub);
+    if (directTarget.startsWith(pageDir + path.sep) && fs.existsSync(directTarget) && fs.statSync(directTarget).isFile()) {
+        return directTarget;
+    }
+
+    // 2. Direct check inside assets/
+    if (!cleanSub.startsWith('assets/')) {
+        const inAssets = path.resolve(pageDir, 'assets', cleanSub);
+        if (inAssets.startsWith(pageDir + path.sep) && fs.existsSync(inAssets) && fs.statSync(inAssets).isFile()) {
+            return inAssets;
+        }
+    }
+
+    // 3. Case-insensitive path traversal for Linux
+    try {
+        const parts = cleanSub.split('/');
+        let curDir = pageDir;
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
+            const isLast = (i === parts.length - 1);
+            const entries = fs.readdirSync(curDir, { withFileTypes: true });
+            const matched = entries.find(e => e.name.toLowerCase() === part.toLowerCase());
+            if (!matched) {
+                // If at first step and 'assets' exists, try looking inside assets
+                if (i === 0 && !cleanSub.startsWith('assets/')) {
+                    const assetsDirPath = path.join(pageDir, 'assets');
+                    if (fs.existsSync(assetsDirPath)) {
+                        return resolveAssetFile(assetsDirPath, cleanSub);
+                    }
+                }
+                return null;
+            }
+            curDir = path.join(curDir, matched.name);
+            if (isLast) {
+                if (matched.isFile()) return curDir;
+            } else {
+                if (!matched.isDirectory()) return null;
+            }
+        }
+    } catch (e) {}
+
+    return null;
 }
 
 const fs = require('fs');
@@ -127,24 +263,8 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
 
         // 2. Read metadata from folder (landing.json or index.html)
         const landingPagesRoot = getLandingPagesRoot();
-        let pageDir = path.resolve(landingPagesRoot, cleanSlug);
-
-        // If folder path with cleanSlug doesn't exist, search directory ignoring quotes/case/ampersands
-        if (!fs.existsSync(pageDir)) {
-            try {
-                const allFolders = fs.readdirSync(landingPagesRoot, { withFileTypes: true })
-                    .filter(d => d.isDirectory())
-                    .map(d => d.name);
-                const matchedFolder = allFolders.find(f => {
-                    const fNorm = f.toLowerCase().replace(/['"’`]/g, '').replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
-                    const sNorm = cleanSlug.toLowerCase().replace(/['"’`]/g, '').replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
-                    return fNorm === sNorm;
-                });
-                if (matchedFolder) {
-                    pageDir = path.resolve(landingPagesRoot, matchedFolder);
-                }
-            } catch (e) {}
-        }
+        const resolvedFolder = resolveLandingFolder(landingPagesRoot, cleanSlug);
+        let pageDir = resolvedFolder ? resolvedFolder.fullPath : path.resolve(landingPagesRoot, cleanSlug);
 
         let title = '';
         let webhookUrl = '';
@@ -204,8 +324,8 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
 
         // 3. Insert newly auto-provisioned content row into `contents`
         const [insertRes] = await pool.query(
-            `INSERT INTO contents (title, slug, content_type_id, category_id, status, webhook_url, redirect_url, content, builder_layout)
-             VALUES (?, ?, 10, 1, 'published', ?, ?, ?, ?)`,
+            `INSERT INTO contents (title, slug, content_type_id, category_id, status, webhook_url, redirect_url, content, builder_layout, published_date)
+             VALUES (?, ?, 10, 1, 'published', ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
             [
                 title,
                 dbSlug,
@@ -295,9 +415,13 @@ module.exports = {
     getLandingPagesRoot,
     isValidSlug,
     getFileLandingPageUrl,
+    getLandingPageShareUrl,
     getMimeType,
     getOrCreateContentForLandingPage,
     syncAllFileLandingPages,
+    resolveLandingFolder,
+    resolveAssetFile,
+    FORBIDDEN_FILENAMES,
     EXT_MIME_MAP
 };
 
