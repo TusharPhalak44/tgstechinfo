@@ -161,7 +161,7 @@ const useCountUp = (target, visible, duration = 1400) => {
 // Format large numbers to readable format (e.g., 376543303 -> "376.5M+", 1500000000 -> "1.5B+")
 function formatNumber(num) {
   if (!num || num === 0) return '0';
-  
+
   let formatted;
   if (num >= 1000000000) {
     formatted = (num / 1000000000).toFixed(1).replace(/\.0$/, '') + 'B+';
@@ -172,7 +172,7 @@ function formatNumber(num) {
   } else {
     formatted = num.toString();
   }
-  
+
   return formatted;
 }
 
@@ -1135,7 +1135,7 @@ const HeroSection = () => {
             maxWidth: 540,
             fontWeight: 400
           }}>
-            In-depth articles, expert CXO interviews, and whitepapers across AI, Cybersecurity, Cloud Computing, and DevOps — driving enterprise growth.
+            In-depth articles, expert CXO interviews, and whitepapers across AI, Cybersecurity, Cloud Computing, and DevOps driving enterprise growth.
           </p>
 
           {/* Dual Action CTA Buttons */}

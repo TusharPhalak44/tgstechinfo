@@ -78,11 +78,11 @@ export default function Audience() {
   const contactsInMillions = totalContacts / 1000000;
   const companiesInMillions = totalCompanies / 1000000;
 
-  const formattedHeadlineContacts = contactsInMillions >= 1 
+  const formattedHeadlineContacts = contactsInMillions >= 1
     ? `${contactsInMillions.toFixed(1).replace(/\.0$/, '')} Million+`
     : `${(totalContacts / 1000).toFixed(0)}K+`;
 
-  const formattedGlobalPill = contactsInMillions >= 1 
+  const formattedGlobalPill = contactsInMillions >= 1
     ? `${contactsInMillions.toFixed(1).replace(/\.0$/, '')}M+`
     : `${(totalContacts / 1000).toFixed(0)}K+`;
 
@@ -177,12 +177,12 @@ export default function Audience() {
 
   const industrySectors = stats?.industry_breakdown?.length > 0
     ? stats.industry_breakdown.slice(0, 6).map(item => ({
-        name: item.industry_name,
-        count: item.contact_count >= 1000000 
-          ? `${(item.contact_count / 1000000).toFixed(1)}M+` 
-          : `${Math.round(item.contact_count / 1000)}K+`,
-        share: item.percentage || 10
-      }))
+      name: item.industry_name,
+      count: item.contact_count >= 1000000
+        ? `${(item.contact_count / 1000000).toFixed(1)}M+`
+        : `${Math.round(item.contact_count / 1000)}K+`,
+      share: item.percentage || 10
+    }))
     : defaultIndustries;
 
   const defaultDepartments = [
@@ -196,12 +196,12 @@ export default function Audience() {
 
   const departmentFunctions = stats?.department_breakdown?.length > 0
     ? stats.department_breakdown.slice(0, 6).map(item => ({
-        name: item.department_name,
-        count: item.contact_count >= 1000000 
-          ? `${(item.contact_count / 1000000).toFixed(1)}M+` 
-          : `${Math.round(item.contact_count / 1000)}K+`,
-        share: item.percentage || 10
-      }))
+      name: item.department_name,
+      count: item.contact_count >= 1000000
+        ? `${(item.contact_count / 1000000).toFixed(1)}M+`
+        : `${Math.round(item.contact_count / 1000)}K+`,
+      share: item.percentage || 10
+    }))
     : defaultDepartments;
 
   const defaultLevels = [
@@ -215,19 +215,18 @@ export default function Audience() {
 
   const seniorityLevels = stats?.job_level_breakdown?.length > 0
     ? stats.job_level_breakdown.slice(0, 6).map(item => ({
-        name: item.job_level_name,
-        count: item.contact_count >= 1000000 
-          ? `${(item.contact_count / 1000000).toFixed(1)}M+` 
-          : `${Math.round(item.contact_count / 1000)}K+`,
-        share: item.percentage || 10
-      }))
+      name: item.job_level_name,
+      count: item.contact_count >= 1000000
+        ? `${(item.contact_count / 1000000).toFixed(1)}M+`
+        : `${Math.round(item.contact_count / 1000)}K+`,
+      share: item.percentage || 10
+    }))
     : defaultLevels;
 
   return (
     <div
-      className={`min-h-screen relative overflow-hidden transition-colors duration-300 ${
-        darkMode ? 'bg-[#070E1A] text-slate-100' : 'bg-[#FAFBFD] text-slate-900'
-      }`}
+      className={`min-h-screen relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-[#070E1A] text-slate-100' : 'bg-[#FAFBFD] text-slate-900'
+        }`}
     >
       {/* ── Dynamic Ambient Page Background Animation ── */}
       <div
@@ -284,9 +283,8 @@ export default function Audience() {
 
         {/* Dynamic Subtle Tech Dot Grid */}
         <div
-          className={`absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:32px_32px] ${
-            darkMode ? 'opacity-[0.04]' : 'opacity-[0.06]'
-          }`}
+          className={`absolute inset-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:32px_32px] ${darkMode ? 'opacity-[0.04]' : 'opacity-[0.06]'
+            }`}
         />
       </div>
 
@@ -316,7 +314,7 @@ export default function Audience() {
               <span className="bg-gradient-to-r from-[#0AAEEF] via-[#0284C7] to-[#F7941D] bg-clip-text text-transparent">
                 {formattedHeadlineContacts}
               </span>{' '}
-              Decision-Makers Worldwide
+              Decision Makers Worldwide
             </motion.h1>
 
             {/* Subtitle */}
@@ -324,12 +322,11 @@ export default function Audience() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className={`mt-6 text-base sm:text-lg leading-relaxed ${
-                darkMode ? 'text-slate-300' : 'text-slate-600'
-              }`}
+              className={`mt-6 text-base sm:text-lg leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-600'
+                }`}
             >
               Taraj Global empowers enterprise technology vendors and B2B marketers with verified,
-              high-intent C-Suite leaders, Directors, and senior professionals across 195+ countries.
+              high intent C-Suite leaders, Directors, and senior professionals across 195+ countries.
             </motion.p>
           </div>
 
@@ -363,11 +360,10 @@ export default function Audience() {
                   boxShadow: `0 16px 32px ${stat.glowRgba}`,
                   transition: { duration: 0.2 }
                 }}
-                className={`relative group overflow-hidden p-4 sm:p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 min-w-0 ${
-                  darkMode
-                    ? 'bg-slate-900/80 border-slate-800/90 shadow-lg'
-                    : 'bg-white/90 border-slate-200/90 shadow-[0_8px_24px_rgba(10,174,239,0.06)]'
-                } ${stat.borderHover}`}
+                className={`relative group overflow-hidden p-4 sm:p-6 rounded-2xl border backdrop-blur-md transition-all duration-300 min-w-0 ${darkMode
+                  ? 'bg-slate-900/80 border-slate-800/90 shadow-lg'
+                  : 'bg-white/90 border-slate-200/90 shadow-[0_8px_24px_rgba(10,174,239,0.06)]'
+                  } ${stat.borderHover}`}
               >
                 {/* Micro Hover Corner Glow Accent */}
                 <div
@@ -427,13 +423,12 @@ export default function Audience() {
             <div className="flex items-center gap-2 flex-wrap">
               <button
                 onClick={() => setSelectedRegionId('GLOBAL')}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                  selectedRegionId === 'GLOBAL'
-                    ? 'bg-gradient-to-r from-[#0AAEEF] to-[#0284C7] text-white border-[#0AAEEF] shadow-md'
-                    : darkMode
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${selectedRegionId === 'GLOBAL'
+                  ? 'bg-gradient-to-r from-[#0AAEEF] to-[#0284C7] text-white border-[#0AAEEF] shadow-md'
+                  : darkMode
                     ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-[#0AAEEF]'
                     : 'bg-white border-slate-200 text-slate-700 hover:border-[#0AAEEF]'
-                }`}
+                  }`}
               >
                 🌍 Global ({formattedGlobalPill})
               </button>
@@ -442,13 +437,12 @@ export default function Audience() {
                 <button
                   key={reg.id}
                   onClick={() => setSelectedRegionId(reg.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                    selectedRegionId === reg.id
-                      ? 'bg-gradient-to-r from-[#0AAEEF] to-[#0284C7] text-white border-[#0AAEEF] shadow-md'
-                      : darkMode
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${selectedRegionId === reg.id
+                    ? 'bg-gradient-to-r from-[#0AAEEF] to-[#0284C7] text-white border-[#0AAEEF] shadow-md'
+                    : darkMode
                       ? 'bg-slate-800/80 border-slate-700 text-slate-300 hover:border-[#0AAEEF]'
                       : 'bg-white border-slate-200 text-slate-700 hover:border-[#0AAEEF]'
-                  }`}
+                    }`}
                 >
                   {reg.code} <span className="text-[#F7941D] font-mono">({reg.contacts})</span>
                 </button>
@@ -505,9 +499,8 @@ export default function Audience() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className={`mt-3 text-sm sm:text-base ${
-                darkMode ? 'text-slate-400' : 'text-slate-600'
-              }`}
+              className={`mt-3 text-sm sm:text-base ${darkMode ? 'text-slate-400' : 'text-slate-600'
+                }`}
             >
               Granular distribution across core industry sectors, functional decision centers, and executive seniority authority.
             </motion.p>
@@ -525,11 +518,10 @@ export default function Audience() {
             <motion.div
               variants={cardItemVariants}
               whileHover={{ y: -6, transition: { duration: 0.25 } }}
-              className={`p-7 rounded-3xl border transition-all duration-300 hover:shadow-2xl relative overflow-hidden ${
-                darkMode
-                  ? 'bg-slate-900/80 border-slate-800 hover:border-[#F7941D]/40 shadow-xl'
-                  : 'bg-white border-slate-200/80 hover:border-[#F7941D] shadow-[0_12px_36px_rgba(247,148,29,0.06)]'
-              }`}
+              className={`p-7 rounded-3xl border transition-all duration-300 hover:shadow-2xl relative overflow-hidden ${darkMode
+                ? 'bg-slate-900/80 border-slate-800 hover:border-[#F7941D]/40 shadow-xl'
+                : 'bg-white border-slate-200/80 hover:border-[#F7941D] shadow-[0_12px_36px_rgba(247,148,29,0.06)]'
+                }`}
             >
               {/* Top Accent Gradient Bar */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#F7941D] via-[#FB923C] to-[#FBBF24]" />
@@ -573,11 +565,10 @@ export default function Audience() {
             <motion.div
               variants={cardItemVariants}
               whileHover={{ y: -6, transition: { duration: 0.25 } }}
-              className={`p-7 rounded-3xl border transition-all duration-300 hover:shadow-2xl relative overflow-hidden ${
-                darkMode
-                  ? 'bg-slate-900/80 border-slate-800 hover:border-[#10B981]/40 shadow-xl'
-                  : 'bg-white border-slate-200/80 hover:border-[#10B981] shadow-[0_12px_36px_rgba(16,185,129,0.06)]'
-              }`}
+              className={`p-7 rounded-3xl border transition-all duration-300 hover:shadow-2xl relative overflow-hidden ${darkMode
+                ? 'bg-slate-900/80 border-slate-800 hover:border-[#10B981]/40 shadow-xl'
+                : 'bg-white border-slate-200/80 hover:border-[#10B981] shadow-[0_12px_36px_rgba(16,185,129,0.06)]'
+                }`}
             >
               {/* Top Accent Gradient Bar */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#10B981] via-[#34D399] to-[#6EE7B7]" />
@@ -621,11 +612,10 @@ export default function Audience() {
             <motion.div
               variants={cardItemVariants}
               whileHover={{ y: -6, transition: { duration: 0.25 } }}
-              className={`p-7 rounded-3xl border transition-all duration-300 hover:shadow-2xl relative overflow-hidden ${
-                darkMode
-                  ? 'bg-slate-900/80 border-slate-800 hover:border-[#0AAEEF]/40 shadow-xl'
-                  : 'bg-white border-slate-200/80 hover:border-[#0AAEEF] shadow-[0_12px_36px_rgba(10,174,239,0.06)]'
-              }`}
+              className={`p-7 rounded-3xl border transition-all duration-300 hover:shadow-2xl relative overflow-hidden ${darkMode
+                ? 'bg-slate-900/80 border-slate-800 hover:border-[#0AAEEF]/40 shadow-xl'
+                : 'bg-white border-slate-200/80 hover:border-[#0AAEEF] shadow-[0_12px_36px_rgba(10,174,239,0.06)]'
+                }`}
             >
               {/* Top Accent Gradient Bar */}
               <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#0AAEEF] via-[#0284C7] to-[#38BDF8]" />
@@ -687,7 +677,7 @@ export default function Audience() {
                   <span>Uncompromising Data Standards</span>
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                  How We Ensure High-Quality Demographic Accuracy
+                  How We Ensure High Quality Demographic Accuracy
                 </h3>
                 <p className={`mt-4 text-sm sm:text-base leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                   Our database undergoes automated 30-day freshness cycles, multi-point verification,
@@ -762,11 +752,10 @@ export default function Audience() {
 
               <Link to="/case-studies">
                 <button
-                  className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm border transition-all cursor-pointer ${
-                    darkMode
-                      ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
+                  className={`inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm border transition-all cursor-pointer ${darkMode
+                    ? 'border-slate-700 bg-slate-800 text-slate-200 hover:bg-slate-700'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
                 >
                   <FileText className="w-4 h-4 text-[#0AAEEF]" />
                   <span>View Customer Case Studies</span>
