@@ -21,7 +21,7 @@ router.post('/content/:id/view', apiLimiter, contentController.incrementContentV
 // Alias routes for landing pages — /lp/:slug and /landing-page/:slug resolve the same as /content/:slug
 router.get('/lp/:slug', publicController.getContentBySlug);
 router.get('/landing-page/:slug', publicController.getContentBySlug);
-router.post('/landing-page', strictLimiter, publicController.submitLandingPage);
+router.post('/landing-page', publicController.submitLandingPage);
 router.post('/subscribe-content', strictLimiter, publicController.subscribeContent);
 router.post('/newsletter', strictLimiter, publicController.subscribeNewsletter);
 router.get('/categories', publicController.getCategories);
