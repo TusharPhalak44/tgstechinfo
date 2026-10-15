@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
-import { Mail, Lock, ArrowRight, Eye, EyeOff, CheckCircle, AlertCircle, Loader2, Star } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import SaaSLeadJourneyAnimation from '../components/auth/SaaSLeadJourneyAnimation';
 
 const styles = `
@@ -222,23 +222,9 @@ const styles = `
   .lp-btn:hover:not(:disabled)::after { left:100%; }
 
   /* Switch */
-  .lp-switch { text-align:center; font-size:.82rem; color:#64748B; margin-bottom:14px; }
+  .lp-switch { text-align:center; font-size:.82rem; color:#64748B; margin-bottom:0; }
   .lp-switch a { font-weight:700; text-decoration:none; color:#0B1F4D; margin-left:4px; transition:color .2s; }
   .lp-switch a:hover { color:#F7941D; }
-
-  /* Demo box */
-  .lp-demo {
-    padding:11px 13px; border-radius:11px;
-    background:#FFF7ED;
-    border:1px solid #FED7AA;
-  }
-  .lp-demo-hd {
-    font-size:.6rem; font-weight:700;
-    text-transform:uppercase; letter-spacing:.14em;
-    color:#EA580C; margin-bottom:5px;
-    display:flex; align-items:center; gap:5px;
-  }
-  .lp-demo-row { font-size:.72rem; line-height:1.7; color:#78716C; }
 
   @keyframes spin { to { transform:rotate(360deg); } }
 `;
@@ -398,15 +384,6 @@ const Login = () => {
             {/* Switch */}
             <div className="lp-switch">
               Don't have an account?<Link to="/register">Create account →</Link>
-            </div>
-
-            {/* Demo credentials */}
-            <div className="lp-demo">
-              <div className="lp-demo-hd"><Star size={9}/>Demo Credentials</div>
-              <div className="lp-demo-row">
-                <div>👑 <strong style={{ color:'rgba(255,255,255,0.58)' }}>Admin:</strong> admin@tgstechinfo.com / Admin@123</div>
-                <div>👤 <strong style={{ color:'rgba(255,255,255,0.58)' }}>User:</strong> user@tgstechinfo.com / User@123</div>
-              </div>
             </div>
 
           </div>{/* /card */}
