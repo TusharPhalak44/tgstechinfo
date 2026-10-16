@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
 const Section = ({ title, children, darkMode }) => (
@@ -335,7 +336,7 @@ const PrivacyPolicy = () => {
               <Li>Research publications</Li>
               <Li>Sponsored industry content</Li>
             </ul>
-            <p style={{ paddingLeft: 4, fontSize: 'clamp(14px, 1.5vw, 15.5px)' }}>You may unsubscribe at any time using the unsubscribe link included in our emails.</p>
+            <p style={{ paddingLeft: 4, fontSize: 'clamp(14px, 1.5vw, 15.5px)' }}>You may unsubscribe at any time using the unsubscribe link included in our emails, or directly via our <Link to="/unsubscribe" style={{ color: '#4a7cff', textDecoration: 'underline' }}>Unsubscribe Page</Link>.</p>
           </Section>
 
           {/* Section 6 */}

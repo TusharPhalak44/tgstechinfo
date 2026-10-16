@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { message } from 'antd';
 import {
@@ -13,14 +13,15 @@ import { useSiteSettings } from '../../context/SiteSettingsContext';
 
 const FooterLink = ({ to, children }) => (
   <Link to={to} style={{
-    fontSize: 13, color: 'var(--color-muted)', textDecoration: 'none',
+    fontSize: 13, color: '#FFFFFF', textDecoration: 'none',
     display: 'flex', alignItems: 'center', gap: 7, padding: '5px 0',
-    transition: 'color .2s, gap .2s'
+    transition: 'color .2s, gap .2s',
+    opacity: 0.95
   }}
-    onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-accent)'; e.currentTarget.style.gap = '10px'; }}
-    onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-muted)'; e.currentTarget.style.gap = '7px'; }}
+    onMouseEnter={e => { e.currentTarget.style.color = '#F7941D'; e.currentTarget.style.gap = '10px'; e.currentTarget.style.opacity = '1'; }}
+    onMouseLeave={e => { e.currentTarget.style.color = '#FFFFFF'; e.currentTarget.style.gap = '7px'; e.currentTarget.style.opacity = '0.95'; }}
   >
-    <ArrowRightOutlined style={{ fontSize: 9 }} />
+    <ArrowRightOutlined style={{ fontSize: 9, color: 'rgba(255,255,255,0.8)' }} />
     {children}
   </Link>
 );
@@ -29,12 +30,12 @@ const SocialBtn = ({ href, icon, label, color }) => (
   <a href={href} aria-label={label} target="_blank" rel="noopener noreferrer" style={{
     width: 38, height: 38, borderRadius: 10,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: 'var(--color-muted)', fontSize: 17, textDecoration: 'none',
-    background: 'var(--color-primary-light)', border: '1px solid var(--color-border)',
+    color: '#FFFFFF', fontSize: 17, textDecoration: 'none',
+    background: 'rgba(255, 255, 255, 0.12)', border: '1px solid rgba(255, 255, 255, 0.22)',
     transition: 'all .22s'
   }}
-    onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-accent)'; e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
-    onMouseLeave={e => { e.currentTarget.style.background = 'var(--color-primary-light)'; e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.transform = 'none'; }}
+    onMouseEnter={e => { e.currentTarget.style.background = '#F7941D'; e.currentTarget.style.borderColor = '#F7941D'; e.currentTarget.style.transform = 'translateY(-3px)'; }}
+    onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.22)'; e.currentTarget.style.transform = 'none'; }}
   >
     {icon}
   </a>
@@ -56,6 +57,50 @@ const Footer = ({ simplified = false }) => {
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [stats, setStats] = useState({
+    readers: '150M+',
+    articles: '290+',
+    experts: '500+'
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get('/api/public/stats');
+        if (cancelled || !res.data) return;
+
+        const { totalPublished, totalArticles, totalAuthors, totalUsers, totalViews } = res.data;
+        const articleCount = totalPublished ?? totalArticles;
+        const expertCount = totalAuthors ?? totalUsers;
+
+        const formatNumber = (num, fallback) => {
+          if (num === undefined || num === null || num === '') return fallback;
+          const val = Number(num);
+          if (isNaN(val) || val <= 0) return fallback;
+          if (val >= 1_000_000) {
+            return `${(val / 1_000_000).toFixed(val % 1_000_000 === 0 ? 0 : 1)}M+`;
+          }
+          if (val >= 10_000) {
+            return `${(val / 1_000).toFixed(val % 1_000 === 0 ? 0 : 1)}K+`;
+          }
+          return `${val}+`;
+        };
+
+        setStats({
+          readers: totalViews ? formatNumber(totalViews, '150M+') : '150M+',
+          articles: articleCount !== undefined ? formatNumber(articleCount, `${articleCount}+`) : '290+',
+          experts: expertCount !== undefined ? formatNumber(expertCount, `${expertCount}+`) : '500+'
+        });
+      } catch (err) {
+        console.warn('[Footer] Failed to load public stats:', err?.message);
+      }
+    };
+
+    fetchStats();
+    return () => { cancelled = true; };
+  }, []);
 
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
@@ -83,31 +128,31 @@ const Footer = ({ simplified = false }) => {
   // Simplified footer for dashboard pages
   if (simplified) {
     return (
-      <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)' }}>
+      <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, borderTop: darkMode ? '1px solid #334155' : '1px solid rgba(255,255,255,0.15)', color: '#FFFFFF' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 13, color: 'var(--color-muted)' }}>
-            © {year} <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>TGS Tech Info</span>. All rights reserved.
+          <span style={{ fontSize: 13, color: '#FFFFFF' }}>
+            © {year} <span style={{ color: '#FFFFFF', fontWeight: 700 }}>TGS Tech Info</span>. All rights reserved.
           </span>
           <div style={{ display: 'flex', gap: 20 }}>
             {[['Privacy', '/privacy-policy'], ['Terms', '/terms-of-use'], ['Cookies', '/cookie-policy']].map(([label, to]) => (
-              <Link key={label} to={to} style={{ fontSize: 13, color: 'var(--color-muted)', textDecoration: 'none', transition: 'color .2s' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+              <Link key={label} to={to} style={{ fontSize: 13, color: '#FFFFFF', textDecoration: 'none', transition: 'color .2s' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#F7941D'}
+                onMouseLeave={e => e.currentTarget.style.color = '#FFFFFF'}
               >{label}</Link>
             ))}
             <button
               onClick={() => setShowCookiePreferences(true)}
               style={{
                 fontSize: 13,
-                color: 'var(--color-muted)',
+                color: '#FFFFFF',
                 background: 'none',
                 border: 'none',
                 cursor: 'pointer',
                 padding: 0,
                 transition: 'color .2s'
               }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+              onMouseEnter={e => e.currentTarget.style.color = '#F7941D'}
+              onMouseLeave={e => e.currentTarget.style.color = '#FFFFFF'}
             >
               Cookie Preferences
             </button>
@@ -127,28 +172,30 @@ const Footer = ({ simplified = false }) => {
 
   // Full footer for public pages
   return (
-    <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, position: 'relative', zIndex: 1 }}>
+    <footer style={{ background: darkMode ? '#0f172a' : 'var(--color-primary)', marginTop: 0, position: 'relative', zIndex: 1, color: '#FFFFFF' }}>
+      {/* Global Footer White Text Rules */}
+      <style>{`
+        .footer-grid {
+          display: grid;
+          grid-template-columns: 1.6fr 1fr 1fr 1fr 1.4fr;
+          gap: 40px 32px;
+        }
+        @media (max-width: 1024px) {
+          .footer-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 40px 24px;
+          }
+        }
+        @media (max-width: 640px) {
+          .footer-grid {
+            grid-template-columns: 1fr;
+            gap: 32px;
+          }
+        }
+      `}</style>
+
       {/* ── Main footer ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 44px' }}>
-        <style>{`
-          .footer-grid {
-            display: grid;
-            grid-template-columns: 1.6fr 1fr 1fr 1fr 1.4fr;
-            gap: 40px 32px;
-          }
-          @media (max-width: 1024px) {
-            .footer-grid {
-              grid-template-columns: repeat(2, 1fr);
-              gap: 40px 24px;
-            }
-          }
-          @media (max-width: 640px) {
-            .footer-grid {
-              grid-template-columns: 1fr;
-              gap: 32px;
-            }
-          }
-        `}</style>
         <div className="footer-grid">
 
           {/* Brand */}
@@ -157,10 +204,10 @@ const Footer = ({ simplified = false }) => {
               {footerLogo ? (
                 <img src={footerLogo} alt="TGS Tech Info" style={{ height: logoSizes.footer.height || 90, width: 'auto', maxWidth: logoSizes.footer.width || 200, objectFit: 'contain' }} />
               ) : (
-                <span style={{ fontSize: 22, fontWeight: 'bold', color: 'var(--color-accent)' }}>TGS Tech Info</span>
+                <span style={{ fontSize: 22, fontWeight: 'bold', color: '#FFFFFF' }}>TGS Tech Info</span>
               )}
             </div>
-            <p style={{ fontSize: 13, color: 'var(--color-muted)', lineHeight: 1.8, marginBottom: 22, maxWidth: 240 }}>
+            <p style={{ fontSize: 13, color: '#FFFFFF', opacity: 0.95, lineHeight: 1.8, marginBottom: 22, maxWidth: 240 }}>
               Your gateway to technology insights, news, and resources for IT and B2B professionals worldwide.
             </p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
@@ -168,10 +215,14 @@ const Footer = ({ simplified = false }) => {
             </div>
             {/* Mini stats */}
             <div style={{ display: 'flex', gap: 20 }}>
-              {[['50K+', 'Readers'], ['500+', 'Articles'], ['100+', 'Experts']].map(([num, lbl]) => (
+              {[
+                [stats.readers, 'Readers'],
+                [stats.articles, 'Articles'],
+                [stats.experts, 'Experts']
+              ].map(([num, lbl]) => (
                 <div key={lbl}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{num}</div>
-                  <div style={{ fontSize: 11, color: 'var(--color-muted)' }}>{lbl}</div>
+                  <div style={{ fontSize: 11, color: '#FFFFFF', opacity: 0.85 }}>{lbl}</div>
                 </div>
               ))}
             </div>
@@ -217,7 +268,6 @@ const Footer = ({ simplified = false }) => {
             <FooterLink to="/user-account-policy">User Account &amp; Platform Usage</FooterLink>
           </div>
 
-
           {/* Contact + Newsletter */}
           <div>
             <ColHead>Get In Touch</ColHead>
@@ -226,31 +276,31 @@ const Footer = ({ simplified = false }) => {
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <MailOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>info@tgstechinfo.com</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5 }}>info@tgstechinfo.com</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <PhoneOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>+91 96655-99442</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5 }}>+91 96655-99442</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <PhoneOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>+1 346-487-8307</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5 }}>+1 346-487-8307</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>The Space Business Complex Office No 512-516, Grant Rd, Kharadi, Pune, Maharashtra 411014</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>The Space Business Complex Office No 512-516, Grant Rd, Kharadi, Pune, Maharashtra 411014</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: 'var(--color-muted)', paddingTop: 5 }}>762, Fulton St, San Francisco, California 94115</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>762, Fulton St, San Francisco, California 94115</span>
               </div>
             </div>
 
@@ -289,12 +339,12 @@ const Footer = ({ simplified = false }) => {
       </div>
 
       {/* ── Divider ── */}
-      <div style={{ height: 1, background: darkMode ? '#334155' : 'var(--color-border)', margin: '0 24px' }} />
+      <div style={{ height: 1, background: 'rgba(255, 255, 255, 0.15)', margin: '0 24px' }} />
 
       {/* ── Bottom bar ── */}
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '18px 24px', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-        <span style={{ fontSize: 13, color: 'var(--color-muted)', textAlign: 'center', width: '100%', display: 'block' }} className="footer-copyright">
-          © {year} <span style={{ color: 'var(--color-accent)', fontWeight: 600 }}>TGS Tech Info</span>. All rights reserved.
+        <span style={{ fontSize: 13, color: '#FFFFFF', textAlign: 'center', width: '100%', display: 'block' }} className="footer-copyright">
+          © {year} <span style={{ color: '#FFFFFF', fontWeight: 700 }}>TGS Tech Info</span>. All rights reserved.
         </span>
         <style>{`
           @media (min-width: 640px) {
@@ -306,16 +356,16 @@ const Footer = ({ simplified = false }) => {
         `}</style>
         <div className="footer-bottom-links">
           {[['Privacy', '/privacy-policy'], ['Terms', '/terms-of-use'], ['Cookies', '/cookie-policy']].map(([label, to]) => (
-            <Link key={label} to={to} style={{ fontSize: 13, color: 'var(--color-muted)', textDecoration: 'none', transition: 'color .2s' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+            <Link key={label} to={to} style={{ fontSize: 13, color: '#FFFFFF', textDecoration: 'none', transition: 'color .2s' }}
+              onMouseEnter={e => e.currentTarget.style.color = '#F7941D'}
+              onMouseLeave={e => e.currentTarget.style.color = '#FFFFFF'}
             >{label}</Link>
           ))}
           <button
             onClick={() => setShowCookiePreferences(true)}
-            style={{ fontSize: 13, color: 'var(--color-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color .2s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+            style={{ fontSize: 13, color: '#FFFFFF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'color .2s' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#F7941D'}
+            onMouseLeave={e => e.currentTarget.style.color = '#FFFFFF'}
           >
             Cookie Preferences
           </button>

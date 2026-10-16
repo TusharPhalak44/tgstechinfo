@@ -1172,8 +1172,17 @@ exports.getPublicStats = async (req, res) => {
         const [[{ totalPublished }]] = await pool.query("SELECT COUNT(*) as totalPublished FROM contents WHERE status = 'published'");
         const [[{ totalCategories }]] = await pool.query('SELECT COUNT(*) as totalCategories FROM categories');
         const [[{ totalAuthors }]] = await pool.query("SELECT COUNT(*) as totalAuthors FROM users WHERE role != 'admin'");
+        const [[{ totalUsers }]] = await pool.query("SELECT COUNT(*) as totalUsers FROM users");
         const [[{ totalViews }]] = await pool.query('SELECT COALESCE(SUM(view_count),0) as totalViews FROM contents');
-        res.json({ totalPublished, totalCategories, totalAuthors, totalViews });
+        res.json({
+            totalPublished,
+            totalArticles: totalPublished,
+            totalCategories,
+            totalAuthors,
+            totalUsers,
+            totalExperts: totalAuthors > 0 ? totalAuthors : totalUsers,
+            totalViews
+        });
     } catch (error) {
         console.error('Get public stats error:', error);
         res.status(500).json({ message: 'Server error' });

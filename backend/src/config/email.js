@@ -32,13 +32,13 @@ const isRateLimited = (to, maxPerHour = 10) => {
     const normalizedTo = String(to).trim().toLowerCase();
     const now = Date.now();
     const hourAgo = now - (60 * 60 * 1000);
-    
+
     if (!emailRateLimiter.has(normalizedTo)) {
         emailRateLimiter.set(normalizedTo, []);
     }
-    
+
     const timestamps = emailRateLimiter.get(normalizedTo).filter(t => t > hourAgo);
-    
+
     // Clean up old entries if map grows
     if (emailRateLimiter.size > 500) {
         for (const [key, val] of emailRateLimiter.entries()) {
@@ -47,20 +47,20 @@ const isRateLimited = (to, maxPerHour = 10) => {
             }
         }
     }
-    
+
     if (timestamps.length >= maxPerHour) {
         console.warn(`[Rate Limit] Email to ${normalizedTo} exceeds limit (${maxPerHour}/hour)`);
         emailRateLimiter.set(normalizedTo, timestamps);
         return true;
     }
-    
+
     timestamps.push(now);
     emailRateLimiter.set(normalizedTo, timestamps);
     return false;
 };
 
 /**
- * Get the appropriate email transporter (SendGrid or Hostinger)
+ * Get the appropriate email transporter (SendGrid, Gmail, or Hostinger/custom SMTP)
  * @returns {object} - Nodemailer transporter or SendGrid transport
  */
 const getEmailTransporter = () => {
@@ -77,23 +77,42 @@ const getEmailTransporter = () => {
             }
         });
     }
-    
-    // Fall back to Hostinger
-    console.log('[Email] Using Hostinger SMTP as email service');
-    const user = process.env.EMAIL_USER;
-    const rawPass = process.env.EMAIL_PASSWORD;
-    const pass = rawPass ? rawPass.replace(/^['"](.*)['"]$/g, '$1') : rawPass;
-    const host = process.env.EMAIL_HOST || 'smtp.hostinger.com';
-    const port = Number(process.env.EMAIL_PORT || 465);
-    
+
+    const user = process.env.EMAIL_USER ? process.env.EMAIL_USER.trim() : '';
+    const rawPass = process.env.EMAIL_PASSWORD || '';
+    // Strip surrounding quotes
+    const pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
+
+    let host = (process.env.EMAIL_HOST || '').trim();
+    let port = Number(process.env.EMAIL_PORT || 465);
+
+    // Auto-detect Gmail if user is @gmail.com or host contains gmail
+    const isGmailUser = user && user.toLowerCase().endsWith('@gmail.com');
+    const isGmailHost = host && host.toLowerCase().includes('gmail');
+
+    if (isGmailUser || isGmailHost) {
+        host = 'smtp.gmail.com';
+        if (!process.env.EMAIL_PORT) {
+            port = 465;
+        }
+        console.log(`[Email] Using Gmail SMTP (${host}:${port}) for ${user}`);
+    } else if (host.includes('hostinger') || !host) {
+        host = host || 'smtp.hostinger.com';
+        console.log(`[Email] Using Hostinger SMTP (${host}:${port}) for ${user}`);
+    } else {
+        console.log(`[Email] Using Custom SMTP (${host}:${port}) for ${user}`);
+    }
+
+    const isSecure = port === 465;
+
     return nodemailer.createTransport({
         host,
         port,
-        secure: port === 465,
+        secure: isSecure,
         auth: { user, pass },
         tls: { rejectUnauthorized: false },
-        debug: true,
-        logger: true
+        debug: process.env.NODE_ENV === 'development',
+        logger: process.env.NODE_ENV === 'development'
     });
 };
 
@@ -109,13 +128,13 @@ const getPublicUrl = () => {
         const firstUrl = process.env.FRONTEND_URL.split(',')[0].trim();
         return firstUrl.replace(/\/$/, ''); // Remove trailing slash
     }
-    
+
     // Fallback to API_URL if set
     if (process.env.API_URL) {
         const firstUrl = process.env.API_URL.split(',')[0].trim();
         return firstUrl.replace(/\/$/, '');
     }
-    
+
     // Default fallback (development)
     return 'http://localhost:5173';
 };
@@ -129,13 +148,13 @@ const getBackendUrl = () => {
     if (process.env.BACKEND_URL) {
         return process.env.BACKEND_URL.replace(/\/$/, '');
     }
-    
+
     // Check for API_URL (often points to backend)
     if (process.env.API_URL) {
         const firstUrl = process.env.API_URL.split(',')[0].trim();
         return firstUrl.replace(/\/$/, '');
     }
-    
+
     // Default to localhost backend
     return 'http://localhost:5000';
 };
@@ -222,10 +241,10 @@ const getWebsiteLogoUrl = async () => {
  */
 const buildLogoHtml = (logoData) => {
     if (!logoData || !logoData.value) return '';
-    
+
     const logoSrc = logoData.value;
     const altText = 'TGS Tech Info Logo';
-    
+
     // For both base64 and URL, use consistent styling with fallbacks
     return `<div style="text-align:center;margin-bottom:20px;padding:10px;background-color:#ffffff;">
     <img src="${logoSrc}" 
@@ -241,9 +260,9 @@ const sendEmail = async (to, subject, html, options = {}) => {
     // Check rate limit
     if (isRateLimited(to, 10)) {
         console.warn(`[sendEmail] Rate limit exceeded for ${to}`);
-        return { 
+        return {
             success: false,
-            skipped: true, 
+            skipped: true,
             reason: 'rate_limit_exceeded',
             message: 'Too many emails sent to this address. Please try again later.'
         };
@@ -254,7 +273,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
         return { success: false, skipped: true, reason: 'no_recipient' };
     }
 
-    const fromAddress = process.env.EMAIL_FROM || 'noreply@tgstechinfo.com';
+    const fromAddress = process.env.EMAIL_FROM || 'tgs.admin001@gmail.com';
     const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
     const organization = process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
 
@@ -262,7 +281,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
     const user = process.env.EMAIL_USER;
     const rawPass = process.env.EMAIL_PASSWORD;
     const pass = rawPass ? rawPass.replace(/^['"](.*)['"]$/g, '$1') : rawPass;
-    
+
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
         if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY.includes('placeholder')) {
             console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD or SENDGRID_API_KEY.');
@@ -271,21 +290,51 @@ const sendEmail = async (to, subject, html, options = {}) => {
     }
 
     const transporter = getEmailTransporter();
-    const messageId = `<${Date.now()}@${fromAddress.split('@')[1]}>`;
+    const publicUrl = getPublicUrl();
+    const unsubscribeUrl = `${publicUrl}/unsubscribe?email=${encodeURIComponent(to || '')}`;
+
+    // Auto-append compliant unsubscribe footer if email HTML does not already contain an unsubscribe link
+    let finalHtml = html;
+    if (typeof finalHtml === 'string' && !/unsubscribe/i.test(finalHtml)) {
+        const unsubscribeFooter = `
+            <div style="margin-top: 35px; padding-top: 18px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; font-family: Arial, sans-serif;">
+                <p style="margin: 0 0 6px 0;">You received this email because you subscribed to or requested content from <strong>${escapeHtml(organization)}</strong>.</p>
+                <p style="margin: 0;">To stop receiving these communications, <a href="${unsubscribeUrl}" style="color: #0284c7; text-decoration: underline;">click here to unsubscribe</a>.</p>
+            </div>
+        `;
+        if (finalHtml.includes('</body>')) {
+            finalHtml = finalHtml.replace('</body>', `${unsubscribeFooter}</body>`);
+        } else {
+            finalHtml += unsubscribeFooter;
+        }
+    }
+
+    // Generate plain text fallback by stripping HTML tags
+    const textFallback = options.text || (typeof finalHtml === 'string'
+        ? finalHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+            .replace(/<br\s*[\/]?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/\n\s+\n/g, '\n\n')
+            .trim()
+        : '');
 
     const mailOptions = {
         from: `"${organization}" <${fromAddress}>`,
         to,
         subject,
-        html,
+        text: textFallback,
+        html: finalHtml,
         replyTo: replyTo,
-        messageId: messageId,
         headers: {
             'X-Priority': '3',
-            'X-Mailer': 'TGS Tech Info Mailer',
-            'X-Organization': organization,
-            'List-Unsubscribe': `<mailto:${replyTo}?subject=Unsubscribe>`,
-            'Precedence': 'bulk'
+            'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:${replyTo}?subject=Unsubscribe>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
         }
     };
 
@@ -300,18 +349,18 @@ const sendEmail = async (to, subject, html, options = {}) => {
         return { ...info, success: true };
     } catch (sendErr) {
         console.error(`[sendEmail] Email Send Error for recipient ${to}:`, sendErr.message);
-        
+
         // Check for Hostinger suspension
         if (sendErr.message && sendErr.message.includes('suspended')) {
             console.error(`[sendEmail] CRITICAL: Email account appears suspended on Hostinger`);
             console.error(`[sendEmail] ACTION REQUIRED: Log into Hostinger hPanel and reactivate the email account.`);
         }
-        
+
         // Check for SMTP outbound blocking
         if (sendErr.responseCode === 554 || (sendErr.message && sendErr.message.includes('554'))) {
             console.warn(`[sendEmail] CRITICAL: Outbound sending is disabled on SMTP host`);
         }
-        
+
         if (process.env.NODE_ENV === 'development') {
             console.log(`\n============================ EMAIL PREVIEW (${to}) ============================`);
             console.log(`Subject: ${subject}`);
@@ -319,7 +368,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
             console.log(`From: ${fromAddress}`);
             console.log(`=================================================================================\n`);
         }
-        
+
         return {
             success: false,
             error: sendErr.message,
@@ -358,12 +407,17 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
                     <p>You now have access to: <strong>${safeTitle}</strong></p>
                     <p>For urgent placements and queries, please feel free to contact:</p>
                     <p><strong>Contact person:</strong> Mark Jason</p>
-                    <p><strong>Email ID:</strong> info@tgstechinfo.com</p>
+                    <p><strong>Email ID:</strong> tgs.admin001@gmail.com</p>
                     <br>
                     <p>Regards,</p>
                     <p><strong>TGS Tech Info Team</strong></p>
                 </div>
-                <div class="footer"><p>© 2024 TGS Tech Info. All rights reserved.</p></div>
+                <div class="footer">
+                    <p>© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
+                    <p style="margin-top: 8px; font-size: 11px; color: #777;">
+                        Don't want to receive these emails? <a href="${getPublicUrl()}/unsubscribe" style="color: #0284c7; text-decoration: underline;">Unsubscribe</a>
+                    </p>
+                </div>
             </div>
         </body>
         </html>
@@ -383,7 +437,7 @@ const accessGrantEmailTemplate = (name, contentTitle) => {
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
                 .header { background: #1a237e; color: white; padding: 20px; text-align: center; }
                 .content { padding: 30px; background: #f5f5f5; }
-                .footer { padding: 20px; text-align: center; background: #e0e0e0; }
+                .footer { padding: 20px; text-align: center; background: #e0e0e0; font-size: 12px; color: #555; }
             </style>
         </head>
         <body>
@@ -398,13 +452,16 @@ const accessGrantEmailTemplate = (name, contentTitle) => {
                     <p>You now have access to: <strong>${safeTitle}</strong></p>
                     <p>For urgent placements and queries, please feel free to contact:</p>
                     <p><strong>Contact person:</strong> Mark Jason</p>
-                    <p><strong>Email ID:</strong> max.brown@tgstechinfo.com</p>
+                    <p><strong>Email ID:</strong> tgs.admin001@gmail.com</p>
                     <br>
                     <p>Regards,</p>
                     <p><strong>TGS Tech Info Team</strong></p>
                 </div>
                 <div class="footer">
-                    <p>© 2024 TGS Tech Info. All rights reserved.</p>
+                    <p>© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
+                    <p style="margin-top: 8px; font-size: 11px; color: #777;">
+                        Don't want to receive these emails? <a href="${getPublicUrl()}/unsubscribe" style="color: #0284c7; text-decoration: underline;">Unsubscribe</a>
+                    </p>
                 </div>
             </div>
         </body>
@@ -466,7 +523,7 @@ const chatbotQueryAdminTemplate = (email, query, submittedAt) => {
         </html>
     `;
 };
- 
+
 // Template for admin response to user
 const chatbotQueryResponseTemplate = (query, adminResponse) => {
     const safeQuery = escapeHtml(query);
@@ -564,7 +621,7 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             frontend_url: publicUrl,
             login_url: `${publicUrl}/login`,
             dashboard_url: `${publicUrl}/user-dashboard`,
-            unsubscribe_url: `${publicUrl}/unsubscribe`,
+            unsubscribe_url: `${publicUrl}/unsubscribe?email=${encodeURIComponent(to || '')}`,
             download_url: publicUrl,
             reset_url: `${publicUrl}/reset-password`,
             name: derivedName,
@@ -582,6 +639,9 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             reviewed_date: formatDateForEmail(new Date()),
             feedback: '',
             email: to || '',
+            support_email: 'tgs.admin001@gmail.com',
+            admin_email: 'tgs.admin001@gmail.com',
+            contact_email: 'tgs.admin001@gmail.com',
             ...variables
         };
 
@@ -602,21 +662,21 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             console.log('[sendTemplatedEmail] Logo is enabled for template:', template.template_type);
             const logoData = await getWebsiteLogoUrl();
             console.log('[sendTemplatedEmail] Logo data fetched:', logoData ? 'Found' : 'Not found');
-            
+
             if (logoData && logoData.value) {
                 const logoHtml = buildLogoHtml(logoData);
                 const logoValue = logoData.value;
                 console.log('[sendTemplatedEmail] Logo type:', logoData.type, 'Logo value length:', logoValue.length);
-                
+
                 // Replace logo placeholders with improved HTML
                 renderedHtml = renderedHtml
                     .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
                     .replace(/\{\{website_logo_img\}\}/gi, `<img src="${logoValue}" alt="TGS Tech Info Logo" style="max-width:180px;height:auto;display:block;margin:0 auto;border:none;" width="180" border="0" />`)
                     .replace(/\{\{website_logo\}\}/gi, logoValue)
                     .replace(/\{\{logo\}\}/gi, logoValue);
-                
+
                 console.log('[sendTemplatedEmail] Logo placeholders replaced successfully');
-                
+
                 // If no placeholder exists, prepend logo to content
                 const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
                 if (!hasLogoPlaceholder) {

@@ -252,6 +252,17 @@ const getContentImage = (item) => {
   return null;
 };
 
+const isContentVisible = (item) => {
+  if (!item) return true;
+  if (item.is_visible_on_site !== undefined && item.is_visible_on_site !== null) {
+    return Number(item.is_visible_on_site) !== 0 && item.is_visible_on_site !== false && item.is_visible_on_site !== '0';
+  }
+  if (item.is_visible !== undefined && item.is_visible !== null) {
+    return Number(item.is_visible) !== 0 && item.is_visible !== false && item.is_visible !== '0';
+  }
+  return true;
+};
+
 const AdminContent = () => {
   const { darkMode } = useTheme();
   const { user } = useAuth();
@@ -418,13 +429,17 @@ const AdminContent = () => {
   const handleToggleVisibility = async (e, content) => {
     if (e) e.stopPropagation();
     setVisibilityLoadingId(content.id);
-    const newVisibility = content.is_visible === 0 ? 1 : 0;
+    const currentlyVisible = isContentVisible(content);
+    const newVisibility = currentlyVisible ? 0 : 1;
     try {
-      await axios.put(`/api/admin/content/${content.id}/visibility`, { is_visible_on_site: newVisibility });
+      await axios.put(`/api/admin/content/${content.id}/visibility`, { 
+        is_visible_on_site: newVisibility,
+        is_visible: newVisibility 
+      });
       message.success(`Publication is now ${newVisibility ? 'visible' : 'hidden'} on live website`);
-      setAllContents(prev => prev.map(c => c.id === content.id ? { ...c, is_visible: newVisibility } : c));
+      setAllContents(prev => prev.map(c => c.id === content.id ? { ...c, is_visible_on_site: newVisibility, is_visible: newVisibility } : c));
       if (selectedArticle?.id === content.id) {
-        setSelectedArticle(prev => ({ ...prev, is_visible: newVisibility }));
+        setSelectedArticle(prev => ({ ...prev, is_visible_on_site: newVisibility, is_visible: newVisibility }));
       }
     } catch (err) {
       message.error('Failed to update publication visibility');
@@ -638,45 +653,47 @@ const AdminContent = () => {
       title: 'Actions',
       key: 'actions',
       width: 160,
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Copy Public Link">
-            <Button
-              type="text"
-              size="small"
-              icon={<CopyOutlined />}
-              onClick={() => handleCopyShareUrl(record.slug)}
-              style={{ color: '#10B981' }}
-            />
-          </Tooltip>
-          <Tooltip title="Quick Inspect">
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => { setSelectedArticle(record); setDrawerOpen(true); }}
-              style={{ color: '#0AAEEF' }}
-            />
-          </Tooltip>
-          <Tooltip title="Edit Publication">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => navigate(`/dashboard/create-post/${record.id}`)}
-              style={{ color: '#3B82F6' }}
-            />
-          </Tooltip>
-          <Tooltip title={record.is_visible === 0 ? 'Make Visible' : 'Hide from Site'}>
-            <Button
-              type="text"
-              size="small"
-              icon={record.is_visible === 0 ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-              onClick={(e) => handleToggleVisibility(e, record)}
-              loading={visibilityLoadingId === record.id}
-              style={{ color: record.is_visible === 0 ? '#F59E0B' : '#10B981' }}
-            />
-          </Tooltip>
+      render: (_, record) => {
+        const isVis = isContentVisible(record);
+        return (
+          <Space size="small">
+            <Tooltip title="Copy Public Link">
+              <Button
+                type="text"
+                size="small"
+                icon={<CopyOutlined />}
+                onClick={() => handleCopyShareUrl(record.slug)}
+                style={{ color: '#10B981' }}
+              />
+            </Tooltip>
+            <Tooltip title="Quick Inspect">
+              <Button
+                type="text"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => { setSelectedArticle(record); setDrawerOpen(true); }}
+                style={{ color: '#0AAEEF' }}
+              />
+            </Tooltip>
+            <Tooltip title="Edit Publication">
+              <Button
+                type="text"
+                size="small"
+                icon={<EditOutlined />}
+                onClick={() => navigate(`/dashboard/create-post/${record.id}`)}
+                style={{ color: '#3B82F6' }}
+              />
+            </Tooltip>
+            <Tooltip title={!isVis ? 'Make Visible' : 'Hide from Site'}>
+              <Button
+                type="text"
+                size="small"
+                icon={!isVis ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                onClick={(e) => handleToggleVisibility(e, record)}
+                loading={visibilityLoadingId === record.id}
+                style={{ color: !isVis ? '#F59E0B' : '#10B981' }}
+              />
+            </Tooltip>
           <Popconfirm
             title="Delete Publication"
             description="Are you sure you want to permanently delete this content?"
@@ -690,9 +707,10 @@ const AdminContent = () => {
             </Tooltip>
           </Popconfirm>
         </Space>
-      )
+      );
     }
-  ];
+  }
+];
 
   return (
     <div className={`radar-dashboard-root admin-content-root ${darkMode ? 'dark' : 'light'} radar-grid-bg`} style={{ minHeight: '100vh', padding: '24px' }}>
@@ -1007,7 +1025,7 @@ const AdminContent = () => {
             const typeKey = (item.content_type_name || item.content_type || 'article').toLowerCase();
             const typeConfig = CONTENT_TYPE_CONFIG[typeKey] || CONTENT_TYPE_CONFIG.article;
             const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.draft;
-            const isVisible = item.is_visible !== 0;
+            const isVisible = isContentVisible(item);
             const itemImg = getContentImage(item);
 
             return (
@@ -1294,8 +1312,8 @@ const AdminContent = () => {
                 </div>
                 <div style={{ padding: 12, textAlign: 'center' }}>
                   <div style={{ fontSize: '0.7rem', color: textMuted }}>VISIBILITY</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: selectedArticle.is_visible !== 0 ? '#10B981' : '#F59E0B', marginTop: 4 }}>
-                    {selectedArticle.is_visible !== 0 ? 'Live Website' : 'Hidden'}
+                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: isContentVisible(selectedArticle) ? '#10B981' : '#F59E0B', marginTop: 4 }}>
+                    {isContentVisible(selectedArticle) ? 'Live Website' : 'Hidden'}
                   </div>
                 </div>
                 <div style={{ padding: 12, textAlign: 'center' }}>
@@ -1418,13 +1436,13 @@ const AdminContent = () => {
                 </Button>
 
                 <Button
-                  icon={selectedArticle.is_visible === 0 ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                  icon={!isContentVisible(selectedArticle) ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                   block
                   onClick={(e) => handleToggleVisibility(e, selectedArticle)}
                   loading={visibilityLoadingId === selectedArticle.id}
                   style={{ borderRadius: 10, borderColor }}
                 >
-                  {selectedArticle.is_visible === 0 ? 'Make Visible on Site' : 'Hide from Public Site'}
+                  {!isContentVisible(selectedArticle) ? 'Make Visible on Site' : 'Hide from Public Site'}
                 </Button>
 
                 {selectedArticle.status === 'draft' && (

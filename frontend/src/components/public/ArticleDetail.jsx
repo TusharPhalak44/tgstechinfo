@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   Row, Col, Typography, Tag, Button, Form, Input,
-  message, Card, Avatar, Space, Skeleton, Select
+  message, Card, Avatar, Space, Skeleton, Select, Tooltip
 } from 'antd';
 import {
   CalendarOutlined, ClockCircleOutlined, ShareAltOutlined,
   UserOutlined, LockOutlined, CloseOutlined, MailOutlined,
   PhoneOutlined, IdcardOutlined, BankOutlined, SafetyCertificateOutlined,
   CheckCircleFilled, VideoCameraOutlined, RightOutlined, FireOutlined,
-  ReadOutlined
+  ReadOutlined, CopyOutlined, CheckOutlined, LinkedinFilled, TwitterOutlined,
+  FacebookFilled, WhatsAppOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -22,6 +23,7 @@ import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatDateForLongDisplay, formatDateForDisplay, DATE_FORMATS } from '../../utils/dateHelper';
 import ArticleNewsletterBanner from './ArticleNewsletterBanner';
 import { navigateContentItem } from '../../lib/contentRoute';
+import ContentShareModal from './ContentShareModal';
 
 const { Title, Text } = Typography;
 
@@ -153,6 +155,44 @@ const ArticleDetail = () => {
   const [submittedData, setSubmittedData] = useState(null); // stores {name, email} after form submit
   const [pdfFile, setPdfFile] = useState(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [quickCopied, setQuickCopied] = useState(false);
+
+  const handleQuickCopy = async () => {
+    const url = window.location.href;
+    let success = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+        success = true;
+      }
+    } catch (e) {
+      console.warn('Clipboard write failed:', e);
+    }
+    if (!success) {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        textarea.style.top = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        success = document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch (err) {
+        console.error('ExecCommand copy failed:', err);
+      }
+    }
+    if (success) {
+      setQuickCopied(true);
+      messageApi.success('Link copied to clipboard!');
+      setTimeout(() => setQuickCopied(false), 2500);
+    } else {
+      messageApi.error('Failed to copy link');
+    }
+  };
 
   // Webinar Registration state
   const [webinarRegistered, setWebinarRegistered] = useState(false);
@@ -559,7 +599,16 @@ const ArticleDetail = () => {
               <Tag color="blue" style={{ marginBottom: 12 }}>{content.category_name}</Tag>
 
               {/* Meta */}
-              <div style={{ marginBottom: 16, paddingBottom: 16, borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0' }}>
+              <div style={{
+                marginBottom: 16,
+                paddingBottom: 16,
+                borderBottom: darkMode ? '1px solid #334155' : '1px solid #f0f0f0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12
+              }}>
                 <Space size="middle" wrap>
                   <Space>
                     <Avatar icon={<UserOutlined />} size="small" />
@@ -574,6 +623,21 @@ const ArticleDetail = () => {
                     <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{content.reading_time || 0} min read</Text>
                   </Space>
                 </Space>
+                <Button
+                  size="small"
+                  icon={<ShareAltOutlined />}
+                  onClick={() => setShareModalOpen(true)}
+                  style={{
+                    borderRadius: 16,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderColor: darkMode ? '#475569' : '#cbd5e1',
+                    color: darkMode ? '#cbd5e1' : '#334155',
+                    background: darkMode ? 'rgba(51, 65, 85, 0.4)' : '#f8fafc'
+                  }}
+                >
+                  Share
+                </Button>
               </div>
 
               {/* Content rendered in saved layout order */}
@@ -591,9 +655,124 @@ const ArticleDetail = () => {
                 contentHtml={(requiresLanding && !hasAccess) ? previewContent : fullContent}
                 darkMode={darkMode}
                 extraAfter={
-                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0', display: 'flex', gap: 16, alignItems: 'center' }}>
-                    <Text strong style={{ color: darkMode ? '#f1f5f9' : '#000' }}>Share:</Text>
-                    <Button icon={<ShareAltOutlined />}>Share</Button>
+                  <div style={{
+                    marginTop: 24,
+                    paddingTop: 20,
+                    borderTop: darkMode ? '1px solid #334155' : '1px solid #f0f0f0',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 12,
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                      <Text strong style={{ color: darkMode ? '#f1f5f9' : '#1e293b', fontSize: 14 }}>
+                        Share:
+                      </Text>
+                      <Button
+                        type="primary"
+                        icon={<ShareAltOutlined />}
+                        onClick={() => setShareModalOpen(true)}
+                        style={{
+                          background: 'linear-gradient(135deg, #0AAEEF 0%, #0077b5 100%)',
+                          border: 'none',
+                          borderRadius: 20,
+                          fontWeight: 600,
+                          boxShadow: '0 2px 8px rgba(10, 174, 239, 0.25)'
+                        }}
+                      >
+                        Share
+                      </Button>
+                      <Tooltip title="Share on LinkedIn">
+                        <Button
+                          shape="circle"
+                          icon={<LinkedinFilled />}
+                          onClick={() => {
+                            const url = encodeURIComponent(window.location.href);
+                            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank', 'width=640,height=560,scrollbars=yes,resizable=yes');
+                          }}
+                          style={{
+                            background: '#0A66C2',
+                            color: '#fff',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Share on X (Twitter)">
+                        <Button
+                          shape="circle"
+                          icon={<TwitterOutlined />}
+                          onClick={() => {
+                            const url = encodeURIComponent(window.location.href);
+                            const title = encodeURIComponent(content?.title || '');
+                            window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, '_blank', 'width=640,height=560,scrollbars=yes,resizable=yes');
+                          }}
+                          style={{
+                            background: darkMode ? '#0f172a' : '#111827',
+                            color: '#fff',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Share on WhatsApp">
+                        <Button
+                          shape="circle"
+                          icon={<WhatsAppOutlined />}
+                          onClick={() => {
+                            const url = encodeURIComponent(window.location.href);
+                            const title = encodeURIComponent(content?.title || '');
+                            window.open(`https://api.whatsapp.com/send?text=${title}%20-%20${url}`, '_blank', 'width=640,height=560,scrollbars=yes,resizable=yes');
+                          }}
+                          style={{
+                            background: '#25D366',
+                            color: '#fff',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Share on Facebook">
+                        <Button
+                          shape="circle"
+                          icon={<FacebookFilled />}
+                          onClick={() => {
+                            const url = encodeURIComponent(window.location.href);
+                            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank', 'width=640,height=560,scrollbars=yes,resizable=yes');
+                          }}
+                          style={{
+                            background: '#1877F2',
+                            color: '#fff',
+                            border: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        />
+                      </Tooltip>
+                      <Tooltip title={quickCopied ? "Link Copied!" : "Copy Link"}>
+                        <Button
+                          icon={quickCopied ? <CheckOutlined /> : <CopyOutlined />}
+                          onClick={handleQuickCopy}
+                          style={{
+                            borderRadius: 20,
+                            borderColor: quickCopied ? '#10b981' : (darkMode ? '#475569' : '#d9d9d9'),
+                            color: quickCopied ? '#10b981' : (darkMode ? '#cbd5e1' : '#374151'),
+                            background: quickCopied ? (darkMode ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5') : 'transparent',
+                            fontWeight: 500
+                          }}
+                        >
+                          {quickCopied ? 'Copied!' : 'Copy Link'}
+                        </Button>
+                      </Tooltip>
+                    </div>
                   </div>
                 }
               />
@@ -1456,6 +1635,14 @@ const ArticleDetail = () => {
             ↑
           </button>
         )}
+
+        {/* Content Share Modal */}
+        <ContentShareModal
+          open={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          content={content}
+          darkMode={darkMode}
+        />
 
       </div>
     </>

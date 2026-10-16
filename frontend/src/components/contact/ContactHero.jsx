@@ -1,8 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Newspaper, ShieldCheck, Zap, Globe2 } from 'lucide-react';
+import { Newspaper, ShieldCheck, Zap } from 'lucide-react';
 
 export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
+  const [publishedCount, setPublishedCount] = useState('290+');
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get('/api/public/stats');
+        if (!cancelled && res.data) {
+          const count = res.data.totalPublished ?? res.data.totalArticles;
+          if (count !== undefined && count !== null) {
+            setPublishedCount(`${count}+`);
+          }
+        }
+      } catch (err) {
+        console.warn('[ContactHero] Failed to fetch stats:', err?.message);
+      }
+    };
+    fetchStats();
+    return () => { cancelled = true; };
+  }, []);
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.98, y: 30 }}
@@ -70,7 +91,7 @@ export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
         </motion.p>
 
         {/* Quick Stats Cards with Staggered Entrance & Hover Motion */}
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto pt-6 border-t border-white/20 text-left">
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto pt-6 border-t border-white/20 text-left">
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -80,7 +101,7 @@ export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
           >
             <Newspaper className="w-7 h-7 text-amber-400 shrink-0" />
             <div>
-              <div className="text-base font-extrabold text-white">10,000+</div>
+              <div className="text-base font-extrabold text-white">{publishedCount}</div>
               <div className="text-[11px] text-slate-200">Articles Published</div>
             </div>
           </motion.div>
@@ -89,20 +110,6 @@ export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ y: -5, scale: 1.03 }}
-            className="flex items-center gap-3 p-3.5 rounded-2xl bg-black/45 backdrop-blur-md border border-white/20 shadow-lg"
-          >
-            <Globe2 className="w-7 h-7 text-sky-400 shrink-0" />
-            <div>
-              <div className="text-base font-extrabold text-white">50+ Verticals</div>
-              <div className="text-[11px] text-slate-200">Global Coverage</div>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
             whileHover={{ y: -5, scale: 1.03 }}
             className="flex items-center gap-3 p-3.5 rounded-2xl bg-black/45 backdrop-blur-md border border-white/20 shadow-lg"
           >
@@ -116,7 +123,7 @@ export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
           <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.8, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
             whileHover={{ y: -5, scale: 1.03 }}
             className="flex items-center gap-3 p-3.5 rounded-2xl bg-black/45 backdrop-blur-md border border-white/20 shadow-lg"
           >

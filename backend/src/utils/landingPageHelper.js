@@ -47,7 +47,7 @@ function getFileLandingPageUrl(slug) {
 function getLandingPageShareUrl(slug) {
     if (!slug) return '';
     const cleanSlug = slug.replace(/^\/+|\/+$/g, '').trim();
-    const rawDomain = (process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.net').split(',')[0].trim();
+    const rawDomain = (process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com').split(',')[0].trim();
     const cleanBase = rawDomain.replace(/\/+$/, '');
     return `${cleanBase}/content/${encodeURIComponent(cleanSlug)}`;
 }

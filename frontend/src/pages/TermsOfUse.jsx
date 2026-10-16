@@ -133,7 +133,7 @@ const TermsOfUse = () => {
         <Section title="8. Newsletter" darkMode={darkMode}>
           <ul style={{ paddingLeft: 24, listStyleType: 'disc' }}>
             <Li>By subscribing to our newsletter, you consent to receive <strong>periodic email communications</strong> about technology news, platform updates, and industry insights.</Li>
-            <Li>You may <strong>unsubscribe</strong> at any time by clicking the unsubscribe link in any newsletter email or by contacting us at <a href="mailto:contact@tgstechinfo.com" style={{ color: '#6c5ce7' }}>contact@tgstechinfo.com</a>.</Li>
+            <Li>You may <strong>unsubscribe</strong> at any time by clicking the unsubscribe link in any email, visiting our <Link to="/unsubscribe" style={{ color: '#6c5ce7', textDecoration: 'underline' }}>Unsubscribe Page</Link>, or by contacting us at <a href="mailto:contact@tgstechinfo.com" style={{ color: '#6c5ce7' }}>contact@tgstechinfo.com</a>.</Li>
             <Li>We will <strong>not share</strong> your newsletter subscription email with third parties for their own marketing purposes.</Li>
           </ul>
         </Section>

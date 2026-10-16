@@ -42,7 +42,7 @@ class User {
     }
 
     static async update(id, userData) {
-        const { first_name, last_name, email, job_title, company_name, country, is_active, avatar } = userData;
+        const { first_name, last_name, email, job_title, company_name, country, role, password_hash, is_active, avatar } = userData;
         
         // Build dynamic update query with only provided fields
         const updates = [];
@@ -72,6 +72,19 @@ class User {
             updates.push('country = ?');
             values.push(country);
         }
+        if (role !== undefined) {
+            updates.push('role = ?');
+            values.push(role);
+        }
+        if (password_hash !== undefined) {
+            updates.push('password_hash = ?');
+            values.push(password_hash);
+            updates.push('failed_login_attempts = 0');
+            updates.push('last_failed_login = NULL');
+            updates.push('locked_until = NULL');
+            updates.push('reset_token = NULL');
+            updates.push('reset_token_expires = NULL');
+        }
         if (is_active !== undefined) {
             updates.push('is_active = ?');
             values.push(is_active);
@@ -94,6 +107,19 @@ class User {
             WHERE id = ?
         `;
         await pool.query(query, values);
+
+        if (role) {
+            try {
+                const roleName = role === 'admin' ? 'Admin' : 'Contributor';
+                const defaultRole = await Role.findByName(roleName);
+                if (defaultRole) {
+                    await Role.assignToUser(id, defaultRole.id);
+                }
+            } catch (roleErr) {
+                console.error('Failed to sync user role assignment:', roleErr);
+            }
+        }
+
         return await User.findById(id);
     }
 
@@ -118,7 +144,7 @@ class User {
 
     static async updatePassword(userId, hashedPassword) {
         await pool.query(
-            'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL WHERE id = ?',
+            'UPDATE users SET password_hash = ?, reset_token = NULL, reset_token_expires = NULL, failed_login_attempts = 0, last_failed_login = NULL, locked_until = NULL WHERE id = ?',
             [hashedPassword, userId]
         );
     }

@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -14,7 +15,6 @@ import {
   CheckCircle2,
   BarChart3,
   PenTool,
-  Award,
   ChevronRight,
   Cpu,
   Lock,
@@ -136,13 +136,31 @@ const journeyItems = [
     tags: ['50+ Tech Verticals', 'Global Reach', 'SaaS & AI Focus']
   },
   {
-    year: '2024+',
+    year: '2024',
     title: 'Enterprise AI & Media Network Expansion',
     subtitle: 'Global Intelligence Distribution',
     desc: 'Integrating AI-driven editorial tools, interactive research webinars, enterprise case studies, and dedicated media kits for global partners.',
-    metric: '10,000+ Total Articles',
+    metric: 'Global Media Network',
     mediaImage: '/images/journey/journey_2024_expansion.jpg',
     tags: ['AI Content Tools', 'Webinars & eBooks', 'Media Partnerships']
+  },
+  {
+    year: '2025',
+    title: 'Audience Intelligence & Automated Lead Syndication',
+    subtitle: '150M+ Global Readership Milestones',
+    desc: 'Introduced deep B2B audience analytics, interactive radar mapping, and automated multi-channel content syndication serving global tech enterprises.',
+    metric: '150M+ Readers',
+    mediaImage: '/images/journey/journey_2025_intelligence.jpg',
+    tags: ['Audience Intelligence', 'Radar Analytics', 'Global Syndication']
+  },
+  {
+    year: '2026',
+    title: 'Next-Era Predictive Intelligence & Global Reach',
+    subtitle: 'Unified B2B Tech Ecosystem',
+    desc: 'Empowering global decision-makers with real-time tech intent insights, conversational AI assistants, and enterprise digital transformation research.',
+    metric: 'Next-Gen Ecosystem',
+    mediaImage: '/images/journey/journey_2026_future.jpg',
+    tags: ['Predictive Insights', 'Intent Intelligence', 'Enterprise Ecosystem']
   }
 ];
 
@@ -372,9 +390,27 @@ export const About = () => {
   const { darkMode } = useTheme();
   const [activeTab, setActiveTab] = useState('our-story');
   const [activeMatrixTab, setActiveMatrixTab] = useState('ai-data');
+  const [publishedCount, setPublishedCount] = useState('290+');
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    let cancelled = false;
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get('/api/public/stats');
+        if (!cancelled && res.data) {
+          const count = res.data.totalPublished ?? res.data.totalArticles;
+          if (count !== undefined && count !== null) {
+            setPublishedCount(`${count}+`);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch published count in About page:', err);
+      }
+    };
+    fetchStats();
+    return () => { cancelled = true; };
   }, []);
 
   const currentMatrixData = verticalMatrix.find(m => m.id === activeMatrixTab) || verticalMatrix[0];
@@ -409,18 +445,14 @@ export const About = () => {
             </p>
 
             {/* Quick Metrics Bar */}
-            <div className="pt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 border-t min-w-0" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="pt-4 grid grid-cols-2 gap-4 sm:gap-6 border-t min-w-0" style={{ borderColor: 'var(--color-border)' }}>
               <div className="min-w-0">
-                <div className="text-xl sm:text-2xl font-extrabold text-blue-600 dark:text-blue-400">10,000+</div>
+                <div className="text-xl sm:text-2xl font-extrabold text-blue-600 dark:text-blue-400">{publishedCount}</div>
                 <div className="text-xs font-semibold truncate sm:whitespace-normal" style={{ color: 'var(--color-muted)' }}>Published Articles</div>
               </div>
               <div className="min-w-0">
-                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">50+</div>
-                <div className="text-xs font-semibold truncate sm:whitespace-normal" style={{ color: 'var(--color-muted)' }}>Tech Verticals</div>
-              </div>
-              <div className="min-w-0 col-span-2 sm:col-span-1">
-                <div className="text-xl sm:text-2xl font-extrabold text-amber-500">100K+</div>
-                <div className="text-xs font-semibold truncate sm:whitespace-normal" style={{ color: 'var(--color-muted)' }}>Monthly Readers</div>
+                <div className="text-xl sm:text-2xl font-extrabold text-amber-500">150M+</div>
+                <div className="text-xs font-semibold truncate sm:whitespace-normal" style={{ color: 'var(--color-muted)' }}>Readers</div>
               </div>
             </div>
 
@@ -466,22 +498,6 @@ export const About = () => {
                 </div>
               </div>
             </div>
-
-            {/* Floating Glass Badge */}
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute -bottom-6 -left-6 px-4 py-3 rounded-2xl border shadow-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md flex items-center gap-3 hidden sm:flex"
-              style={{ borderColor: 'var(--color-border)' }}
-            >
-              <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                <Award className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-xs font-bold" style={{ color: 'var(--color-heading)' }}>Verified Standards</div>
-                <div className="text-[10px]" style={{ color: 'var(--color-muted)' }}>Peer-Reviewed Technical Research</div>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
 

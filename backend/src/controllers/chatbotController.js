@@ -591,7 +591,7 @@ exports.submitQuery = async (req, res) => {
         const chatbotQuery = await ChatbotQuery.create({ email, query });
 
         // Send email notification to admin(s)
-        const adminEmailConfig = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'info@tgstechinfo.com';
+        const adminEmailConfig = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'tgs.admin001@gmail.com';
         const adminRecipients = adminEmailConfig.split(',').map(e => e.trim()).filter(Boolean);
         const submittedAt = new Date().toLocaleString();
         const emailHtml = chatbotQueryAdminTemplate(email, query, submittedAt);

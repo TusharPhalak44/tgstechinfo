@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Skeleton, Pagination, Tag } from 'antd';
 import { CalendarOutlined, EyeOutlined, UserOutlined, SearchOutlined, CompassOutlined, ReadOutlined, FireOutlined, PlayCircleOutlined, VideoCameraOutlined, ClockCircleOutlined, LinkOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -550,6 +550,7 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile }) 
 const SidebarPost = ({ item, navigate, accent, darkMode }) => {
   const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
+  const views = Number(item.view_count || item.views_count || 0);
   return (
     <div style={{ display: 'flex', flexDirection: 'row', gap: isMobile ? 12 : 10, padding: isMobile ? '10px 0' : '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
       onClick={() => navigateContent(item, navigate)}
@@ -571,12 +572,16 @@ const SidebarPost = ({ item, navigate, accent, darkMode }) => {
         >
           {item.title}
         </h4>
-        <p style={{
-          fontSize: isMobile ? 12 : 11.5, color: '#94a3b8', margin: 0, lineHeight: 1.5,
-          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-        }}>
-          {item.short_description}
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <EyeOutlined style={{ fontSize: 11, color: accent }} /> {views.toLocaleString()} {views === 1 ? 'view' : 'views'}
+          </span>
+          {item.category_name && (
+            <span style={{ fontSize: 10.5, color: darkMode ? '#94a3b8' : '#64748b', background: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: '1px 6px', borderRadius: 4 }}>
+              {item.category_name}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -585,7 +590,9 @@ const SidebarPost = ({ item, navigate, accent, darkMode }) => {
 // ── Main CategoryList Component ─────────────────────────────────────
 const CategoryList = () => {
   const { slug: paramSlug } = useParams();
-  const pathSlug = window.location.pathname.replace('/', '');
+  const location = useLocation();
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const pathSlug = pathParts[pathParts.length - 1] || '';
   const slug = paramSlug || pathSlug;
   const navigate = useNavigate();
   const { darkMode } = useTheme();
@@ -613,6 +620,9 @@ const CategoryList = () => {
   const typeInfo = TYPE_MAP[slug];
   const accent = typeInfo?.accent || CATEGORY_ACCENT_MAP[slug] || '#0AAEEF';
   const pageTitle = typeInfo?.title || (slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) || 'Articles';
+  const trendingTitle = typeInfo?.title
+    ? `Trending ${typeInfo.title}`
+    : (pageTitle ? `Trending ${pageTitle}` : 'Trending Articles');
 
   useEffect(() => {
     setCurrentPage(1);
@@ -630,7 +640,14 @@ const CategoryList = () => {
     try {
       const catCountParams = typeInfo ? { content_type: typeInfo.type } : {};
       const [recentRes, catRes] = await Promise.all([
-        axios.get('/api/public/content', { params: { status: 'published', limit: 5, ...(typeInfo ? { content_type: typeInfo.type } : { category: slug }) } }),
+        axios.get('/api/public/content', {
+          params: {
+            status: 'published',
+            limit: 5,
+            sort_by: 'views',
+            ...(typeInfo ? { content_type: typeInfo.type } : { category: slug })
+          }
+        }),
         axios.get('/api/public/categories-with-count', { params: catCountParams }),
       ]);
       setRecentPosts(recentRes.data?.data || []);
@@ -878,7 +895,7 @@ const CategoryList = () => {
               {/* Recent Posts Card */}
               <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 14, padding: '20px', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,.3)' : '0 2px 16px rgba(0,0,0,.06)', border: darkMode ? '1px solid #334155' : '1px solid #eef0f5' }}>
                 <div style={{ fontWeight: 800, fontSize: 15, color: accent, marginBottom: 4, paddingBottom: 12, borderBottom: `2px solid ${accent}22`, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <FireOutlined /> Trending Articles
+                  <FireOutlined /> {trendingTitle}
                 </div>
                 {loading
                   ? <Skeleton active paragraph={{ rows: 6 }} />

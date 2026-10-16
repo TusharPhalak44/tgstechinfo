@@ -33,6 +33,17 @@ const parseTags = (tags) => {
   try { return JSON.parse(tags); } catch { return []; }
 };
 
+const isContentVisible = (item) => {
+  if (!item) return true;
+  if (item.is_visible_on_site !== undefined && item.is_visible_on_site !== null) {
+    return Number(item.is_visible_on_site) !== 0 && item.is_visible_on_site !== false && item.is_visible_on_site !== '0';
+  }
+  if (item.is_visible !== undefined && item.is_visible !== null) {
+    return Number(item.is_visible) !== 0 && item.is_visible !== false && item.is_visible !== '0';
+  }
+  return true;
+};
+
 const formatImageUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
   let cleaned = url.trim().replace(/\\/g, '/');
@@ -203,11 +214,15 @@ const ContentDetail = () => {
 
   const handleToggleVisibility = async () => {
     setVisibilityLoading(true);
-    const newVisibility = content.is_visible === 0 ? 1 : 0;
+    const currentlyVisible = isContentVisible(content);
+    const newVisibility = currentlyVisible ? 0 : 1;
     try {
-      await axios.put(`/api/admin/content/${content.id}/visibility`, { is_visible_on_site: newVisibility });
+      await axios.put(`/api/admin/content/${content.id}/visibility`, { 
+        is_visible_on_site: newVisibility,
+        is_visible: newVisibility 
+      });
       message.success(`Publication is now ${newVisibility ? 'visible' : 'hidden'} on live website`);
-      setContent(prev => ({ ...prev, is_visible: newVisibility }));
+      setContent(prev => ({ ...prev, is_visible_on_site: newVisibility, is_visible: newVisibility }));
     } catch (err) {
       message.error('Failed to update publication visibility');
     } finally {
@@ -377,8 +392,8 @@ const ContentDetail = () => {
                 </div>
                 <div style={{ padding: 16, textAlign: 'center', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8 }}>
                   <div style={{ fontSize: '0.7rem', color: textMuted, marginBottom: 4 }}>VISIBILITY</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: content.is_visible !== 0 ? '#10B981' : '#F59E0B' }}>
-                    {content.is_visible !== 0 ? 'Live Website' : 'Hidden'}
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: isContentVisible(content) ? '#10B981' : '#F59E0B' }}>
+                    {isContentVisible(content) ? 'Live Website' : 'Hidden'}
                   </div>
                 </div>
                 <div style={{ padding: 16, textAlign: 'center', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8 }}>
@@ -601,13 +616,13 @@ const ContentDetail = () => {
                 </Button>
 
                 <Button
-                  icon={content.is_visible === 0 ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                  icon={!isContentVisible(content) ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                   block
                   onClick={handleToggleVisibility}
                   loading={visibilityLoading}
                   style={{ borderRadius: 10, borderColor }}
                 >
-                  {content.is_visible === 0 ? 'Make Visible on Site' : 'Hide from Public Site'}
+                  {!isContentVisible(content) ? 'Make Visible on Site' : 'Hide from Public Site'}
                 </Button>
 
                 {content.status === 'draft' && (

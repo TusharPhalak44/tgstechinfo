@@ -36,7 +36,7 @@ const faqData = [
   {
     category: 'general',
     question: 'How do I report a content error, copyright concern, or update request?',
-    answer: 'We take editorial integrity seriously. Please select "Report Issue" or email info@tgstechinfo.com with the article URL and specific concern. Our editorial compliance team will review and respond promptly.',
+    answer: 'We take editorial integrity seriously. Please select "Report Issue" or email tgs.admin001@gmail.com with the article URL and specific concern. Our editorial compliance team will review and respond promptly.',
     icon: ShieldAlert
   }
 ];

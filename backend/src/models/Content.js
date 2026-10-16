@@ -455,6 +455,7 @@ class Content {
     static async findById(id) {
         const query = `
             SELECT c.*, 
+                   c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -472,6 +473,7 @@ class Content {
     static async findBySlug(slug) {
         const query = `
             SELECT c.*, 
+                   c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -494,6 +496,7 @@ class Content {
     static async findBySlugAny(slug) {
         const query = `
             SELECT c.*, 
+                   c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -548,8 +551,14 @@ class Content {
         const [countRows] = await pool.query(countQuery, values);
         const total = countRows[0].total;
 
+        let orderBy = 'COALESCE(c.published_date, c.created_at) DESC, c.id DESC';
+        if (filters.sort_by === 'views' || filters.sort_by === 'popular' || filters.sort_by === 'trending' || filters.sort_by === 'clicks') {
+            orderBy = 'COALESCE(c.view_count, 0) DESC, COALESCE(c.published_date, c.created_at) DESC, c.id DESC';
+        }
+
         let query = `
             SELECT c.*, 
+                   c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -558,7 +567,7 @@ class Content {
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            ${baseWhere} ORDER BY COALESCE(c.published_date, c.created_at) DESC, c.id DESC
+            ${baseWhere} ORDER BY ${orderBy}
         `;
 
         const pageValues = [...values];
@@ -709,6 +718,10 @@ class Content {
         ];
 
         const intFields = ['user_id', 'content_type_id', 'category_id', 'reading_time'];
+
+        if (contentData.is_visible_on_site === undefined && contentData.is_visible !== undefined) {
+            contentData.is_visible_on_site = contentData.is_visible;
+        }
 
         const updates = [];
         const values = [];

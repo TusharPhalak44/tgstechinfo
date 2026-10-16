@@ -33,6 +33,17 @@ const parseTags = (tags) => {
   try { return JSON.parse(tags); } catch { return []; }
 };
 
+const isContentVisible = (item) => {
+  if (!item) return true;
+  if (item.is_visible_on_site !== undefined && item.is_visible_on_site !== null) {
+    return Number(item.is_visible_on_site) !== 0 && item.is_visible_on_site !== false && item.is_visible_on_site !== '0';
+  }
+  if (item.is_visible !== undefined && item.is_visible !== null) {
+    return Number(item.is_visible) !== 0 && item.is_visible !== false && item.is_visible !== '0';
+  }
+  return true;
+};
+
 const formatImageUrl = (url) => {
   if (!url || typeof url !== 'string') return null;
   let cleaned = url.trim().replace(/\\/g, '/');
@@ -348,8 +359,8 @@ const ContentReviewDetail = () => {
                 </div>
                 <div style={{ padding: 16, textAlign: 'center', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8 }}>
                   <div style={{ fontSize: '0.7rem', color: textMuted, marginBottom: 4 }}>VISIBILITY</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: content.is_visible !== 0 ? '#10B981' : '#F59E0B' }}>
-                    {content.is_visible !== 0 ? 'Live Website' : 'Hidden'}
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: isContentVisible(content) ? '#10B981' : '#F59E0B' }}>
+                    {isContentVisible(content) ? 'Live Website' : 'Hidden'}
                   </div>
                 </div>
                 <div style={{ padding: 16, textAlign: 'center', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8 }}>

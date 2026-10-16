@@ -37,7 +37,7 @@ const desks = [
     id: 'corporate',
     title: 'Corporate & HQ Desk',
     badge: 'Operations',
-    email: 'info@tgstechinfo.com',
+    email: 'tgs.admin001@gmail.com',
     desc: 'General inquiries, corporate communications, data privacy, or office visits.',
     icon: Building2,
     categoryKey: 'general',

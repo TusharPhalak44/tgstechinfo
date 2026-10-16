@@ -318,7 +318,7 @@ exports.getAllUsers = async (req, res) => {
 exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const { first_name, last_name, job_title, company_name, role } = req.body;
+        const { first_name, last_name, job_title, company_name, country, role, password, is_active } = req.body;
 
         // Check if user exists
         const existingUser = await User.findById(id);
@@ -331,22 +331,109 @@ exports.updateUser = async (req, res) => {
         if (last_name !== undefined) updateData.last_name = last_name;
         if (job_title !== undefined) updateData.job_title = job_title;
         if (company_name !== undefined) updateData.company_name = company_name;
+        if (country !== undefined) updateData.country = country;
         if (role !== undefined) updateData.role = role;
+        if (is_active !== undefined) updateData.is_active = is_active;
+
+        let passwordChanged = false;
+        // Handle password update if admin provided a new password
+        if (password !== undefined && password !== null && String(password).trim().length > 0) {
+            const rawPassword = String(password).trim();
+            if (rawPassword.length < 6) {
+                return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+            }
+            const { hashPassword } = require('../config/auth');
+            updateData.password_hash = await hashPassword(rawPassword);
+            passwordChanged = true;
+        }
 
         const user = await User.update(id, updateData);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // If password changed, invalidate existing sessions so new credentials are required
+        if (passwordChanged) {
+            try {
+                const UserSession = require('../models/UserSession');
+                await UserSession.deactivateAllForUser(id);
+            } catch (sessErr) {
+                console.error('[adminController.updateUser] Error deactivating user sessions (non-fatal):', sessErr);
+            }
+        }
+
         delete user.password_hash;
 
-        // Log to audit logs
-        await logAudit(req, 'update', 'user', id, `Updated user details for: ${user.email}`, 'success');
+        // Log to audit logs (non-fatal)
+        try {
+            const passwordLogMsg = passwordChanged ? ' and changed password' : '';
+            await logAudit(req, 'update', 'user', id, `Updated user details${passwordLogMsg} for: ${user.email}`, 'success');
+        } catch (auditErr) {
+            console.error('[adminController.updateUser] Audit log error (non-fatal):', auditErr);
+        }
 
-        res.json({ message: 'User updated successfully', user });
+        res.json({ message: 'User updated successfully', user, passwordChanged });
     } catch (error) {
         console.error('Update user error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+};
+
+// ✅ Admin direct change / reset user password
+exports.changeUserPassword = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { password, unlock_account = true, invalidate_sessions = true } = req.body;
+
+        if (!password || String(password).trim().length < 6) {
+            return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+        }
+
+        const existingUser = await User.findById(id);
+        if (!existingUser) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const rawPassword = String(password).trim();
+        const { hashPassword } = require('../config/auth');
+        const password_hash = await hashPassword(rawPassword);
+
+        // Update password and clear reset tokens & lock counters
+        await User.updatePassword(id, password_hash);
+
+        // If unlock_account is requested, make sure account is active and not locked
+        if (unlock_account) {
+            await pool.query(
+                'UPDATE users SET is_active = 1, failed_login_attempts = 0, last_failed_login = NULL, locked_until = NULL WHERE id = ?',
+                [id]
+            );
+        }
+
+        // Invalidate previous sessions
+        if (invalidate_sessions) {
+            try {
+                const UserSession = require('../models/UserSession');
+                await UserSession.deactivateAllForUser(id);
+            } catch (sessErr) {
+                console.error('[adminController.changeUserPassword] Error deactivating sessions (non-fatal):', sessErr);
+            }
+        }
+
+        // Audit log (non-fatal)
+        try {
+            await logAudit(req, 'change_password', 'user', id, `Admin updated password for user: ${existingUser.email}`, 'success');
+        } catch (auditErr) {
+            console.error('[adminController.changeUserPassword] Audit error (non-fatal):', auditErr);
+        }
+
+        const updatedUser = await User.findById(id);
+        res.json({
+            message: `Password updated successfully for ${existingUser.email}. The user can now log in with the new password.`,
+            user: updatedUser
+        });
+    } catch (error) {
+        console.error('Admin change user password error:', error);
+        res.status(500).json({ message: error.message || 'Server error' });
     }
 };
 
@@ -462,7 +549,7 @@ exports.adminEditContent = async (req, res) => {
                 file_data: fileData
             });
             if (bannerFile.path && require('fs').existsSync(bannerFile.path)) {
-                try { require('fs').unlinkSync(bannerFile.path); } catch (e) {}
+                try { require('fs').unlinkSync(bannerFile.path); } catch (e) { }
             }
             updateData.banner_image = bannerFile.filename;
         }
@@ -487,7 +574,7 @@ exports.adminEditContent = async (req, res) => {
                     file_data: fileData
                 });
                 if (pdfFile.path && require('fs').existsSync(pdfFile.path)) {
-                    try { require('fs').unlinkSync(pdfFile.path); } catch (e) {}
+                    try { require('fs').unlinkSync(pdfFile.path); } catch (e) { }
                 }
             } catch (e) { console.error('Media save error:', e.message); }
         }
@@ -1395,21 +1482,27 @@ exports.getContentPortfolio = async (req, res) => {
 exports.toggleContentVisibility = async (req, res) => {
     try {
         const { id } = req.params;
-        const { is_visible_on_site } = req.body;
+        let { is_visible_on_site, is_visible } = req.body;
+
+        if (is_visible_on_site === undefined && is_visible !== undefined) {
+            is_visible_on_site = is_visible;
+        }
 
         if (is_visible_on_site === undefined) {
             return res.status(400).json({ message: 'is_visible_on_site is required' });
         }
+
+        const visibilityVal = (is_visible_on_site === 1 || is_visible_on_site === true || is_visible_on_site === '1') ? 1 : 0;
 
         const content = await Content.findById(id);
         if (!content) {
             return res.status(404).json({ message: 'Content not found' });
         }
 
-        const updatedContent = await Content.update(id, { is_visible_on_site });
+        const updatedContent = await Content.update(id, { is_visible_on_site: visibilityVal });
 
         // Log to audit logs
-        const visibilityStatus = is_visible_on_site ? 'visible' : 'hidden';
+        const visibilityStatus = visibilityVal === 1 ? 'visible' : 'hidden';
         await logAudit(
             req,
             'update',
