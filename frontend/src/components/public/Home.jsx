@@ -995,7 +995,7 @@ const PIPELINE_CARDS = [
     tag: 'BUYING DECISIONS',
     status: 'DATA-DRIVEN',
     icon: '⚖️',
-    title: 'Software BattleCards & Guides',
+    title: 'Comparison Reports & Guides',
     desc: 'HR Tech • ERP • CRM • Cloud & DevOps Software Evaluations',
     subtitle: 'Unbiased side-by-side software evaluations to help companies pick the right tools.',
     accentColor: '#10B981',
@@ -1652,8 +1652,8 @@ const HeroSection = () => {
                         background: isActive
                           ? tab.color
                           : isPassed
-                          ? 'rgba(16, 185, 129, 0.45)'
-                          : 'rgba(255, 255, 255, 0.1)',
+                            ? 'rgba(16, 185, 129, 0.45)'
+                            : 'rgba(255, 255, 255, 0.1)',
                         boxShadow: isActive ? `0 0 6px ${tab.color}` : 'none',
                         transition: 'all 0.3s ease',
                         marginTop: 2,
@@ -1746,8 +1746,8 @@ const HeroSection = () => {
                       boxShadow: isCurrent
                         ? `0 0 32px ${card.accentColor}33, 0 20px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255,255,255,0.2)`
                         : isNext
-                        ? `0 -8px 24px rgba(0, 0, 0, 0.5), 0 0 18px ${card.accentColor}25, inset 0 1px 0 rgba(255,255,255,0.12)`
-                        : `0 -12px 30px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255,255,255,0.06)`,
+                          ? `0 -8px 24px rgba(0, 0, 0, 0.5), 0 0 18px ${card.accentColor}25, inset 0 1px 0 rgba(255,255,255,0.12)`
+                          : `0 -12px 30px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255,255,255,0.06)`,
                       padding: '18px 20px',
                       overflow: 'hidden',
                       display: 'flex',
