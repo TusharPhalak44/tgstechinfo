@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo, createContext, useContext } from 'react';
+import React, { useState, useRef, useEffect, createContext, useContext } from 'react';
 import {
   ComposableMap,
   Geographies,
@@ -138,8 +138,7 @@ export function Map({
   children,
   className = '',
   onSelectRegion,
-  onSelectCountry,
-  countryBreakdown = []
+  onSelectCountry
 }) {
   const { darkMode } = useTheme();
   const [position, setPosition] = useState(REGION_PRESETS.GLOBAL);
@@ -193,52 +192,8 @@ export function Map({
 
   const isZoomedIn = position.zoom >= 1.5 || activeRegion !== 'GLOBAL';
 
-  // Merge live database breakdown dynamically with coordinates & flags
-  const dynamicCountryMarkers = useMemo(() => {
-    if (!countryBreakdown || countryBreakdown.length === 0) {
-      return COUNTRY_MARKERS;
-    }
-
-    const breakdownMap = new Map();
-    countryBreakdown.forEach((c) => {
-      if (c.iso_code) breakdownMap.set(c.iso_code.toLowerCase(), c);
-      if (c.country_name) breakdownMap.set(c.country_name.toLowerCase(), c);
-      if (c.name) breakdownMap.set(c.name.toLowerCase(), c);
-    });
-
-    return COUNTRY_MARKERS.map((marker) => {
-      const match = breakdownMap.get(marker.id.toLowerCase()) || 
-                    (marker.name && breakdownMap.get(marker.name.toLowerCase()));
-      if (!match) return marker;
-
-      const contactsNum = parseInt(match.contact_count || 0, 10);
-      const accountsNum = parseInt(match.company_count || 0, 10);
-
-      const formattedContacts = contactsNum >= 1000000
-        ? `${(contactsNum / 1000000).toFixed(1).replace(/\.0$/, '')}M+`
-        : contactsNum >= 1000
-        ? `${Math.round(contactsNum / 1000)}K+`
-        : `${contactsNum}`;
-
-      const formattedAccounts = accountsNum >= 1000000
-        ? `${(accountsNum / 1000000).toFixed(2).replace(/\.00$/, '')}M+`
-        : accountsNum >= 1000
-        ? `${Math.round(accountsNum / 1000)}K+`
-        : `${accountsNum}`;
-
-      return {
-        ...marker,
-        contacts: formattedContacts,
-        accounts: formattedAccounts,
-        rawContacts: contactsNum,
-        rawAccounts: accountsNum,
-        percentage: match.percentage
-      };
-    });
-  }, [countryBreakdown]);
-
   // Filter country markers based on active region and zoom level
-  const visibleCountryMarkers = dynamicCountryMarkers.filter((c) => {
+  const visibleCountryMarkers = COUNTRY_MARKERS.filter((c) => {
     if (activeRegion === 'GLOBAL') {
       return isZoomedIn;
     }

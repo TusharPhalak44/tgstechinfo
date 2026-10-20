@@ -5,8 +5,7 @@
  */
 
 const { pool } = require('../config/database');
-const { invalidateMetadataCache, clearStatsCache } = require('./audienceController');
-
+const { invalidateMetadataCache } = require('./audienceController');
 
 // Helper to log audit events
 const logAudit = async (req, action, entity, entityId, oldValue, newValue) => {
@@ -433,7 +432,6 @@ exports.updateStatisticRecord = async (req, res, next) => {
         `, [String(newGlobalTotal), req.user?.id || null]);
 
         invalidateMetadataCache();
-        if (typeof clearStatsCache === 'function') clearStatsCache();
 
         res.json({
             success: true,
@@ -614,7 +612,6 @@ exports.importAudienceData = async (req, res, next) => {
         });
 
         invalidateMetadataCache();
-        if (typeof clearStatsCache === 'function') clearStatsCache();
 
         res.json({
             success: true,
@@ -921,7 +918,6 @@ exports.adjustAudienceVolume = async (req, res, next) => {
         await logAudit(req, 'PROPORTIONAL_ADJUSTMENT', 'audience_statistics', scope_code, { previous_scope_total: currentScopeTotal }, { new_scope_total: targetScopeTotal, delta, new_global_total: newGlobalTotal });
 
         invalidateMetadataCache();
-        if (typeof clearStatsCache === 'function') clearStatsCache();
 
         res.json({
             success: true,

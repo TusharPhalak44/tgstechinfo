@@ -456,7 +456,6 @@ export default function Audience() {
               center={[2.3522, 48.8566]}
               activeRegion={selectedRegionId}
               onSelectRegion={(rId) => setSelectedRegionId(rId)}
-              countryBreakdown={stats?.country_breakdown || []}
               className="h-full w-full"
             >
               <MapControls

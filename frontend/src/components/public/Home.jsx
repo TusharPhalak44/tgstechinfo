@@ -995,7 +995,7 @@ const PIPELINE_CARDS = [
     tag: 'BUYING DECISIONS',
     status: 'DATA-DRIVEN',
     icon: '⚖️',
-    title: 'Comparison Reports & Guides',
+    title: 'Software BattleCards & Guides',
     desc: 'HR Tech • ERP • CRM • Cloud & DevOps Software Evaluations',
     subtitle: 'Unbiased side-by-side software evaluations to help companies pick the right tools.',
     accentColor: '#10B981',
