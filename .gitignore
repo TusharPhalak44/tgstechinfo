@@ -46,3 +46,5 @@ Thumbs.db
 # *.png
 # *.jpg
 # *.jpeg
+# Database backup files
+backend/database/backups/*.sql
