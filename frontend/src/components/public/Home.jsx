@@ -1279,28 +1279,7 @@ const HeroSection = () => {
         backgroundImage: 'linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px)',
         backgroundSize: '36px 36px',
         pointerEvents: 'none'
-      }} />
-
-      <div className="hero-grid" style={{
-        maxWidth: 1240,
-        margin: '0 auto',
-        padding: '0 24px',
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-        gap: 'clamp(32px, 4vw, 56px)',
-        alignItems: 'center',
-        position: 'relative',
-        zIndex: 2,
-        width: '100%',
-        boxSizing: 'border-box'
-      }}>
-        {/* LEFT COLUMN - Messaging & CTAs */}
-        <div className="hero-left" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          textAlign: 'left',
-          minWidth: 0,
+        
           width: '100%'
         }}>
           {/* Top Status Pill Badge */}
@@ -2370,7 +2349,7 @@ const HeroSection = () => {
           }
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 
