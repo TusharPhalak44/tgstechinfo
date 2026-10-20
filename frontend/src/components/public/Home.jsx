@@ -270,7 +270,7 @@ const StatsBar = ({ stats, darkMode = false }) => {
 
   const items = [
     { label: 'Articles Published', value: stats.totalPublished, icon: <FileTextOutlined />, color: '#0AAEEF', suffix: '+' },
-    { label: 'Total Reads & Views', value: stats.totalViews, icon: <EyeOutlined />, color: '#F7941D', suffix: '', formatLarge: true },
+    { label: 'Total Reads', value: 150, icon: <EyeOutlined />, color: '#F7941D', suffix: 'M+' },
     { label: 'Verified Contributors', value: stats.totalAuthors, icon: <TeamOutlined />, color: '#16A34A', suffix: '+' },
     { label: 'Tech Categories', value: stats.totalCategories, icon: <FolderOpenOutlined />, color: '#8B5CF6' },
   ];
@@ -792,7 +792,7 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
 
 // ── Why Publish With Us ─────────────────────────────────────────
 const WHY_ITEMS = [
-  { title: 'Targeted B2B Audience', desc: 'Reach 200,000+ verified IT decision-makers, CXOs, and tech buyers across industries.' },
+  { title: 'Targeted B2B Audience', desc: 'Reach 78M+ verified IT decision-makers, CXOs, and tech buyers across industries.' },
   { title: 'Measurable ROI', desc: 'Real-time analytics dashboard: track impressions, leads, downloads and engagement.' },
   { title: 'Thought Leadership', desc: 'Position your brand as an industry authority with expert-curated editorial placement.' },
   { title: 'Multi-Channel Distribution', desc: 'Your content amplified via newsletter, social, SEO and partner syndication networks.' },
@@ -948,53 +948,294 @@ const NewsletterBox = () => {
   );
 };
 
-// ── Hero slides ──────────────────────────────────────────────────
-const HERO_SLIDES = [
-  { img: '/images/hero/hero_ai.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80', tag: 'Artificial Intelligence', title: 'How AI is Reshaping the Future of Enterprise Technology' },
-  { img: '/images/hero/hero_cybersecurity.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80', tag: 'Cybersecurity', title: 'Zero Trust Architecture: The New Standard for Enterprise Security' },
-  { img: '/images/hero/hero_cloud.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80', tag: 'Cloud Computing', title: 'Multi-Cloud Strategies Driving Digital Transformation in 2026' },
-  { img: '/images/hero/hero_data.jpg', fallback: 'https://wsrv.nl/?url=https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=800&q=80', tag: 'Data Analytics', title: 'Real-Time Data Processing: The Shift Every Business Must Make' },
+// ── TGS Tech Info Platform Pillars (Concept Showcase) ──
+const PIPELINE_CARDS = [
+  {
+    step: '01',
+    tag: 'EXPLORE & READ',
+    status: '1,200+ INSIGHTS',
+    icon: '📰',
+    title: 'Read Deep Tech Insights',
+    desc: 'Enterprise Tech • AI & Cloud • Cybersecurity • Software Reviews',
+    subtitle: 'Stay ahead with daily research-backed tech articles, analysis, and breaking news.',
+    accentColor: '#38BDF8',
+    leftHeader: '📖 Free Knowledge',
+    leftSubtitle: 'Curated Topics',
+    leftTitle: '14+ Tech Categories',
+    leftDesc: 'In-depth coverage of AI, Cloud Infrastructure, HR Tech, ERP & Cybersecurity.',
+    leftBadges: ['1,200+ Articles', 'Fact-Checked', 'Free Access'],
+    rightHeader: '💡 Value For You',
+    rightSubtitle: 'Always Ahead',
+    rightTitle: 'Make Smarter Decisions',
+    rightDesc: 'Actionable takeaways designed for developers, IT managers & technology leaders.',
+    rightBadges: ['3-5 Min Reads', 'Zero Clickbait', 'Expert Verified ✓'],
+  },
+  {
+    step: '02',
+    tag: 'BECOME AN AUTHOR',
+    status: 'OPEN TO ALL',
+    icon: '✍️',
+    title: 'Publish Your Own Content',
+    desc: 'Open Contributor Community • Visual Builder • Global Byline',
+    subtitle: 'Write and submit your insights. Get published with your own permanent author byline.',
+    accentColor: '#F59E0B',
+    leftHeader: '📝 Write & Submit',
+    leftSubtitle: 'Author Studio',
+    leftTitle: 'Draft in Rich Editor',
+    leftDesc: 'Submit blogs, tutorials, and opinion pieces with formatting, images & code blocks.',
+    leftBadges: ['Fast 24h Review', 'SEO Optimized', 'Easy Editor'],
+    rightHeader: '🚀 Your Recognition',
+    rightSubtitle: 'Global Reach',
+    rightTitle: 'Reach 2.4M+ Global Readers',
+    rightDesc: 'Build your industry authority, verified author profile, and expand professional network.',
+    rightBadges: ['Permanent Byline ✓', 'Author Profile', 'Social Reach'],
+  },
+  {
+    step: '03',
+    tag: 'BUYING DECISIONS',
+    status: 'DATA-DRIVEN',
+    icon: '⚖️',
+    title: 'Software BattleCards & Guides',
+    desc: 'HR Tech • ERP • CRM • Cloud & DevOps Software Evaluations',
+    subtitle: 'Unbiased side-by-side software evaluations to help companies pick the right tools.',
+    accentColor: '#10B981',
+    leftHeader: '📊 Software Matrix',
+    leftSubtitle: 'Direct Evaluation',
+    leftTitle: 'Side-by-Side Analysis',
+    leftDesc: 'Compare top tools: ADP vs Paylocity, Workday vs SAP, NetSuite vs Sage & more.',
+    leftBadges: ['Feature Matrix', 'Transparent Pricing', 'Pros & Cons'],
+    rightHeader: '🎯 Buyer Confidence',
+    rightSubtitle: 'Save Months',
+    rightTitle: 'Choose The Right Tech Stack',
+    rightDesc: 'Data-backed comparisons and consultation requests ensure confident buying decisions.',
+    rightBadges: ['Zero Guesswork', 'Free Consultation', 'ROI Evaluated ✓'],
+  },
+  {
+    step: '04',
+    tag: 'FOR TECH BRANDS',
+    status: 'LEAD ENGINE',
+    icon: '🎯',
+    title: 'Whitepapers & B2B Inquiries',
+    desc: 'Free Research Downloads • In-depth Case Studies • B2B Inquiry Engine',
+    subtitle: 'Download research papers for free, or publish your whitepaper to capture leads.',
+    accentColor: '#F7941D',
+    leftHeader: '📄 Research Library',
+    leftSubtitle: 'Free Access',
+    leftTitle: 'Download Whitepapers',
+    leftDesc: 'Access downloadable enterprise guides, vendor whitepapers, and customer case studies.',
+    leftBadges: ['Free PDF Access', 'Real Case Studies', 'Deep Research'],
+    rightHeader: '👥 B2B Lead Engine',
+    rightSubtitle: 'CRM Connected',
+    rightTitle: 'Connect With Tech Buyers',
+    rightDesc: 'Tech companies capture high-intent inquiries from verified enterprise decision makers.',
+    rightBadges: ['Verified CXO Leads ✓', 'Instant CRM Sync', 'High Intent'],
+  },
+  {
+    step: '05',
+    tag: 'COMMUNITY & SCALE',
+    status: '240+ COUNTRIES',
+    icon: '🌐',
+    title: 'Global Tech Intelligence Hub',
+    desc: '2.4M+ Annual Readers • 500+ Top Contributors • Weekly Briefings',
+    subtitle: 'A vibrant knowledge ecosystem connecting technology creators, enterprise buyers, and thinkers.',
+    accentColor: '#06B6D4',
+    leftHeader: '🌍 Global Readership',
+    leftSubtitle: 'Worldwide',
+    leftTitle: '240+ Countries Connected',
+    leftDesc: 'Read by CIOs, CTOs, engineers, startup founders, and enterprise IT leaders worldwide.',
+    leftBadges: ['500+ Writers', 'Global Edge CDN', 'Fast Loading'],
+    rightHeader: '📈 Trusted Media',
+    rightSubtitle: 'Pure Value',
+    rightTitle: 'Zero Spam, Pure Tech',
+    rightDesc: 'Free weekly briefings, newsletter digests, and curated industry spotlights.',
+    rightBadges: ['100% Free Access ✓', 'Community Driven', 'High Trust'],
+  }
 ];
 
-// ── Hero quotes with shimmer words ─────────────────────────────────
-const HERO_QUOTES = [
-  {
-    text: 'Your Gateway to',
-    shimmerWord: 'Tech Insights',
-    afterText: ' & Innovation',
-    fullText: 'Your Gateway to Tech Insights & Innovation'
-  },
-  {
-    text: 'Where',
-    shimmerWord: 'Technology',
-    afterText: ' Meets Business Growth',
-    fullText: 'Where Technology Meets Business Growth'
-  },
-  {
-    text: 'The',
-    shimmerWord: 'Knowledge Hub',
-    afterText: ' for Modern Businesses',
-    fullText: 'The Knowledge Hub for Modern Businesses'
-  },
-  {
-    text: 'Turning Industry Knowledge into',
-    shimmerWord: 'Business Value',
-    afterText: '',
-    fullText: 'Turning Industry Knowledge into Business Value'
-  },
-];
+// ── Hero Animated Headline ──
+const HeroHeadline = () => {
+  const fullText = "Submit it. Get published.";
+  const [displayedText, setDisplayedText] = useState("");
+  const [strikeActive, setStrikeActive] = useState(false);
+  const [typingComplete, setTypingComplete] = useState(false);
+  const [cursorBlink, setCursorBlink] = useState(true);
 
-// ── Hero Section (ONLY HEIGHT REDUCED - CONTENT UNCHANGED) ──
+  // Blinking cursor
+  useEffect(() => {
+    const blinkInterval = setInterval(() => {
+      setCursorBlink((prev) => !prev);
+    }, 500);
+    return () => clearInterval(blinkInterval);
+  }, []);
+
+  useEffect(() => {
+    let strikeTimer;
+    let typeTimer;
+    let typeInterval;
+    let loopTimer;
+
+    const startSequence = () => {
+      setStrikeActive(false);
+      setDisplayedText("");
+      setTypingComplete(false);
+
+      // Delay before line 1 strike-through line draws
+      strikeTimer = setTimeout(() => {
+        setStrikeActive(true);
+
+        // Once strike line finishes drawing across the words (~1600ms), start typing line 2
+        typeTimer = setTimeout(() => {
+          let i = 0;
+          typeInterval = setInterval(() => {
+            i++;
+            setDisplayedText(fullText.slice(0, i));
+            if (i >= fullText.length) {
+              clearInterval(typeInterval);
+              setTypingComplete(true);
+
+              // Pause 7s before repeating sequence smoothly
+              loopTimer = setTimeout(() => {
+                startSequence();
+              }, 7000);
+            }
+          }, 115);
+        }, 1650);
+      }, 500);
+    };
+
+    startSequence();
+
+    return () => {
+      clearTimeout(strikeTimer);
+      clearTimeout(typeTimer);
+      clearInterval(typeInterval);
+      clearTimeout(loopTimer);
+    };
+  }, []);
+
+  const splitIndex = "Submit it. ".length;
+  const part1 = displayedText.slice(0, splitIndex);
+  const part2 = displayedText.slice(splitIndex);
+
+  return (
+    <div style={{ margin: '0 0 20px', minHeight: 'clamp(90px, 9vw, 130px)', width: '100%', maxWidth: '100%' }}>
+      {/* 1st Line: Pitch. Wait. Hope. with animated center horizontal strike line */}
+      <div style={{ marginBottom: 6 }}>
+        <span
+          style={{
+            position: 'relative',
+            display: 'inline-block',
+            fontSize: 'clamp(20px, 2.4vw, 32px)',
+            fontWeight: 700,
+            color: strikeActive ? 'rgba(255, 255, 255, 0.42)' : '#FFFFFF',
+            transition: 'color 1.2s ease',
+            whiteSpace: 'nowrap',
+            lineHeight: 1.2,
+          }}
+        >
+          Pitch. Wait. Hope.
+          <span
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: '52%',
+              height: '3.5px',
+              width: strikeActive ? '100%' : '0%',
+              background: 'linear-gradient(90deg, #F7941D 0%, #FF5722 100%)',
+              borderRadius: '2px',
+              boxShadow: '0 0 10px rgba(247, 148, 29, 0.7)',
+              transition: 'width 1.6s cubic-bezier(0.25, 1, 0.5, 1)',
+              pointerEvents: 'none',
+            }}
+          />
+        </span>
+      </div>
+
+      {/* 2nd Line: Submit it. Get published. with typing animation */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          minHeight: 'clamp(36px, 4.4vw, 56px)',
+          width: '100%',
+          maxWidth: '100%',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 'clamp(24px, 2.7vw, 40px)',
+            fontWeight: 900,
+            letterSpacing: '-0.8px',
+            lineHeight: 1.15,
+            wordBreak: 'break-word',
+          }}
+        >
+          <span style={{ color: '#FFFFFF' }}>{part1}</span>
+          {part2 && (
+            <span
+              className="orange-shimmer-text"
+              style={{
+                background: 'linear-gradient(120deg, #F7941D 20%, #FFE0B2 50%, #0AAEEF 80%)',
+                backgroundSize: '200% auto',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                animation: 'shimmerGrad 4s linear infinite',
+              }}
+            >
+              {part2}
+            </span>
+          )}
+        </span>
+        {/* Glowing typing cursor */}
+        <span
+          style={{
+            display: 'inline-block',
+            width: '3px',
+            height: 'clamp(22px, 2.4vw, 34px)',
+            background: '#F7941D',
+            marginLeft: '4px',
+            borderRadius: '2px',
+            opacity: typingComplete ? (cursorBlink ? 1 : 0) : 1,
+            boxShadow: '0 0 8px #F7941D',
+            verticalAlign: 'middle',
+            flexShrink: 0,
+            transition: 'opacity 0.12s ease',
+          }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ── Hero Section (WITH PIPELINE CARDS SHOWCASE) ──
 const HeroSection = () => {
   const [active, setActive] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const navigate = useNavigate();
   const timerRef = useRef(null);
+
   const startTimer = () => {
     clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setActive(prev => (prev + 1) % HERO_SLIDES.length), 4200);
+    timerRef.current = setInterval(() => {
+      setActive(prev => (prev + 1) % PIPELINE_CARDS.length);
+    }, 3800);
   };
-  useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, []);
-  const goTo = i => { setActive(i); startTimer(); };
+
+  useEffect(() => {
+    if (!isPaused) {
+      startTimer();
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [isPaused]);
+
+  const goTo = i => {
+    setActive(i);
+    startTimer();
+  };
 
   return (
     <div className="hero-section" style={{
@@ -1045,18 +1286,22 @@ const HeroSection = () => {
         margin: '0 auto',
         padding: '0 24px',
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
         gap: 'clamp(32px, 4vw, 56px)',
         alignItems: 'center',
         position: 'relative',
-        zIndex: 2
+        zIndex: 2,
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
         {/* LEFT COLUMN - Messaging & CTAs */}
         <div className="hero-left" style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-start',
-          textAlign: 'left'
+          textAlign: 'left',
+          minWidth: 0,
+          width: '100%'
         }}>
           {/* Top Status Pill Badge */}
           <div style={{
@@ -1092,50 +1337,18 @@ const HeroSection = () => {
           </div>
 
           {/* Main Dynamic Headline */}
-          <h1 style={{
-            color: '#FFFFFF',
-            fontWeight: 900,
-            lineHeight: 1.15,
-            fontSize: 'clamp(30px, 3.8vw, 52px)',
-            margin: '0 0 20px',
-            letterSpacing: '-1px',
-            position: 'relative',
-            minHeight: 'clamp(70px, 8vw, 110px)'
-          }}>
-            {HERO_QUOTES.map((quote, i) => (
-              <div key={i} style={{
-                position: active === i ? 'relative' : 'absolute',
-                left: 0,
-                top: 0,
-                opacity: active === i ? 1 : 0,
-                transform: active === i ? 'translateY(0)' : 'translateY(24px)',
-                transition: 'opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                width: '100%',
-                pointerEvents: active === i ? 'auto' : 'none'
-              }}>
-                {quote.text}<br />
-                <span className="orange-shimmer-text" style={{
-                  background: 'linear-gradient(120deg, #F7941D 20%, #FFE0B2 50%, #0AAEEF 80%)',
-                  backgroundSize: '200% auto',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  animation: 'shimmerGrad 4s linear infinite'
-                }}>{quote.shimmerWord}</span>
-                {quote.afterText && <>{quote.afterText}</>}
-              </div>
-            ))}
-          </h1>
+          <HeroHeadline />
 
           {/* Subtitle */}
           <p style={{
-            color: 'rgba(241, 245, 249, 0.82)',
+            color: 'rgba(241, 245, 249, 0.88)',
             fontSize: 'clamp(15px, 1.1vw, 17.5px)',
             lineHeight: 1.7,
             margin: '0 0 28px',
             maxWidth: 540,
             fontWeight: 400
           }}>
-            In-depth articles, expert CXO interviews, and whitepapers across AI, Cybersecurity, Cloud Computing, and DevOps driving enterprise growth.
+            Write your own article, hit submit, and watch it go live on TGS with your name on it. Join the contributor community and publish whenever you have something to say.
           </p>
 
           {/* Dual Action CTA Buttons */}
@@ -1227,136 +1440,716 @@ const HeroSection = () => {
           </div>
         </div>
 
-        {/* RIGHT COLUMN - 3D Glassmorphic Featured Slide Showcase */}
-        <div className="hero-right" style={{ position: 'relative' }}>
-          <div style={{
-            position: 'relative',
-            borderRadius: 24,
-            overflow: 'hidden',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.15)',
-            background: 'rgba(15, 23, 42, 0.6)',
-            backdropFilter: 'blur(20px)'
-          }}>
-            {HERO_SLIDES.map((slide, i) => (
-              <div key={i} style={{
-                position: i === 0 ? 'relative' : 'absolute',
+        {/* RIGHT COLUMN - Precision Mechanical Pipeline Cards Showcase */}
+        <div
+          className="hero-right"
+          style={{ position: 'relative', minWidth: 0, width: '100%' }}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              borderRadius: 24,
+              overflow: 'hidden',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.14)',
+              background: 'linear-gradient(145deg, rgba(11, 20, 44, 0.94) 0%, rgba(15, 23, 42, 0.98) 100%)',
+              backdropFilter: 'blur(20px)',
+              padding: '20px 22px 18px',
+              minHeight: 'clamp(460px, 38vw, 510px)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            {/* Ambient Background Tech Grid Overlay */}
+            <div
+              style={{
+                position: 'absolute',
                 inset: 0,
-                opacity: active === i ? 1 : 0,
-                transform: active === i ? 'scale(1)' : 'scale(1.04)',
-                transition: 'opacity 1.2s ease, transform 1.2s ease',
-                pointerEvents: active === i ? 'auto' : 'none',
-                background: 'linear-gradient(135deg, #0B1F4D 0%, #152A60 50%, #070D1E 100%)'
-              }}>
-                <img
-                  src={slide.img}
-                  alt={slide.tag}
-                  onError={(e) => {
-                    if (slide.fallback && e.currentTarget.src !== slide.fallback) {
-                      e.currentTarget.src = slide.fallback;
-                    } else {
-                      e.currentTarget.style.display = 'none';
-                    }
-                  }}
+                opacity: 0.08,
+                backgroundImage: 'linear-gradient(rgba(56, 189, 248, 0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.4) 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
+                pointerEvents: 'none',
+              }}
+            />
+
+            {/* Ambient Neon Radial Blobs */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '-20%',
+                right: '-10%',
+                width: 260,
+                height: 260,
+                background: 'radial-gradient(circle, rgba(247, 148, 29, 0.22) 0%, transparent 70%)',
+                filter: 'blur(50px)',
+                pointerEvents: 'none',
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '-20%',
+                left: '-10%',
+                width: 260,
+                height: 260,
+                background: 'radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, transparent 70%)',
+                filter: 'blur(50px)',
+                pointerEvents: 'none',
+              }}
+            />
+
+            {/* ── TOP HUD HEADER BAR ── */}
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                paddingBottom: 10,
+                marginBottom: 10,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span
                   style={{
-                    width: '100%',
-                    height: 'clamp(240px, 24vw, 340px)',
-                    objectFit: 'cover',
-                    display: 'block'
-                  }}
-                />
-
-                {/* Overlay Vignette Gradient */}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(to top, rgba(11,31,77,0.95) 0%, rgba(11,31,77,0.3) 60%, transparent 100%)'
-                }} />
-
-                {/* Article Info Content */}
-                <div style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  padding: '24px 28px',
-                  background: 'linear-gradient(to top, rgba(11,31,77,0.98), transparent)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                    <span style={{
-                      fontSize: 11,
-                      fontWeight: 800,
-                      color: '#F7941D',
-                      textTransform: 'uppercase',
-                      letterSpacing: 1.2,
-                      background: 'rgba(247, 148, 29, 0.15)',
-                      border: '1px solid rgba(247, 148, 29, 0.3)',
-                      borderRadius: 14,
-                      padding: '3px 12px'
-                    }}>
-                      {slide.tag}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-                      ⚡ 5 min read
-                    </span>
-                  </div>
-
-                  <div style={{
-                    color: '#FFFFFF',
-                    fontWeight: 800,
-                    fontSize: 'clamp(16px, 1.4vw, 22px)',
-                    lineHeight: 1.35,
-                    letterSpacing: '-0.3px'
-                  }}>
-                    {slide.title}
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Slide Pagination Dots */}
-            <div style={{ position: 'absolute', bottom: 18, right: 20, display: 'flex', gap: 8, zIndex: 10 }}>
-              {HERO_SLIDES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goTo(i)}
-                  style={{
-                    width: active === i ? 26 : 8,
+                    width: 8,
                     height: 8,
-                    borderRadius: 10,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: active === i ? '#F7941D' : 'rgba(255,255,255,0.4)',
-                    transition: 'all .3s ease',
-                    padding: 0
+                    borderRadius: '50%',
+                    background: '#38BDF8',
+                    boxShadow: '0 0 10px #38BDF8',
+                    display: 'inline-block',
+                    animation: 'pulseDot 2s infinite',
                   }}
                 />
-              ))}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    letterSpacing: 1.4,
+                    textTransform: 'uppercase',
+                    background: 'linear-gradient(90deg, #38BDF8 0%, #FFFFFF 50%, #F7941D 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  }}
+                >
+                  Platform Ecosystem • What We Offer
+                </span>
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    background: '#F7941D',
+                    boxShadow: '0 0 10px #F7941D',
+                    display: 'inline-block',
+                    animation: 'pulseDot 2s infinite 1s',
+                  }}
+                />
+              </div>
+
+              {/* Step indicator counter badge */}
+              <div
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: '#F7941D',
+                  background: 'rgba(247, 148, 29, 0.12)',
+                  border: '1px solid rgba(247, 148, 29, 0.35)',
+                  borderRadius: 12,
+                  padding: '2px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <span>PILLAR {active + 1} / {PIPELINE_CARDS.length}</span>
+              </div>
             </div>
 
-            {/* Slide Progress Line */}
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: 'rgba(255,255,255,0.15)' }}>
-              <div style={{
-                height: '100%',
-                background: 'linear-gradient(90deg, #F7941D, #0AAEEF)',
-                animation: 'heroProgress 4.2s linear infinite',
-                boxShadow: '0 0 12px rgba(247,148,29,0.5)'
-              }} />
-            </div>
-          </div>
+            {/* ── TOP INTERACTIVE TIMELINE TABS (01 Read → 02 Publish → 03 Compare → 04 Whitepapers → 05 Global Reach) ── */}
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 10,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(5, 1fr)',
+                gap: 4,
+                background: 'rgba(5, 12, 28, 0.65)',
+                border: '1px solid rgba(255, 255, 255, 0.09)',
+                borderRadius: 14,
+                padding: '4px',
+                marginBottom: 12,
+              }}
+            >
+              {[
+                { idx: 0, num: '01', label: 'Read Tech', icon: '📰', color: '#38BDF8' },
+                { idx: 1, num: '02', label: 'Publish', icon: '✍️', color: '#F59E0B' },
+                { idx: 2, num: '03', label: 'Compare', icon: '⚖️', color: '#10B981' },
+                { idx: 3, num: '04', label: 'Whitepapers', icon: '🎯', color: '#F7941D' },
+                { idx: 4, num: '05', label: 'Global Reach', icon: '🌐', color: '#06B6D4' },
+              ].map(tab => {
+                const isActive = active === tab.idx;
+                const isPassed = active > tab.idx;
+                return (
+                  <button
+                    key={tab.num}
+                    onClick={() => goTo(tab.idx)}
+                    style={{
+                      outline: 'none',
+                      cursor: 'pointer',
+                      padding: '5px 3px',
+                      borderRadius: 10,
+                      background: isActive
+                        ? `linear-gradient(135deg, ${tab.color}25 0%, ${tab.color}10 100%)`
+                        : 'transparent',
+                      border: isActive ? `1px solid ${tab.color}66` : '1px solid transparent',
+                      boxShadow: isActive ? `0 0 12px ${tab.color}25` : 'none',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 2,
+                      transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                      position: 'relative',
+                    }}
+                    onMouseEnter={e => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 11 }}>{tab.icon}</span>
+                      <span
+                        style={{
+                          fontSize: 10.5,
+                          fontWeight: isActive ? 800 : 600,
+                          color: isActive ? '#FFFFFF' : isPassed ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.45)',
+                          letterSpacing: '-0.2px',
+                        }}
+                      >
+                        {tab.label}
+                      </span>
+                    </div>
 
-          {/* Slide counter indicator */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 10, gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: '#FFFFFF', background: 'rgba(255,255,255,0.1)', padding: '3px 10px', borderRadius: 8 }}>
-              {String(active + 1).padStart(2, '0')}
-            </span>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-              / {String(HERO_SLIDES.length).padStart(2, '0')}
-            </span>
+                    {/* Mini Pipeline Active Tracker Bar */}
+                    <div
+                      style={{
+                        width: '100%',
+                        height: 2.5,
+                        borderRadius: 2,
+                        background: isActive
+                          ? tab.color
+                          : isPassed
+                          ? 'rgba(16, 185, 129, 0.45)'
+                          : 'rgba(255, 255, 255, 0.1)',
+                        boxShadow: isActive ? `0 0 6px ${tab.color}` : 'none',
+                        transition: 'all 0.3s ease',
+                        marginTop: 2,
+                      }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* ── CARD STAGE DISPLAY AREA (3D Layered Card Deck - Apple / Stripe Style) ── */}
+            <div
+              style={{
+                position: 'relative',
+                flex: 1,
+                minHeight: 'clamp(320px, 28vw, 360px)',
+                display: 'flex',
+                alignItems: 'center',
+                zIndex: 10,
+                perspective: '1200px',
+                perspectiveOrigin: '50% 30%',
+                transformStyle: 'preserve-3d',
+                paddingTop: 24,
+                marginBottom: 6,
+              }}
+            >
+              {PIPELINE_CARDS.map((card, i) => {
+                const total = PIPELINE_CARDS.length;
+                const offset = (i - active + total) % total;
+                const isCurrent = offset === 0;
+                const isNext = offset === 1;
+                const isNextNext = offset === 2;
+                const isExiting = offset === total - 1;
+
+                let transform = 'translate3d(0, -30px, -110px) scale(0.85)';
+                let opacity = 0;
+                let zIndex = 1;
+                let pointerEvents = 'none';
+                let filter = 'none';
+                let cursor = 'default';
+
+                if (isCurrent) {
+                  transform = 'translate3d(0, 0px, 0px) scale(1) rotateX(0deg)';
+                  opacity = 1;
+                  zIndex = 25;
+                  pointerEvents = 'auto';
+                  filter = 'none';
+                } else if (isNext) {
+                  transform = 'translate3d(0, -12px, -40px) scale(0.955) rotateX(1.6deg)';
+                  opacity = 0.72;
+                  zIndex = 18;
+                  pointerEvents = 'auto';
+                  cursor = 'pointer';
+                  filter = 'brightness(0.78) contrast(0.95)';
+                } else if (isNextNext) {
+                  transform = 'translate3d(0, -22px, -80px) scale(0.91) rotateX(3deg)';
+                  opacity = 0.42;
+                  zIndex = 12;
+                  pointerEvents = 'auto';
+                  cursor = 'pointer';
+                  filter = 'brightness(0.6) blur(0.4px)';
+                } else if (isExiting) {
+                  transform = 'translate3d(0, 36px, 20px) scale(0.97) rotateX(-2deg)';
+                  opacity = 0;
+                  zIndex = 30;
+                  pointerEvents = 'none';
+                }
+
+                return (
+                  <div
+                    key={card.step}
+                    onClick={() => {
+                      if (isNext || isNextNext) goTo(i);
+                    }}
+                    style={{
+                      position: isCurrent ? 'relative' : 'absolute',
+                      inset: 0,
+                      opacity,
+                      transform,
+                      zIndex,
+                      pointerEvents,
+                      filter,
+                      cursor,
+                      transition: 'all 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
+                      borderRadius: 18,
+                      background: isCurrent
+                        ? 'linear-gradient(160deg, rgba(16, 28, 62, 0.94) 0%, rgba(10, 18, 42, 0.98) 100%)'
+                        : 'linear-gradient(160deg, rgba(12, 22, 48, 0.92) 0%, rgba(8, 14, 32, 0.96) 100%)',
+                      border: `1.5px solid ${isCurrent ? card.accentColor : isNext ? `${card.accentColor}77` : 'rgba(255, 255, 255, 0.12)'}`,
+                      boxShadow: isCurrent
+                        ? `0 0 32px ${card.accentColor}33, 0 20px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255,255,255,0.2)`
+                        : isNext
+                        ? `0 -8px 24px rgba(0, 0, 0, 0.5), 0 0 18px ${card.accentColor}25, inset 0 1px 0 rgba(255,255,255,0.12)`
+                        : `0 -12px 30px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255,255,255,0.06)`,
+                      padding: '18px 20px',
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      width: '100%',
+                    }}
+                    onMouseEnter={e => {
+                      if (isNext) e.currentTarget.style.transform = 'translate3d(0, -15px, -30px) scale(0.965) rotateX(1deg)';
+                    }}
+                    onMouseLeave={e => {
+                      if (isNext) e.currentTarget.style.transform = 'translate3d(0, -12px, -40px) scale(0.955) rotateX(1.6deg)';
+                    }}
+                  >
+                    {/* Glowing Laser Scanner Line (Active Card Only) */}
+                    {isCurrent && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          height: '2.5px',
+                          background: `linear-gradient(90deg, transparent 0%, ${card.accentColor} 30%, #FFFFFF 50%, ${card.accentColor} 70%, transparent 100%)`,
+                          boxShadow: `0 0 14px ${card.accentColor}, 0 0 28px ${card.accentColor}`,
+                          animation: 'cardScanLine 2.2s ease-in-out infinite alternate',
+                          zIndex: 20,
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '15%',
+                            right: '15%',
+                            top: '-8px',
+                            height: '18px',
+                            background: `radial-gradient(ellipse at center, ${card.accentColor}55 0%, transparent 80%)`,
+                            filter: 'blur(3px)',
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* Top Node Tag & Status */}
+                    <div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: 8,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span
+                            style={{
+                              fontFamily: "'JetBrains Mono', monospace",
+                              fontSize: 11,
+                              fontWeight: 800,
+                              letterSpacing: '0.08em',
+                              color: card.accentColor,
+                            }}
+                          >
+                            {card.tag}
+                          </span>
+                          {(isNext || isNextNext) && (
+                            <span
+                              style={{
+                                fontFamily: "'JetBrains Mono', monospace",
+                                fontSize: 9.5,
+                                fontWeight: 800,
+                                padding: '2px 7px',
+                                borderRadius: 8,
+                                background: `${card.accentColor}25`,
+                                border: `1px solid ${card.accentColor}66`,
+                                color: card.accentColor,
+                                letterSpacing: 0.5,
+                              }}
+                            >
+                              {isNext ? '▶ NEXT' : 'STAGE'}
+                            </span>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: 10,
+                            fontWeight: 700,
+                            padding: '3px 9px',
+                            borderRadius: 6,
+                            background: `${card.accentColor}22`,
+                            color: card.accentColor,
+                            border: `1px solid ${card.accentColor}55`,
+                            boxShadow: `0 0 10px ${card.accentColor}33`,
+                          }}
+                        >
+                          ● {card.status}
+                        </span>
+                      </div>
+
+                      {/* Title Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                        <span style={{ fontSize: 26, lineHeight: 1 }}>{card.icon}</span>
+                        <div>
+                          <h3
+                            style={{
+                              margin: 0,
+                              color: '#FFFFFF',
+                              fontSize: 'clamp(17px, 1.6vw, 22px)',
+                              fontWeight: 800,
+                              letterSpacing: '-0.3px',
+                            }}
+                          >
+                            {card.title}
+                          </h3>
+                          <div style={{ fontSize: 11.5, color: 'rgba(255, 255, 255, 0.65)', fontWeight: 500, marginTop: 2 }}>
+                            {card.desc}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── SPLIT-SCREEN PLATFORM CAPABILITY SHOWCASE ── */}
+                    <div
+                      style={{
+                        background: 'rgba(4, 9, 22, 0.85)',
+                        border: `1px solid ${card.accentColor}33`,
+                        borderRadius: 14,
+                        padding: '12px',
+                        margin: '8px 0 6px',
+                        boxShadow: `0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08)`,
+                        position: 'relative',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {/* Ambient background illumination */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '-40%',
+                          right: '-20%',
+                          width: 150,
+                          height: 150,
+                          background: `radial-gradient(circle, ${card.accentColor}20 0%, transparent 70%)`,
+                          pointerEvents: 'none',
+                        }}
+                      />
+
+                      {/* Header bar showing Platform Concept Mode */}
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: 8,
+                          paddingBottom: 6,
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.07)',
+                          fontSize: 10,
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}
+                      >
+                        <span style={{ color: 'rgba(255, 255, 255, 0.55)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <span>PLATFORM CAPABILITY:</span>
+                          <span style={{ color: card.accentColor, fontWeight: 700 }}>WHAT YOU GET ➔ YOUR BENEFIT</span>
+                        </span>
+                        <span
+                          style={{
+                            color: '#34D399',
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            padding: '1px 7px',
+                            borderRadius: 4,
+                            fontWeight: 700,
+                          }}
+                        >
+                          ● LIVE ECOSYSTEM
+                        </span>
+                      </div>
+
+                      {/* The 2-Column Split Screen Layout */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 28px 1fr',
+                          gap: 6,
+                          alignItems: 'stretch',
+                        }}
+                      >
+                        {/* ── LEFT HALF: WHAT YOU GET / ACCESS ── */}
+                        <div
+                          style={{
+                            background: 'rgba(15, 23, 42, 0.7)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            borderRadius: 10,
+                            padding: '8px 10px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: 9.5, fontWeight: 800, color: '#94A3B8', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                              {card.leftHeader}
+                            </span>
+                            <span style={{ fontSize: 8.5, color: '#64748B', fontFamily: "'JetBrains Mono', monospace" }}>
+                              {card.leftSubtitle}
+                            </span>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#F1F5F9', marginBottom: 3 }}>
+                              {card.leftTitle}
+                            </div>
+                            <div style={{ fontSize: 9.5, color: '#94A3B8', lineHeight: 1.35, marginBottom: 6 }}>
+                              {card.leftDesc}
+                            </div>
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                              {card.leftBadges && card.leftBadges.map((badge, bIdx) => (
+                                <span key={bIdx} style={{ fontSize: 8.5, background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 3, color: '#CBD5E1' }}>
+                                  {badge}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ── CENTER DIVIDER: CONNECTOR ── */}
+                        <div
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            position: 'relative',
+                          }}
+                        >
+                          <div style={{ width: 1.5, flex: 1, background: `linear-gradient(180deg, transparent, ${card.accentColor}66, transparent)` }} />
+                          <div
+                            style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: '50%',
+                              background: '#0B1530',
+                              border: `1.5px solid ${card.accentColor}`,
+                              boxShadow: `0 0 10px ${card.accentColor}66`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 10,
+                              color: card.accentColor,
+                              margin: '4px 0',
+                              fontWeight: 900,
+                            }}
+                          >
+                            ➔
+                          </div>
+                          <div style={{ width: 1.5, flex: 1, background: `linear-gradient(180deg, transparent, ${card.accentColor}66, transparent)` }} />
+                        </div>
+
+                        {/* ── RIGHT HALF: YOUR BENEFIT / OUTCOME ── */}
+                        <div
+                          style={{
+                            background: `linear-gradient(145deg, rgba(16, 32, 70, 0.85) 0%, rgba(9, 20, 48, 0.95) 100%)`,
+                            border: `1px solid ${card.accentColor}55`,
+                            borderRadius: 10,
+                            padding: '8px 10px',
+                            boxShadow: `0 4px 16px ${card.accentColor}18`,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontSize: 9.5, fontWeight: 800, color: card.accentColor, letterSpacing: 0.8, textTransform: 'uppercase' }}>
+                              {card.rightHeader}
+                            </span>
+                            <span style={{ fontSize: 8.5, color: '#34D399', fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
+                              {card.rightSubtitle}
+                            </span>
+                          </div>
+
+                          <div>
+                            <div style={{ fontSize: 11, fontWeight: 800, color: '#FFFFFF', marginBottom: 3 }}>
+                              {card.rightTitle}
+                            </div>
+                            <div style={{ fontSize: 9.5, color: '#BFDBFE', lineHeight: 1.35, marginBottom: 6 }}>
+                              {card.rightDesc}
+                            </div>
+                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                              {card.rightBadges && card.rightBadges.map((badge, bIdx) => (
+                                <span key={bIdx} style={{ fontSize: 8.5, background: `${card.accentColor}25`, color: card.accentColor, padding: '1px 6px', borderRadius: 3, fontWeight: 700 }}>
+                                  {badge}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Subtitle */}
+                    <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.55)', fontStyle: 'italic', marginTop: 4 }}>
+                      ⚡ {card.subtitle}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── BOTTOM PIPELINE STEP SELECTORS / PROGRESS DOTS ── */}
+            <div
+              style={{
+                position: 'relative',
+                zIndex: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingTop: 12,
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                marginTop: 10,
+              }}
+            >
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                {PIPELINE_CARDS.map((card, idx) => (
+                  <button
+                    key={card.step}
+                    onClick={() => goTo(idx)}
+                    title={`Stage ${idx + 1}: ${card.title}`}
+                    style={{
+                      width: active === idx ? 28 : 8,
+                      height: 8,
+                      borderRadius: 10,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: active === idx ? card.accentColor : 'rgba(255, 255, 255, 0.25)',
+                      boxShadow: active === idx ? `0 0 10px ${card.accentColor}` : 'none',
+                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                      padding: 0,
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.45)', fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.8, textTransform: 'uppercase', marginRight: 2 }}>
+                  3D Deck Stack
+                </span>
+                <button
+                  onClick={() => goTo((active - 1 + PIPELINE_CARDS.length) % PIPELINE_CARDS.length)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#FFFFFF',
+                    borderRadius: 8,
+                    width: 26,
+                    height: 26,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(247, 148, 29, 0.25)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; }}
+                >
+                  ◀
+                </button>
+                <button
+                  onClick={() => goTo((active + 1) % PIPELINE_CARDS.length)}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#FFFFFF',
+                    borderRadius: 8,
+                    width: 26,
+                    height: 26,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: 11,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(247, 148, 29, 0.25)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; }}
+                >
+                  ▶
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <style>{`
+        @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes cursorBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes cardScanLine {
+          0% { top: 0%; opacity: 0.85; }
+          50% { opacity: 1; }
+          100% { top: 96%; opacity: 0.85; }
+        }
         @keyframes heroProgress { 0% { width: 0%; } 100% { width: 100%; } }
         @keyframes heroBlobFloat {
           0% { transform: translate(0, 0) scale(1); }
@@ -1381,15 +2174,19 @@ const HeroSection = () => {
         /* Desktop & Large Screens */
         @media (min-width: 1025px) {
           .hero-grid {
-            grid-template-columns: 1fr 1fr !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
             gap: 44px !important;
             min-height: 220px !important;
           }
           .hero-left {
             order: 0 !important;
+            min-width: 0 !important;
+            width: 100% !important;
           }
           .hero-right {
             order: 1 !important;
+            min-width: 0 !important;
+            width: 100% !important;
           }
           .hero-section {
             min-height: 220px !important;
@@ -1417,15 +2214,19 @@ const HeroSection = () => {
         /* Tablet/Laptop */
         @media (min-width: 769px) and (max-width: 1024px) {
           .hero-grid {
-            grid-template-columns: 1fr 1fr !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
             gap: 32px !important;
             min-height: 200px !important;
           }
           .hero-left {
             order: 0 !important;
+            min-width: 0 !important;
+            width: 100% !important;
           }
           .hero-right {
             order: 1 !important;
+            min-width: 0 !important;
+            width: 100% !important;
           }
           .hero-section {
             min-height: 200px !important;
@@ -1886,34 +2687,9 @@ const TrendingTopicsSection = ({ items, navigate, darkMode = false }) => {
                 <h3 style={{ fontWeight: 800, fontSize: 'clamp(16px, 1.3vw, 18px)', lineHeight: 1.4, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {item.title}
                 </h3>
-                <p style={{ fontSize: 'clamp(13px, 0.85vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: '0 0 20px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <p style={{ fontSize: 'clamp(13px, 0.85vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {item.short_description || 'Explore this trending post to learn more about the latest developments and industry best practices.'}
                 </p>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: darkMode ? '1px solid #334155' : '1px solid var(--color-border)' }}>
-                <span style={{ fontWeight: 700, fontSize: 'clamp(13px, 0.9vw, 14px)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)' }}>
-                  {item.author_name || 'Staff Writer'}
-                </span>
-                <div style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: darkMode ? '#1e293b' : '#f1f5f9',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  color: darkMode ? '#94a3b8' : '#334155',
-                  fontWeight: 'bold',
-                  transition: 'background .2s, color .2s'
-                }}
-                  className="arrow-redir"
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-primary)'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = darkMode ? '#1e293b' : '#f1f5f9'; e.currentTarget.style.color = darkMode ? '#94a3b8' : '#334155'; }}
-                >
-                  ↗
-                </div>
               </div>
             </div>
           </div>

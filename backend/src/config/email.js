@@ -424,43 +424,65 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
     `;
 };
 
-// Template for access grant email
-const accessGrantEmailTemplate = (name, contentTitle) => {
-    const safeName = escapeHtml(name);
-    const safeTitle = escapeHtml(contentTitle);
+const accessGrantEmailTemplate = (name, contentTitle, downloadUrl = null, isEbook = false) => {
+    const safeName = escapeHtml(name || 'there');
+    const safeTitle = escapeHtml(contentTitle || 'the requested content');
+    const resourceType = isEbook ? 'eBook' : 'Resource';
     return `
         <!DOCTYPE html>
         <html>
         <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #1a237e; color: white; padding: 20px; text-align: center; }
-                .content { padding: 30px; background: #f5f5f5; }
-                .footer { padding: 20px; text-align: center; background: #e0e0e0; font-size: 12px; color: #555; }
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f1f5f9; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 30px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+                .header { background: linear-gradient(135deg, #0B1F4D 0%, #0AAEEF 100%); color: white; padding: 32px 24px; text-align: center; }
+                .content { padding: 32px 28px; background: #ffffff; }
+                .btn { display: inline-block; background: linear-gradient(135deg, #F7941D 0%, #EA580C 100%); color: #ffffff !important; padding: 14px 32px; text-decoration: none; font-size: 16px; font-weight: 700; border-radius: 8px; box-shadow: 0 4px 14px rgba(247, 148, 29, 0.4); margin: 20px 0; }
+                .footer { padding: 20px; text-align: center; background: #f8fafc; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
             </style>
         </head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h2>Content Access Granted</h2>
+                    <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Your ${resourceType} is Ready</h1>
+                    <p style="margin: 8px 0 0; opacity: 0.9; font-size: 14px;">TGS Tech Info Knowledge Hub</p>
                 </div>
                 <div class="content">
-                    <h3>Hi ${safeName},</h3>
-                    <p>Thank you for reaching out! We've received your details, and our team is reviewing them.</p>
-                    <p>We'll be in touch shortly to explore result-driven growth strategies tailored to your business goals.</p>
-                    <p>You now have access to: <strong>${safeTitle}</strong></p>
-                    <p>For urgent placements and queries, please feel free to contact:</p>
-                    <p><strong>Contact person:</strong> Mark Jason</p>
-                    <p><strong>Email ID:</strong> tgs.admin001@gmail.com</p>
-                    <br>
-                    <p>Regards,</p>
-                    <p><strong>TGS Tech Info Team</strong></p>
+                    <h3 style="color: #0f172a; margin-top: 0;">Hi ${safeName},</h3>
+                    <p>Thank you for your interest! Your copy of <strong>${safeTitle}</strong> is ready for download.</p>
+                    
+                    ${downloadUrl ? `
+                    <div style="text-align: center; margin: 28px 0;">
+                        <a href="${downloadUrl}" class="btn" target="_blank" download>
+                            📥 Download ${resourceType} (PDF)
+                        </a>
+                        <p style="margin-top: 12px; font-size: 12px; color: #64748b;">
+                            If the button doesn't open, copy and paste this direct link into your browser:<br/>
+                            <a href="${downloadUrl}" style="color: #0AAEEF; word-break: break-all;">${downloadUrl}</a>
+                        </p>
+                    </div>
+                    ` : `
+                    <p style="padding: 14px 18px; background: #f0f9ff; border-left: 4px solid #0AAEEF; border-radius: 6px; font-size: 14px;">
+                        Access to <strong>${safeTitle}</strong> has been unlocked.
+                    </p>
+                    `}
+
+                    <p style="margin-top: 24px; font-size: 13px; color: #475569;">
+                        We hope this publication provides valuable insights for your research. If you have any questions or feedback, feel free to reach out to our team.
+                    </p>
+
+                    <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
+                        <p style="margin: 2px 0;"><strong>Editorial & Insights Team</strong></p>
+                        <p style="margin: 2px 0;">TGS Tech Info</p>
+                        <p style="margin: 2px 0;"><a href="${getPublicUrl()}" style="color: #0AAEEF; text-decoration: none;">tgstechinfo.com</a></p>
+                    </div>
                 </div>
                 <div class="footer">
-                    <p>© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
-                    <p style="margin-top: 8px; font-size: 11px; color: #777;">
-                        Don't want to receive these emails? <a href="${getPublicUrl()}/unsubscribe" style="color: #0284c7; text-decoration: underline;">Unsubscribe</a>
+                    <p style="margin: 0;">© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
+                    <p style="margin-top: 8px; font-size: 11px; color: #94a3b8;">
+                        Don't want to receive these emails? <a href="${getPublicUrl()}/unsubscribe" style="color: #0AAEEF; text-decoration: underline;">Unsubscribe</a>
                     </p>
                 </div>
             </div>

@@ -215,7 +215,8 @@ export const extractContentSlug = (pathname) => {
 
   for (const { prefix } of CONTENT_TYPE_ROUTES) {
     if (pathname.startsWith(prefix)) {
-      return pathname.slice(prefix.length).split('/')[0] || null;
+      const parts = pathname.slice(prefix.length).split('/').filter(Boolean);
+      return parts.length > 0 ? parts[parts.length - 1] : null;
     }
   }
   return null;

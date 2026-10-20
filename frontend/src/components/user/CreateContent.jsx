@@ -645,7 +645,10 @@ const CreateContent = () => {
           message.success(`${typeName} updated! Edit anytime before submitting.`);
         }
       } else {
-        // Creating new content - status is already set in buildFormData
+        // Creating new content
+        if (!formData.has('status')) {
+          formData.append('status', 'draft');
+        }
         const response = await axios.post(`${apiBase}/content`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
         setSavedContentId(response.data.content.id);
         setContentStatus('draft');
@@ -654,6 +657,9 @@ const CreateContent = () => {
       }
     } catch (error) {
       console.error('Error saving content:', error);
+      if (error.response?.data) {
+        console.error('Server error details:', error.response.data);
+      }
       // Handle validation errors
       if (error.errorFields && error.errorFields.length > 0) {
         const missingFields = error.errorFields.map(field => {
@@ -675,7 +681,7 @@ const CreateContent = () => {
         });
       } else {
         // Handle server errors
-        message.error(error.response?.data?.message || 'Failed to save content');
+        message.error(error.response?.data?.message || error.message || 'Failed to save content');
       }
     } finally {
       setLoading(false);

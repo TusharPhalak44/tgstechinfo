@@ -441,22 +441,31 @@ function AppContent() {
 
                 <Route path="/forgot-password" element={<ForgotPassword />} />
 
+                <Route path="/article/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/blog/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/blog/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/news/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/news/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/interview/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/interview/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/webinar/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/webinar/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/event/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/event/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/ebook/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/ebook/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/whitepaper/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/whitepaper/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
+                <Route path="/report/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/report/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
                 <Route path="/whitepapers" element={<CategoryList />} />
@@ -491,6 +500,7 @@ function AppContent() {
 
                 <Route path="/about" element={<About />} />
 
+                <Route path="/case-study/:category/:slug" element={<CaseStudyPage />} />
                 <Route path="/case-study/:slug" element={<CaseStudyPage />} />
 
                 <Route path="/case-study" element={<Navigate to="/case-studies" replace />} />

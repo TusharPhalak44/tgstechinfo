@@ -312,6 +312,7 @@ class ChatbotSearchService {
         const { _score, ...formattedResult } = result;
         
         const contentType = normalizeSlug(formattedResult.content_type_slug);
+        const categorySlug = formattedResult.category_slug || 'general';
         
         return {
             id: formattedResult.id,
@@ -323,7 +324,7 @@ class ChatbotSearchService {
             content_type_slug: formattedResult.content_type_slug,
             banner_image: formattedResult.banner_image,
             short_description: formattedResult.short_description,
-            url: `/${contentType}/${formattedResult.slug}`,
+            url: `/${contentType}/${categorySlug}/${formattedResult.slug}`,
             published_date: formattedResult.published_date,
             view_count: formattedResult.view_count,
             tags: formattedResult.tags

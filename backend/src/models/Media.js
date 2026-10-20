@@ -1,8 +1,17 @@
 const { pool } = require('../config/database');
+const fs = require('fs');
+const path = require('path');
+
+const uploadDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadDir)) {
+    try { fs.mkdirSync(uploadDir, { recursive: true }); } catch (e) {}
+}
+
+const MEDIA_COLUMNS = 'id, filename, original_name, file_path, file_type, file_size, mime_type, folder, uploaded_by, created_at, updated_at';
 
 class Media {
     static async create(mediaData) {
-        const { 
+        let { 
             filename, 
             original_name, 
             file_path, 
@@ -17,12 +26,18 @@ class Media {
         // Prevent duplicate — return existing record if filename already in DB
         const existing = await Media.findByFilename(filename);
         if (existing) return existing;
-        
+
+        // 1. Store video and media binary directly in database BLOB via prepared statement
+        // Prepared statements (pool.execute) send raw binary packets directly to MySQL,
+        // preventing V8 string length limits and storing the video entirely in the database.
+        const dbFileData = Buffer.isBuffer(file_data) ? file_data : null;
+
+        // 2. Execute insert with binary prepared statement protocol
         const query = `
             INSERT INTO media_files (filename, original_name, file_path, file_type, file_size, mime_type, folder, uploaded_by, file_data)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
-        const [result] = await pool.query(query, [
+        const [result] = await pool.execute(query, [
             filename, 
             original_name, 
             file_path, 
@@ -30,8 +45,8 @@ class Media {
             file_size, 
             mime_type, 
             folder, 
-            uploaded_by,
-            file_data
+            uploaded_by, 
+            dbFileData
         ]);
         
         return await Media.findById(result.insertId);
@@ -39,7 +54,7 @@ class Media {
 
     static async findById(id) {
         const [rows] = await pool.query(
-            'SELECT * FROM media_files WHERE id = ?',
+            `SELECT ${MEDIA_COLUMNS} FROM media_files WHERE id = ?`,
             [id]
         );
         return rows[0];
@@ -47,7 +62,7 @@ class Media {
 
     static async findByFilename(filename) {
         const [rows] = await pool.query(
-            'SELECT * FROM media_files WHERE filename = ?',
+            `SELECT ${MEDIA_COLUMNS} FROM media_files WHERE filename = ?`,
             [filename]
         );
         return rows[0];
@@ -55,7 +70,7 @@ class Media {
 
     static async findByOriginalName(originalName) {
         const [rows] = await pool.query(
-            'SELECT * FROM media_files WHERE original_name = ? ORDER BY id DESC LIMIT 1',
+            `SELECT ${MEDIA_COLUMNS} FROM media_files WHERE original_name = ? ORDER BY id DESC LIMIT 1`,
             [originalName]
         );
         return rows[0];

@@ -45,7 +45,6 @@ const { Option } = Select;
 // Content Type Definitions & Icons
 const CONTENT_TYPE_CONFIG = {
   all: { label: 'All Content', color: '#0AAEEF', icon: <FileTextOutlined /> },
-  'landing-page': { label: 'Landing Pages', color: '#6366F1', icon: <GlobalOutlined /> },
   article: { label: 'Articles', color: '#3B82F6', icon: <FileTextOutlined /> },
   blog: { label: 'Blogs', color: '#8B5CF6', icon: <BookOutlined /> },
   news: { label: 'News', color: '#EC4899', icon: <ThunderboltOutlined /> },
@@ -57,6 +56,17 @@ const CONTENT_TYPE_CONFIG = {
   'case-study': { label: 'Case Studies', color: '#D946EF', icon: <StarOutlined /> },
   report: { label: 'Reports', color: '#84CC16', icon: <FileTextOutlined /> },
   guide: { label: 'Guides', color: '#F97316', icon: <CompassOutlined /> },
+};
+
+const normalizeContentType = (item) => {
+  if (!item) return 'article';
+  if (Number(item.content_type_id) === 11) return 'case-study';
+  const raw = (item.content_type || item.content_type_name || '').toLowerCase().trim();
+  const normalized = raw.replace(/[\s_]+/g, '-');
+  if (normalized === 'case-study' || normalized === 'casestudy') return 'case-study';
+  if (normalized === 'white-paper' || normalized === 'whitepaper') return 'whitepaper';
+  if (normalized === 'e-book' || normalized === 'ebook') return 'ebook';
+  return normalized || 'article';
 };
 
 const STATUS_CONFIG = {
@@ -453,7 +463,7 @@ const AdminContent = () => {
     return allContents.filter(item => {
       // 1. Content Type Filter
       if (activeTypeTab !== 'all') {
-        const itemType = (item.content_type_name || item.content_type || '').toLowerCase();
+        const itemType = normalizeContentType(item);
         if (itemType !== activeTypeTab) return false;
       }
 
@@ -547,7 +557,7 @@ const AdminContent = () => {
       dataIndex: 'title',
       key: 'title',
       render: (text, record) => {
-        const typeKey = (record.content_type_name || record.content_type || 'article').toLowerCase();
+        const typeKey = normalizeContentType(record);
         const typeConfig = CONTENT_TYPE_CONFIG[typeKey] || CONTENT_TYPE_CONFIG.article;
         const itemImg = getContentImage(record);
         return (
@@ -604,12 +614,12 @@ const AdminContent = () => {
       key: 'content_type',
       width: 120,
       render: (_, record) => {
-        const typeKey = (record.content_type_name || record.content_type || 'article').toLowerCase();
+        const typeKey = normalizeContentType(record);
         const cfg = CONTENT_TYPE_CONFIG[typeKey] || CONTENT_TYPE_CONFIG.article;
         return (
           <div className="radar-chip" style={{ color: cfg.color, borderColor: `${cfg.color}40`, background: `${cfg.color}15` }}>
             {cfg.icon}
-            <span style={{ textTransform: 'capitalize' }}>{typeKey}</span>
+            <span style={{ textTransform: 'capitalize' }}>{cfg.label || typeKey}</span>
           </div>
         );
       }
@@ -891,7 +901,7 @@ const AdminContent = () => {
             const isActive = activeTypeTab === typeKey;
             const count = typeKey === 'all'
               ? allContents.length
-              : allContents.filter(c => (c.content_type_name || c.content_type || '').toLowerCase() === typeKey).length;
+              : allContents.filter(c => normalizeContentType(c) === typeKey).length;
 
             return (
               <button
@@ -1022,7 +1032,7 @@ const AdminContent = () => {
         /* GRID VIEW */
         <Row gutter={[18, 18]}>
           {paginatedContents.map((item, idx) => {
-            const typeKey = (item.content_type_name || item.content_type || 'article').toLowerCase();
+            const typeKey = normalizeContentType(item);
             const typeConfig = CONTENT_TYPE_CONFIG[typeKey] || CONTENT_TYPE_CONFIG.article;
             const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.draft;
             const isVisible = isContentVisible(item);
@@ -1070,7 +1080,7 @@ const AdminContent = () => {
                     {/* Top Overlay Badges */}
                     <div style={{ position: 'absolute', top: 10, left: 10, right: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span className="radar-chip" style={{ color: typeConfig.color, borderColor: `${typeConfig.color}50`, background: 'rgba(15,23,42,0.75)' }}>
-                        {typeConfig.icon} <span style={{ textTransform: 'capitalize' }}>{typeKey}</span>
+                        {typeConfig.icon} <span style={{ textTransform: 'capitalize' }}>{typeConfig.label || typeKey}</span>
                       </span>
 
                       <Tag color={statusConfig.color} style={{ margin: 0, borderRadius: 6, fontWeight: 700 }}>

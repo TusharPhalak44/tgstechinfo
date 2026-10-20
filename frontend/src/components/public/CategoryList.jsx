@@ -66,6 +66,35 @@ const CATEGORY_ACCENT_MAP = {
   'whitepaper': '#0AAEEF'
 };
 
+// ── Helper to format "(contentType - category)" metadata label ───────
+const formatContentTypeCategory = (item) => {
+  if (!item) return '';
+  const rawType = (item.content_type_name || item.content_type || '').trim();
+  let type = '';
+  if (rawType) {
+    if (rawType.toLowerCase() === 'ebook' || rawType.toLowerCase() === 'ebooks') {
+      type = 'eBook';
+    } else {
+      type = rawType
+        .split(/[-_\s]+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+    }
+  }
+  const category = (item.category_name || '').trim();
+
+  if (type && category) {
+    return `(${type} - ${category})`;
+  }
+  if (category) {
+    return `(${category})`;
+  }
+  if (type) {
+    return `(${type})`;
+  }
+  return '';
+};
+
 // ── Premium Executive Frosted Light Band Animation Background ──
 const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) => {
   return (
@@ -171,7 +200,7 @@ const FrostedLightBandBackground = ({ accent = '#0AAEEF', darkMode = false }) =>
 };
 
 // ── Modern Executive Publishing Hero Header ─────────────────────────
-const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigate, darkMode, searchTerm, setSearchTerm, isMobile, isTablet, isTabletOrMobile }) => {
+const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigate, darkMode, searchTerm, setSearchTerm, isMobile, isTablet, isTabletOrMobile, isCategoryPage = false }) => {
   return (
     <div style={{
       position: 'relative',
@@ -366,6 +395,13 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
                   </div>
                 )}
 
+                {/* Content Type - Category Badge in Featured Spotlight (only on Technology / Industry category pages) */}
+                {isCategoryPage && formatContentTypeCategory(featuredPost) && (
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: accent, marginBottom: 6, letterSpacing: .5 }}>
+                    {formatContentTypeCategory(featuredPost)}
+                  </div>
+                )}
+
                 <h3 style={{
                   margin: '0 0 8px 0',
                   fontSize: '1.08rem',
@@ -410,7 +446,7 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
 };
 
 // ── Main List Article Item ───────────────────────────────────────────
-const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile }) => {
+const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, isCategoryPage = false }) => {
   const isMobile = typeof propIsMobile === 'boolean' ? propIsMobile : (typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const isLandingPage = isHtmlBuilderContent(item);
   const isWebinar = (item.content_type_name || item.content_type || '').toLowerCase() === 'webinar';
@@ -484,10 +520,18 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile }) 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isMobile ? 6 : 8, flexWrap: 'wrap' }}>
-          {item.category_name && (
-            <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8 }}>
-              {item.category_name}
-            </span>
+          {isCategoryPage ? (
+            (item.category_name || item.content_type_name || item.content_type) && (
+              <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: accent, letterSpacing: .5 }}>
+                {formatContentTypeCategory(item)}
+              </span>
+            )
+          ) : (
+            item.category_name && (
+              <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8 }}>
+                {item.category_name}
+              </span>
+            )
           )}
           {isWebinar && item.hosted_by && (
             <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#475569' }}>
@@ -547,10 +591,10 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile }) 
 };
 
 // ── Sidebar Recent Post Item ─────────────────────────────────────────
-const SidebarPost = ({ item, navigate, accent, darkMode }) => {
+const SidebarPost = ({ item, index = 0, navigate, accent, darkMode, isCategoryPage = false }) => {
   const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
-  const views = Number(item.view_count || item.views_count || 0);
+  const views = Number(item.views_count || item.view_count || 0);
   return (
     <div style={{ display: 'flex', flexDirection: 'row', gap: isMobile ? 12 : 10, padding: isMobile ? '10px 0' : '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
       onClick={() => navigateContent(item, navigate)}
@@ -560,6 +604,25 @@ const SidebarPost = ({ item, navigate, accent, darkMode }) => {
           ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 24 : 20 }}>📄</div>
         }
+        {/* Trending Rank Pill */}
+        <span style={{
+          position: 'absolute',
+          top: 3,
+          left: 3,
+          background: index === 0 ? 'linear-gradient(135deg, #ef4444 0%, #f59e0b 100%)' : 'rgba(15, 23, 42, 0.75)',
+          color: '#fff',
+          fontSize: 9,
+          fontWeight: 800,
+          padding: '1px 5px',
+          borderRadius: 4,
+          lineHeight: '12px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          {index === 0 && <FireOutlined style={{ fontSize: 8 }} />}#{index + 1}
+        </span>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <h4 style={{
@@ -572,14 +635,27 @@ const SidebarPost = ({ item, navigate, accent, darkMode }) => {
         >
           {item.title}
         </h4>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <EyeOutlined style={{ fontSize: 11, color: accent }} /> {views.toLocaleString()} {views === 1 ? 'view' : 'views'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#38bdf8' : '#0284c7', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <EyeOutlined style={{ fontSize: 11 }} /> {views.toLocaleString()} {views === 1 ? 'view' : 'views'}
           </span>
-          {item.category_name && (
-            <span style={{ fontSize: 10.5, color: darkMode ? '#94a3b8' : '#64748b', background: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: '1px 6px', borderRadius: 4 }}>
-              {item.category_name}
+          {item.reading_time ? (
+            <span style={{ fontSize: 10.5, color: darkMode ? '#94a3b8' : '#64748b', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <ClockCircleOutlined style={{ fontSize: 10 }} /> {item.reading_time} min read
             </span>
+          ) : null}
+          {isCategoryPage ? (
+            (item.category_name || item.content_type_name || item.content_type) && (
+              <span style={{ fontSize: 10, color: darkMode ? '#94a3b8' : '#64748b', background: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: '1px 6px', borderRadius: 4, fontWeight: 600 }}>
+                {formatContentTypeCategory(item)}
+              </span>
+            )
+          ) : (
+            item.category_name && (
+              <span style={{ fontSize: 10, color: darkMode ? '#94a3b8' : '#64748b', background: darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)', padding: '1px 6px', borderRadius: 4 }}>
+                {item.category_name}
+              </span>
+            )
           )}
         </div>
       </div>
@@ -606,6 +682,9 @@ const CategoryList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleCount, setVisibleCount] = useState(INITIAL_SHOW);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedContentType, setSelectedContentType] = useState(null);
+  const [contentTypesTree, setContentTypesTree] = useState([]);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -618,6 +697,7 @@ const CategoryList = () => {
   const isTabletOrMobile = windowWidth < 1024;
 
   const typeInfo = TYPE_MAP[slug];
+  const isCategoryPage = !typeInfo || location.pathname.startsWith('/category/');
   const accent = typeInfo?.accent || CATEGORY_ACCENT_MAP[slug] || '#0AAEEF';
   const pageTitle = typeInfo?.title || (slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) || 'Articles';
   const trendingTitle = typeInfo?.title
@@ -628,18 +708,20 @@ const CategoryList = () => {
     setCurrentPage(1);
     setVisibleCount(INITIAL_SHOW);
     setSearchTerm('');
+    setSelectedCategory(null);
+    setSelectedContentType(null);
     fetchSidebar();
   }, [slug]);
 
   useEffect(() => {
     setVisibleCount(INITIAL_SHOW);
     fetchMainList();
-  }, [slug, currentPage]);
+  }, [slug, currentPage, selectedCategory, selectedContentType]);
 
   const fetchSidebar = async () => {
     try {
       const catCountParams = typeInfo ? { content_type: typeInfo.type } : {};
-      const [recentRes, catRes] = await Promise.all([
+      const requests = [
         axios.get('/api/public/content', {
           params: {
             status: 'published',
@@ -649,9 +731,43 @@ const CategoryList = () => {
           }
         }),
         axios.get('/api/public/categories-with-count', { params: catCountParams }),
-      ]);
-      setRecentPosts(recentRes.data?.data || []);
+      ];
+
+      if (!typeInfo) {
+        requests.push(axios.get('/api/public/content-types-with-count', { params: { category: slug } }));
+      }
+
+      const results = await Promise.all(requests);
+      const recentRes = results[0];
+      const catRes = results[1];
+      const ctRes = results[2];
+      let trendingList = recentRes.data?.data || [];
+      if (trendingList.length < 3) {
+        try {
+          const fallbackRes = await axios.get('/api/public/content', {
+            params: {
+              status: 'published',
+              limit: 5,
+              sort_by: 'views'
+            }
+          });
+          const existingIds = new Set(trendingList.map(d => d.id));
+          for (const it of fallbackRes.data?.data || []) {
+            if (!existingIds.has(it.id)) {
+              trendingList.push(it);
+              existingIds.add(it.id);
+              if (trendingList.length >= 5) break;
+            }
+          }
+        } catch (fbErr) {
+          console.warn('Fallback trending fetch error:', fbErr);
+        }
+      }
+      setRecentPosts(trendingList);
       setCategoriesTree(catRes.data || []);
+      if (ctRes?.data) {
+        setContentTypesTree(ctRes.data || []);
+      }
     } catch (e) {
       console.error(e);
     }
@@ -661,8 +777,17 @@ const CategoryList = () => {
     setLoading(true);
     try {
       const params = { status: 'published', limit: PAGE_SIZE, offset: (currentPage - 1) * PAGE_SIZE };
-      if (typeInfo) params.content_type = typeInfo.type;
-      else params.category = slug;
+      if (typeInfo) {
+        params.content_type = typeInfo.type;
+        if (selectedCategory) {
+          params.category = selectedCategory;
+        }
+      } else {
+        params.category = slug;
+        if (selectedContentType) {
+          params.content_type = selectedContentType;
+        }
+      }
       const mainRes = await axios.get('/api/public/content', { params });
       setContents(mainRes.data?.data || []);
       setTotal(mainRes.data?.total || 0);
@@ -703,6 +828,7 @@ const CategoryList = () => {
         isMobile={isMobile}
         isTablet={isTablet}
         isTabletOrMobile={isTabletOrMobile}
+        isCategoryPage={isCategoryPage}
       />
 
       {/* ── Content Area ── */}
@@ -714,61 +840,269 @@ const CategoryList = () => {
 
             {/* Horizontal Categories */}
             <div style={{ marginBottom: isMobile ? 16 : 24, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+              <style>{`
+                .topic-cat-pill {
+                  transition: all 0.2s ease;
+                }
+                .topic-cat-pill:hover, .topic-cat-pill.is-active {
+                  background: ${accent} !important;
+                  color: #ffffff !important;
+                  border-color: ${accent} !important;
+                  box-shadow: 0 4px 12px ${accent}33;
+                }
+                .topic-cat-pill:hover .topic-cat-count, .topic-cat-pill.is-active .topic-cat-count {
+                  background: #ffffff !important;
+                  color: ${accent} !important;
+                }
+              `}</style>
               <div style={{ fontWeight: 700, fontSize: isMobile ? 13 : 14, color: darkMode ? '#94a3b8' : '#64748b', marginBottom: isMobile ? 10 : 12, textTransform: 'uppercase', letterSpacing: 1 }}>
-                Explore Topics & Categories
+                {typeInfo ? 'Explore Topics & Categories' : `Browse ${pageTitle} by Content Type`}
               </div>
               <div style={{ display: 'flex', gap: isMobile ? 8 : 10, overflowX: 'auto', paddingBottom: 10, scrollbarWidth: 'thin', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
                 {loading
                   ? <Skeleton active paragraph={{ rows: 1 }} />
-                  : categoriesTree.filter(parent => parent.count > 0).length === 0
-                    ? <div style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>No categories found.</div>
-                    : categoriesTree.filter(parent => parent.count > 0).map(parent => (
-                      <button
-                        key={parent.id}
-                        onClick={() => navigate(`/category/${parent.slug}`)}
-                        style={{
-                          padding: isMobile ? '6px 12px' : '8px 16px',
-                          background: darkMode ? '#1e293b' : '#fff',
-                          border: `1.5px solid ${accent}33`,
-                          borderRadius: 20,
-                          fontSize: isMobile ? 12 : 13,
-                          fontWeight: 600,
-                          color: darkMode ? '#f1f5f9' : '#0f172a',
-                          cursor: 'pointer',
-                          transition: 'all .2s',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          flexShrink: 0
-                        }}
-                        onMouseEnter={e => {
-                          e.currentTarget.style.background = accent;
-                          e.currentTarget.style.color = '#fff';
-                          e.currentTarget.style.borderColor = accent;
-                        }}
-                        onMouseLeave={e => {
-                          e.currentTarget.style.background = darkMode ? '#1e293b' : '#fff';
-                          e.currentTarget.style.color = darkMode ? '#f1f5f9' : '#0f172a';
-                          e.currentTarget.style.borderColor = `${accent}33`;
-                        }}
-                      >
-                        {parent.name}
-                        <span style={{ fontSize: isMobile ? 10 : 11, fontWeight: 700, background: `${accent}18`, color: accent, borderRadius: 12, padding: '1px 6px', minWidth: 20, textAlign: 'center' }}>
-                          {parent.count}
-                        </span>
-                      </button>
-                    ))
+                  : typeInfo ? (
+                      // ── INSIGHTS & RESOURCES: In-place Category Filter Pills ──
+                      (() => {
+                        const totalCatCount = categoriesTree.reduce((sum, parent) => sum + (Number(parent.count) || 0), 0);
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedCategory) {
+                                  setSelectedCategory(null);
+                                  setCurrentPage(1);
+                                }
+                              }}
+                              className={`topic-cat-pill ${!selectedCategory ? 'is-active' : ''}`}
+                              style={{
+                                padding: isMobile ? '6px 12px' : '8px 16px',
+                                background: !selectedCategory ? accent : (darkMode ? '#1e293b' : '#fff'),
+                                border: `1.5px solid ${!selectedCategory ? accent : `${accent}33`}`,
+                                borderRadius: 20,
+                                fontSize: isMobile ? 12 : 13,
+                                fontWeight: 600,
+                                color: !selectedCategory ? '#fff' : (darkMode ? '#f1f5f9' : '#0f172a'),
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                flexShrink: 0
+                              }}
+                            >
+                              All {pageTitle}
+                              <span
+                                className="topic-cat-count"
+                                style={{
+                                  fontSize: isMobile ? 10 : 11,
+                                  fontWeight: 700,
+                                  background: !selectedCategory ? '#ffffff' : `${accent}18`,
+                                  color: accent,
+                                  borderRadius: 12,
+                                  padding: '1px 6px',
+                                  minWidth: 20,
+                                  textAlign: 'center',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                {totalCatCount || total}
+                              </span>
+                            </button>
+
+                            {categoriesTree.filter(parent => parent.count > 0).map(parent => {
+                              const isActive = selectedCategory === parent.slug;
+                              return (
+                                <button
+                                  key={parent.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedCategory(prev => prev === parent.slug ? null : parent.slug);
+                                    setCurrentPage(1);
+                                  }}
+                                  className={`topic-cat-pill ${isActive ? 'is-active' : ''}`}
+                                  style={{
+                                    padding: isMobile ? '6px 12px' : '8px 16px',
+                                    background: isActive ? accent : (darkMode ? '#1e293b' : '#fff'),
+                                    border: `1.5px solid ${isActive ? accent : `${accent}33`}`,
+                                    borderRadius: 20,
+                                    fontSize: isMobile ? 12 : 13,
+                                    fontWeight: 600,
+                                    color: isActive ? '#fff' : (darkMode ? '#f1f5f9' : '#0f172a'),
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  {parent.name}
+                                  <span
+                                    className="topic-cat-count"
+                                    style={{
+                                      fontSize: isMobile ? 10 : 11,
+                                      fontWeight: 700,
+                                      background: isActive ? '#ffffff' : `${accent}18`,
+                                      color: accent,
+                                      borderRadius: 12,
+                                      padding: '1px 6px',
+                                      minWidth: 20,
+                                      textAlign: 'center',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                  >
+                                    {parent.count}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </>
+                        );
+                      })()
+                    ) : (
+                      // ── TECHNOLOGY & INDUSTRY: In-place Content Type Filter Pills ──
+                      (() => {
+                        const availableTypes = contentTypesTree.filter(ct => ct.count > 0);
+                        const typesToRender = availableTypes.length > 0 ? availableTypes : contentTypesTree;
+                        const totalTypesCount = typesToRender.reduce((sum, ct) => sum + (Number(ct.count) || 0), 0);
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (selectedContentType) {
+                                  setSelectedContentType(null);
+                                  setCurrentPage(1);
+                                }
+                              }}
+                              className={`topic-cat-pill ${!selectedContentType ? 'is-active' : ''}`}
+                              style={{
+                                padding: isMobile ? '6px 12px' : '8px 16px',
+                                background: !selectedContentType ? accent : (darkMode ? '#1e293b' : '#fff'),
+                                border: `1.5px solid ${!selectedContentType ? accent : `${accent}33`}`,
+                                borderRadius: 20,
+                                fontSize: isMobile ? 12 : 13,
+                                fontWeight: 600,
+                                color: !selectedContentType ? '#fff' : (darkMode ? '#f1f5f9' : '#0f172a'),
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                flexShrink: 0
+                              }}
+                            >
+                              All Formats
+                              <span
+                                className="topic-cat-count"
+                                style={{
+                                  fontSize: isMobile ? 10 : 11,
+                                  fontWeight: 700,
+                                  background: !selectedContentType ? '#ffffff' : `${accent}18`,
+                                  color: accent,
+                                  borderRadius: 12,
+                                  padding: '1px 6px',
+                                  minWidth: 20,
+                                  textAlign: 'center',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                {totalTypesCount || total}
+                              </span>
+                            </button>
+
+                            {typesToRender.map(ct => {
+                              const isActive = selectedContentType === ct.slug;
+                              return (
+                                <button
+                                  key={ct.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedContentType(prev => prev === ct.slug ? null : ct.slug);
+                                    setCurrentPage(1);
+                                  }}
+                                  className={`topic-cat-pill ${isActive ? 'is-active' : ''}`}
+                                  style={{
+                                    padding: isMobile ? '6px 12px' : '8px 16px',
+                                    background: isActive ? accent : (darkMode ? '#1e293b' : '#fff'),
+                                    border: `1.5px solid ${isActive ? accent : `${accent}33`}`,
+                                    borderRadius: 20,
+                                    fontSize: isMobile ? 12 : 13,
+                                    fontWeight: 600,
+                                    color: isActive ? '#fff' : (darkMode ? '#f1f5f9' : '#0f172a'),
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  {ct.name}
+                                  <span
+                                    className="topic-cat-count"
+                                    style={{
+                                      fontSize: isMobile ? 10 : 11,
+                                      fontWeight: 700,
+                                      background: isActive ? '#ffffff' : `${accent}18`,
+                                      color: accent,
+                                      borderRadius: 12,
+                                      padding: '1px 6px',
+                                      minWidth: 20,
+                                      textAlign: 'center',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                  >
+                                    {ct.count}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </>
+                        );
+                      })()
+                    )
                 }
               </div>
             </div>
 
             {/* Title & Count bar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, paddingBottom: isMobile ? 12 : 16, borderBottom: `3px solid ${accent}`, flexShrink: 0, width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-              <span style={{ fontWeight: 800, fontSize: isMobile ? 16 : 18, color: darkMode ? '#f1f5f9' : '#0f172a' }}>
-                {searchTerm ? `Search Results for "${searchTerm}"` : `Latest ${pageTitle}`}
+              <span style={{ fontWeight: 800, fontSize: isMobile ? 16 : 18, color: darkMode ? '#f1f5f9' : '#0f172a', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                {searchTerm
+                  ? `Search Results for "${searchTerm}"`
+                  : selectedCategory
+                    ? `Latest ${pageTitle}: ${categoriesTree.find(c => c.slug === selectedCategory)?.name || selectedCategory}`
+                    : selectedContentType
+                      ? `Latest ${pageTitle}: ${contentTypesTree.find(c => c.slug === selectedContentType)?.name || selectedContentType}`
+                      : `Latest ${pageTitle}`}
+                {(selectedCategory || selectedContentType) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCategory(null);
+                      setSelectedContentType(null);
+                      setCurrentPage(1);
+                    }}
+                    title="Clear filter"
+                    style={{
+                      background: darkMode ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+                      color: '#ef4444',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      borderRadius: 12,
+                      padding: '2px 8px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    Clear Filter ✕
+                  </button>
+                )}
               </span>
               <span style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>
-                {filteredContents.length} articles found
+                {total} {selectedContentType ? (contentTypesTree.find(c => c.slug === selectedContentType)?.name || 'items') : (typeInfo ? pageTitle.toLowerCase() : 'items')} found
               </span>
             </div>
 
@@ -779,7 +1113,7 @@ const CategoryList = () => {
                 : filteredContents.length === 0
                   ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>No articles matched your search query.</div>
                   : filteredContents.slice(0, visibleCount).map(item => (
-                    <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} isMobile={isMobile} />
+                    <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} isMobile={isMobile} isCategoryPage={isCategoryPage} />
                   ))
               }
             </div>
@@ -899,8 +1233,8 @@ const CategoryList = () => {
                 </div>
                 {loading
                   ? <Skeleton active paragraph={{ rows: 6 }} />
-                  : recentPosts.map(item => (
-                    <SidebarPost key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} />
+                  : recentPosts.map((item, index) => (
+                    <SidebarPost key={item.id} item={item} index={index} navigate={navigate} accent={accent} darkMode={darkMode} isCategoryPage={isCategoryPage} />
                   ))
                 }
               </div>

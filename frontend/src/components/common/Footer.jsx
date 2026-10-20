@@ -6,7 +6,7 @@ import {
   MailOutlined, PhoneOutlined, EnvironmentOutlined, ArrowRightOutlined,
   SendOutlined
 } from '@ant-design/icons';
-import CookiePreferencesModal from './CookieBanner';
+import { CookiePreferencesModal } from './CookieBanner';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
@@ -57,50 +57,6 @@ const Footer = ({ simplified = false }) => {
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
-  const [stats, setStats] = useState({
-    readers: '150M+',
-    articles: '290+',
-    experts: '500+'
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchStats = async () => {
-      try {
-        const res = await axios.get('/api/public/stats');
-        if (cancelled || !res.data) return;
-
-        const { totalPublished, totalArticles, totalAuthors, totalUsers, totalViews } = res.data;
-        const articleCount = totalPublished ?? totalArticles;
-        const expertCount = totalAuthors ?? totalUsers;
-
-        const formatNumber = (num, fallback) => {
-          if (num === undefined || num === null || num === '') return fallback;
-          const val = Number(num);
-          if (isNaN(val) || val <= 0) return fallback;
-          if (val >= 1_000_000) {
-            return `${(val / 1_000_000).toFixed(val % 1_000_000 === 0 ? 0 : 1)}M+`;
-          }
-          if (val >= 10_000) {
-            return `${(val / 1_000).toFixed(val % 1_000 === 0 ? 0 : 1)}K+`;
-          }
-          return `${val}+`;
-        };
-
-        setStats({
-          readers: totalViews ? formatNumber(totalViews, '150M+') : '150M+',
-          articles: articleCount !== undefined ? formatNumber(articleCount, `${articleCount}+`) : '290+',
-          experts: expertCount !== undefined ? formatNumber(expertCount, `${expertCount}+`) : '500+'
-        });
-      } catch (err) {
-        console.warn('[Footer] Failed to load public stats:', err?.message);
-      }
-    };
-
-    fetchStats();
-    return () => { cancelled = true; };
-  }, []);
 
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
@@ -210,21 +166,8 @@ const Footer = ({ simplified = false }) => {
             <p style={{ fontSize: 13, color: '#FFFFFF', opacity: 0.95, lineHeight: 1.8, marginBottom: 22, maxWidth: 240 }}>
               Your gateway to technology insights, news, and resources for IT and B2B professionals worldwide.
             </p>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
               <SocialBtn href="https://www.linkedin.com/company/taraj-global/" icon={<LinkedinOutlined />} label="LinkedIn" color="#0077b5" />
-            </div>
-            {/* Mini stats */}
-            <div style={{ display: 'flex', gap: 20 }}>
-              {[
-                [stats.readers, 'Readers'],
-                [stats.articles, 'Articles'],
-                [stats.experts, 'Experts']
-              ].map(([num, lbl]) => (
-                <div key={lbl}>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--color-accent)' }}>{num}</div>
-                  <div style={{ fontSize: 11, color: '#FFFFFF', opacity: 0.85 }}>{lbl}</div>
-                </div>
-              ))}
             </div>
           </div>
 

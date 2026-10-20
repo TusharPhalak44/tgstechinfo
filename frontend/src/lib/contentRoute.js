@@ -24,6 +24,44 @@ const parseLayout = (layout) => {
   }
 };
 
+const slugifyCategory = (name) => {
+  if (!name) return '';
+  return String(name)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+const extractCategorySlug = (item) => {
+  if (!item) return '';
+  if (typeof item.category_slug === 'string' && item.category_slug.trim()) {
+    return slugifyCategory(item.category_slug);
+  }
+  if (typeof item.category === 'string' && item.category.trim()) {
+    return slugifyCategory(item.category);
+  }
+  if (typeof item.category === 'object' && item.category !== null) {
+    if (typeof item.category.slug === 'string' && item.category.slug.trim()) {
+      return slugifyCategory(item.category.slug);
+    }
+    if (typeof item.category.name === 'string' && item.category.name.trim()) {
+      return slugifyCategory(item.category.name);
+    }
+  }
+  if (typeof item.category_name === 'string' && item.category_name.trim()) {
+    return slugifyCategory(item.category_name);
+  }
+  if (Array.isArray(item.categories) && item.categories.length > 0) {
+    const first = item.categories[0];
+    if (typeof first === 'string') return slugifyCategory(first);
+    if (typeof first === 'object' && first !== null) {
+      return slugifyCategory(first.slug || first.name);
+    }
+  }
+  return '';
+};
+
 export const resolveContentRoute = (item = {}) => {
   const rawUrl = typeof item?.url === 'string' ? item.url.trim() : '';
   const slug = typeof item?.slug === 'string' ? item.slug.trim() : '';
@@ -35,7 +73,7 @@ export const resolveContentRoute = (item = {}) => {
   const isLandingPageType = ['landing-page', 'landing page'].includes((contentType || contentTypeName || '').toLowerCase().trim());
   const isFileLanding = Boolean(
     item?.is_file_landing_page ||
-    (Array.isArray(parsedLayout) && (parsedLayout.includes('file-landing') || parsedLayout[0] === 'file-landing')) ||
+    (Array.isArray(parsedLayout) && (parsedLayout.includes('file-landing') || layout?.[0] === 'file-landing')) ||
     (typeof item?.content === 'string' && item.content.includes('File-based landing page')) ||
     (rawUrl && (rawUrl.startsWith('/lp/') || rawUrl.includes('/lp/')))
   );
@@ -75,7 +113,10 @@ export const resolveContentRoute = (item = {}) => {
     return { url: `/content/${encodeURIComponent(slug)}`, newTab: true };
   }
 
-  return { url: `/${normalizeContentType(contentType || contentTypeName || 'article')}/${encodeURIComponent(slug)}`, newTab: false };
+  const type = normalizeContentType(contentType || contentTypeName || 'article');
+  const catSlug = extractCategorySlug(item) || 'general';
+
+  return { url: `/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`, newTab: false };
 };
 
 export const navigateContentItem = (item, navigate, options = {}) => {

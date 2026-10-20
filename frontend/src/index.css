@@ -123,15 +123,19 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { overflow-x: hidden; max-width: 100vw; }
 
-/* ── Navbar ── */
+/* ── Navbar Responsive Breakpoint: Mobile (<768px) vs Desktop/Laptop (>=768px) ── */
 .mobile-menu-toggle { display: none; }
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .desktop-nav { display: none !important; }
   .mobile-menu-toggle { display: inline-flex !important; }
 }
+@media (min-width: 768px) {
+  .desktop-nav { display: flex !important; }
+  .mobile-menu-toggle { display: none !important; }
+}
 
 /* ── Hero grid (Home page) ── */
-.hero-grid { grid-template-columns: 1fr 1fr; }
+.hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 @media (max-width: 768px) {
   .hero-grid { grid-template-columns: 1fr !important; }
 }

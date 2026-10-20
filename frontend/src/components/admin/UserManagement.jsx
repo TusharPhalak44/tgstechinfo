@@ -83,13 +83,9 @@ const UserManagement = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-  const [passwordUser, setPasswordUser] = useState(null);
-  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [form] = Form.useForm();
-  const [passwordForm] = Form.useForm();
   const [stats, setStats] = useState({
     total: 0,
     admin: 0,
@@ -140,12 +136,18 @@ const UserManagement = () => {
 
   const handleAddUser = () => {
     setEditingUser(null);
+    setGeneratedPassword('');
     form.resetFields();
+    form.setFieldsValue({
+      role: 'user',
+      password: '',
+    });
     setModalVisible(true);
   };
 
   const handleEdit = (user) => {
     setEditingUser(user);
+    setGeneratedPassword('');
     form.setFieldsValue({
       first_name: user.first_name || '',
       last_name: user.last_name || '',
@@ -165,15 +167,22 @@ const UserManagement = () => {
         const payload = { ...values };
         if (!payload.password || String(payload.password).trim() === '') {
           delete payload.password;
+        } else {
+          payload.password = String(payload.password).trim();
+          if (payload.password.length < 6) {
+            message.error('Password must be at least 6 characters long');
+            return;
+          }
         }
-        await axios.put(`/api/admin/users/${editingUser.id}`, payload);
-        message.success('User updated successfully');
+        const res = await axios.put(`/api/admin/users/${editingUser.id}`, payload);
+        message.success(res.data?.passwordChanged ? 'User credentials and password updated successfully' : 'User updated successfully');
       } else {
         await axios.post('/api/admin/users', values);
         message.success('User created successfully');
       }
       setModalVisible(false);
       setEditingUser(null);
+      setGeneratedPassword('');
       form.resetFields();
       fetchUsers();
     } catch (error) {
@@ -192,17 +201,6 @@ const UserManagement = () => {
     }
   };
 
-  const handleOpenPasswordModal = (user) => {
-    setPasswordUser(user);
-    setGeneratedPassword('');
-    passwordForm.resetFields();
-    passwordForm.setFieldsValue({
-      unlock_account: true,
-      invalidate_sessions: true
-    });
-    setPasswordModalVisible(true);
-  };
-
   const generateStrongPassword = () => {
     const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
     const lower = 'abcdefghjkmnpqrstuvwxyz';
@@ -219,9 +217,8 @@ const UserManagement = () => {
     }
     pwd = pwd.split('').sort(() => 0.5 - Math.random()).join('');
     setGeneratedPassword(pwd);
-    passwordForm.setFieldsValue({
-      password: pwd,
-      confirmPassword: pwd
+    form.setFieldsValue({
+      password: pwd
     });
     message.success('Generated strong password!');
   };
@@ -235,34 +232,29 @@ const UserManagement = () => {
     }
   };
 
-  const handlePasswordSubmit = async (values) => {
-    if (!passwordUser) return;
-    setPasswordSubmitting(true);
-    try {
-      const response = await axios.put(`/api/admin/users/${passwordUser.id}/password`, {
-        password: values.password,
-        unlock_account: values.unlock_account !== false,
-        invalidate_sessions: values.invalidate_sessions !== false
-      });
-      message.success(response.data?.message || `Password changed for ${passwordUser.email}`);
-      setPasswordModalVisible(false);
-      setPasswordUser(null);
-      passwordForm.resetFields();
-      setGeneratedPassword('');
-      fetchUsers();
-    } catch (error) {
-      const msg = error.response?.data?.message || 'Failed to update user password';
-      message.error(msg);
-    } finally {
-      setPasswordSubmitting(false);
-    }
-  };
+  const filteredUsers = users.filter((u) => {
+    if (!searchQuery || !searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const fullName = `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase();
+    const firstName = (u.first_name || '').toLowerCase();
+    const lastName = (u.last_name || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    const jobTitle = (u.job_title || '').toLowerCase();
+    const company = (u.company_name || u.company || '').toLowerCase();
+    const country = (u.country || '').toLowerCase();
+    const role = (u.role || '').toLowerCase();
 
-  const filteredUsers = users.filter(u => 
-    `${u.first_name || ''} ${u.last_name || ''}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (u.role || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    return (
+      fullName.includes(q) ||
+      firstName.includes(q) ||
+      lastName.includes(q) ||
+      email.includes(q) ||
+      jobTitle.includes(q) ||
+      company.includes(q) ||
+      country.includes(q) ||
+      role.includes(q)
+    );
+  });
 
   const StatCard = ({ title, value, icon, color = 'primary', accentColor, subtitle }) => {
     const colorMap = {
@@ -395,25 +387,10 @@ const UserManagement = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 140,
+      width: 100,
       align: 'right',
       render: (_, record) => (
         <Space size={6}>
-          <PermissionWrapper permissions="user.update">
-            <Tooltip title="Change / Reset Password">
-              <Button
-                type="text"
-                icon={<KeyOutlined />}
-                onClick={() => handleOpenPasswordModal(record)}
-                style={{
-                  borderRadius: 8,
-                  color: '#F59E0B',
-                  background: D ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)',
-                  border: `1px solid ${D ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.2)'}`,
-                }}
-              />
-            </Tooltip>
-          </PermissionWrapper>
           <PermissionWrapper permissions="user.update">
             <Tooltip title="Edit User Credentials">
               <Button
@@ -569,13 +546,14 @@ const UserManagement = () => {
                   border: `1px solid ${D ? 'rgba(51, 65, 85, 0.8)' : 'rgba(203, 213, 225, 0.8)'}`,
                   borderRadius: 10,
                   padding: '6px 14px',
-                  width: 240,
+                  width: 320,
+                  maxWidth: '100%',
                 }}
               >
                 <SearchOutlined style={{ color: D ? '#64748B' : '#94A3B8', fontSize: 14 }} />
                 <input
                   type="text"
-                  placeholder="Search user name/email..."
+                  placeholder="Search by name, email, job title, company, country..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   style={{
@@ -588,6 +566,24 @@ const UserManagement = () => {
                     fontFamily: 'inherit',
                   }}
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: D ? '#94A3B8' : '#64748B',
+                      fontSize: 13,
+                      padding: '0 2px',
+                      lineHeight: 1,
+                    }}
+                    title="Clear search"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
 
               <Tooltip title="Reload Users">
@@ -613,7 +609,12 @@ const UserManagement = () => {
             </div>
           }
           open={modalVisible}
-          onCancel={() => setModalVisible(false)}
+          onCancel={() => {
+            setModalVisible(false);
+            setEditingUser(null);
+            setGeneratedPassword('');
+            form.resetFields();
+          }}
           onOk={() => form.submit()}
           okText={editingUser ? 'Save Changes' : 'Create User'}
           okButtonProps={{
@@ -652,33 +653,90 @@ const UserManagement = () => {
               <Input placeholder="United States" style={{ borderRadius: 8, height: 40 }} />
             </Form.Item>
 
-            <Form.Item 
-              name="password" 
-              label={
-                <span style={{ fontWeight: 700, fontSize: '0.82rem' }}>
-                  {editingUser ? 'Password / Change Password' : 'Password'}
-                </span>
-              } 
-              rules={!editingUser ? [
-                { required: true, message: 'Password is required' },
-                { min: 6, message: 'Password must be at least 6 characters' }
-              ] : [
-                { min: 6, message: 'Password must be at least 6 characters if changed' }
-              ]}
-              extra={
-                editingUser ? (
-                  <span style={{ fontSize: '0.74rem', color: D ? '#94A3B8' : '#64748B' }}>
-                    Type a new password here to update this user's password, or leave blank to keep current password.
-                  </span>
-                ) : null
-              }
+            {/* ── PASSWORD / CHANGE PASSWORD SECTION ── */}
+            <div
+              style={{
+                marginTop: 18,
+                marginBottom: 16,
+                padding: '14px 16px',
+                borderRadius: 12,
+                background: D ? 'rgba(30, 41, 59, 0.6)' : '#F8FAFC',
+                border: `1px solid ${D ? 'rgba(51, 65, 85, 0.8)' : '#E2E8F0'}`,
+              }}
             >
-              <Input.Password 
-                placeholder={editingUser ? "Enter new password to change" : "At least 8 characters"} 
-                style={{ borderRadius: 8, height: 40 }} 
-                visibilityToggle
-              />
-            </Form.Item>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <LockOutlined style={{ color: '#F59E0B', fontSize: 15 }} />
+                  <span style={{ fontWeight: 800, fontSize: '0.85rem', color: D ? '#F8FAFC' : '#0F172A' }}>
+                    {editingUser ? 'Password / Change Password' : 'Password Setup'}
+                  </span>
+                </div>
+                <Button
+                  size="small"
+                  type="link"
+                  icon={<KeyOutlined />}
+                  onClick={generateStrongPassword}
+                  style={{ fontSize: '0.74rem', padding: 0, color: '#3B82F6', fontWeight: 700 }}
+                >
+                  Generate Strong Password
+                </Button>
+              </div>
+
+              {editingUser ? (
+                <div style={{ fontSize: '0.74rem', color: D ? '#94A3B8' : '#64748B', marginBottom: 10 }}>
+                  Leave blank to retain current password, or enter a new password below to reset this user's credentials.
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.74rem', color: D ? '#94A3B8' : '#64748B', marginBottom: 10 }}>
+                  Enter a secure password for this new account (minimum 6 characters).
+                </div>
+              )}
+
+              <Form.Item
+                name="password"
+                rules={!editingUser ? [
+                  { required: true, message: 'Password is required' },
+                  { min: 6, message: 'Password must be at least 6 characters' }
+                ] : [
+                  { min: 6, message: 'Password must be at least 6 characters if changed' }
+                ]}
+                style={{ marginBottom: generatedPassword ? 8 : 0 }}
+              >
+                <Input.Password
+                  placeholder={editingUser ? "Enter new password (leave blank to keep current)" : "At least 6 characters"}
+                  style={{ borderRadius: 8, height: 40 }}
+                  visibilityToggle
+                />
+              </Form.Item>
+
+              {generatedPassword && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '0.76rem',
+                    background: D ? 'rgba(245, 158, 11, 0.12)' : 'rgba(245, 158, 11, 0.08)',
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    color: D ? '#FCD34D' : '#B45309',
+                    marginTop: 6
+                  }}
+                >
+                  <span>Generated Password: <strong>{generatedPassword}</strong></span>
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<CopyOutlined />}
+                    onClick={() => copyToClipboard(generatedPassword)}
+                    style={{ fontSize: '0.72rem', height: 24, padding: '0 8px', color: D ? '#FCD34D' : '#B45309', fontWeight: 600 }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <Form.Item name="role" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>System Role</span>} initialValue="user">
               <Select style={{ height: 40, borderRadius: 8 }}>
@@ -686,212 +744,6 @@ const UserManagement = () => {
                 <Option value="admin">Admin (Full Control)</Option>
               </Select>
             </Form.Item>
-          </Form>
-        </Modal>
-
-        {/* ── DEDICATED CHANGE PASSWORD MODAL ── */}
-        <Modal
-          title={
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: D ? '#F8FAFC' : '#0F172A', fontWeight: 800 }}>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 10,
-                  background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                  color: '#FFFFFF',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
-                }}
-              >
-                <KeyOutlined />
-              </div>
-              <div>
-                <div>Change User Password</div>
-                <div style={{ fontSize: '0.74rem', fontWeight: 500, color: D ? '#94A3B8' : '#64748B' }}>
-                  Set a new password for account login
-                </div>
-              </div>
-            </div>
-          }
-          open={passwordModalVisible}
-          onCancel={() => {
-            setPasswordModalVisible(false);
-            setPasswordUser(null);
-            passwordForm.resetFields();
-            setGeneratedPassword('');
-          }}
-          onOk={() => passwordForm.submit()}
-          okText="Update Password"
-          confirmLoading={passwordSubmitting}
-          okButtonProps={{
-            style: {
-              background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-              border: 'none',
-              borderRadius: 8,
-              fontWeight: 700,
-              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)'
-            },
-          }}
-          cancelButtonProps={{ style: { borderRadius: 8 } }}
-          destroyOnClose
-          width={500}
-        >
-          {passwordUser && (
-            <div
-              style={{
-                marginTop: 14,
-                marginBottom: 18,
-                padding: '12px 16px',
-                borderRadius: 12,
-                background: D ? 'rgba(30, 41, 59, 0.7)' : '#F1F5F9',
-                border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : '#E2E8F0'}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <Avatar style={{ background: '#3B82F6', fontWeight: 700 }}>
-                  {(passwordUser.first_name?.[0] || passwordUser.email?.[0] || 'U').toUpperCase()}
-                </Avatar>
-                <div>
-                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: D ? '#F8FAFC' : '#0F172A' }}>
-                    {`${passwordUser.first_name || ''} ${passwordUser.last_name || ''}`.trim() || 'Team Member'}
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: D ? '#94A3B8' : '#64748B' }}>
-                    {passwordUser.email}
-                  </div>
-                </div>
-              </div>
-              <Tag color={passwordUser.is_active ? 'green' : 'red'} style={{ borderRadius: 6, fontWeight: 700 }}>
-                {passwordUser.is_active ? 'ACTIVE' : 'INACTIVE'}
-              </Tag>
-            </div>
-          )}
-
-          <Form
-            form={passwordForm}
-            layout="vertical"
-            onFinish={handlePasswordSubmit}
-            initialValues={{
-              unlock_account: true,
-              invalidate_sessions: true
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-              <Button
-                size="small"
-                type="dashed"
-                icon={<SafetyCertificateOutlined />}
-                onClick={generateStrongPassword}
-                style={{
-                  borderRadius: 6,
-                  fontSize: '0.74rem',
-                  fontWeight: 600,
-                  color: '#2563EB',
-                  borderColor: '#93C5FD'
-                }}
-              >
-                Generate Strong Password
-              </Button>
-            </div>
-
-            <Form.Item
-              name="password"
-              label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>New Password</span>}
-              rules={[
-                { required: true, message: 'Please enter a new password' },
-                { min: 6, message: 'Password must be at least 6 characters long' }
-              ]}
-            >
-              <Input.Password
-                placeholder="Enter at least 6 characters"
-                style={{ borderRadius: 8, height: 42 }}
-                visibilityToggle
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="confirmPassword"
-              label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Confirm New Password</span>}
-              dependencies={['password']}
-              rules={[
-                { required: true, message: 'Please confirm the new password' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error('The two passwords do not match!'));
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                placeholder="Re-enter the new password"
-                style={{ borderRadius: 8, height: 42 }}
-                visibilityToggle
-              />
-            </Form.Item>
-
-            {generatedPassword && (
-              <Alert
-                type="info"
-                showIcon
-                style={{ marginBottom: 16, borderRadius: 8 }}
-                message={
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.8rem' }}>
-                      Generated Password: <strong>{generatedPassword}</strong>
-                    </span>
-                    <Button
-                      size="small"
-                      type="link"
-                      icon={<CopyOutlined />}
-                      onClick={() => copyToClipboard(generatedPassword)}
-                    >
-                      Copy
-                    </Button>
-                  </div>
-                }
-              />
-            )}
-
-            <div
-              style={{
-                padding: '12px 14px',
-                borderRadius: 10,
-                background: D ? 'rgba(30, 41, 59, 0.5)' : '#F8FAFC',
-                border: `1px solid ${D ? 'rgba(51, 65, 85, 0.4)' : '#E2E8F0'}`,
-                marginBottom: 12
-              }}
-            >
-              <Form.Item name="unlock_account" valuePropName="checked" style={{ marginBottom: 6 }}>
-                <Checkbox style={{ fontSize: '0.82rem', fontWeight: 600 }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <UnlockOutlined style={{ color: '#10B981' }} />
-                    Unlock account & clear failed login attempts (Recommended)
-                  </span>
-                </Checkbox>
-              </Form.Item>
-
-              <Form.Item name="invalidate_sessions" valuePropName="checked" style={{ marginBottom: 0 }}>
-                <Checkbox style={{ fontSize: '0.82rem', fontWeight: 600 }}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <LockOutlined style={{ color: '#6366F1' }} />
-                    Invalidate active sessions on other devices
-                  </span>
-                </Checkbox>
-              </Form.Item>
-            </div>
-
-            <div style={{ fontSize: '0.74rem', color: D ? '#94A3B8' : '#64748B' }}>
-              💡 Once saved, the user can immediately log in with their email and this new password at the login page.
-            </div>
           </Form>
         </Modal>
       </div>

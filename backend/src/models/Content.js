@@ -343,7 +343,16 @@ class Content {
             }
         }
 
-        const slug = slugify(title ? String(title).trim() : `untitled-${Date.now()}`, { lower: true, strict: true }) || `untitled-${Date.now()}`;
+        let baseSlug = slugify(title ? String(title).trim() : `untitled-${Date.now()}`, { lower: true, strict: true }) || `untitled-${Date.now()}`;
+        let slug = baseSlug;
+        let slugCounter = 1;
+        while (true) {
+            const [existingSlug] = await pool.query('SELECT id FROM contents WHERE slug = ?', [slug]);
+            if (existingSlug.length === 0) break;
+            slugCounter++;
+            slug = `${baseSlug}-${slugCounter}`;
+        }
+
         const wordCount = (content || '').split(/\s+/).length;
         const reading_time = Math.ceil(wordCount / 200);
 
@@ -365,7 +374,8 @@ class Content {
             return `${dateObj.getFullYear()}-${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())} ${pad(dateObj.getHours())}:${pad(dateObj.getMinutes())}:${pad(dateObj.getSeconds())}`;
         };
 
-        const scalarize = (val) => {
+        const scalarize = (val, isContentField = false) => {
+            if (isContentField) return val ?? '';
             if (val === null || val === undefined || val === '' || val === 'null' || val === 'undefined') return null;
             if (val instanceof Date) return toMySqlDateTime(val);
             if (typeof val === 'string') return val;
@@ -423,7 +433,7 @@ class Content {
             created_at || (status === 'published' && scheduled_publish_date ? scheduled_publish_date : (published_date || new Date()))
         ];
 
-        const insertValues = rawValues.map(v => scalarize(v));
+        const insertValues = rawValues.map((v, i) => scalarize(v, insertColumns[i] === 'content'));
         const placeholders = insertColumns.map(() => '?').join(', ');
         const query = `INSERT INTO contents (${insertColumns.join(', ')}) VALUES (${placeholders})`;
 
@@ -553,7 +563,7 @@ class Content {
 
         let orderBy = 'COALESCE(c.published_date, c.created_at) DESC, c.id DESC';
         if (filters.sort_by === 'views' || filters.sort_by === 'popular' || filters.sort_by === 'trending' || filters.sort_by === 'clicks') {
-            orderBy = 'COALESCE(c.view_count, 0) DESC, COALESCE(c.published_date, c.created_at) DESC, c.id DESC';
+            orderBy = 'GREATEST(COALESCE(c.views_count, 0), COALESCE(c.view_count, 0)) DESC, COALESCE(c.reading_time, 0) DESC, COALESCE(c.published_date, c.created_at) DESC, c.id DESC';
         }
 
         let query = `
@@ -562,7 +572,8 @@ class Content {
                    u.first_name, u.last_name, u.email as author_email,
                    ct.name as content_type_name,
                    ct.slug as content_type,
-                   cat.name as category_name
+                   cat.name as category_name,
+                   cat.slug as category_slug
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
@@ -809,10 +820,12 @@ class Content {
 
     static async getRelatedArticles(contentId, categoryId, limit = 3) {
         const query = `
-            SELECT c.*, u.first_name, u.last_name, ct.slug as content_type
+            SELECT c.*, u.first_name, u.last_name, ct.slug as content_type,
+                   cat.name as category_name, cat.slug as category_slug
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
+            LEFT JOIN categories cat ON c.category_id = cat.id
             WHERE c.category_id = ? AND c.id != ? AND c.status = 'published' 
               AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
               AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)

@@ -290,14 +290,37 @@ exports.serveFile = async (req, res) => {
             [filename]
         );
         if (rows[0] && rows[0].file_data) {
+            const fileData = rows[0].file_data;
+            const fileSize = fileData.length;
             const mime = rows[0].mime_type || 'application/octet-stream';
             const originalName = rows[0].original_name || filename;
+            const range = req.headers.range;
+
+            if (range && mime.startsWith('video/')) {
+                const parts = range.replace(/bytes=/, '').split('-');
+                const start = parseInt(parts[0], 10);
+                const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+                const chunksize = (end - start) + 1;
+                const chunk = fileData.subarray(start, end + 1);
+
+                res.writeHead(206, {
+                    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                    'Accept-Ranges': 'bytes',
+                    'Content-Length': chunksize,
+                    'Content-Type': mime,
+                    'Cache-Control': 'public, max-age=31536000'
+                });
+                return res.end(chunk);
+            }
+
             res.setHeader('Content-Type', mime);
+            res.setHeader('Accept-Ranges', 'bytes');
+            res.setHeader('Content-Length', fileSize);
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             if (download === '1') {
                 res.setHeader('Content-Disposition', `attachment; filename="${originalName}"`);
             }
-            return res.send(rows[0].file_data);
+            return res.send(fileData);
         }
 
         // 2. Fallback: check disk filesystem if legacy file was on disk

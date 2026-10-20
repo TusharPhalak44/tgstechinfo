@@ -178,8 +178,12 @@ const normalizeContentTypeSlug = (value) => {
 
 exports.getPublishedContent = async (req, res) => {
     try {
-        const { category, content_type, limit = 10, offset = 0, start_date, end_date } = req.query;
+        const { category, content_type, limit = 10, offset = 0, start_date, end_date, sort_by } = req.query;
         const filters = { status: 'published', is_visible_on_site: true };
+
+        if (sort_by) {
+            filters.sort_by = String(sort_by).trim().toLowerCase();
+        }
 
         if (category) {
             if (/^\d+$/.test(category)) {
@@ -620,15 +624,39 @@ exports.submitLandingPage = async (req, res) => {
             extraData.full_name ||
             req.body.first_name ||
             'there';
-        const contentTitle = content?.title || 'the requested article';
+        const typeSlug = (content?.content_type || '').toLowerCase();
+        const typeName = (content?.content_type_name || '').toLowerCase();
+        const isEbook = typeSlug.includes('ebook') || typeName.includes('ebook') || content?.content_type_id === 7;
+
+        // Build direct download URL if pdf_file exists
+        let downloadUrl = null;
+        if (content?.pdf_file) {
+            const rawPdf = String(content.pdf_file).trim();
+            if (rawPdf.startsWith('http://') || rawPdf.startsWith('https://')) {
+                downloadUrl = rawPdf;
+            } else {
+                const baseUrl = (process.env.BACKEND_URL || process.env.API_URL || 'https://tgstechinfo.com').replace(/\/+$/, '');
+                const cleanPdf = rawPdf.startsWith('/') ? rawPdf : `/uploads/${rawPdf}`;
+                downloadUrl = `${baseUrl}${cleanPdf}`;
+            }
+        }
+
+        const contentTitle = content?.title || (isEbook ? 'Your eBook' : 'the requested article');
+        const emailSubject = isEbook
+            ? `Your eBook Download: ${contentTitle} — TGS Tech Info`
+            : `Access Granted: ${contentTitle} — TGS Tech Info`;
 
         if (emailValue) {
             try {
-                const emailHtml = accessGrantEmailTemplate(fullName, contentTitle);
-                const emailResult = await sendEmail(emailValue, 'Access Granted - TGS Tech Info', emailHtml);
-                if (emailResult?.skipped) console.warn('Email skipped:', emailResult.reason);
+                const emailHtml = accessGrantEmailTemplate(fullName, contentTitle, downloadUrl, isEbook);
+                const emailResult = await sendEmail(emailValue, emailSubject, emailHtml);
+                if (!emailResult?.success) {
+                    console.error('[submitLandingPage] Email delivery failed:', emailResult?.error || emailResult?.reason);
+                } else {
+                    console.log(`[submitLandingPage] Email successfully sent to ${emailValue}`);
+                }
             } catch (emailError) {
-                console.warn('Email send skipped:', emailError.message);
+                console.error('[submitLandingPage] Email send exception:', emailError.message);
             }
         }
 
@@ -728,9 +756,10 @@ exports.submitLandingPage = async (req, res) => {
         res.json({
             id: submissionRecord?.id || normalizedContentId || 1,
             submission_id: submissionRecord?.id || null,
-            message: 'Access granted successfully.',
+            message: isEbook ? 'Thank you! The eBook download link has been sent to your email.' : 'Access granted successfully.',
             has_access: true,
             pdf_file: content?.pdf_file || null,
+            download_url: downloadUrl || null,
             redirect_url: redirectUrl || null
         });
         console.log('========== FORM SUBMISSION END (SUCCESS) ==========');
@@ -924,29 +953,44 @@ exports.subscribeNewsletter = async (req, res) => {
 
 exports.unsubscribeNewsletter = async (req, res) => {
     try {
-        const { token } = req.query;
+        const token = req.query.token || req.body?.token;
+        const email = req.query.email || req.body?.email;
 
-        if (!token) {
-            return res.status(400).json({ message: 'Unsubscribe token is required' });
+        if (!token && !email) {
+            return res.status(400).json({ message: 'Unsubscribe token or email address is required' });
         }
 
-        // Find subscriber by token (active or inactive)
-        const [subscribers] = await pool.query(
-            'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ?',
-            [token]
-        );
+        let subscriber = null;
 
-        if (subscribers.length === 0) {
-            return res.status(404).json({ message: 'Invalid or expired unsubscribe link' });
+        if (token) {
+            const [subscribers] = await pool.query(
+                'SELECT * FROM newsletter_subscribers WHERE unsubscribe_token = ?',
+                [token]
+            );
+            if (subscribers.length > 0) {
+                subscriber = subscribers[0];
+            }
+        } else if (email) {
+            const normalizedEmail = email.trim().toLowerCase();
+            const [subscribers] = await pool.query(
+                'SELECT * FROM newsletter_subscribers WHERE LOWER(email) = ?',
+                [normalizedEmail]
+            );
+            if (subscribers.length > 0) {
+                subscriber = subscribers[0];
+            }
         }
 
-        const subscriber = subscribers[0];
+        if (!subscriber) {
+            return res.status(404).json({ message: 'No active newsletter subscription found for this link or email address' });
+        }
 
         // Idempotent UX: if already inactive, return a graceful success response
         if (!subscriber.is_active) {
             return res.json({
                 message: 'You are already unsubscribed from our newsletter.',
-                already_unsubscribed: true
+                already_unsubscribed: true,
+                email: subscriber.email
             });
         }
 
@@ -956,7 +1000,10 @@ exports.unsubscribeNewsletter = async (req, res) => {
             [subscriber.id]
         );
 
-        res.json({ message: 'Successfully unsubscribed from newsletter' });
+        res.json({
+            message: 'Successfully unsubscribed from newsletter',
+            email: subscriber.email
+        });
     } catch (error) {
         console.error('Newsletter unsubscribe error:', error);
         res.status(500).json({ message: 'Server error' });
@@ -1081,6 +1128,48 @@ exports.getContentTypeCounts = async (req, res) => {
         res.json(counts);
     } catch (error) {
         console.error('Get content type counts error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.getContentTypesWithCount = async (req, res) => {
+    try {
+        const { category } = req.query;
+        const { pool } = require('../config/database');
+
+        let categoryFilter = '';
+        const values = [];
+
+        if (category) {
+            const matchedCategory = await Category.findBySlug(category);
+            if (matchedCategory) {
+                categoryFilter = ' AND c.category_id = ?';
+                values.push(matchedCategory.id);
+            }
+        }
+
+        const [rows] = await pool.query(
+            `SELECT ct.id, ct.name, ct.slug, COUNT(c.id) as count
+             FROM content_types ct
+             LEFT JOIN contents c ON c.content_type_id = ct.id 
+                  AND (c.status = 'published' OR c.status IS NULL)
+                  AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+                  ${categoryFilter}
+             GROUP BY ct.id, ct.name, ct.slug
+             ORDER BY ct.id ASC`,
+            values
+        );
+
+        const result = rows.map(r => ({
+            id: r.id,
+            name: r.name,
+            slug: r.slug,
+            count: parseInt(r.count || 0, 10)
+        }));
+
+        res.json(result);
+    } catch (error) {
+        console.error('Get content types with count error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };

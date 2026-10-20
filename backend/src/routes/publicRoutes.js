@@ -29,6 +29,7 @@ router.get('/categories-with-count', publicController.getCategoriesWithCount);
 router.get('/top-categories', publicController.getTopCategoriesByViews);
 router.get('/content-types', publicController.getContentTypes);
 router.get('/content-type-counts', publicController.getContentTypeCounts);
+router.get('/content-types-with-count', publicController.getContentTypesWithCount);
 
 // Public stats
 router.get('/stats', publicController.getPublicStats);
@@ -40,6 +41,7 @@ router.post('/case-study-gate', strictLimiter, publicController.submitCaseStudyG
 
 // Newsletter
 router.get('/newsletter/unsubscribe', publicController.unsubscribeNewsletter);
+router.post('/newsletter/unsubscribe', publicController.unsubscribeNewsletter);
 
 // Data requests (DSAR + Do Not Sell)
 router.post('/data-request/dsar', passwordResetLimiter, publicController.submitDataRequest);

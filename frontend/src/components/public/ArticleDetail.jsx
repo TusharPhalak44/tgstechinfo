@@ -10,7 +10,7 @@ import {
   PhoneOutlined, IdcardOutlined, BankOutlined, SafetyCertificateOutlined,
   CheckCircleFilled, VideoCameraOutlined, RightOutlined, FireOutlined,
   ReadOutlined, CopyOutlined, CheckOutlined, LinkedinFilled, TwitterOutlined,
-  FacebookFilled, WhatsAppOutlined
+  FacebookFilled, WhatsAppOutlined, ArrowUpOutlined, DownloadOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -262,6 +262,9 @@ const ArticleDetail = () => {
 
         setContent(c);
         setRelatedArticles(response.data.relatedArticles || []);
+        if (c?.pdf_file) {
+          setPdfFile(c.pdf_file);
+        }
         if (c?.id) {
           const isReg = localStorage.getItem(`webinar_registered_${c.id}`);
           if (isReg) setWebinarRegistered(true);
@@ -398,15 +401,17 @@ const ArticleDetail = () => {
   const handleLandingPageSubmit = async (values) => {
     setSubmitting(true);
     try {
-      const extra_fields = {};
-      customFields.forEach(field => {
-        if (values[field.name] !== undefined) {
-          extra_fields[field.name] = values[field.name];
-          // webhook_key bhi store karo taaki backend correctly map kar sake
-          if (field.webhook_key && field.webhook_key !== field.name)
-            extra_fields[field.webhook_key] = values[field.name];
-        }
-      });
+      const extra_fields = { ...values };
+      if (customFields && customFields.length > 0) {
+        customFields.forEach(field => {
+          if (values[field.name] !== undefined) {
+            extra_fields[field.name] = values[field.name];
+            // webhook_key bhi store karo taaki backend correctly map kar sake
+            if (field.webhook_key && field.webhook_key !== field.name)
+              extra_fields[field.webhook_key] = values[field.name];
+          }
+        });
+      }
 
       const res = await axios.post('/api/public/landing-page', {
         content_id: content.id,
@@ -421,9 +426,15 @@ const ArticleDetail = () => {
 
       localStorage.setItem(`article-access-${content.id}`, 'true');
       setHasAccess(true);
-      setPdfFile(res.data?.pdf_file || null);
+      if (res.data?.pdf_file || content?.pdf_file) {
+        setPdfFile(res.data?.pdf_file || content?.pdf_file);
+      }
       setSubmittedData(extra_fields);
-      form.resetFields();
+      try {
+        form.resetFields();
+      } catch (e) { /* ignore */ }
+
+      messageApi.success(res.data?.message || 'Access granted successfully!');
 
       if (res.data?.redirect_url) {
         const target = res.data.redirect_url.trim();
@@ -460,7 +471,11 @@ const ArticleDetail = () => {
   };
 
   const handleDownloadPdf = () => {
-    if (!pdfFile) return;
+    const fileToDownload = pdfFile || content?.pdf_file;
+    if (!fileToDownload) {
+      messageApi.warning('eBook PDF file is being prepared. Please check your email.');
+      return;
+    }
 
     // Track download engagement
     if (isTrackingEnabled && content?.id) {
@@ -468,15 +483,19 @@ const ArticleDetail = () => {
         content_id: content.id,
         engagement_type: 'download',
         engagement_data: {
-          file_name: pdfFile,
+          file_name: fileToDownload,
           content_type: content.content_type_slug || content.content_type
         }
       }).catch(err => console.error('Download tracking error:', err));
     }
 
+    const downloadHref = fileToDownload.startsWith('http://') || fileToDownload.startsWith('https://')
+      ? fileToDownload
+      : (fileToDownload.startsWith('/') ? fileToDownload : `/uploads/${fileToDownload}`);
+
     const link = document.createElement('a');
-    link.href = `/uploads/${pdfFile}`;
-    link.download = pdfFile;
+    link.href = downloadHref;
+    link.download = fileToDownload.split('/').pop() || 'ebook.pdf';
     link.target = '_blank';
     document.body.appendChild(link);
     link.click();
@@ -544,12 +563,22 @@ const ArticleDetail = () => {
     </div>
   );
 
-  const LANDING_TYPES = ['whitepaper', 'white paper', 'white-paper', 'event', 'e-book'];
+  const LANDING_TYPES = ['whitepaper', 'white paper', 'white-paper', 'event', 'e-book', 'ebook', 'ebooks'];
   const contentTypeName = (content?.content_type_name || content?.content_type || '').toLowerCase().trim();
-  const requiresLanding = LANDING_TYPES.includes(contentTypeName);
+  const isEbook = contentTypeName.includes('ebook') || content?.content_type_id === 7;
+  const requiresLanding = LANDING_TYPES.some(t => contentTypeName.includes(t)) || isEbook;
 
   const fullContent = content.content || '';
   const previewContent = getPreviewHtml(content.short_description || fullContent);
+
+  const effectiveCustomFields = (customFields && customFields.length > 0)
+    ? customFields
+    : [
+        { name: 'first_name', label: 'First Name', type: 'text', placeholder: 'Enter your first name', required: true },
+        { name: 'last_name', label: 'Last Name', type: 'text', placeholder: 'Enter your last name', required: true },
+        { name: 'email', label: 'Business Email', type: 'email', placeholder: 'name@company.com', required: true },
+        { name: 'contact', label: 'Phone / Contact', type: 'text', placeholder: '+1 (555) 000-0000', required: false }
+      ];
 
   return (
     <>
@@ -644,7 +673,10 @@ const ArticleDetail = () => {
               {requiresLanding && !hasAccess && (
                 <div style={{ marginBottom: 20, padding: '14px 16px', background: darkMode ? 'rgba(251, 191, 36, 0.1)' : '#fff7e6', border: darkMode ? '1px solid #fbbf24' : '1px solid #ffd591', borderRadius: 8 }}>
                   <Text strong style={{ color: darkMode ? '#fcd34d' : '#8c4b00' }}>
-                    <LockOutlined style={{ marginRight: 8 }} /> Preview only. Fill the form on the right to unlock the full article.
+                    <LockOutlined style={{ marginRight: 8 }} />
+                    {isEbook
+                      ? ' eBook Overview: Complete the form below to receive the complete eBook in PDF format directly in your email.'
+                      : ' Preview only. Fill the form to unlock the full content.'}
                   </Text>
                 </div>
               )}
@@ -776,6 +808,239 @@ const ArticleDetail = () => {
                   </div>
                 }
               />
+
+              {/* ── EBOOK DOWNLOAD & LEAD CAPTURE SECTION (Directly below description) ── */}
+              {isEbook && (
+                <div
+                  id="ebook-download-section"
+                  style={{
+                    marginTop: 32,
+                    marginBottom: 32,
+                    background: darkMode
+                      ? 'linear-gradient(145deg, #1e293b 0%, #0f172a 100%)'
+                      : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    borderRadius: 16,
+                    border: darkMode ? '1.5px solid #334155' : '1.5px solid #e2e8f0',
+                    boxShadow: darkMode
+                      ? '0 10px 30px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+                      : '0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02)',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {/* Gradient accent top bar */}
+                  <div style={{
+                    height: 4,
+                    background: 'linear-gradient(90deg, #0AAEEF 0%, #4a7cff 50%, #6c5ce7 100%)'
+                  }} />
+
+                  {!hasAccess ? (
+                    <div style={{ padding: '32px 28px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 24 }}>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                            <div style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: 10,
+                              background: 'linear-gradient(135deg, #0AAEEF 0%, #0077b5 100%)',
+                              color: '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: 18,
+                              boxShadow: '0 4px 12px rgba(10, 174, 239, 0.3)'
+                            }}>
+                              📥
+                            </div>
+                            <Title level={3} style={{ margin: 0, fontSize: 22, fontWeight: 800, color: darkMode ? '#f8fafc' : '#0f172a' }}>
+                              Download Your Free Copy
+                            </Title>
+                          </div>
+                          <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 14 }}>
+                            Fill in your details below to receive the complete eBook (PDF) directly to your email inbox.
+                          </Text>
+                        </div>
+
+                        <div style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          background: darkMode ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5',
+                          border: darkMode ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #a7f3d0',
+                          padding: '6px 14px',
+                          borderRadius: 20,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: darkMode ? '#34d399' : '#065f46'
+                        }}>
+                          ⚡ Free Instant Delivery via Email
+                        </div>
+                      </div>
+
+                      <Form
+                        form={form}
+                        layout="vertical"
+                        onFinish={handleLandingPageSubmit}
+                        requiredMark={false}
+                      >
+                        <Row gutter={16}>
+                          {effectiveCustomFields.map(field => {
+                            const isFullWidth = field.type === 'textarea' || field.type === 'checkbox' || effectiveCustomFields.length <= 2;
+                            return (
+                              <Col xs={24} sm={isFullWidth ? 24 : 12} key={field.name}>
+                                <Form.Item
+                                  name={field.name}
+                                  label={
+                                    <span style={{ color: darkMode ? '#cbd5e1' : '#334155', fontWeight: 600, fontSize: 13 }}>
+                                      {field.label || field.name} {field.required !== false && <span style={{ color: '#ef4444' }}>*</span>}
+                                    </span>
+                                  }
+                                  rules={[{ required: field.required !== false, message: `${field.label || field.name} is required` }]}
+                                  style={{ marginBottom: 16 }}
+                                >
+                                  {field.type === 'textarea' ? (
+                                    <Input.TextArea
+                                      rows={3}
+                                      placeholder={field.placeholder || field.label}
+                                      style={{
+                                        borderRadius: 8,
+                                        background: darkMode ? '#0f172a' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  ) : field.type === 'select' ? (
+                                    <Select
+                                      placeholder={field.placeholder || field.label}
+                                      size="large"
+                                      style={{ width: '100%' }}
+                                    >
+                                      {(field.options || '').split(',').map(o => o.trim()).filter(Boolean).map(o => (
+                                        <Select.Option key={o} value={o}>{o}</Select.Option>
+                                      ))}
+                                    </Select>
+                                  ) : field.type === 'checkbox' ? (
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 4 }}>
+                                      <input
+                                        type="checkbox"
+                                        id={`ebook_${field.name}`}
+                                        required={field.required !== false}
+                                        style={{ marginTop: 4, width: 16, height: 16, cursor: 'pointer' }}
+                                      />
+                                      <label htmlFor={`ebook_${field.name}`} style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', cursor: 'pointer' }}>
+                                        {field.consent_text || field.label}
+                                      </label>
+                                    </div>
+                                  ) : (
+                                    <Input
+                                      type={field.type === 'email' ? 'email' : 'text'}
+                                      placeholder={field.placeholder || field.label}
+                                      size="large"
+                                      style={{
+                                        height: 46,
+                                        borderRadius: 8,
+                                        background: darkMode ? '#0f172a' : '#fff',
+                                        borderColor: darkMode ? '#334155' : '#cbd5e1',
+                                        color: darkMode ? '#f8fafc' : '#0f172a'
+                                      }}
+                                    />
+                                  )}
+                                </Form.Item>
+                              </Col>
+                            );
+                          })}
+                        </Row>
+
+                        <Form.Item style={{ marginBottom: 0, marginTop: 8 }}>
+                          <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={submitting}
+                            style={{
+                              width: '100%',
+                              height: 50,
+                              fontSize: 16,
+                              fontWeight: 700,
+                              background: 'linear-gradient(135deg, #0AAEEF 0%, #4a7cff 100%)',
+                              border: 'none',
+                              borderRadius: 10,
+                              boxShadow: '0 4px 16px rgba(10, 174, 239, 0.35)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: 8
+                            }}
+                          >
+                            📥 Send eBook (PDF) to My Email
+                          </Button>
+                        </Form.Item>
+                      </Form>
+
+                      <div style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: darkMode ? '#94a3b8' : '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <SafetyCertificateOutlined style={{ color: '#10b981', fontSize: 14 }} />
+                        <span>We respect your privacy. No spam — your email is only used to deliver this eBook.</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '36px 28px', textAlign: 'center' }}>
+                      <div style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '50%',
+                        background: darkMode ? 'rgba(16, 185, 129, 0.2)' : '#dcfce7',
+                        color: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 32,
+                        margin: '0 auto 16px'
+                      }}>
+                        ✅
+                      </div>
+                      <Title level={3} style={{ color: darkMode ? '#f8fafc' : '#0f172a', margin: '0 0 8px', fontWeight: 800 }}>
+                        Your eBook is on its way!
+                      </Title>
+                      <Text style={{
+                        color: darkMode ? '#94a3b8' : '#475569',
+                        fontSize: 15,
+                        display: 'block',
+                        maxWidth: 550,
+                        margin: '0 auto 24px',
+                        lineHeight: 1.6
+                      }}>
+                        {submittedData?.email || submittedData?.email_address ? (
+                          <>We have sent the PDF download link to <strong>{submittedData.email || submittedData.email_address}</strong>. Please check your inbox (and spam/promotions folder).</>
+                        ) : (
+                          <>We have sent the PDF download link to your email address. Please check your inbox (and spam/promotions folder).</>
+                        )}
+                      </Text>
+
+                      {(pdfFile || content?.pdf_file) && (
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          <Button
+                            type="primary"
+                            size="large"
+                            icon={<DownloadOutlined />}
+                            onClick={handleDownloadPdf}
+                            style={{
+                              height: 48,
+                              padding: '0 32px',
+                              fontSize: 15,
+                              fontWeight: 700,
+                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              border: 'none',
+                              borderRadius: 10,
+                              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+                            }}
+                          >
+                            📄 Download eBook PDF Now
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ── WEBINAR REGISTRATION & MEDIA SECTION ── */}
               {contentTypeName === 'webinar' && (() => {
@@ -1293,120 +1558,149 @@ const ArticleDetail = () => {
                   </div>
 
                   <div style={{ padding: '24px' }}>
-                    {/* BEFORE SUBMIT: show form */}
+                    {/* BEFORE SUBMIT */}
                     {!hasAccess && (
-                      <>
-                        <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', display: 'block', marginBottom: 20, fontSize: 14, lineHeight: 1.6 }}>
-                          Fill in your details below to unlock the full article and get instant access.
-                        </Text>
-                        <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
-                          {customFields.map(field => (
-                            <Form.Item
-                              key={field.name}
-                              name={field.name}
-                              rules={[{ required: field.required !== false, message: `${field.label || field.name} is required` }]}
-                              style={{ marginBottom: 16 }}
-                            >
-                              {field.type === 'textarea' ? (
-                                <Input.TextArea
-                                  placeholder={field.placeholder || field.label}
-                                  rows={3}
-                                  style={{
-                                    borderRadius: 8,
-                                    border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
-                                    padding: '10px 12px',
-                                    fontSize: 14,
-                                    transition: 'all 0.2s',
-                                    background: darkMode ? '#0f172a' : '#fff',
-                                    color: darkMode ? '#f1f5f9' : '#000'
-                                  }}
-                                  onFocus={e => e.currentTarget.style.borderColor = '#4a7cff'}
-                                  onBlur={e => e.currentTarget.style.borderColor = darkMode ? '#475569' : '#e2e8f0'}
-                                />
-                              ) : field.type === 'select' ? (
-                                <Select
-                                  placeholder={field.placeholder || field.label}
-                                  style={{
-                                    width: '100%',
-                                    borderRadius: 8
-                                  }}
-                                >
-                                  {(field.options || '').split(',').map(o => o.trim()).filter(Boolean).map(o => (
-                                    <Select.Option key={o} value={o}>{o}</Select.Option>
-                                  ))}
-                                </Select>
-                              ) : field.type === 'checkbox' ? (
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                                  <input
-                                    type="checkbox"
-                                    id={field.name}
-                                    required={field.required !== false}
-                                    style={{ marginTop: 4, width: 16, height: 16, cursor: 'pointer' }}
+                      isEbook ? (
+                        <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+                          <div style={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: '50%',
+                            background: darkMode ? 'rgba(10, 174, 239, 0.15)' : '#e0f2fe',
+                            color: '#0AAEEF',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 26,
+                            margin: '0 auto 16px'
+                          }}>
+                            📖
+                          </div>
+                          <Title level={4} style={{ color: darkMode ? '#f8fafc' : '#0f172a', marginBottom: 8, fontWeight: 700 }}>
+                            Free eBook Available
+                          </Title>
+                          <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', display: 'block', marginBottom: 20, fontSize: 13, lineHeight: 1.6 }}>
+                            Download the full publication in PDF format. Fill out the quick form below the overview to have it delivered straight to your email.
+                          </Text>
+                          <Button
+                            type="primary"
+                            block
+                            onClick={() => {
+                              const el = document.getElementById('ebook-download-section');
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            style={{
+                              background: 'linear-gradient(135deg, #0AAEEF 0%, #4a7cff 100%)',
+                              color: '#fff',
+                              fontWeight: 700,
+                              borderRadius: 8,
+                              height: 44,
+                              fontSize: 14,
+                              border: 'none',
+                              boxShadow: '0 4px 12px rgba(10, 174, 239, 0.3)'
+                            }}
+                          >
+                            📥 Go to Download Form ↓
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', display: 'block', marginBottom: 20, fontSize: 14, lineHeight: 1.6 }}>
+                            Fill in your details below to unlock the full article and get instant access.
+                          </Text>
+                          <Form layout="vertical" onFinish={handleLandingPageSubmit} form={form}>
+                            {effectiveCustomFields.map(field => (
+                              <Form.Item
+                                key={field.name}
+                                name={field.name}
+                                rules={[{ required: field.required !== false, message: `${field.label || field.name} is required` }]}
+                                style={{ marginBottom: 16 }}
+                              >
+                                {field.type === 'textarea' ? (
+                                  <Input.TextArea
+                                    placeholder={field.placeholder || field.label}
+                                    rows={3}
+                                    style={{
+                                      borderRadius: 8,
+                                      border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
+                                      padding: '10px 12px',
+                                      fontSize: 14,
+                                      transition: 'all 0.2s',
+                                      background: darkMode ? '#0f172a' : '#fff',
+                                      color: darkMode ? '#f1f5f9' : '#000'
+                                    }}
                                   />
-                                  <label htmlFor={field.name} style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.5, cursor: 'pointer' }}>
-                                    {field.consent_text || field.label}
-                                    {field.redirect_link && (
-                                      <a href={field.redirect_link} target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff', marginLeft: 4 }}>
-                                        Learn more →
-                                      </a>
-                                    )}
-                                  </label>
-                                </div>
-                              ) : (
-                                <Input
-                                  type={field.type || 'text'}
-                                  placeholder={field.placeholder || field.label}
-                                  style={{
-                                    borderRadius: 8,
-                                    border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
-                                    padding: '10px 12px',
-                                    fontSize: 14,
-                                    transition: 'all 0.2s',
-                                    background: darkMode ? '#0f172a' : '#fff',
-                                    color: darkMode ? '#f1f5f9' : '#000'
-                                  }}
-                                  onFocus={e => e.currentTarget.style.borderColor = '#4a7cff'}
-                                  onBlur={e => e.currentTarget.style.borderColor = darkMode ? '#475569' : '#e2e8f0'}
-                                />
-                              )}
+                                ) : field.type === 'select' ? (
+                                  <Select
+                                    placeholder={field.placeholder || field.label}
+                                    style={{
+                                      width: '100%',
+                                      borderRadius: 8
+                                    }}
+                                  >
+                                    {(field.options || '').split(',').map(o => o.trim()).filter(Boolean).map(o => (
+                                      <Select.Option key={o} value={o}>{o}</Select.Option>
+                                    ))}
+                                  </Select>
+                                ) : field.type === 'checkbox' ? (
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                    <input
+                                      type="checkbox"
+                                      id={field.name}
+                                      required={field.required !== false}
+                                      style={{ marginTop: 4, width: 16, height: 16, cursor: 'pointer' }}
+                                    />
+                                    <label htmlFor={field.name} style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', lineHeight: 1.5, cursor: 'pointer' }}>
+                                      {field.consent_text || field.label}
+                                      {field.redirect_link && (
+                                        <a href={field.redirect_link} target="_blank" rel="noopener noreferrer" style={{ color: '#4a7cff', marginLeft: 4 }}>
+                                          Learn more →
+                                        </a>
+                                      )}
+                                    </label>
+                                  </div>
+                                ) : (
+                                  <Input
+                                    type={field.type || 'text'}
+                                    placeholder={field.placeholder || field.label}
+                                    style={{
+                                      borderRadius: 8,
+                                      border: darkMode ? '1px solid #475569' : '1px solid #e2e8f0',
+                                      padding: '10px 12px',
+                                      fontSize: 14,
+                                      transition: 'all 0.2s',
+                                      background: darkMode ? '#0f172a' : '#fff',
+                                      color: darkMode ? '#f1f5f9' : '#000'
+                                    }}
+                                  />
+                                )}
+                              </Form.Item>
+                            ))}
+                            <Form.Item style={{ marginBottom: 0 }}>
+                              <Button
+                                type="primary"
+                                htmlType="submit"
+                                block
+                                loading={submitting}
+                                className={submitting ? 'submit-btn-loading' : ''}
+                                style={{
+                                  background: submitting ? '#4a7cff' : 'linear-gradient(135deg, #4a7cff 0%, #6c5ce7 100%)',
+                                  color: '#fff',
+                                  fontWeight: 600,
+                                  borderRadius: 8,
+                                  height: 44,
+                                  fontSize: 15,
+                                  border: 'none',
+                                  boxShadow: '0 4px 12px rgba(74, 124, 255, 0.3)',
+                                  transition: 'all 0.3s ease'
+                                }}
+                              >
+                                {submitting ? 'Submitting...' : 'Get Access →'}
+                              </Button>
                             </Form.Item>
-                          ))}
-                          <Form.Item style={{ marginBottom: 0 }}>
-                            <Button
-                              type="primary"
-                              htmlType="submit"
-                              block
-                              loading={submitting}
-                              className={submitting ? 'submit-btn-loading' : ''}
-                              style={{
-                                background: submitting ? '#4a7cff' : 'linear-gradient(135deg, #4a7cff 0%, #6c5ce7 100%)',
-                                color: '#fff',
-                                fontWeight: 600,
-                                borderRadius: 8,
-                                height: 44,
-                                fontSize: 15,
-                                border: 'none',
-                                boxShadow: '0 4px 12px rgba(74, 124, 255, 0.3)',
-                                transition: 'all 0.3s ease'
-                              }}
-                              onMouseEnter={e => {
-                                if (!submitting) {
-                                  e.currentTarget.style.transform = 'translateY(-2px)';
-                                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(74, 124, 255, 0.4)';
-                                }
-                              }}
-                              onMouseLeave={e => {
-                                if (!submitting) {
-                                  e.currentTarget.style.transform = 'translateY(0)';
-                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(74, 124, 255, 0.3)';
-                                }
-                              }}
-                            >
-                              {submitting ? 'Submitting...' : 'Get Access →'}
-                            </Button>
-                          </Form.Item>
-                        </Form>
-                      </>
+                          </Form>
+                        </>
+                      )
                     )}
 
                     {/* AFTER SUBMIT: show 2 options */}
@@ -1455,13 +1749,15 @@ const ArticleDetail = () => {
                                 fontSize: 18
                               }}>📖</div>
                               <div>
-                                <div style={{ fontWeight: 700, fontSize: 14, color: darkMode ? '#f1f5f9' : '#1e293b' }}>Read Full Article</div>
+                                <div style={{ fontWeight: 700, fontSize: 14, color: darkMode ? '#f1f5f9' : '#1e293b' }}>
+                                  {isEbook ? 'eBook Unlocked' : 'Read Full Article'}
+                                </div>
                                 <Text style={{ color: darkMode ? '#94a3b8' : '#64748b', fontSize: 12 }}>
-                                  Full article is now unlocked above
+                                  {isEbook ? 'PDF link sent to email & available below' : 'Full article is now unlocked above'}
                                 </Text>
                               </div>
                             </div>
-                            {pdfFile && (
+                            {(pdfFile || content?.pdf_file) && (
                               <Button
                                 block
                                 onClick={handleDownloadPdf}
@@ -1601,38 +1897,47 @@ const ArticleDetail = () => {
         {/* Scroll to Top Button */}
         {showScrollTop && (
           <button
+            type="button"
             onClick={scrollToTop}
+            aria-label="Scroll to top"
             style={{
               position: 'fixed',
-              bottom: 100,
-              right: 30,
-              width: 50,
-              height: 50,
+              bottom: 90,
+              right: 28,
+              width: 48,
+              height: 48,
               borderRadius: '50%',
-              background: darkMode ? '#7c3aed' : '#6b21a8',
-              color: '#fff',
-              border: 'none',
+              background: darkMode
+                ? 'linear-gradient(135deg, #F7941D 0%, #EA580C 100%)'
+                : 'linear-gradient(135deg, #F7941D 0%, #FF6B00 100%)',
+              color: '#FFFFFF',
+              border: '2px solid rgba(255, 255, 255, 0.4)',
               cursor: 'pointer',
-              boxShadow: '0 4px 20px rgba(107, 33, 168, 0.4)',
+              boxShadow: darkMode
+                ? '0 6px 24px rgba(247, 148, 29, 0.45)'
+                : '0 6px 24px rgba(247, 148, 29, 0.5)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 20,
+              fontSize: 18,
               zIndex: 1000,
-              transition: 'all 0.3s ease',
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               opacity: showScrollTop ? 1 : 0,
-              transform: showScrollTop ? 'translateY(0)' : 'translateY(20px)'
+              transform: showScrollTop ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.8)'
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-5px) scale(1.1)';
-              e.currentTarget.style.boxShadow = '0 8px 30px rgba(107, 33, 168, 0.5)';
+              e.currentTarget.style.transform = 'translateY(-4px) scale(1.1)';
+              e.currentTarget.style.boxShadow = '0 10px 30px rgba(247, 148, 29, 0.65)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = '0 4px 20px rgba(107, 33, 168, 0.4)';
+              e.currentTarget.style.boxShadow = darkMode
+                ? '0 6px 24px rgba(247, 148, 29, 0.45)'
+                : '0 6px 24px rgba(247, 148, 29, 0.5)';
             }}
+            title="Scroll to top"
           >
-            ↑
+            <ArrowUpOutlined style={{ fontSize: 18 }} />
           </button>
         )}
 

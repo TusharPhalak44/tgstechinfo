@@ -30,22 +30,23 @@ test('opens external URLs in a new tab', () => {
   assert.deepEqual(route, { url: 'https://example.com/path', newTab: true });
 });
 
-test('falls back to a content-type route for regular content', () => {
+test('falls back to a content-type route with general category for regular content', () => {
   const route = resolveContentRoute({
     slug: 'ai-trends',
     content_type: 'blog'
   });
 
-  assert.deepEqual(route, { url: '/blog/ai-trends', newTab: false });
+  assert.deepEqual(route, { url: '/blog/general/ai-trends', newTab: false });
 });
 
-test('normalizes plural content types to the route slug', () => {
+test('normalizes plural content types to the route slug with category', () => {
   const route = resolveContentRoute({
     slug: 'ai-trends',
-    content_type: 'Articles'
+    content_type: 'Articles',
+    category_slug: 'artificial-intelligence'
   });
 
-  assert.deepEqual(route, { url: '/article/ai-trends', newTab: false });
+  assert.deepEqual(route, { url: '/article/artificial-intelligence/ai-trends', newTab: false });
 });
 
 test('resolves file-based landing page to /lp/:slug route', () => {
