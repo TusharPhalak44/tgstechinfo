@@ -33,21 +33,51 @@ class Media {
         const dbFileData = Buffer.isBuffer(file_data) ? file_data : null;
 
         // 2. Execute insert with binary prepared statement protocol
-        const query = `
-            INSERT INTO media_files (filename, original_name, file_path, file_type, file_size, mime_type, folder, uploaded_by, file_data)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const [result] = await pool.execute(query, [
-            filename, 
-            original_name, 
-            file_path, 
-            file_type, 
-            file_size, 
-            mime_type, 
-            folder, 
-            uploaded_by, 
-            dbFileData
-        ]);
+        let result;
+        try {
+            const query = `
+                INSERT INTO media_files (filename, original_name, file_path, file_type, file_size, mime_type, folder, uploaded_by, file_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            const [res] = await pool.execute(query, [
+                filename, 
+                original_name, 
+                file_path, 
+                file_type, 
+                file_size, 
+                mime_type, 
+                folder, 
+                uploaded_by, 
+                dbFileData
+            ]);
+            result = res;
+        } catch (dbError) {
+            // If MySQL packet limit exceeded (ER_NET_PACKET_TOO_LARGE), gracefully save to disk uploads folder
+            if (dbError.code === 'ER_NET_PACKET_TOO_LARGE' || dbError.errno === 1153) {
+                console.warn(`[Media.create] File exceeds MySQL max_allowed_packet. Storing ${filename} on disk fallback:`, dbError.message);
+                if (dbFileData) {
+                    const diskPath = path.join(uploadDir, filename);
+                    fs.writeFileSync(diskPath, dbFileData);
+                }
+                const fallbackQuery = `
+                    INSERT INTO media_files (filename, original_name, file_path, file_type, file_size, mime_type, folder, uploaded_by, file_data)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                `;
+                const [res] = await pool.execute(fallbackQuery, [
+                    filename, 
+                    original_name, 
+                    file_path, 
+                    file_type, 
+                    file_size, 
+                    mime_type, 
+                    folder, 
+                    uploaded_by
+                ]);
+                result = res;
+            } else {
+                throw dbError;
+            }
+        }
         
         return await Media.findById(result.insertId);
     }

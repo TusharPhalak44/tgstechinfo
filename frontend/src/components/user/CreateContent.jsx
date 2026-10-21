@@ -719,6 +719,16 @@ const CreateContent = () => {
           message.info('Published content cannot be submitted again. Use Save to update its settings.');
           return;
         }
+        // Avoid re-uploading heavy video/banner/pdf if already saved in draft
+        if (existing.video_file && draftSaved) {
+          formData.delete('video_file');
+        }
+        if (existing.banner_image && draftSaved) {
+          formData.delete('banner_image');
+        }
+        if (existing.pdf_file && draftSaved) {
+          formData.delete('pdf_file');
+        }
         await axios.put(`${apiBase}/content/${contentId}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       } else {
         const createRes = await axios.post(`${apiBase}/content`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
