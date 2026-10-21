@@ -500,6 +500,7 @@ function AppContent() {
                 <Route path="/unsubscribe" element={<Unsubscribe />} />
 
                 <Route path="/contact" element={<ContactUs />} />
+                <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
 
                 <Route path="/about" element={<About />} />
 

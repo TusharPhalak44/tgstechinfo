@@ -180,6 +180,7 @@ const NavLink = ({ item, active, darkMode }) => {
     return (
       <Link
         to={item.to}
+        itemProp="url"
         className="nav-link-item"
         style={{
           fontWeight: active ? 700 : 600,
@@ -211,7 +212,7 @@ const NavLink = ({ item, active, darkMode }) => {
           }
         }}
       >
-        {item.label}
+        <span itemProp="name">{item.label}</span>
         {active && (
           <span style={{
             position: 'absolute',
@@ -822,6 +823,10 @@ const Navbar = () => {
             {!isMobile && (
               <nav
                 className="desktop-nav desktop-nav-container"
+                aria-label="Main Navigation"
+                itemScope
+                itemType="https://schema.org/SiteNavigationElement"
+                role="navigation"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -944,9 +949,11 @@ const Navbar = () => {
 
               {/* 2. Contact Us Button */}
               {!isMobile && (
-                <button
-                  onClick={() => navigate('/contact')}
+                <Link
+                  to="/contact"
                   aria-label="Contact Us"
+                  itemProp="url"
+                  style={{ textDecoration: 'none' }}
                   className={`nav-contact-btn group relative rounded-full font-bold transition-all duration-300 inline-flex items-center cursor-pointer select-none ${
                     darkMode
                       ? 'bg-[rgba(59,130,246,0.1)] border-[1.5px] border-[#3B82F6] text-[#3B82F6] hover:bg-[#3B82F6] hover:text-white hover:shadow-[0_6px_18px_rgba(59,130,246,0.35)]'
@@ -960,8 +967,8 @@ const Navbar = () => {
                   }`}>
                     <PhoneCall className="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110 shrink-0" />
                   </div>
-                  <span className="tracking-wide font-extrabold whitespace-nowrap">Contact Us</span>
-                </button>
+                  <span itemProp="name" className="tracking-wide font-extrabold whitespace-nowrap">Contact Us</span>
+                </Link>
               )}
 
               {/* 3. Notifications (Authenticated) */}
