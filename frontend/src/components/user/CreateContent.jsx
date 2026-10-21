@@ -737,6 +737,9 @@ const CreateContent = () => {
       navigate(redirectPath);
     } catch (error) {
       console.error('Error submitting content:', error);
+      if (error.response?.data) {
+        console.error('Server error details:', error.response.data);
+      }
       // Handle validation errors
       if (error.errorFields && error.errorFields.length > 0) {
         const missingFields = error.errorFields.map(field => {

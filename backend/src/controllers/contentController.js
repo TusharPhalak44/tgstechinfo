@@ -487,9 +487,22 @@ exports.updateContent = async (req, res) => {
             }
         }
         
-        // Handle tag usage updates
-        const oldTags = content.tags ? (typeof content.tags === 'string' ? JSON.parse(content.tags) : content.tags) : [];
-        const newTags = updateData.tags ? (typeof updateData.tags === 'string' ? JSON.parse(updateData.tags) : updateData.tags) : [];
+        // Handle tag usage updates safely
+        const parseTagsSafely = (raw) => {
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw;
+            if (typeof raw === 'string') {
+                const trimmed = raw.trim();
+                if (trimmed.startsWith('[')) {
+                    try { return JSON.parse(trimmed); } catch (e) {}
+                }
+                return trimmed.split(',').map(t => t.trim()).filter(Boolean);
+            }
+            return [];
+        };
+
+        const oldTags = parseTagsSafely(content.tags);
+        const newTags = parseTagsSafely(updateData.tags);
         
         // Decrease usage for removed tags
         const removedTags = oldTags.filter(tag => !newTags.includes(tag));
@@ -511,7 +524,13 @@ exports.updateContent = async (req, res) => {
         res.json({ message: 'Content updated successfully', content: updatedContent });
     } catch (error) {
         console.error('Update content error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('SQL Error details:', { code: error.code, errno: error.errno, sqlState: error.sqlState, sqlMessage: error.sqlMessage });
+        res.status(500).json({ 
+            message: error.sqlMessage || error.message || 'Server error',
+            code: error.code,
+            sqlState: error.sqlState,
+            sqlMessage: error.sqlMessage
+        });
     }
 };
 
