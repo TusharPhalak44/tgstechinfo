@@ -50,7 +50,7 @@ const anyFileFilter = (req, file, cb) => {
 // Uses in-memory storage for all files (saved directly into database BLOB).
 const uploadWithPdfBase = multer({
     storage: memoryStorage,
-    limits: { fileSize: 500 * 1024 * 1024 }, // 500 MB
+    limits: { fileSize: 700 * 1024 * 1024 }, // 500 MB
     fileFilter: anyFileFilter
 });
 
