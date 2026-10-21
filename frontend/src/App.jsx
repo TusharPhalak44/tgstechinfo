@@ -65,6 +65,7 @@ const ArticleDetail = lazyWithRetry(() => import('./components/public/ArticleDet
 const CategoryList = lazyWithRetry(() => import('./components/public/CategoryList'));
 const SearchResults = lazyWithRetry(() => import('./components/public/SearchResults'));
 const Newsletter = lazyWithRetry(() => import('./components/public/Newsletter'));
+const SitemapXml = lazyWithRetry(() => import('./pages/SitemapXml'));
 
 // Lazy-loaded dashboard & admin routes
 const Dashboard = lazyWithRetry(() => import('./components/user/Dashboard'));
@@ -276,7 +277,8 @@ function AppContent() {
     '/landing-page/',
     '/audience-intelligence',
     '/audience/view/',
-    '/audience-intelligence/view/'
+    '/audience-intelligence/view/',
+    '/sitemap.xml'
   ];
 
   const dashboardRoutes = ['/dashboard', '/admin', '/user-dashboard'];
@@ -400,6 +402,7 @@ function AppContent() {
             <Route path="/audience/view/:token" element={<SharedAudienceView />} />
 
             <Route path="/audience-intelligence/view/:token" element={<SharedAudienceView />} />
+            <Route path="/sitemap.xml" element={<SitemapXml />} />
 
           </Routes>
 
@@ -546,6 +549,7 @@ function AppContent() {
                 <Route path="/audience-intelligence" element={<AudienceIntelligence />} />
 
                 <Route path="/audience/view/:token" element={<SharedAudienceView />} />
+                <Route path="/sitemap.xml" element={<SitemapXml />} />
 
 
 
