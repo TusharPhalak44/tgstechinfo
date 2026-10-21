@@ -15,6 +15,7 @@ import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import { formatContentPublishDate, sortContentByDate } from '../../utils/dateHelper';
+import { formatViewsToM } from '../../utils/numberHelper';
 
 // Newsletter Subscribe Form Component
 const NewsletterSubscribeForm = ({ darkMode = false }) => {
@@ -2471,7 +2472,7 @@ const HeroCard = ({ article, navigate, onImgClick, accent = 'var(--color-primary
       <div style={{ fontWeight: 700, fontSize: 'clamp(14px, 1vw, 15px)', lineHeight: 1.45, color: 'var(--color-heading)', marginBottom: 8, flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
       <div style={{ fontSize: 'clamp(12px, 0.8vw, 12.5px)', color: 'var(--color-muted)', lineHeight: 1.6, marginBottom: 12, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.short_description}</div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><EyeOutlined />{article.view_count || 0}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><EyeOutlined />{formatViewsToM(article.view_count)}</span>
       </div>
     </div>
   </div>

@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import ReactApexChart from "react-apexcharts";
 import axios from "axios";
+import { formatViewsToM } from "../../../utils/numberHelper";
 
 const PALETTE = ["#2563EB", "#10B981", "#F59E0B", "#7C3AED", "#06B6D4", "#EA580C", "#DB2777", "#16A34A"];
 
@@ -108,7 +109,7 @@ const LandingPagePerformance = ({ dark, period }) => {
                         {p.page_title || p.page_url}
                       </td>
                       <td style={{ padding: "10px 10px", color: "#2563EB", fontWeight: 800 }}>
-                        {views.toLocaleString()}
+                        {formatViewsToM(views)}
                       </td>
                       <td style={{ padding: "10px 10px", color: "#10B981", fontWeight: 700 }}>
                         {unique.toLocaleString()}

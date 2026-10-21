@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem } from '../../lib/contentRoute';
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatWebinarDate } from '../../utils/dateHelper';
+import { formatViewsToM } from '../../utils/numberHelper';
 
 // Detect HTML builder or file-based landing page content
 const isHtmlBuilderContent = (item) => {
@@ -575,7 +576,7 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
           </span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <EyeOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
-            {item.view_count || 0}
+            {formatViewsToM(item.view_count)}
           </span>
           <span style={{
             marginLeft: isMobile ? 0 : 'auto', fontSize: isMobile ? 11 : 12, fontWeight: 700,
@@ -637,7 +638,7 @@ const SidebarPost = ({ item, index = 0, navigate, accent, darkMode, isCategoryPa
         </h4>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#38bdf8' : '#0284c7', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <EyeOutlined style={{ fontSize: 11 }} /> {views.toLocaleString()} {views === 1 ? 'view' : 'views'}
+            <EyeOutlined style={{ fontSize: 11 }} /> {formatViewsToM(views)} views
           </span>
           {item.reading_time ? (
             <span style={{ fontSize: 10.5, color: darkMode ? '#94a3b8' : '#64748b', display: 'inline-flex', alignItems: 'center', gap: 3 }}>

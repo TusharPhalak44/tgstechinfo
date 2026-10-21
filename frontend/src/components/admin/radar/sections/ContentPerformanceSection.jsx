@@ -16,6 +16,8 @@ import {
   CompassOutlined,
 } from '@ant-design/icons';
 
+import { formatViewsToM } from '../../../../utils/numberHelper';
+
 const COLORS = ['#0AAEEF', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#64748B'];
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -1051,7 +1053,7 @@ const ContentPerformanceSection = ({ darkMode, popularPages = [], topBlogs = [],
                   </div>
                   <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 11, fontFamily: 'monospace', color: darkMode ? '#94A3B8' : '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <EyeOutlined /> {(b.views || 0).toLocaleString()} views
+                      <EyeOutlined /> {formatViewsToM(b.views || 0)} views
                     </span>
                     <span style={{ fontSize: 11, fontFamily: 'monospace', color: darkMode ? '#94A3B8' : '#64748B', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <ReadOutlined /> {(b.reads || 0).toLocaleString()} reads

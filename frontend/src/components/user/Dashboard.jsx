@@ -29,6 +29,7 @@ import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
 import { formatContentPublishDateWithFallback, formatContentPublishDate } from '../../utils/dateHelper';
+import { formatViewsToM } from '../../utils/numberHelper';
 import { useAuth } from '../../context/AuthContext';
 
 const { Title, Text } = Typography;
@@ -1120,7 +1121,7 @@ const Dashboard = () => {
                           </span>
                           <span style={{ fontSize: '0.7rem', color: D ? '#64748B' : '#94A3B8', display: 'flex', alignItems: 'center', gap: 4 }}>
                             <EyeOutlined />
-                            {article.view_count ?? article.views_count ?? 0} views
+                            {formatViewsToM(article.view_count ?? article.views_count ?? 0)} views
                           </span>
                         </div>
 

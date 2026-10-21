@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import ReactApexChart from "react-apexcharts";
 import axios from "axios";
+import { formatViewsToM } from "../../../utils/numberHelper";
 
 const PALETTE = ["#2563EB", "#0D9488", "#7C3AED", "#F59E0B", "#06B6D4", "#10B981", "#EA580C", "#DB2777"];
 
@@ -84,7 +85,7 @@ const ContentPortfolio = ({ dark, period }) => {
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</div>
                       <div style={{ display: "flex", gap: 8, marginTop: 3 }}>
                         <span style={{ fontSize: "0.68rem", color: dark ? "#64748B" : "#94A3B8" }}>
-                          👁️ {Number(a.views || 0).toLocaleString()} views
+                          👁️ {formatViewsToM(a.views || 0)} views
                         </span>
                         {a.category && (
                           <span style={{ fontSize: "0.68rem", padding: "0 6px", borderRadius: 4,

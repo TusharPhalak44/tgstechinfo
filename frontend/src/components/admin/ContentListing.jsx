@@ -18,6 +18,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { formatContentPublishDate } from '../../utils/dateHelper';
+import { formatViewsToM } from '../../utils/numberHelper';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -351,7 +352,7 @@ const ContentListing = () => {
       dataIndex: 'view_count',
       render: (views) => (
         <span style={{ fontSize: '0.78rem', fontWeight: 700, color: D ? '#CBD5E1' : '#334155' }}>
-          {(views || 0).toLocaleString()}
+          {formatViewsToM(views || 0)}
         </span>
       ),
     },

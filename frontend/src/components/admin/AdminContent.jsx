@@ -24,6 +24,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import './radar/RadarStyles.css';
 import { formatContentPublishDate } from '../../utils/dateHelper';
+import { formatViewsToM } from '../../utils/numberHelper';
 
 // Format large numbers to readable format (e.g., 376543303 -> "376.5M", 1500000000 -> "1.5B")
 function formatNumber(num) {
@@ -655,7 +656,7 @@ const AdminContent = () => {
       sorter: (a, b) => (a.view_count || 0) - (b.view_count || 0),
       render: (views) => (
         <span style={{ fontWeight: 700, color: '#0AAEEF', fontSize: '0.84rem' }}>
-          {formatNumber(views || 0)}
+          {formatViewsToM(views || 0)}
         </span>
       )
     },
@@ -883,7 +884,7 @@ const AdminContent = () => {
               <FireOutlined style={{ fontSize: 18, color: '#0AAEEF' }} />
             </div>
             <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#0AAEEF', marginTop: 8 }}>
-              {formatNumber(metrics.totalViews)}
+              {formatViewsToM(metrics.totalViews)}
             </div>
             <div style={{ fontSize: '0.72rem', color: textMuted, marginTop: 4 }}>
               Combined readership engagement
@@ -1152,7 +1153,7 @@ const AdminContent = () => {
                       </div>
 
                       <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0AAEEF', display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <EyeOutlined /> {formatNumber(item.view_count || 0)}
+                        <EyeOutlined /> {formatViewsToM(item.view_count || 0)}
                       </div>
                     </div>
                   </div>
@@ -1317,7 +1318,7 @@ const AdminContent = () => {
                 <div style={{ padding: 12, textAlign: 'center' }}>
                   <div style={{ fontSize: '0.7rem', color: textMuted }}>READERSHIP VIEWS</div>
                   <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0AAEEF', marginTop: 2 }}>
-                    {formatNumber(selectedArticle.view_count || 0)}
+                    {formatViewsToM(selectedArticle.view_count || 0)}
                   </div>
                 </div>
                 <div style={{ padding: 12, textAlign: 'center' }}>

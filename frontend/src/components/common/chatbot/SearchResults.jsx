@@ -4,6 +4,7 @@ import { ExternalLink, Calendar, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../../context/ChatContext';
 import { navigateContentItem } from '../../../lib/contentRoute';
+import { formatViewsToM } from '../../../utils/numberHelper';
 
 const SearchResults = ({ query }) => {
   const { searchResults, logClick } = useChat();
@@ -60,7 +61,7 @@ const SearchResults = ({ query }) => {
                 </span>
                 <span style={{ fontSize: 11, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Eye size={12} />
-                  {result.view_count || 0}
+                  {formatViewsToM(result.view_count || 0)}
                 </span>
               </div>
               <h4 style={{

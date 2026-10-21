@@ -38,6 +38,7 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../context/ThemeContext";
 import { audienceService } from "../../services/audienceService";
 import "./radar/RadarStyles.css";
+import { formatViewsToM } from "../../utils/numberHelper";
 
 const { RangePicker } = DatePicker;
 
@@ -1278,7 +1279,7 @@ const DashboardHome = () => {
                       <div style={{ display: "flex", alignItems: "center", gap: 14, textAlign: "right", flexShrink: 0 }}>
                         <div>
                           <div style={{ fontSize: "0.84rem", fontWeight: 600, color: brandLightBlue }}>
-                            {item.views.toLocaleString()}
+                            {formatViewsToM(item.views)}
                           </div>
                           <div style={{ fontSize: "0.64rem", color: textMuted }}>Views</div>
                         </div>
@@ -1466,7 +1467,7 @@ const DashboardHome = () => {
                     </div>
                     <div>
                       <div style={{ fontSize: "0.84rem", fontWeight: 600, color: brandLightBlue }}>
-                        {Number(author.total_views || 0).toLocaleString()}
+                        {formatViewsToM(author.total_views || 0)}
                       </div>
                       <div style={{ fontSize: "0.64rem", color: textMuted }}>Views</div>
                     </div>

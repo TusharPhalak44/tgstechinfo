@@ -15,6 +15,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import './radar/RadarStyles.css';
 import { formatContentPublishDate, formatDateForDisplay } from '../../utils/dateHelper';
+import { formatViewsToM } from '../../utils/numberHelper';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -354,7 +355,7 @@ const ContentReviewDetail = () => {
                 <div style={{ padding: 16, textAlign: 'center', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8 }}>
                   <div style={{ fontSize: '0.7rem', color: textMuted, marginBottom: 4 }}>READERSHIP VIEWS</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#0AAEEF' }}>
-                    {(content.view_count || 0).toLocaleString()}
+                    {formatViewsToM(content.view_count || 0)}
                   </div>
                 </div>
                 <div style={{ padding: 16, textAlign: 'center', background: darkMode ? 'rgba(15, 23, 42, 0.5)' : 'rgba(241, 245, 249, 0.5)', borderRadius: 8 }}>
