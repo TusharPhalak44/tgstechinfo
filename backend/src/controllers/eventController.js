@@ -45,10 +45,9 @@ exports.getPublicEvents = async (req, res) => {
         let query = `
             SELECT e.*, 
                    COALESCE(e.banner_image, c.banner_image) AS banner_image,
-                   COUNT(r.id) AS registered_count
+                   (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status != 'cancelled') AS registered_count
             FROM events e
             LEFT JOIN contents c ON c.slug = e.slug COLLATE utf8mb4_unicode_ci AND c.content_type_id = 5
-            LEFT JOIN event_registrations r ON e.id = r.event_id AND r.status != 'cancelled'
             WHERE e.status = 'published'
         `;
         const params = [];
@@ -79,8 +78,6 @@ exports.getPublicEvents = async (req, res) => {
             // Default upcoming
             query += ` AND e.start_date >= NOW()`;
         }
-
-        query += ` GROUP BY e.id`;
 
         // Ordering: upcoming events soonest first, past events most recent first
         if (timeline === 'past') {
@@ -141,12 +138,10 @@ exports.getPublicEventBySlug = async (req, res) => {
         const [rows] = await pool.query(`
             SELECT e.*, 
                    COALESCE(e.banner_image, c.banner_image) AS banner_image,
-                   COUNT(r.id) AS registered_count
+                   (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status != 'cancelled') AS registered_count
             FROM events e
             LEFT JOIN contents c ON c.slug = e.slug COLLATE utf8mb4_unicode_ci AND c.content_type_id = 5
-            LEFT JOIN event_registrations r ON e.id = r.event_id AND r.status != 'cancelled'
             WHERE e.slug = ? AND e.status = 'published'
-            GROUP BY e.id, c.banner_image
             LIMIT 1
         `, [slug]);
 
@@ -383,10 +378,9 @@ exports.getAdminEvents = async (req, res) => {
 
         let query = `
             SELECT e.*, 
-                   COUNT(r.id) AS total_registered,
-                   SUM(CASE WHEN r.status = 'attended' THEN 1 ELSE 0 END) AS total_attended
+                   (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status != 'cancelled') AS total_registered,
+                   (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status = 'attended') AS total_attended
             FROM events e
-            LEFT JOIN event_registrations r ON e.id = r.event_id AND r.status != 'cancelled'
             WHERE 1=1
         `;
         const params = [];
@@ -407,7 +401,7 @@ exports.getAdminEvents = async (req, res) => {
             params.push(type);
         }
 
-        query += ` GROUP BY e.id ORDER BY e.created_at DESC`;
+        query += ` ORDER BY e.created_at DESC`;
 
         const [rows] = await pool.query(query, params);
         res.json({ success: true, events: rows });
