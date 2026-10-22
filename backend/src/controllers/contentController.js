@@ -97,7 +97,7 @@ exports.createContent = async (req, res) => {
         // If content_type is Event (id 5), synchronize with the events table
         if (contentData.content_type_id === 5) {
             try {
-                const eventStartDate = contentData.webinar_date || contentData.scheduled_publish_date || new Date();
+                const eventStartDate = req.body.start_date || contentData.webinar_date || contentData.scheduled_publish_date || new Date();
                 const eventSlug = content.slug || content.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
                 const bannerPath = content.banner_image ? (content.banner_image.startsWith('/uploads/') ? content.banner_image : `/uploads/${content.banner_image}`) : null;
 
@@ -105,27 +105,102 @@ exports.createContent = async (req, res) => {
                 if (!existingEvent || existingEvent.length === 0) {
                     await pool.query(`
                         INSERT INTO events 
-                        (title, slug, short_description, description, event_type, event_mode, start_date, timezone,
-                         online_platform, online_join_url, banner_image, speaker_name, status, featured, created_by)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        (title, slug, short_description, description, event_type, event_mode, start_date, end_date, timezone,
+                         venue_name, venue_address, venue_city, venue_map_url,
+                         source_url, registration_type, registration_url,
+                         online_platform, online_join_url, virtual_join_url,
+                         banner_image, speaker_name, speaker_role, speaker_company, speaker_bio,
+                         ticket_type, ticket_price, max_capacity, status, featured, created_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     `, [
                         content.title,
                         eventSlug,
                         content.short_description || null,
                         content.content || null,
-                        content.webinar_type || 'conference',
-                        'online',
+                        req.body.event_format || req.body.event_type || content.webinar_type || 'conference',
+                        req.body.event_mode || 'online',
                         new Date(eventStartDate),
-                        'IST (UTC+5:30)',
-                        content.platform || 'Zoom',
-                        content.join_link || null,
+                        req.body.end_date ? new Date(req.body.end_date) : null,
+                        req.body.timezone || 'IST (UTC+5:30)',
+                        req.body.venue_name || null,
+                        req.body.venue_address || null,
+                        req.body.venue_city || null,
+                        req.body.venue_map_url || null,
+                        req.body.source_url || null,
+                        req.body.registration_type || 'tgs',
+                        req.body.registration_url || null,
+                        req.body.online_platform || content.platform || 'Zoom',
+                        req.body.virtual_join_url || req.body.online_join_url || content.join_link || null,
+                        req.body.virtual_join_url || req.body.online_join_url || content.join_link || null,
                         bannerPath,
-                        content.hosted_by || null,
+                        req.body.speaker_name || content.hosted_by || null,
+                        req.body.speaker_role || null,
+                        req.body.speaker_company || null,
+                        req.body.speaker_bio || null,
+                        req.body.ticket_type || 'free',
+                        parseFloat(req.body.ticket_price) || 0,
+                        parseInt(req.body.max_capacity, 10) || 0,
                         'published',
                         1,
                         req.user?.id || null
                     ]);
                     console.log('✓ Synchronized event with events table for content:', content.id);
+                } else {
+                    await pool.query(`
+                        UPDATE events SET
+                            title = ?,
+                            slug = ?,
+                            short_description = ?,
+                            description = ?,
+                            event_type = ?,
+                            event_mode = ?,
+                            start_date = ?,
+                            end_date = ?,
+                            timezone = ?,
+                            venue_name = ?,
+                            venue_address = ?,
+                            venue_city = ?,
+                            venue_map_url = ?,
+                            source_url = ?,
+                            registration_type = ?,
+                            registration_url = ?,
+                            online_platform = ?,
+                            online_join_url = ?,
+                            virtual_join_url = ?,
+                            banner_image = COALESCE(?, banner_image),
+                            speaker_name = ?,
+                            speaker_role = ?,
+                            speaker_company = ?,
+                            speaker_bio = ?
+                        WHERE id = ?
+                    `, [
+                        content.title,
+                        eventSlug,
+                        content.short_description || null,
+                        content.content || null,
+                        req.body.event_format || req.body.event_type || content.webinar_type || 'conference',
+                        req.body.event_mode || 'online',
+                        new Date(eventStartDate),
+                        req.body.end_date ? new Date(req.body.end_date) : null,
+                        req.body.timezone || 'IST (UTC+5:30)',
+                        req.body.venue_name || null,
+                        req.body.venue_address || null,
+                        req.body.venue_city || null,
+                        req.body.venue_map_url || null,
+                        req.body.source_url || null,
+                        req.body.registration_type || 'tgs',
+                        req.body.registration_url || null,
+                        req.body.online_platform || content.platform || 'Zoom',
+                        req.body.virtual_join_url || req.body.online_join_url || content.join_link || null,
+                        req.body.virtual_join_url || req.body.online_join_url || content.join_link || null,
+                        bannerPath,
+                        req.body.speaker_name || content.hosted_by || null,
+                        req.body.speaker_role || null,
+                        req.body.speaker_company || null,
+                        req.body.speaker_bio || null,
+                        existingEvent[0].id
+                    ]);
+                    console.log('✓ Updated existing event in events table for content:', content.id);
                 }
             } catch (eventSyncErr) {
                 console.warn('[createContent] Event table sync notice:', eventSyncErr.message);
@@ -555,6 +630,76 @@ exports.updateContent = async (req, res) => {
         }
 
         const updatedContent = await Content.findById(id);
+
+        // If content_type is Event (id 5), synchronize updates to events table
+        if (updatedContent && updatedContent.content_type_id === 5) {
+            try {
+                const eventStartDate = req.body.start_date || updatedContent.webinar_date || updatedContent.scheduled_publish_date || new Date();
+                const eventSlug = updatedContent.slug || updatedContent.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                const bannerPath = updatedContent.banner_image ? (updatedContent.banner_image.startsWith('/uploads/') ? updatedContent.banner_image : `/uploads/${updatedContent.banner_image}`) : null;
+
+                const [existingEvent] = await pool.query('SELECT id FROM events WHERE slug = ? OR title = ? LIMIT 1', [eventSlug, updatedContent.title]);
+                if (existingEvent && existingEvent.length > 0) {
+                    await pool.query(`
+                        UPDATE events SET
+                            title = ?,
+                            slug = ?,
+                            short_description = ?,
+                            description = ?,
+                            event_type = ?,
+                            event_mode = ?,
+                            start_date = ?,
+                            end_date = ?,
+                            timezone = ?,
+                            venue_name = ?,
+                            venue_address = ?,
+                            venue_city = ?,
+                            venue_map_url = ?,
+                            source_url = ?,
+                            registration_type = ?,
+                            registration_url = ?,
+                            online_platform = ?,
+                            online_join_url = ?,
+                            virtual_join_url = ?,
+                            banner_image = COALESCE(?, banner_image),
+                            speaker_name = ?,
+                            speaker_role = ?,
+                            speaker_company = ?,
+                            speaker_bio = ?
+                        WHERE id = ?
+                    `, [
+                        updatedContent.title,
+                        eventSlug,
+                        updatedContent.short_description || null,
+                        updatedContent.content || null,
+                        req.body.event_format || req.body.event_type || updatedContent.webinar_type || 'conference',
+                        req.body.event_mode || 'online',
+                        new Date(eventStartDate),
+                        req.body.end_date ? new Date(req.body.end_date) : null,
+                        req.body.timezone || 'IST (UTC+5:30)',
+                        req.body.venue_name || null,
+                        req.body.venue_address || null,
+                        req.body.venue_city || null,
+                        req.body.venue_map_url || null,
+                        req.body.source_url || null,
+                        req.body.registration_type || 'tgs',
+                        req.body.registration_url || null,
+                        req.body.online_platform || updatedContent.platform || 'Zoom',
+                        req.body.virtual_join_url || req.body.online_join_url || updatedContent.join_link || null,
+                        req.body.virtual_join_url || req.body.online_join_url || updatedContent.join_link || null,
+                        bannerPath,
+                        req.body.speaker_name || updatedContent.hosted_by || null,
+                        req.body.speaker_role || null,
+                        req.body.speaker_company || null,
+                        req.body.speaker_bio || null,
+                        existingEvent[0].id
+                    ]);
+                    console.log('✓ Synchronized event updates to events table for content:', id);
+                }
+            } catch (eventUpdateErr) {
+                console.warn('[updateContent] Event table sync notice:', eventUpdateErr.message);
+            }
+        }
 
         // Log to audit logs
         await logAudit(req, 'update', 'content', id, `Updated content: ${updatedContent.title}`, 'success');

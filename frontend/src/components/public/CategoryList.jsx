@@ -335,9 +335,10 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
                 <div style={{ height: 185, borderRadius: 12, overflow: 'hidden', position: 'relative', marginBottom: 14, background: '#1E293B' }}>
                   {featuredPost.banner_image ? (
                     <img
-                      src={`/uploads/${featuredPost.banner_image}`}
+                      src={getBannerSrc(featuredPost.banner_image)}
                       alt={featuredPost.title}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={e => { e.target.src = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80'; }}
                     />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>⚡</div>
@@ -446,13 +447,23 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
   );
 };
 
+// ── Helper to resolve media/banner URLs safely ───────────────────────
+const getBannerSrc = (banner) => {
+  if (!banner) return null;
+  if (banner.startsWith('http://') || banner.startsWith('https://') || banner.startsWith('data:')) return banner;
+  if (banner.startsWith('/')) return banner;
+  return `/uploads/${banner}`;
+};
+
 // ── Main List Article Item ───────────────────────────────────────────
 const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, isCategoryPage = false }) => {
   const isMobile = typeof propIsMobile === 'boolean' ? propIsMobile : (typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const isLandingPage = isHtmlBuilderContent(item);
   const isWebinar = (item.content_type_name || item.content_type || '').toLowerCase() === 'webinar';
+  const isEvent = (item.content_type_name || item.content_type || '').toLowerCase() === 'event' || item.content_type_id === 5;
   const isLive = isWebinar && (item.webinar_type === 'live' || (!item.webinar_type && item.webinar_date));
   const isOnDemand = isWebinar && (item.webinar_type === 'on_demand' || item.video_file);
+  const bannerSrc = getBannerSrc(item.banner_image);
 
   return (
     <div style={{
@@ -481,12 +492,13 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
         maxHeight: isMobile ? 180 : 155,
         boxSizing: 'border-box'
       }} className="cat-list-item-thumb">
-        {item.banner_image
-          ? <img src={`/uploads/${item.banner_image}`} alt={item.title} className="cat-list-item-thumb-img" style={{ transition: 'transform .4s ease', width: '100%', height: '100%', objectFit: 'cover' }}
+        {bannerSrc
+          ? <img src={bannerSrc} alt={item.title} className="cat-list-item-thumb-img" style={{ transition: 'transform .4s ease', width: '100%', height: '100%', objectFit: 'cover' }}
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+              onError={e => { e.target.src = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80'; }}
             />
-          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 40 : 32 }}>📄</div>
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 40 : 32 }}>{isEvent ? '📅' : '📄'}</div>
         }
 
         {/* Play Icon Overlay for On-Demand Video Webinars */}
@@ -501,7 +513,7 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
         {/* Badge Overlay */}
         <span style={{
           position: 'absolute', top: 8, left: 8,
-          background: isLive ? '#ef4444' : (isOnDemand ? '#3b82f6' : (isLandingPage ? '#6c5ce7' : accent)),
+          background: isLive ? '#ef4444' : (isOnDemand ? '#3b82f6' : (isLandingPage ? '#6c5ce7' : (isEvent ? '#f59e0b' : accent))),
           color: '#fff', fontSize: isMobile ? 9 : 10, fontWeight: 800,
           padding: isMobile ? '2px 8px' : '3px 10px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase',
           display: 'flex', alignItems: 'center', gap: 5, boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
@@ -512,6 +524,8 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
             <><PlayCircleOutlined /> ON-DEMAND</>
           ) : isLandingPage ? (
             'Landing Page'
+          ) : isEvent ? (
+            'EVENT'
           ) : (
             item.content_type_name || item.content_type || ''
           )}
@@ -565,6 +579,13 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
           </div>
         )}
 
+        {/* Event Schedule preview line */}
+        {isEvent && item.webinar_date && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CalendarOutlined /> Scheduled Event: {formatWebinarDate(item.webinar_date)}
+          </div>
+        )}
+
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <UserOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
@@ -580,10 +601,10 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
           </span>
           <span style={{
             marginLeft: isMobile ? 0 : 'auto', fontSize: isMobile ? 11 : 12, fontWeight: 700,
-            color: isLive ? '#ef4444' : (isOnDemand ? '#3b82f6' : (isLandingPage ? '#6c5ce7' : accent)),
+            color: isLive ? '#ef4444' : (isOnDemand ? '#3b82f6' : (isLandingPage ? '#6c5ce7' : (isEvent ? '#f59e0b' : accent))),
             display: 'flex', alignItems: 'center', gap: 4
           }}>
-            {isLive ? '🔴 Register for Live Webinar →' : (isOnDemand ? '📹 Watch Video Recording →' : (isLandingPage ? '→ View Landing Page' : '→ Read Article'))}
+            {isLive ? '🔴 Register for Live Webinar →' : (isOnDemand ? '📹 Watch Video Recording →' : (isLandingPage ? '→ View Landing Page' : (isEvent ? '📅 Register for Event →' : '→ Read Article')))}
           </span>
         </div>
       </div>
@@ -601,9 +622,9 @@ const SidebarPost = ({ item, index = 0, navigate, accent, darkMode, isCategoryPa
       onClick={() => navigateContent(item, navigate)}
     >
       <div style={{ width: isMobile ? 80 : 64, height: isMobile ? 60 : 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }}>
-        {item.banner_image
-          ? <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 24 : 20 }}>📄</div>
+        {getBannerSrc(item.banner_image)
+          ? <img src={getBannerSrc(item.banner_image)} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
+          : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 24 : 20 }}>{((item.content_type_name || item.content_type || '').toLowerCase() === 'event' || item.content_type_id === 5) ? '📅' : '📄'}</div>
         }
         {/* Trending Rank Pill */}
         <span style={{

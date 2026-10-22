@@ -534,7 +534,7 @@ const CreateContent = () => {
       return formData;
     }
 
-    // For Event type, include all event metadata and synchronize to events table
+    // For Event type, include all event metadata for unified backend handling
     if (isEventType) {
       formData.append('content_type_id', values.content_type_id);
       formData.append('category_id', values.category_id);
@@ -546,51 +546,43 @@ const CreateContent = () => {
       formData.append('hosted_by', values.speaker_name || values.hosted_by || '');
       formData.append('platform', values.online_platform || 'Zoom');
       formData.append('webinar_type', values.event_format || 'conference');
-      formData.append('join_link', values.virtual_join_url || values.online_join_url || '');
+      formData.append('event_format', values.event_format || 'conference');
+      formData.append('event_mode', values.event_mode || eventModeType || 'online');
+      formData.append('timezone', values.timezone || 'IST (UTC+5:30)');
+
+      const joinLinkValue = values.virtual_join_url || values.online_join_url || '';
+      formData.append('join_link', joinLinkValue);
+      formData.append('online_join_url', joinLinkValue);
+      formData.append('virtual_join_url', joinLinkValue);
       formData.append('source_url', values.source_url || '');
       formData.append('registration_type', values.registration_type || eventRegType || 'tgs');
       formData.append('registration_url', values.registration_url || '');
 
+      if (values.venue_name) formData.append('venue_name', values.venue_name);
+      if (values.venue_address) formData.append('venue_address', values.venue_address);
+      if (values.venue_city) formData.append('venue_city', values.venue_city);
+      if (values.venue_map_url) formData.append('venue_map_url', values.venue_map_url);
+
+      if (values.speaker_name) formData.append('speaker_name', values.speaker_name);
+      if (values.speaker_role) formData.append('speaker_role', values.speaker_role);
+      if (values.speaker_company) formData.append('speaker_company', values.speaker_company);
+      if (values.speaker_bio) formData.append('speaker_bio', values.speaker_bio);
+
+      if (values.ticket_type) formData.append('ticket_type', values.ticket_type);
+      if (values.ticket_price !== undefined) formData.append('ticket_price', values.ticket_price);
+      if (values.max_capacity !== undefined) formData.append('max_capacity', values.max_capacity);
+
       if (values.event_start_date) {
         formData.append('webinar_date', values.event_start_date.format('YYYY-MM-DD HH:mm:ss'));
+        formData.append('start_date', values.event_start_date.format('YYYY-MM-DD HH:mm:ss'));
+      }
+      if (values.event_end_date) {
+        formData.append('end_date', values.event_end_date.format('YYYY-MM-DD HH:mm:ss'));
       }
 
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('banner_image', fileList[0].originFileObj);
       }
-
-      // Synchronize directly with the events module table
-      const joinLinkValue = values.virtual_join_url || values.online_join_url || '';
-      eventService.createEvent({
-        title: values.title,
-        short_description: values.short_description,
-        description: values.content,
-        event_type: values.event_format || 'conference',
-        event_mode: values.event_mode || eventModeType || 'online',
-        start_date: values.event_start_date ? values.event_start_date.format('YYYY-MM-DD HH:mm:ss') : new Date(),
-        end_date: values.event_end_date ? values.event_end_date.format('YYYY-MM-DD HH:mm:ss') : null,
-        timezone: values.timezone || 'IST (UTC+5:30)',
-        source_url: values.source_url || null,
-        registration_type: values.registration_type || eventRegType || 'tgs',
-        registration_url: values.registration_url || null,
-        online_platform: values.online_platform || 'Zoom',
-        online_join_url: joinLinkValue,
-        virtual_join_url: joinLinkValue,
-        venue_name: values.venue_name || null,
-        venue_address: values.venue_address || null,
-        venue_city: values.venue_city || null,
-        venue_map_url: values.venue_map_url || null,
-        speaker_name: values.speaker_name || null,
-        speaker_role: values.speaker_role || null,
-        speaker_company: values.speaker_company || null,
-        speaker_bio: values.speaker_bio || null,
-        speaker_image: values.speaker_image || null,
-        ticket_type: values.ticket_type || 'free',
-        ticket_price: values.ticket_price || 0,
-        max_capacity: values.max_capacity || 0,
-        status: 'published',
-        featured: 1
-      }).catch(err => console.warn('[CreateContent] Event sync notice:', err.message));
 
       return formData;
     }

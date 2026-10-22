@@ -33,6 +33,16 @@ function isValidHttpUrl(str) {
 }
 
 /**
+ * Normalize banner image URLs
+ */
+function formatBannerUrl(img) {
+    if (!img) return null;
+    if (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:')) return img;
+    if (img.startsWith('/')) return img;
+    return `/uploads/${img}`;
+}
+
+/**
  * Public: Get published events with search, filters & pagination
  */
 exports.getPublicEvents = async (req, res) => {
@@ -107,6 +117,7 @@ exports.getPublicEvents = async (req, res) => {
 
             return {
                 ...safe,
+                banner_image: formatBannerUrl(safe.banner_image),
                 is_full: Boolean(isFull),
                 seats_left: evt.max_capacity > 0 ? Math.max(0, evt.max_capacity - evt.registered_count) : null
             };
@@ -166,6 +177,7 @@ exports.getPublicEventBySlug = async (req, res) => {
             success: true,
             event: {
                 ...safeEvent,
+                banner_image: formatBannerUrl(safeEvent.banner_image),
                 is_full: Boolean(isFull),
                 is_past: isPast,
                 seats_left: event.max_capacity > 0 ? Math.max(0, event.max_capacity - event.registered_count) : null
@@ -873,5 +885,34 @@ exports.exportAttendeesCsv = async (req, res) => {
     } catch (err) {
         console.error('[exportAttendeesCsv] Error:', err);
         res.status(500).send('Error exporting attendees CSV');
+    }
+};
+
+/**
+ * Admin: Delete Event
+ */
+exports.deleteEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [existing] = await pool.query('SELECT title, slug FROM events WHERE id = ? LIMIT 1', [id]);
+        if (!existing || existing.length === 0) {
+            return res.status(404).json({ success: false, message: 'Event not found.' });
+        }
+
+        const event = existing[0];
+
+        // Delete from events table (cascade deletes registrations)
+        await pool.query('DELETE FROM events WHERE id = ?', [id]);
+
+        // Also clean up contents table if matching event exists there
+        if (event.slug) {
+            await pool.query('DELETE FROM contents WHERE slug = ? AND content_type_id = 5', [event.slug]).catch(() => {});
+        }
+
+        res.json({ success: true, message: 'Event deleted successfully.' });
+    } catch (err) {
+        console.error('[deleteEvent] Error:', err);
+        res.status(500).json({ success: false, message: 'Failed to delete event.' });
     }
 };

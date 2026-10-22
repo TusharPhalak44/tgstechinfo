@@ -837,6 +837,20 @@ class Content {
     }
 
     static async delete(id) {
+        // Fetch content metadata to safely cascade-delete associated event or dynamic tables
+        try {
+            const [rows] = await pool.query('SELECT title, slug, content_type_id FROM contents WHERE id = ?', [id]);
+            if (rows && rows.length > 0) {
+                const item = rows[0];
+                if (item.content_type_id === 5 || item.slug) {
+                    await pool.query('DELETE FROM events WHERE slug = ? OR title = ?', [item.slug, item.title]);
+                    console.log('✓ Cascade deleted event from events table for content id:', id);
+                }
+            }
+        } catch (eventDeleteError) {
+            console.warn('[Content.delete] Event cascade delete notice:', eventDeleteError.message);
+        }
+
         // Drop dynamic table if it exists
         try {
             await dropDynamicTable(id);

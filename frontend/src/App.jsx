@@ -513,9 +513,10 @@ function AppContent() {
                 <Route path="/case-studies" element={<CategoryList />} />
 
                 {/* Events Hub Routes */}
-                <Route path="/events" element={<EventsPage />} />
+                <Route path="/events" element={<CategoryList />} />
                 <Route path="/events/:slug" element={<EventDetailPage />} />
                 <Route path="/event/:slug" element={<EventDetailPage />} />
+                <Route path="/event/:category/:slug" element={<EventDetailPage />} />
 
                 {/* Landing pages listing + direct access */}
 
