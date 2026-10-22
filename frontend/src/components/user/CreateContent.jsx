@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Form, Input, Select, Button, message, DatePicker,
-  Upload, Space, Divider, Typography, Tooltip, Tag, Modal, ConfigProvider, Checkbox, Radio
+  Upload, Space, Divider, Typography, Tooltip, Tag, Modal, ConfigProvider, Checkbox, Radio, InputNumber
 } from 'antd';
 import {
   UploadOutlined, SaveOutlined, SendOutlined, EyeOutlined,
   CalendarOutlined, ClockCircleOutlined, UserOutlined, TagOutlined,
   PictureOutlined, SettingOutlined, InfoCircleOutlined, ArrowLeftOutlined,
   FilePdfOutlined, PlusOutlined, DeleteOutlined, HolderOutlined, MenuOutlined, ApiOutlined, CodeOutlined,
-  BookOutlined, QuestionCircleOutlined, FileTextOutlined, PlayCircleOutlined, LinkOutlined, VideoCameraOutlined
+  BookOutlined, QuestionCircleOutlined, FileTextOutlined, PlayCircleOutlined, LinkOutlined, VideoCameraOutlined,
+  GlobalOutlined
 } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -26,6 +27,7 @@ import MediaLibraryModal from '../common/MediaLibraryModal';
 import { EditorialGuidelines } from '../guidelines/EditorialGuidelines';
 import { SubmissionInstructions } from '../guidelines/SubmissionInstructions';
 import { TermsAndConditions } from '../guidelines/TermsAndConditions';
+import eventService from '../../services/eventService';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -116,6 +118,8 @@ const CreateContent = () => {
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [webinarTypeMode, setWebinarTypeMode] = useState('live'); // 'live' | 'on_demand'
+  const [eventModeType, setEventModeType] = useState('online'); // 'online' | 'offline' | 'hybrid'
+  const [eventRegType, setEventRegType] = useState('tgs'); // 'tgs' | 'external'
 
   // Guidelines modals state
   const [guidelinesVisible, setGuidelinesVisible] = useState(false);
@@ -526,6 +530,67 @@ const CreateContent = () => {
       if (videoList.length > 0 && videoList[0].originFileObj) {
         formData.append('video_file', videoList[0].originFileObj);
       }
+
+      return formData;
+    }
+
+    // For Event type, include all event metadata and synchronize to events table
+    if (isEventType) {
+      formData.append('content_type_id', values.content_type_id);
+      formData.append('category_id', values.category_id);
+      formData.append('title', values.title);
+      formData.append('short_description', values.short_description || '');
+      formData.append('status', values.status || 'published');
+      formData.append('content', values.content || '');
+
+      formData.append('hosted_by', values.speaker_name || values.hosted_by || '');
+      formData.append('platform', values.online_platform || 'Zoom');
+      formData.append('webinar_type', values.event_format || 'conference');
+      formData.append('join_link', values.virtual_join_url || values.online_join_url || '');
+      formData.append('source_url', values.source_url || '');
+      formData.append('registration_type', values.registration_type || eventRegType || 'tgs');
+      formData.append('registration_url', values.registration_url || '');
+
+      if (values.event_start_date) {
+        formData.append('webinar_date', values.event_start_date.format('YYYY-MM-DD HH:mm:ss'));
+      }
+
+      if (fileList.length > 0 && fileList[0].originFileObj) {
+        formData.append('banner_image', fileList[0].originFileObj);
+      }
+
+      // Synchronize directly with the events module table
+      const joinLinkValue = values.virtual_join_url || values.online_join_url || '';
+      eventService.createEvent({
+        title: values.title,
+        short_description: values.short_description,
+        description: values.content,
+        event_type: values.event_format || 'conference',
+        event_mode: values.event_mode || eventModeType || 'online',
+        start_date: values.event_start_date ? values.event_start_date.format('YYYY-MM-DD HH:mm:ss') : new Date(),
+        end_date: values.event_end_date ? values.event_end_date.format('YYYY-MM-DD HH:mm:ss') : null,
+        timezone: values.timezone || 'IST (UTC+5:30)',
+        source_url: values.source_url || null,
+        registration_type: values.registration_type || eventRegType || 'tgs',
+        registration_url: values.registration_url || null,
+        online_platform: values.online_platform || 'Zoom',
+        online_join_url: joinLinkValue,
+        virtual_join_url: joinLinkValue,
+        venue_name: values.venue_name || null,
+        venue_address: values.venue_address || null,
+        venue_city: values.venue_city || null,
+        venue_map_url: values.venue_map_url || null,
+        speaker_name: values.speaker_name || null,
+        speaker_role: values.speaker_role || null,
+        speaker_company: values.speaker_company || null,
+        speaker_bio: values.speaker_bio || null,
+        speaker_image: values.speaker_image || null,
+        ticket_type: values.ticket_type || 'free',
+        ticket_price: values.ticket_price || 0,
+        max_capacity: values.max_capacity || 0,
+        status: 'published',
+        featured: 1
+      }).catch(err => console.warn('[CreateContent] Event sync notice:', err.message));
 
       return formData;
     }
@@ -972,6 +1037,7 @@ const CreateContent = () => {
   const isCaseStudy = ['case study', 'case-study'].includes(selectedTypeName.toLowerCase());
   const isLandingPageType = ['landing page', 'landing-page'].includes(selectedTypeName.toLowerCase());
   const isWebinarType = ['webinar'].includes(selectedTypeName.toLowerCase());
+  const isEventType = ['event', 'events'].includes(selectedTypeName.toLowerCase());
 
   // Auto-switch to HTML Builder tab when Landing Page type is selected (new content only)
   useEffect(() => {
@@ -979,6 +1045,13 @@ const CreateContent = () => {
       setActiveTab('html');
     }
   }, [isLandingPageType]);
+
+  // Ensure standard form tab is active when Event type is selected
+  useEffect(() => {
+    if (isEventType && activeTab !== 'standard') {
+      setActiveTab('standard');
+    }
+  }, [isEventType]);
   const getImageUrl = (file) => {
     if (!file) return null;
     if (file.originFileObj) return URL.createObjectURL(file.originFileObj);
@@ -1667,6 +1740,275 @@ const CreateContent = () => {
                             </div>
                           </>
                         )}
+                      </>
+                    );
+                  }
+
+                  // Event-specific complete creation form
+                  if (isEventType) {
+                    return (
+                      <>
+                        {/* Event Core Info Section */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <Text style={{ fontSize: 12, fontWeight: 700, color: '#F7941D', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                              📅 Event Overview & Schedule Configuration
+                            </Text>
+                            <Tag color="orange" style={{ fontWeight: 700 }}>EVENT TYPE SELECTED</Tag>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+                            <Form.Item name="content_type_id" label="Content Type" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                              <Select placeholder="Select type" size="large" onChange={val => {
+                                const name = contentTypes.find(t => t.id === val)?.name?.toLowerCase() || '';
+                                setSelectedTypeName(name);
+                              }}>
+                                {contentTypes.map(t => <Option key={t.id} value={t.id}>{t.name}</Option>)}
+                              </Select>
+                            </Form.Item>
+                            <Form.Item name="category_id" label="Category" rules={[{ required: true, message: 'Required' }]} style={{ flex: 1, marginBottom: 0 }}>
+                              <Select placeholder="Select category" size="large">
+                                {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                              </Select>
+                            </Form.Item>
+                          </div>
+
+                          <Form.Item name="title" label="Event Title" rules={[{ required: true, message: 'Please enter event title' }]} style={{ marginBottom: 16 }}>
+                            <Input placeholder="e.g. Next-Gen Cloud Architecture & AI Summit 2026" size="large" style={{ fontSize: 18, fontWeight: 700 }} />
+                          </Form.Item>
+
+                          <Form.Item name="short_description" label="Short Summary / Tagline" rules={[{ required: true, message: 'Please provide a short summary' }]} style={{ marginBottom: 16 }}>
+                            <TextArea rows={2} placeholder="Brief 2-3 sentence overview that appears on cards and search results..." />
+                          </Form.Item>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                            <Form.Item name="event_format" label="Event Format" initialValue="conference" rules={[{ required: true }]}>
+                              <Select size="large">
+                                <Option value="webinar">Webinar</Option>
+                                <Option value="workshop">Technical Workshop</Option>
+                                <Option value="conference">Conference / Summit</Option>
+                                <Option value="hackathon">Hackathon / Challenge</Option>
+                                <Option value="meetup">Community Meetup</Option>
+                                <Option value="panel">Panel Discussion</Option>
+                                <Option value="ama">Ask Me Anything (AMA)</Option>
+                              </Select>
+                            </Form.Item>
+
+                            <Form.Item name="event_mode" label="Access Mode" initialValue={eventModeType} rules={[{ required: true }]}>
+                              <Select size="large" onChange={val => setEventModeType(val)}>
+                                <Option value="online">Virtual (Online Meeting)</Option>
+                                <Option value="offline">In-Person (Physical Venue)</Option>
+                                <Option value="hybrid">Hybrid (Online + In-Person)</Option>
+                              </Select>
+                            </Form.Item>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                            <Form.Item name="event_start_date" label="Start Date & Time" rules={[{ required: true, message: 'Start date is required' }]}>
+                              <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" size="large" style={{ width: '100%' }} />
+                            </Form.Item>
+                            <Form.Item name="event_end_date" label="End Date & Time">
+                              <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" size="large" style={{ width: '100%' }} />
+                            </Form.Item>
+                            <Form.Item name="timezone" label="Timezone" initialValue="IST (UTC+5:30)">
+                              <Input size="large" placeholder="IST (UTC+5:30)" />
+                            </Form.Item>
+                          </div>
+
+                          <Form.Item 
+                            name="source_url" 
+                            label="Event Source URL" 
+                            tooltip="Official webpage or source page containing information about this event. Never used as join link."
+                            rules={[
+                              { type: 'url', message: 'Please enter a valid URL (starting with http:// or https://)' }
+                            ]}
+                            style={{ marginTop: 16, marginBottom: 0 }}
+                          >
+                            <Input size="large" prefix={<GlobalOutlined style={{ color: '#0284c7' }} />} placeholder="https://example.com/event-page (Official source)" />
+                          </Form.Item>
+                        </div>
+
+                        {/* Registration Section */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <Text strong style={{ fontSize: 14, color: '#10B981', display: 'block', marginBottom: 16 }}>
+                            📋 Event Registration Process
+                          </Text>
+                          <div style={{ display: 'grid', gridTemplateColumns: eventRegType === 'external' ? '1fr 2fr' : '1fr', gap: 16 }}>
+                            <Form.Item 
+                              name="registration_type" 
+                              label="Registration Type" 
+                              initialValue="tgs"
+                              rules={[{ required: true }]}
+                              style={{ marginBottom: 8 }}
+                            >
+                              <Select size="large" onChange={val => setEventRegType(val)}>
+                                <Option value="tgs">TGS Registration (Built-in Form, Code & Emails)</Option>
+                                <Option value="external">External Registration (Organizer Website)</Option>
+                              </Select>
+                            </Form.Item>
+
+                            {eventRegType === 'external' && (
+                              <Form.Item 
+                                name="registration_url" 
+                                label="Registration URL" 
+                                tooltip="External page where visitors can register for this event."
+                                rules={[
+                                  { required: true, message: 'Please provide external registration URL' },
+                                  { type: 'url', message: 'Must be a valid HTTP or HTTPS URL' }
+                                ]}
+                                style={{ marginBottom: 8 }}
+                              >
+                                <Input size="large" prefix={<LinkOutlined style={{ color: '#10B981' }} />} placeholder="https://organizer.com/register" />
+                              </Form.Item>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#64748b', marginTop: 4 }}>
+                            {eventRegType === 'tgs' 
+                              ? '✓ Visitors register directly on TGS platform. Automated confirmation email and calendar invite (.ics) are generated upon registration.'
+                              : '✓ Visitors will be redirected to the organizer website to complete registration. TGS confirmation emails will not be sent.'}
+                          </div>
+                        </div>
+
+                        {/* Online Platform details (if online or hybrid) */}
+                        {(eventModeType === 'online' || eventModeType === 'hybrid') && (
+                          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                              <Text strong style={{ fontSize: 14, color: '#0284c7' }}>
+                                💻 Virtual Attendance & Join Link <span style={{ fontSize: 12, fontWeight: 'normal', color: darkMode ? '#94a3b8' : '#64748b' }}>(Optional)</span>
+                              </Text>
+                              <span style={{ fontSize: 12, color: '#10B981', fontWeight: 600 }}>
+                                🔒 Kept Private Until Registration
+                              </span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
+                              <Form.Item name="online_platform" label="Platform" initialValue="Zoom">
+                                <Select size="large">
+                                  <Option value="Zoom">Zoom</Option>
+                                  <Option value="Google Meet">Google Meet</Option>
+                                  <Option value="Microsoft Teams">Microsoft Teams</Option>
+                                  <Option value="YouTube Live">YouTube Live</Option>
+                                  <Option value="Webex">Cisco Webex</Option>
+                                </Select>
+                              </Form.Item>
+                              <Form.Item 
+                                name="virtual_join_url" 
+                                label="Virtual Join URL (Optional)" 
+                                tooltip="Actual Zoom, Google Meet, Microsoft Teams, Webex, or other meeting URL used to attend the event. Can be added later."
+                                rules={[
+                                  { type: 'url', message: 'Must be a valid HTTP or HTTPS URL' }
+                                ]}
+                              >
+                                <Input size="large" prefix={<LinkOutlined style={{ color: '#0284c7' }} />} placeholder="https://zoom.us/j/... or https://meet.google.com/ (Optional)" />
+                              </Form.Item>
+                            </div>
+                            <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#64748b', marginTop: 4 }}>
+                              🛡️ Sensitive: Never exposed publicly on event detail page. For TGS-managed events, attendees receive this URL securely after registration.
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Offline Venue details (if offline or hybrid) */}
+                        {(eventModeType === 'offline' || eventModeType === 'hybrid') && (
+                          <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                            <Text strong style={{ fontSize: 14, color: '#8B5CF6', display: 'block', marginBottom: 16 }}>
+                              🏢 Physical Venue & Address
+                            </Text>
+                            <Form.Item name="venue_name" label="Venue Name" rules={[{ required: true, message: 'Please provide venue name' }]} style={{ marginBottom: 16 }}>
+                              <Input size="large" placeholder="e.g. Cyber City IT Park, Convention Hall A" />
+                            </Form.Item>
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginBottom: 16 }}>
+                              <Form.Item name="venue_address" label="Street Address" style={{ marginBottom: 0 }}>
+                                <Input size="large" placeholder="Sector 5, MIDC..." />
+                              </Form.Item>
+                              <Form.Item name="venue_city" label="City" style={{ marginBottom: 0 }}>
+                                <Input size="large" placeholder="Pune / Mumbai" />
+                              </Form.Item>
+                            </div>
+                            <Form.Item name="venue_map_url" label="Google Maps Link (Optional)" style={{ marginBottom: 0 }}>
+                              <Input size="large" placeholder="https://maps.google.com/..." />
+                            </Form.Item>
+                          </div>
+                        )}
+
+                        {/* Keynote Speaker Box */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <Text strong style={{ fontSize: 14, color: '#F7941D', display: 'block', marginBottom: 16 }}>
+                            🎤 Keynote Speaker Details
+                          </Text>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                            <Form.Item name="speaker_name" label="Speaker Name" rules={[{ required: true, message: 'Please specify speaker name' }]} style={{ marginBottom: 0 }}>
+                              <Input size="large" prefix={<UserOutlined style={{ color: '#F7941D' }} />} placeholder="e.g. Dr. Rajesh Sharma" />
+                            </Form.Item>
+                            <Form.Item name="speaker_role" label="Role / Designation" style={{ marginBottom: 0 }}>
+                              <Input size="large" placeholder="e.g. Principal Cloud Architect" />
+                            </Form.Item>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                            <Form.Item name="speaker_company" label="Company / Organization" style={{ marginBottom: 0 }}>
+                              <Input size="large" placeholder="e.g. Google Cloud / TCS" />
+                            </Form.Item>
+                            <Form.Item name="speaker_image" label="Speaker Photo URL (Optional)" style={{ marginBottom: 0 }}>
+                              <Input size="large" placeholder="https://..." />
+                            </Form.Item>
+                          </div>
+                          <Form.Item name="speaker_bio" label="Speaker Bio" style={{ marginBottom: 0 }}>
+                            <TextArea rows={2} placeholder="Brief background of the speaker..." />
+                          </Form.Item>
+                        </div>
+
+                        {/* Ticket & Seating Capacity */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 16 }}>
+                            🎟️ Tickets & Seating Capacity
+                          </Text>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                            <Form.Item name="ticket_type" label="Ticket Model" initialValue="free">
+                              <Select size="large">
+                                <Option value="free">Free Admission</Option>
+                                <Option value="paid">Paid Ticket</Option>
+                              </Select>
+                            </Form.Item>
+                            <Form.Item name="ticket_price" label="Price (₹)" initialValue={0}>
+                              <InputNumber min={0} size="large" style={{ width: '100%' }} />
+                            </Form.Item>
+                            <Form.Item name="max_capacity" label="Max Seats (0 = Unlimited)" initialValue={0}>
+                              <InputNumber min={0} size="large" style={{ width: '100%' }} />
+                            </Form.Item>
+                          </div>
+                        </div>
+
+                        {/* Banner Image */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 24, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                            <div>
+                              <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827' }}><PictureOutlined style={{ marginRight: 8, color: '#4a7cff' }} />Event Banner Image</Text>
+                              <div style={{ fontSize: 12, color: darkMode ? '#94a3b8' : '#8c8c8c', marginTop: 2 }}>Displayed on event card and single event header</div>
+                            </div>
+                            <Upload beforeUpload={() => false} fileList={fileList} onChange={({ fileList: fl }) => setFileList(fl)} maxCount={1} showUploadList={false} accept="image/*">
+                              <Button icon={<UploadOutlined />} size="small">{fileList.length > 0 ? 'Change Image' : 'Upload Image'}</Button>
+                            </Upload>
+                          </div>
+                          {fileList.length > 0 && fileList[0].originFileObj ? (
+                            <div style={{ borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                              <img src={URL.createObjectURL(fileList[0].originFileObj)} alt="Banner" style={{ width: '100%', maxHeight: 260, objectFit: 'contain', display: 'block' }} />
+                            </div>
+                          ) : (
+                            <div style={{ border: darkMode ? '2px dashed #334155' : '2px dashed #d9d9d9', borderRadius: 8, padding: '24px 20px', textAlign: 'center', background: darkMode ? '#0f172a' : '#fafafa' }}>
+                              <PictureOutlined style={{ fontSize: 32, color: darkMode ? '#475569' : '#bfbfbf', marginBottom: 8, display: 'block' }} />
+                              <Text style={{ color: darkMode ? '#94a3b8' : '#8c8c8c', fontSize: 13 }}>Upload an eye-catching banner image for this event</Text>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Full Description & Agenda */}
+                        <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: '24px 28px', marginBottom: 40, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
+                          <Text strong style={{ fontSize: 14, color: darkMode ? '#f1f5f9' : '#111827', display: 'block', marginBottom: 16 }}>
+                            📝 Event Description & Detailed Agenda
+                          </Text>
+                          <Form.Item name="content" style={{ marginBottom: 0 }}>
+                            <TextArea rows={6} placeholder="Detailed agenda, timeline (e.g. 10:00 AM - Keynote, 11:00 AM - Live Q&A), and learning objectives..." />
+                          </Form.Item>
+                        </div>
                       </>
                     );
                   }

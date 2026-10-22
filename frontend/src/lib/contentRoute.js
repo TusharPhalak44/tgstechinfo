@@ -114,6 +114,9 @@ export const resolveContentRoute = (item = {}) => {
   }
 
   const type = normalizeContentType(contentType || contentTypeName || 'article');
+  if (type === 'event' || type === 'events' || item?.content_type_id === 5) {
+    return { url: `/events/${encodeURIComponent(slug)}`, newTab: false };
+  }
   const catSlug = extractCategorySlug(item) || 'general';
 
   return { url: `/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`, newTab: false };

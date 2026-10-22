@@ -40,6 +40,7 @@ import {
   CompassOutlined,
   DatabaseOutlined,
   UnorderedListOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import { useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';

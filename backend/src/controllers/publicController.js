@@ -293,6 +293,19 @@ exports.getContentBySlug = async (req, res) => {
             content.url = `/lp/${content.slug}`;
         }
 
+        if (content.content_type_id === 5) {
+            const [eventRows] = await pool.query(
+                'SELECT id, title, slug, event_type, event_mode, start_date, end_date, timezone, venue_name, venue_address, venue_city, venue_map_url, source_url, registration_type, registration_url, online_platform, speaker_name, speaker_role, speaker_company, speaker_image, ticket_type, ticket_price, max_capacity, status, featured FROM events WHERE slug = ? OR title = ? LIMIT 1',
+                [decodedSlug, content.title]
+            );
+            if (eventRows && eventRows.length > 0) {
+                content.event = eventRows[0];
+                content.source_url = eventRows[0].source_url;
+                content.registration_type = eventRows[0].registration_type;
+                content.registration_url = eventRows[0].registration_url;
+            }
+        }
+
         // Get related articles
         const relatedArticles = await Content.getRelatedArticles(content.id, content.category_id);
         const enrichedRelated = (relatedArticles || []).map(item => {

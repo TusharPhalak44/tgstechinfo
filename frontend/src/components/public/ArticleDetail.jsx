@@ -10,7 +10,8 @@ import {
   PhoneOutlined, IdcardOutlined, BankOutlined, SafetyCertificateOutlined,
   CheckCircleFilled, VideoCameraOutlined, RightOutlined, FireOutlined,
   ReadOutlined, CopyOutlined, CheckOutlined, LinkedinFilled, TwitterOutlined,
-  FacebookFilled, WhatsAppOutlined, ArrowUpOutlined, DownloadOutlined
+  FacebookFilled, WhatsAppOutlined, ArrowUpOutlined, DownloadOutlined,
+  GlobalOutlined, LinkOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -227,6 +228,15 @@ const ArticleDetail = () => {
           messageApi.error('Content not found');
           setContent(null);
           setLoading(false);
+          return;
+        }
+
+        // If this content item is an Event, redirect immediately to the dedicated Event Detail Page
+        const isEventContent = c.content_type_id === 5 || 
+                               (typeof c.content_type === 'string' && c.content_type.toLowerCase() === 'event') ||
+                               (typeof c.content_type_name === 'string' && c.content_type_name.toLowerCase() === 'event');
+        if (isEventContent) {
+          navigate(`/events/${encodeURIComponent(c.slug)}`, { replace: true });
           return;
         }
 
@@ -563,10 +573,20 @@ const ArticleDetail = () => {
     </div>
   );
 
-  const LANDING_TYPES = ['whitepaper', 'white paper', 'white-paper', 'event', 'e-book', 'ebook', 'ebooks'];
+  const LANDING_TYPES = ['whitepaper', 'white paper', 'white-paper', 'e-book', 'ebook', 'ebooks'];
   const contentTypeName = (content?.content_type_name || content?.content_type || '').toLowerCase().trim();
   const isEbook = contentTypeName.includes('ebook') || content?.content_type_id === 7;
-  const requiresLanding = LANDING_TYPES.some(t => contentTypeName.includes(t)) || isEbook;
+  const isEvent = content?.content_type_id === 5 ||
+                  contentTypeName === 'event' ||
+                  contentTypeName.includes('event') ||
+                  Boolean(content?.event) ||
+                  Boolean(content?.registration_url) ||
+                  Boolean(content?.source_url);
+  const requiresLanding = !isEvent && (LANDING_TYPES.some(t => contentTypeName.includes(t)) || isEbook);
+
+  const eventSourceUrl = content?.source_url || content?.event?.source_url;
+  const eventRegUrl = content?.registration_url || content?.event?.registration_url || (isEvent ? `/events/${content?.slug}` : null);
+  const isExternalReg = (content?.registration_type === 'external' || content?.event?.registration_type === 'external') && Boolean(content?.registration_url || content?.event?.registration_url);
 
   const fullContent = content.content || '';
   const previewContent = getPreviewHtml(content.short_description || fullContent);
@@ -624,8 +644,36 @@ const ArticleDetail = () => {
                 >← Back</button>
               </div>
 
-              {/* Category */}
-              <Tag color="blue" style={{ marginBottom: 12 }}>{content.category_name}</Tag>
+              {/* Category & Event Tags */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+                <Tag color="blue">{content.category_name}</Tag>
+                {isEvent && (
+                  <>
+                    <Tag color="cyan" style={{ fontWeight: 700 }}>
+                      📅 EVENT
+                    </Tag>
+                    {eventSourceUrl && (
+                      <a href={eventSourceUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                        <Tag color="geekblue" icon={<GlobalOutlined />} style={{ fontWeight: 600, cursor: 'pointer' }}>
+                          Official Event Source ↗
+                        </Tag>
+                      </a>
+                    )}
+                    {eventRegUrl && (
+                      <a href={eventRegUrl} target={isExternalReg ? "_blank" : "_self"} rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                        <Tag color="green" icon={<LinkOutlined />} style={{ fontWeight: 600, cursor: 'pointer' }}>
+                          {isExternalReg ? 'Register on Organizer Website ↗' : 'Register for Event (Free) ↗'}
+                        </Tag>
+                      </a>
+                    )}
+                    <Link to={`/events/${encodeURIComponent(content.slug)}`} style={{ textDecoration: 'none' }}>
+                      <Tag color="purple" style={{ fontWeight: 600, cursor: 'pointer' }}>
+                        Open Dedicated Event Hub →
+                      </Tag>
+                    </Link>
+                  </>
+                )}
+              </div>
 
               {/* Meta */}
               <div style={{
@@ -1481,7 +1529,100 @@ const ArticleDetail = () => {
               {/* Newsletter Subscription Widget at Top of Right Sidebar */}
               <ArticleNewsletterBanner darkMode={darkMode} contentTitle={content?.title} />
 
-              {/* ── Get Access Card — only for webinar/whitepaper/event ── */}
+              {/* Event Registration & Source Link Widget */}
+              {isEvent && (
+                <Card
+                  style={{
+                    background: darkMode ? '#1e293b' : '#fff',
+                    borderRadius: 16,
+                    border: darkMode ? '2px solid #0284C7' : '2px solid #bae6fd',
+                    boxShadow: darkMode ? '0 6px 20px rgba(0,0,0,0.3)' : '0 6px 20px rgba(2, 132, 199, 0.1)',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{
+                    background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                    padding: '16px 20px',
+                    margin: '-1px -1px 0 -1px',
+                    color: '#fff'
+                  }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.9 }}>
+                      Virtual Event
+                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 800, marginTop: 4 }}>
+                      Event Registration & Access
+                    </div>
+                  </div>
+                  <div style={{ padding: '20px' }}>
+                    <p style={{ fontSize: 13, color: darkMode ? '#94A3B8' : '#475569', marginBottom: 16, lineHeight: 1.5 }}>
+                      Access the official event portal, view full session schedule, and secure your registration.
+                    </p>
+
+                    {eventRegUrl && (
+                      <a
+                        href={eventRegUrl}
+                        target={isExternalReg ? "_blank" : "_self"}
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none', display: 'block', marginBottom: 10 }}
+                      >
+                        <Button
+                          type="primary"
+                          block
+                          size="large"
+                          icon={<LinkOutlined />}
+                          style={{
+                            height: 46,
+                            borderRadius: 8,
+                            background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                            border: 'none',
+                            fontWeight: 800,
+                            fontSize: 14,
+                            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                          }}
+                        >
+                          {isExternalReg ? 'Register on Organizer Site ↗' : 'Register for Event (Free)'}
+                        </Button>
+                      </a>
+                    )}
+
+                    {eventSourceUrl && (
+                      <a
+                        href={eventSourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ textDecoration: 'none', display: 'block', marginBottom: 12 }}
+                      >
+                        <Button
+                          block
+                          icon={<GlobalOutlined />}
+                          style={{
+                            height: 40,
+                            borderRadius: 8,
+                            fontWeight: 600,
+                            fontSize: 13,
+                            borderColor: darkMode ? '#334155' : '#cbd5e1',
+                            color: darkMode ? '#cbd5e1' : '#334155',
+                            background: darkMode ? '#0f172a' : '#f8fafc'
+                          }}
+                        >
+                          Official Event Source ↗
+                        </Button>
+                      </a>
+                    )}
+
+                    <div style={{ textAlign: 'center', marginTop: 10 }}>
+                      <Link
+                        to={`/events/${encodeURIComponent(content.slug)}`}
+                        style={{ fontSize: 13, fontWeight: 600, color: '#0284C7' }}
+                      >
+                        View Interactive Event Hub →
+                      </Link>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* ── Get Access Card — only for webinar/whitepaper ── */}
               {requiresLanding && (
                 <Card
                   style={{

@@ -93,6 +93,44 @@ exports.createContent = async (req, res) => {
         console.log('[createContent] status char codes:', contentData.status ? Array.from(contentData.status).map(c => c.charCodeAt(0)) : 'null');
 
         const content = await Content.create(contentData);
+
+        // If content_type is Event (id 5), synchronize with the events table
+        if (contentData.content_type_id === 5) {
+            try {
+                const eventStartDate = contentData.webinar_date || contentData.scheduled_publish_date || new Date();
+                const eventSlug = content.slug || content.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                const bannerPath = content.banner_image ? (content.banner_image.startsWith('/uploads/') ? content.banner_image : `/uploads/${content.banner_image}`) : null;
+
+                const [existingEvent] = await pool.query('SELECT id FROM events WHERE slug = ? OR title = ? LIMIT 1', [eventSlug, content.title]);
+                if (!existingEvent || existingEvent.length === 0) {
+                    await pool.query(`
+                        INSERT INTO events 
+                        (title, slug, short_description, description, event_type, event_mode, start_date, timezone,
+                         online_platform, online_join_url, banner_image, speaker_name, status, featured, created_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    `, [
+                        content.title,
+                        eventSlug,
+                        content.short_description || null,
+                        content.content || null,
+                        content.webinar_type || 'conference',
+                        'online',
+                        new Date(eventStartDate),
+                        'IST (UTC+5:30)',
+                        content.platform || 'Zoom',
+                        content.join_link || null,
+                        bannerPath,
+                        content.hosted_by || null,
+                        'published',
+                        1,
+                        req.user?.id || null
+                    ]);
+                    console.log('✓ Synchronized event with events table for content:', content.id);
+                }
+            } catch (eventSyncErr) {
+                console.warn('[createContent] Event table sync notice:', eventSyncErr.message);
+            }
+        }
         
         // Add banner image to media_files table if present and not already exists
         if (bannerFile) {

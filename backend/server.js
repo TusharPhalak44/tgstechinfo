@@ -331,6 +331,11 @@ app.use('/api/audience', require('./src/routes/audienceRoutes'));
 
 app.use('/api/admin/audience', require('./src/routes/adminAudienceRoutes'));
 
+// Events Module Routes
+app.use('/api/events', require('./src/routes/eventRoutes'));
+app.use('/api/public/events', require('./src/routes/eventRoutes'));
+app.use('/api/admin/events', require('./src/routes/eventRoutes'));
+
 // File-based Landing Pages (/lp/:slug and /lp/:slug/*)
 app.use('/lp', require('./src/routes/fileLandingRoutes'));
 
@@ -405,6 +410,14 @@ app.listen(PORT, () => {
         syncAllFileLandingPages().catch(e => console.warn('[Startup] Landing pages sync notice:', e.message));
     } catch (e) {
         console.warn('[Startup] Landing pages helper error:', e.message);
+    }
+
+    // Auto-reminder runner for upcoming events (24h and 1h reminders)
+    try {
+        const { startReminderCron } = require('./src/services/eventReminderService');
+        startReminderCron(15);
+    } catch (e) {
+        console.warn('[Startup] Event reminder cron notice:', e.message);
     }
 });
 

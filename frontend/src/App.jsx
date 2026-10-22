@@ -66,6 +66,8 @@ const CategoryList = lazyWithRetry(() => import('./components/public/CategoryLis
 const SearchResults = lazyWithRetry(() => import('./components/public/SearchResults'));
 const Newsletter = lazyWithRetry(() => import('./components/public/Newsletter'));
 const SitemapXml = lazyWithRetry(() => import('./pages/SitemapXml'));
+const EventsPage = lazyWithRetry(() => import('./pages/EventsPage'));
+const EventDetailPage = lazyWithRetry(() => import('./pages/EventDetailPage'));
 
 // Lazy-loaded dashboard & admin routes
 const Dashboard = lazyWithRetry(() => import('./components/user/Dashboard'));
@@ -100,6 +102,7 @@ const SessionManagement = lazyWithRetry(() => import('./components/admin/Session
 const Settings = lazyWithRetry(() => import('./components/admin/Settings'));
 const EmailTemplates = lazyWithRetry(() => import('./components/admin/EmailTemplates'));
 const Tags = lazyWithRetry(() => import('./components/admin/Tags'));
+const AdminEvents = lazyWithRetry(() => import('./components/admin/AdminEvents'));
 
 import { Navigate } from 'react-router-dom';
 
@@ -459,8 +462,8 @@ function AppContent() {
                 <Route path="/webinar/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/webinar/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
-                <Route path="/event/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/event/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/event/:category/:slug" element={<EventDetailPage />} />
+                <Route path="/event/:slug" element={<EventDetailPage />} />
 
                 <Route path="/ebook/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
                 <Route path="/ebook/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
@@ -491,8 +494,6 @@ function AppContent() {
 
                 <Route path="/webinars" element={<CategoryList />} />
 
-                <Route path="/events" element={<CategoryList />} />
-
                 <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
 
                 <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
@@ -510,6 +511,11 @@ function AppContent() {
                 <Route path="/case-study" element={<Navigate to="/case-studies" replace />} />
 
                 <Route path="/case-studies" element={<CategoryList />} />
+
+                {/* Events Hub Routes */}
+                <Route path="/events" element={<EventsPage />} />
+                <Route path="/events/:slug" element={<EventDetailPage />} />
+                <Route path="/event/:slug" element={<EventDetailPage />} />
 
                 {/* Landing pages listing + direct access */}
 
@@ -642,6 +648,8 @@ function AppContent() {
                   <Route path="email-templates" element={<EmailTemplates />} />
 
                   <Route path="submissions" element={<AdminSubmissions />} />
+
+                  <Route path="events" element={<AdminEvents />} />
 
                   <Route path="audience" element={<AdminAudienceDashboard />} />
 

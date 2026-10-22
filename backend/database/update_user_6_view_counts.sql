@@ -22,42 +22,7 @@ AND c.status = 'published'
 ORDER BY c.content_type_id, c.id;
 
 -- ============================================
--- UPDATE VIEW COUNTS FOR USER ID 6
--- ============================================
-
-UPDATE contents c
-SET view_count = 
-    CASE 
-        -- Articles: 180,000 – 2,500,000
-        WHEN c.content_type_id = 2 THEN
-            180000 + 
-            FLOOR(RAND() * 2320000) +
-            FLOOR(DATEDIFF(NOW(), COALESCE(c.published_date, c.created_at)) / 365 * 360000) +
-            (c.id * 1234) % 50000
-            
-        -- Blogs: 120,000 – 1,800,000  
-        WHEN c.content_type_id = 3 THEN
-            120000 + 
-            FLOOR(RAND() * 1680000) +
-            FLOOR(DATEDIFF(NOW(), COALESCE(c.published_date, c.created_at)) / 365 * 280000) +
-            (c.id * 987) % 40000
-            
-        -- News: 250,000 – 3,500,000
-        WHEN c.content_type_id = 1 THEN
-            250000 + 
-            FLOOR(RAND() * 3250000) +
-            FLOOR(DATEDIFF(NOW(), COALESCE(c.published_date, c.created_at)) / 365 * 500000) +
-            (c.id * 1597) % 70000
-            
-        -- Guides: 350,000 – 4,500,000
-        WHEN c.content_type_id = 8 THEN
-            350000 + 
-            FLOOR(RAND() * 4150000) +
-            FLOOR(DATEDIFF(NOW(), COALESCE(c.published_date, c.created_at)) / 365 * 650000) +
-            (c.id * 2584) % 90000
-            
-        -- Case Studies: 450,000 – 5,500,000
-        WHEN c.content_type_id = 11 THEN
+WHEN c.content_type_id = 11 THEN
             450000 + 
             FLOOR(RAND() * 5050000) +
             FLOOR(DATEDIFF(NOW(), COALESCE(c.published_date, c.created_at)) / 365 * 800000) +
