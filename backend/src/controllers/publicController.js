@@ -381,19 +381,22 @@ exports.submitLandingPage = async (req, res) => {
 
         let content = null;
 
-        // 1. If this is a file-based landing page, automatically find or create its content record in `contents`
-        if (fileLandingSlug) {
+        // 1. If explicit content_id was provided, look up by ID first
+        if (normalizedContentId) {
+            content = await Content.findById(normalizedContentId);
+            if (content) {
+                console.log(`[submitLandingPage] Found content #${content.id} (${content.slug}) by explicit content_id`);
+            }
+        }
+
+        // 2. If content not found by ID, and fileLandingSlug exists, find/create for landing slug
+        if (!content && fileLandingSlug) {
             const { getOrCreateContentForLandingPage } = require('../utils/landingPageHelper');
             content = await getOrCreateContentForLandingPage(fileLandingSlug, req.body);
             if (content) {
                 normalizedContentId = content.id;
                 console.log(`[submitLandingPage] Auto-resolved content #${content.id} for landing slug '${fileLandingSlug}'`);
             }
-        }
-
-        // 2. If content_id was provided, look up by ID
-        if (!content && normalizedContentId) {
-            content = await Content.findById(normalizedContentId);
         }
 
         // 3. Fallback: slug passed as a query param (?slug=my-page-slug)
@@ -659,17 +662,35 @@ exports.submitLandingPage = async (req, res) => {
 
             // Software Advice / Gartner partner-conversion specific requirements
             if (targetWebhookUrl.includes('softwareadvice.com') || targetWebhookUrl.includes('partner-conversion')) {
-                if (!webhookPayload.f_name && (webhookPayload.first_name || webhookPayload.firstName)) {
-                    webhookPayload.f_name = webhookPayload.first_name || webhookPayload.firstName;
+                const fn = (webhookPayload.first_name || webhookPayload.firstName || webhookPayload.name || '').trim();
+                const ln = (webhookPayload.last_name || webhookPayload.lastName || '').trim();
+
+                if (!webhookPayload.f_name || String(webhookPayload.f_name).trim() === '') {
+                    webhookPayload.f_name = fn;
                 }
-                if (!webhookPayload.l_name && (webhookPayload.last_name || webhookPayload.lastName)) {
-                    webhookPayload.l_name = webhookPayload.last_name || webhookPayload.lastName;
+                if (!webhookPayload.l_name || String(webhookPayload.l_name).trim() === '') {
+                    webhookPayload.l_name = ln;
                 }
-                if (!webhookPayload.type) {
+                if (!webhookPayload.type || String(webhookPayload.type).trim() === '') {
                     webhookPayload.type = webhookPayload.lead_type || 'download';
                 }
-                if (!webhookPayload.utm_source) {
+                if (!webhookPayload.utm_source || String(webhookPayload.utm_source).trim() === '') {
                     webhookPayload.utm_source = webhookPayload.partner_source || 'tgst';
+                }
+                if (!webhookPayload.market_id || String(webhookPayload.market_id).trim() === '') {
+                    webhookPayload.market_id = '13';
+                }
+                if (!webhookPayload.size_id || String(webhookPayload.size_id).trim() === '') {
+                    webhookPayload.size_id = '896';
+                }
+                if (!webhookPayload.segment_id || String(webhookPayload.segment_id).trim() === '') {
+                    webhookPayload.segment_id = '441';
+                }
+                if (!webhookPayload.campaign || String(webhookPayload.campaign).trim() === '') {
+                    webhookPayload.campaign = 'HR';
+                }
+                if (!webhookPayload.lead_source || String(webhookPayload.lead_source).trim() === '') {
+                    webhookPayload.lead_source = 'Software Advice';
                 }
             }
 
