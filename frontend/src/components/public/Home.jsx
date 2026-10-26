@@ -2449,68 +2449,99 @@ const getArticleRoute = (article) => {
 
 // ── Helper to navigate or open new tab ──────────────────────────
 const navigateArticle = (article, navigate) => {
-  navigateContentItem(article, navigate);
+  navigateContentItem(article, navigate, { newTab: true });
 };
 
 // ── Magazine HeroCard ────────────────────────────────────────────
-const HeroCard = ({ article, navigate, onImgClick, accent = 'var(--color-primary)' }) => (
-  <div onClick={() => navigateArticle(article, navigate)} style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', borderRadius: 14, overflow: 'hidden', background: 'var(--color-surface)', boxShadow: '0 2px 16px rgba(0,0,0,0.10)', border: '1px solid var(--color-border)', transition: 'transform .22s, box-shadow .22s' }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 14px 36px rgba(0,0,0,0.15)'; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.10)'; }}
-  >
-    <div style={{ position: 'relative', lineHeight: 0, overflow: 'hidden' }}
-      onClick={e => { e.stopPropagation(); if (article.banner_image) onImgClick(`/uploads/${article.banner_image}`, article.title); }}>
-      {article.banner_image
-        ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: 'auto', display: 'block', transition: 'transform .4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-        : <div style={{ height: 'clamp(140px, 15vw, 180px)', background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 32, color: 'var(--color-primary)' }} /></div>
-      }
-      {article.content_type_name && <span style={{ position: 'absolute', top: 10, left: 10, background: accent, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase' }}>{article.content_type_name}</span>}
-      {article.video_file && <span style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}><PlayCircleOutlined /> Video</span>}
-    </div>
-    <div style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-      {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 11px)', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
-      <div style={{ fontWeight: 700, fontSize: 'clamp(14px, 1vw, 15px)', lineHeight: 1.45, color: 'var(--color-heading)', marginBottom: 8, flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
-      <div style={{ fontSize: 'clamp(12px, 0.8vw, 12.5px)', color: 'var(--color-muted)', lineHeight: 1.6, marginBottom: 12, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.short_description}</div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><EyeOutlined />{formatViewsToM(article.view_count)}</span>
+const HeroCard = ({ article, navigate, onImgClick, accent = 'var(--color-primary)' }) => {
+  const targetRoute = resolveContentRoute(article);
+  const targetUrl = targetRoute?.url || '#';
+
+  return (
+    <a 
+      href={targetUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ 
+        cursor: 'pointer', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        height: '100%', 
+        borderRadius: 14, 
+        overflow: 'hidden', 
+        background: 'var(--color-surface)', 
+        boxShadow: '0 2px 16px rgba(0,0,0,0.10)', 
+        border: '1px solid var(--color-border)', 
+        transition: 'transform .22s, box-shadow .22s',
+        textDecoration: 'none',
+        color: 'inherit'
+      }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 14px 36px rgba(0,0,0,0.15)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.10)'; }}
+    >
+      <div style={{ position: 'relative', lineHeight: 0, overflow: 'hidden' }}
+        onClick={e => { e.stopPropagation(); if (article.banner_image) onImgClick(`/uploads/${article.banner_image}`, article.title); }}>
+        {article.banner_image
+          ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: 'auto', display: 'block', transition: 'transform .4s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+          : <div style={{ height: 'clamp(140px, 15vw, 180px)', background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 32, color: 'var(--color-primary)' }} /></div>
+        }
+        {article.content_type_name && <span style={{ position: 'absolute', top: 10, left: 10, background: accent, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase' }}>{article.content_type_name}</span>}
+        {article.video_file && <span style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 20, letterSpacing: .6, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}><PlayCircleOutlined /> Video</span>}
       </div>
-    </div>
-  </div>
-);
+      <div style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 11px)', fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
+        <div style={{ fontWeight: 700, fontSize: 'clamp(14px, 1vw, 15px)', lineHeight: 1.45, color: 'var(--color-heading)', marginBottom: 8, flex: 1, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
+        <div style={{ fontSize: 'clamp(12px, 0.8vw, 12.5px)', color: 'var(--color-muted)', lineHeight: 1.6, marginBottom: 12, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.short_description}</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><EyeOutlined />{formatViewsToM(article.view_count)}</span>
+        </div>
+      </div>
+    </a>
+  );
+};
 
 // ── Compact list card ────────────────────────────────────────────
-const ListCard = ({ article, navigate, onImgClick, isLast }) => (
-  <div
-    style={{
-      display: 'flex',
-      gap: 12,
-      padding: '12px 0',
-      flex: 1,
-      borderBottom: isLast ? 'none' : '1px solid var(--color-border)',
-      cursor: 'pointer',
-      borderRadius: 8,
-      transition: 'padding-left .18s',
-      alignItems: 'center'
-    }}
-    onMouseEnter={e => e.currentTarget.style.paddingLeft = '6px'}
-    onMouseLeave={e => e.currentTarget.style.paddingLeft = '0'}
-    onClick={() => navigateArticle(article, navigate)}
-  >
-    <div style={{ width: 76, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', lineHeight: 0, position: 'relative' }}
-      onClick={e => { e.stopPropagation(); if (article.banner_image) onImgClick(`/uploads/${article.banner_image}`, article.title); }}>
-      {article.banner_image
-        ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : <div style={{ width: 76, height: 56, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ color: 'var(--color-primary)', fontSize: 16 }} /></div>
-      }
-      {article.video_file && <span style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 10, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 2 }}><PlayCircleOutlined /></span>}
-    </div>
-    <div style={{ flex: 1, minWidth: 0 }}>
-      {article.category_name && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .6 }}>{article.category_name} · </span>}
-      <div style={{ fontWeight: 600, fontSize: 'clamp(13px, 0.9vw, 14px)', color: 'var(--color-heading)', lineHeight: 1.4, margin: '2px 0 4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
-      <span style={{ fontSize: 'clamp(11px, 0.7vw, 12px)', color: 'var(--color-muted)' }}><CalendarOutlined style={{ marginRight: 3 }} />{formatContentPublishDate(article)}</span>
-    </div>
-  </div>
-);
+const ListCard = ({ article, navigate, onImgClick, isLast }) => {
+  const targetRoute = resolveContentRoute(article);
+  const targetUrl = targetRoute?.url || '#';
+
+  return (
+    <a
+      href={targetUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'flex',
+        gap: 12,
+        padding: '12px 0',
+        flex: 1,
+        borderBottom: isLast ? 'none' : '1px solid var(--color-border)',
+        cursor: 'pointer',
+        borderRadius: 8,
+        transition: 'padding-left .18s',
+        alignItems: 'center',
+        textDecoration: 'none',
+        color: 'inherit'
+      }}
+      onMouseEnter={e => e.currentTarget.style.paddingLeft = '6px'}
+      onMouseLeave={e => e.currentTarget.style.paddingLeft = '0'}
+    >
+      <div style={{ width: 76, height: 56, flexShrink: 0, borderRadius: 8, overflow: 'hidden', lineHeight: 0, position: 'relative' }}
+        onClick={e => { e.stopPropagation(); if (article.banner_image) onImgClick(`/uploads/${article.banner_image}`, article.title); }}>
+        {article.banner_image
+          ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : <div style={{ width: 76, height: 56, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ color: 'var(--color-primary)', fontSize: 16 }} /></div>
+        }
+        {article.video_file && <span style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 10, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 2 }}><PlayCircleOutlined /></span>}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {article.category_name && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .6 }}>{article.category_name} · </span>}
+        <div style={{ fontWeight: 600, fontSize: 'clamp(13px, 0.9vw, 14px)', color: 'var(--color-heading)', lineHeight: 1.4, margin: '2px 0 4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</div>
+        <span style={{ fontSize: 'clamp(11px, 0.7vw, 12px)', color: 'var(--color-muted)' }}><CalendarOutlined style={{ marginRight: 3 }} />{formatContentPublishDate(article)}</span>
+      </div>
+    </a>
+  );
+};
 
 // ── Latest Posts Section ─────────────────────────────────────────
 const LatestArticlesSection = ({ items, articles, blogs, navigate }) => {
@@ -2554,43 +2585,54 @@ const LatestArticlesSection = ({ items, articles, blogs, navigate }) => {
         gridTemplateColumns: 'repeat(4, 1fr)',
         gap: 20
       }}>
-        {combined.map((article, idx) => (
-          <div key={article.id || idx} onClick={() => navigateArticle(article, navigate)}
-            style={{
-              opacity: visible ? 1 : 0,
-              transform: visible ? 'translateY(0)' : 'translateY(28px)',
-              transition: `opacity .55s ease ${idx * 100}ms, transform .55s ease ${idx * 100}ms`,
-              cursor: 'pointer'
-            }}>
-            <Card className="latest-article-card" style={{
-              height: '100%',
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)',
-              borderRadius: 16,
-              overflow: 'hidden',
-              boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
-              transition: 'transform .25s ease, box-shadow .25s ease, border-color .25s ease'
-            }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(11,31,77,0.16)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+        {combined.map((article, idx) => {
+          const targetRoute = resolveContentRoute(article);
+          return (
+            <a 
+              key={article.id || idx} 
+              href={targetRoute?.url || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(28px)',
+                transition: `opacity .55s ease ${idx * 100}ms, transform .55s ease ${idx * 100}ms`,
+                cursor: 'pointer',
+                textDecoration: 'none',
+                color: 'inherit',
+                display: 'block'
+              }}
             >
-              <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(140px, 12vw, 160px)', background: '#f3f4f6' }}>
-                {article.banner_image
-                  ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                  : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 36, color: 'var(--color-primary)', opacity: 0.5 }} /></div>
-                }
-              </div>
-              <CardContent style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)' }}>
-                {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 10.5px)', fontWeight: 700, color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
-                <h3 style={{ fontWeight: 700, fontSize: 'clamp(14px, 1vw, 14.5px)', lineHeight: 1.5, color: 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</h3>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined style={{ fontSize: 11 }} />{formatContentPublishDate(article)}</span>
-                  <span style={{ color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3 }}>Read more <ArrowRightOutlined style={{ fontSize: 9 }} /></span>
+              <Card className="latest-article-card" style={{
+                height: '100%',
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                borderRadius: 16,
+                overflow: 'hidden',
+                boxShadow: '0 2px 16px rgba(0,0,0,0.07)',
+                transition: 'transform .25s ease, box-shadow .25s ease, border-color .25s ease'
+              }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(11,31,77,0.16)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+              >
+                <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(140px, 12vw, 160px)', background: '#f3f4f6' }}>
+                  {article.banner_image
+                    ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                    : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 36, color: 'var(--color-primary)', opacity: 0.5 }} /></div>
+                  }
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        ))}
+                <CardContent style={{ padding: 'clamp(14px, 1.2vw, 16px) clamp(14px, 1.2vw, 18px) clamp(14px, 1.2vw, 18px)' }}>
+                  {article.category_name && <span style={{ fontSize: 'clamp(10px, 0.7vw, 10.5px)', fontWeight: 700, color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: .8, marginBottom: 8, display: 'block' }}>{article.category_name}</span>}
+                  <h3 style={{ fontWeight: 700, fontSize: 'clamp(14px, 1vw, 14.5px)', lineHeight: 1.5, color: 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{article.title}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTop: '1px solid var(--color-border)', fontSize: 'clamp(11px, 0.7vw, 11.5px)', color: 'var(--color-muted)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><CalendarOutlined style={{ fontSize: 11 }} />{formatContentPublishDate(article)}</span>
+                    <span style={{ color: article.content_type_name?.toLowerCase() === 'blog' ? '#6c5ce7' : 'var(--color-primary)', fontWeight: 600, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3 }}>Read more <ArrowRightOutlined style={{ fontSize: 9 }} /></span>
+                  </div>
+                </CardContent>
+              </Card>
+            </a>
+          );
+        })}
       </div>
     </div>
   );
@@ -2629,72 +2671,82 @@ const TrendingTopicsSection = ({ items, navigate, darkMode = false }) => {
         gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 28
       }}>
-        {items.map((item, idx) => (
-          <div key={item.id || idx} onClick={() => navigateArticle(item, navigate)} style={{
-            background: darkMode ? '#1e293b' : 'var(--color-surface)',
-            borderRadius: 20,
-            border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)',
-            boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.04)',
-            display: 'flex',
-            flexDirection: 'column',
-            cursor: 'pointer',
-            transition: 'transform .3s ease, box-shadow .3s ease, border-color .3s ease',
-            overflow: 'hidden'
-          }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = 'translateY(-8px)';
-              e.currentTarget.style.boxShadow = darkMode ? '0 20px 40px rgba(0,0,0,0.4)' : '0 20px 40px rgba(11,31,77,0.08)';
-              e.currentTarget.style.borderColor = 'var(--color-primary)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.04)';
-              e.currentTarget.style.borderColor = darkMode ? '#334155' : 'var(--color-border)';
-            }}
-          >
-            <div style={{ position: 'relative', overflow: 'hidden', paddingTop: '56.25%', background: darkMode ? '#1e293b' : '#f3f4f6' }}>
-              {item.banner_image ? (
-                <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{
-                  position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover'
-                }} />
-              ) : (
-                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: darkMode ? '#1e293b' : 'var(--color-primary-light)' }}>
-                  <ReadOutlined style={{ fontSize: 32, color: 'var(--color-primary)', opacity: 0.5 }} />
-                </div>
-              )}
-            </div>
-
-            <div style={{ padding: 'clamp(18px, 1.8vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 6 }}>
-                  <span style={{ fontSize: 'clamp(12px, 0.8vw, 13px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <CalendarOutlined style={{ color: 'var(--color-primary)', fontSize: 13 }} />
-                    {formatContentPublishDate(item)}
-                  </span>
-                  {item.category_name && (
-                    <span style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: 'var(--color-primary)',
-                      background: 'var(--color-primary-light)',
-                      padding: '3px 10px',
-                      borderRadius: 12,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5
-                    }}>{item.category_name}</span>
-                  )}
-                </div>
-
-                <h3 style={{ fontWeight: 800, fontSize: 'clamp(16px, 1.3vw, 18px)', lineHeight: 1.4, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {item.title}
-                </h3>
-                <p style={{ fontSize: 'clamp(13px, 0.85vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {item.short_description || 'Explore this trending post to learn more about the latest developments and industry best practices.'}
-                </p>
+        {items.map((item, idx) => {
+          const targetRoute = resolveContentRoute(item);
+          return (
+            <a 
+              key={item.id || idx} 
+              href={targetRoute?.url || '#'}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                background: darkMode ? '#1e293b' : 'var(--color-surface)',
+                borderRadius: 20,
+                border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)',
+                boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                cursor: 'pointer',
+                transition: 'transform .3s ease, box-shadow .3s ease, border-color .3s ease',
+                overflow: 'hidden',
+                textDecoration: 'none',
+                color: 'inherit'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'translateY(-8px)';
+                e.currentTarget.style.boxShadow = darkMode ? '0 20px 40px rgba(0,0,0,0.4)' : '0 20px 40px rgba(11,31,77,0.08)';
+                e.currentTarget.style.borderColor = 'var(--color-primary)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = darkMode ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.04)';
+                e.currentTarget.style.borderColor = darkMode ? '#334155' : 'var(--color-border)';
+              }}
+            >
+              <div style={{ position: 'relative', overflow: 'hidden', paddingTop: '56.25%', background: darkMode ? '#1e293b' : '#f3f4f6' }}>
+                {item.banner_image ? (
+                  <img src={`/uploads/${item.banner_image}`} alt={item.title} style={{
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover'
+                  }} />
+                ) : (
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: darkMode ? '#1e293b' : 'var(--color-primary-light)' }}>
+                    <ReadOutlined style={{ fontSize: 32, color: 'var(--color-primary)', opacity: 0.5 }} />
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-        ))}
+
+              <div style={{ padding: 'clamp(18px, 1.8vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 6 }}>
+                    <span style={{ fontSize: 'clamp(12px, 0.8vw, 13px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <CalendarOutlined style={{ color: 'var(--color-primary)', fontSize: 13 }} />
+                      {formatContentPublishDate(item)}
+                    </span>
+                    {item.category_name && (
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: 'var(--color-primary)',
+                        background: 'var(--color-primary-light)',
+                        padding: '3px 10px',
+                        borderRadius: 12,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5
+                      }}>{item.category_name}</span>
+                    )}
+                  </div>
+
+                  <h3 style={{ fontWeight: 800, fontSize: 'clamp(16px, 1.3vw, 18px)', lineHeight: 1.4, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', margin: '0 0 10px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {item.title}
+                  </h3>
+                  <p style={{ fontSize: 'clamp(13px, 0.85vw, 14px)', color: darkMode ? '#94a3b8' : 'var(--color-muted)', lineHeight: 1.6, margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {item.short_description || 'Explore this trending post to learn more about the latest developments and industry best practices.'}
+                  </p>
+                </div>
+              </div>
+            </a>
+          );
+        })}
       </div>
     </div>
   );
@@ -2875,76 +2927,82 @@ const Home = () => {
                     gridTemplateColumns: 'repeat(3, 1fr)',
                     gap: 20
                   }}>
-                    {tabData.slice(0, 3).map((a, idx) => (
-                      <div key={a.id} style={{ animation: `catCardIn .4s ease ${idx * 80}ms both` }}>
-                        <div style={{
-                          background: 'var(--color-surface)',
-                          borderRadius: 14,
-                          overflow: 'hidden',
-                          border: `1.5px solid ${activeCat?.color || 'var(--color-primary)'}22`,
-                          boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          transition: 'all .3s cubic-bezier(0.4, 0, 0.2, 1)',
-                          cursor: 'pointer'
-                        }}
-                          onClick={() => navigateArticle(a, navigate)}
-                          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)'; e.currentTarget.style.boxShadow = `0 24px 48px ${activeCat?.color || 'var(--color-primary)'}33, 0 12px 24px rgba(0,0,0,0.1)`; }}
-                          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)'; }}
-                        >
-                          <div style={{ position: 'relative', overflow: 'hidden', height: 'clamp(160px, 14vw, 200px)', lineHeight: 0 }}>
-                            {a.banner_image
-                              ? <img src={`/uploads/${a.banner_image}`} alt={a.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                              : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${activeCat?.color || 'var(--color-primary)'}22 0%, #e8edff 100%)` }}><ReadOutlined style={{ fontSize: 40, color: activeCat?.color || 'var(--color-primary)', opacity: 0.4 }} /></div>
-                            }
-                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: activeCat?.color || 'var(--color-primary)' }} />
-                            {isHtmlBuilderContent(a) && (
-                              <span style={{ position: 'absolute', top: 10, right: 10, background: '#6c5ce7', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase' }}>
-                                Landing Page
-                              </span>
-                            )}
-                            {!isHtmlBuilderContent(a) && a.content_type_name && (
-                              <span style={{ position: 'absolute', top: 10, right: 10, background: activeCat?.color || 'var(--color-primary)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase' }}>
-                                {a.content_type_name}
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ padding: 'clamp(16px, 1.5vw, 18px) clamp(16px, 1.5vw, 20px) clamp(16px, 1.5vw, 20px)', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                            <h3 style={{ fontWeight: 700, fontSize: 'clamp(15px, 1.1vw, 16px)', lineHeight: 1.45, color: 'var(--color-heading)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</h3>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 'clamp(11px, 0.8vw, 12px)', color: 'var(--color-muted)', flexWrap: 'wrap' }}>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ width: 22, height: 22, borderRadius: '50%', background: `${activeCat?.color || 'var(--color-primary)'}22`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: activeCat?.color || 'var(--color-primary)', fontWeight: 700 }}>
-                                  {(a.author_name || a.author || 'A').charAt(0).toUpperCase()}
+                    {tabData.slice(0, 3).map((a, idx) => {
+                      const targetRoute = resolveContentRoute(a);
+                      return (
+                        <div key={a.id} style={{ animation: `catCardIn .4s ease ${idx * 80}ms both` }}>
+                          <a 
+                            href={targetRoute?.url || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              background: 'var(--color-surface)',
+                              borderRadius: 14,
+                              overflow: 'hidden',
+                              border: `1.5px solid ${activeCat?.color || 'var(--color-primary)'}22`,
+                              boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              transition: 'all .3s cubic-bezier(0.4, 0, 0.2, 1)',
+                              cursor: 'pointer',
+                              textDecoration: 'none',
+                              color: 'inherit'
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)'; e.currentTarget.style.boxShadow = `0 24px 48px ${activeCat?.color || 'var(--color-primary)'}33, 0 12px 24px rgba(0,0,0,0.1)`; }}
+                            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)'; }}
+                          >
+                            <div style={{ position: 'relative', overflow: 'hidden', height: 'clamp(160px, 14vw, 200px)', lineHeight: 0 }}>
+                              {a.banner_image
+                                ? <img src={`/uploads/${a.banner_image}`} alt={a.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                                : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${activeCat?.color || 'var(--color-primary)'}22 0%, #e8edff 100%)` }}><ReadOutlined style={{ fontSize: 40, color: activeCat?.color || 'var(--color-primary)', opacity: 0.4 }} /></div>
+                              }
+                              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: activeCat?.color || 'var(--color-primary)' }} />
+                              {isHtmlBuilderContent(a) && (
+                                <span style={{ position: 'absolute', top: 10, right: 10, background: '#6c5ce7', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase' }}>
+                                  Landing Page
                                 </span>
-                                <span style={{ fontWeight: 500 }}>{a.author_name || a.author || 'TgsTechInfo'}</span>
-                              </span>
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CalendarOutlined />{formatContentPublishDate(a)}</span>
+                              )}
+                              {!isHtmlBuilderContent(a) && a.content_type_name && (
+                                <span style={{ position: 'absolute', top: 10, right: 10, background: activeCat?.color || 'var(--color-primary)', color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 20, letterSpacing: .5, textTransform: 'uppercase' }}>
+                                  {a.content_type_name}
+                                </span>
+                              )}
                             </div>
-                            <div style={{ marginTop: 'auto', paddingTop: 4 }}>
-                              <button onClick={(e) => { e.stopPropagation(); navigateArticle(a, navigate); }}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 6,
-                                  padding: '8px 0',
-                                  background: 'transparent',
-                                  color: activeCat?.color || 'var(--color-primary)',
-                                  fontWeight: 700,
-                                  fontSize: 'clamp(12px, 0.8vw, 13px)',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  transition: 'transform .2s ease'
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(5px)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; }}
-                              >
-                                {isHtmlBuilderContent(a) ? 'View Landing Page' : 'Read More'} <ArrowRightOutlined style={{ fontSize: 11 }} />
-                              </button>
+                            <div style={{ padding: 'clamp(16px, 1.5vw, 18px) clamp(16px, 1.5vw, 20px) clamp(16px, 1.5vw, 20px)', flex: 1, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                              <h3 style={{ fontWeight: 700, fontSize: 'clamp(15px, 1.1vw, 16px)', lineHeight: 1.45, color: 'var(--color-heading)', margin: 0, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</h3>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 'clamp(11px, 0.8vw, 12px)', color: 'var(--color-muted)', flexWrap: 'wrap' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ width: 22, height: 22, borderRadius: '50%', background: `${activeCat?.color || 'var(--color-primary)'}22`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: activeCat?.color || 'var(--color-primary)', fontWeight: 700 }}>
+                                    {(a.author_name || a.author || 'A').charAt(0).toUpperCase()}
+                                  </span>
+                                  <span style={{ fontWeight: 500 }}>{a.author_name || a.author || 'TgsTechInfo'}</span>
+                                </span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><CalendarOutlined />{formatContentPublishDate(a)}</span>
+                              </div>
+                              <div style={{ marginTop: 'auto', paddingTop: 4 }}>
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    padding: '8px 0',
+                                    background: 'transparent',
+                                    color: activeCat?.color || 'var(--color-primary)',
+                                    fontWeight: 700,
+                                    fontSize: 'clamp(12px, 0.8vw, 13px)',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'transform .2s ease'
+                                  }}
+                                >
+                                  {isHtmlBuilderContent(a) ? 'View Landing Page' : 'Read More'} <ArrowRightOutlined style={{ fontSize: 11 }} />
+                                </span>
+                              </div>
                             </div>
-                          </div>
+                          </a>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2961,54 +3019,62 @@ const Home = () => {
               gridTemplateColumns: 'repeat(2, 1fr)',
               gap: 24
             }}>
-              {data.articles.slice(0, 2).map((a, idx) => (
-                <div key={a.id || idx} className="featured-article-card" style={{
-                  background: 'var(--color-surface)',
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                  border: '1.5px solid var(--color-border)',
-                  boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  transition: 'all .3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  cursor: 'pointer'
-                }}
-                  onClick={() => navigateArticle(a, navigate)}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)'; e.currentTarget.style.boxShadow = `0 24px 48px rgba(0,0,0,0.1), 0 12px 24px rgba(0,0,0,0.08)`; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
-                >
-                  <div style={{ position: 'relative', overflow: 'hidden', height: 'clamp(180px, 18vw, 240px)', lineHeight: 0 }}>
-                    {a.banner_image
-                      ? <img src={`/uploads/${a.banner_image}`} alt={a.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
-                      : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 40, color: 'var(--color-primary)', opacity: 0.4 }} /></div>
-                    }
-                  </div>
-                  <div style={{ padding: 'clamp(18px, 1.8vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <h3 style={{ fontWeight: 800, fontSize: 'clamp(17px, 1.5vw, 20px)', lineHeight: 1.4, color: 'var(--color-heading)', margin: '0 0 16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</h3>
-                    <div style={{ marginTop: 'auto' }}>
-                      <button onClick={(e) => { e.stopPropagation(); navigateArticle(a, navigate); }}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '8px 0',
-                          background: 'transparent',
-                          color: 'var(--color-primary)',
-                          fontWeight: 700,
-                          fontSize: 'clamp(13px, 0.9vw, 14px)',
-                          border: 'none',
-                          cursor: 'pointer',
-                          transition: 'transform .2s ease'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(5px)'; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; }}
-                      >
-                        Explore <ArrowRightOutlined style={{ fontSize: 12 }} />
-                      </button>
+              {data.articles.slice(0, 2).map((a, idx) => {
+                const targetRoute = resolveContentRoute(a);
+                return (
+                  <a 
+                    key={a.id || idx} 
+                    href={targetRoute?.url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="featured-article-card" 
+                    style={{
+                      background: 'var(--color-surface)',
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      border: '1.5px solid var(--color-border)',
+                      boxShadow: '0 6px 24px rgba(0,0,0,0.06)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'all .3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      cursor: 'pointer',
+                      textDecoration: 'none',
+                      color: 'inherit'
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)'; e.currentTarget.style.boxShadow = `0 24px 48px rgba(0,0,0,0.1), 0 12px 24px rgba(0,0,0,0.08)`; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
+                  >
+                    <div style={{ position: 'relative', overflow: 'hidden', height: 'clamp(180px, 18vw, 240px)', lineHeight: 0 }}>
+                      {a.banner_image
+                        ? <img src={`/uploads/${a.banner_image}`} alt={a.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                        : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 40, color: 'var(--color-primary)', opacity: 0.4 }} /></div>
+                      }
                     </div>
-                  </div>
-                </div>
-              ))}
+                    <div style={{ padding: 'clamp(18px, 1.8vw, 24px)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <h3 style={{ fontWeight: 800, fontSize: 'clamp(17px, 1.5vw, 20px)', lineHeight: 1.4, color: 'var(--color-heading)', margin: '0 0 16px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</h3>
+                      <div style={{ marginTop: 'auto' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '8px 0',
+                            background: 'transparent',
+                            color: 'var(--color-primary)',
+                            fontWeight: 700,
+                            fontSize: 'clamp(13px, 0.9vw, 14px)',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'transform .2s ease'
+                          }}
+                        >
+                          Explore <ArrowRightOutlined style={{ fontSize: 12 }} />
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           </RevealSection>
         )}

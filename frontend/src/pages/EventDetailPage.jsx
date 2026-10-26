@@ -24,6 +24,7 @@ import { Tag, Button, Modal, Form, Input, message, Spin, Alert } from 'antd';
 import DOMPurify from 'dompurify';
 import eventService from '../services/eventService';
 import { useTheme } from '../context/ThemeContext';
+import '../styles/event-detail.css';
 
 export default function EventDetailPage() {
   const { slug } = useParams();
@@ -243,12 +244,14 @@ export default function EventDetailPage() {
       />
 
       {/* ── TOP BREADCRUMB & BACK LINK ─────────────────────────── */}
-      <div style={{
-        background: darkMode ? '#0F172A' : '#FFFFFF',
-        borderBottom: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
-        padding: '14px 24px'
-      }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div 
+        className="event-top-bar"
+        style={{
+          background: darkMode ? '#0F172A' : '#FFFFFF',
+          borderBottom: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0'
+        }}
+      >
+        <div className="event-top-bar-inner">
           <Link to="/events" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#0284C7', fontWeight: 600, textDecoration: 'none' }}>
             <ArrowLeftOutlined /> Back to All Events
           </Link>
@@ -266,11 +269,11 @@ export default function EventDetailPage() {
       </div>
 
       {/* ── MAIN CONTENT CONTAINER ─────────────────────────────── */}
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 24px 80px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: 36, alignItems: 'start' }}>
+      <div className="event-detail-container">
+        <div className="event-detail-grid">
           
           {/* ── LEFT COLUMN: MAIN EVENT DETAILS ─────────────────── */}
-          <div>
+          <div className="event-main-content">
             {/* Badges */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
               <Tag color={isOnline ? 'cyan' : 'purple'} style={{ borderRadius: 6, fontWeight: 700, padding: '4px 10px', fontSize: 13 }}>
@@ -314,41 +317,38 @@ export default function EventDetailPage() {
             </div>
 
             {/* Title */}
-            <h1 style={{
-              fontSize: 'clamp(1.8rem, 3.2vw, 2.5rem)',
-              fontWeight: 800,
-              lineHeight: 1.25,
-              color: darkMode ? '#F1F5F9' : '#0B1F4D',
-              margin: '0 0 16px',
-              letterSpacing: '-0.02em'
-            }}>
+            <h1 
+              className="event-title"
+              style={{
+                color: darkMode ? '#F1F5F9' : '#0B1F4D'
+              }}
+            >
               {event.title}
             </h1>
 
             {/* Subtitle / Short Description */}
             {event.short_description && (
-              <p style={{
-                fontSize: 16,
-                lineHeight: 1.6,
-                color: darkMode ? '#94A3B8' : '#475569',
-                margin: '0 0 24px'
-              }}>
+              <p 
+                className="event-subtitle"
+                style={{
+                  color: darkMode ? '#94A3B8' : '#475569'
+                }}
+              >
                 {event.short_description}
               </p>
             )}
 
             {/* Hero Image */}
-            <div style={{
-              borderRadius: 16,
-              overflow: 'hidden',
-              marginBottom: 32,
-              maxHeight: 420,
-              boxShadow: darkMode ? '0 12px 30px rgba(0,0,0,0.5)' : '0 12px 30px rgba(11,31,77,0.1)'
-            }}>
+            <div 
+              className="event-hero-banner"
+              style={{
+                boxShadow: darkMode ? '0 12px 30px rgba(0,0,0,0.5)' : '0 12px 30px rgba(11,31,77,0.1)'
+              }}
+            >
               <img
                 src={getBannerImageUrl(event.banner_image)}
                 alt={event.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                className="event-hero-img"
                 onError={(e) => {
                   e.target.src = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&auto=format&fit=crop&q=80';
                 }}
@@ -356,17 +356,14 @@ export default function EventDetailPage() {
             </div>
 
             {/* ── EVENT HIGHLIGHTS GRID ── */}
-            <div style={{
-              background: darkMode ? '#0F172A' : '#FFFFFF',
-              borderRadius: 14,
-              padding: 24,
-              marginBottom: 36,
-              border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: 20
-            }}>
-              <div>
+            <div 
+              className="event-highlights-card"
+              style={{
+                background: darkMode ? '#0F172A' : '#FFFFFF',
+                border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0'
+              }}
+            >
+              <div className="event-highlight-item">
                 <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>
                   🗓️ Date & Schedule
                 </div>
@@ -378,7 +375,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="event-highlight-item">
                 <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>
                   📍 Access Mode
                 </div>
@@ -390,7 +387,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="event-highlight-item">
                 <div style={{ fontSize: 12, color: '#94A3B8', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>
                   🎟️ Registration Cost
                 </div>
@@ -405,39 +402,26 @@ export default function EventDetailPage() {
 
             {/* ── KEYNOTE SPEAKER BOX ── */}
             {event.speaker_name && (
-              <div style={{
-                background: darkMode ? '#0F172A' : '#FFFFFF',
-                borderRadius: 14,
-                padding: '24px 28px',
-                marginBottom: 36,
-                border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
-                borderLeft: '5px solid #F7941D'
-              }}>
+              <div 
+                className="event-speaker-card"
+                style={{
+                  background: darkMode ? '#0F172A' : '#FFFFFF',
+                  border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
+                  borderLeft: '5px solid #F7941D'
+                }}
+              >
                 <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: '#F7941D', letterSpacing: '0.05em', marginBottom: 12 }}>
                   Featured Keynote Speaker
                 </div>
-                <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
-                  <div style={{
-                    width: 72,
-                    height: 72,
-                    borderRadius: '50%',
-                    background: '#0B1F4D',
-                    color: '#FFFFFF',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 26,
-                    fontWeight: 700,
-                    overflow: 'hidden',
-                    flexShrink: 0
-                  }}>
+                <div className="event-speaker-flex">
+                  <div className="event-speaker-avatar">
                     {event.speaker_image ? (
                       <img src={getSpeakerImageUrl(event.speaker_image)} alt={event.speaker_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <UserOutlined />
                     )}
                   </div>
-                  <div>
+                  <div className="event-speaker-info">
                     <h3 style={{ margin: '0 0 4px', fontSize: 19, fontWeight: 700, color: darkMode ? '#F1F5F9' : '#0B1F4D' }}>
                       {event.speaker_name}
                     </h3>
@@ -455,21 +439,20 @@ export default function EventDetailPage() {
             )}
 
             {/* ── ABOUT THE EVENT & FULL AGENDA (HTML Content) ── */}
-            <div style={{
-              background: darkMode ? '#0F172A' : '#FFFFFF',
-              borderRadius: 14,
-              padding: '32px 30px',
-              border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
-              marginBottom: 36
-            }}>
+            <div 
+              className="event-agenda-card"
+              style={{
+                background: darkMode ? '#0F172A' : '#FFFFFF',
+                border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0'
+              }}
+            >
               <h2 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 18px', color: darkMode ? '#F1F5F9' : '#0B1F4D' }}>
                 About This Event & Agenda
               </h2>
 
               <div 
+                className="event-agenda-content"
                 style={{
-                  fontSize: 15,
-                  lineHeight: 1.8,
                   color: darkMode ? '#CBD5E1' : '#334155'
                 }}
                 dangerouslySetInnerHTML={{
@@ -480,13 +463,13 @@ export default function EventDetailPage() {
 
             {/* ── VENUE / ONLINE PLATFORM DETAILS ── */}
             {isOffline && event.venue_name && (
-              <div style={{
-                background: darkMode ? '#0F172A' : '#FFFFFF',
-                borderRadius: 14,
-                padding: '24px 28px',
-                border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
-                marginBottom: 36
-              }}>
+              <div 
+                className="event-venue-card"
+                style={{
+                  background: darkMode ? '#0F172A' : '#FFFFFF',
+                  border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0'
+                }}
+              >
                 <h3 style={{ margin: '0 0 12px', fontSize: 18, fontWeight: 700, color: darkMode ? '#F1F5F9' : '#0B1F4D' }}>
                   <EnvironmentOutlined style={{ color: '#EF4444', marginRight: 8 }} /> Venue Location
                 </h3>
@@ -506,14 +489,15 @@ export default function EventDetailPage() {
           </div>
 
           {/* ── RIGHT COLUMN: STICKY REGISTRATION CTA WIDGET ─────── */}
-          <div style={{ position: 'sticky', top: 90 }}>
-            <div style={{
-              background: darkMode ? '#0F172A' : '#FFFFFF',
-              borderRadius: 16,
-              padding: '28px 24px',
-              border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
-              boxShadow: darkMode ? '0 16px 40px rgba(0,0,0,0.45)' : '0 16px 40px rgba(11,31,77,0.08)'
-            }}>
+          <div className="event-sidebar-col">
+            <div 
+              className="event-registration-card"
+              style={{
+                background: darkMode ? '#0F172A' : '#FFFFFF',
+                border: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
+                boxShadow: darkMode ? '0 16px 40px rgba(0,0,0,0.45)' : '0 16px 40px rgba(11,31,77,0.08)'
+              }}
+            >
               {/* Ticket Price & Status */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <div>
@@ -545,22 +529,34 @@ export default function EventDetailPage() {
                   <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748B', marginBottom: 10 }}>
                     ⏳ Event Starts In
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                    <div style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF', padding: '8px 4px', borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#F7941D' }}>{timeLeft.days}</div>
-                      <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>DAYS</div>
+                  <div className="event-countdown-grid">
+                    <div 
+                      className="event-countdown-cell"
+                      style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF' }}
+                    >
+                      <div className="event-countdown-num">{timeLeft.days}</div>
+                      <div className="event-countdown-label">DAYS</div>
                     </div>
-                    <div style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF', padding: '8px 4px', borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#F7941D' }}>{timeLeft.hours}</div>
-                      <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>HOURS</div>
+                    <div 
+                      className="event-countdown-cell"
+                      style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF' }}
+                    >
+                      <div className="event-countdown-num">{timeLeft.hours}</div>
+                      <div className="event-countdown-label">HOURS</div>
                     </div>
-                    <div style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF', padding: '8px 4px', borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#F7941D' }}>{timeLeft.minutes}</div>
-                      <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>MINS</div>
+                    <div 
+                      className="event-countdown-cell"
+                      style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF' }}
+                    >
+                      <div className="event-countdown-num">{timeLeft.minutes}</div>
+                      <div className="event-countdown-label">MINS</div>
                     </div>
-                    <div style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF', padding: '8px 4px', borderRadius: 8 }}>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#F7941D' }}>{timeLeft.seconds}</div>
-                      <div style={{ fontSize: 10, color: '#94A3B8', fontWeight: 600 }}>SECS</div>
+                    <div 
+                      className="event-countdown-cell"
+                      style={{ background: darkMode ? '#0B1F4D' : '#FFFFFF' }}
+                    >
+                      <div className="event-countdown-num">{timeLeft.seconds}</div>
+                      <div className="event-countdown-label">SECS</div>
                     </div>
                   </div>
                 </div>
@@ -685,6 +681,7 @@ export default function EventDetailPage() {
         }}
         footer={null}
         width={560}
+        style={{ maxWidth: 'calc(100vw - 24px)', margin: '0 auto' }}
         centered
         destroyOnClose
       >
@@ -716,7 +713,7 @@ export default function EventDetailPage() {
                 </Form.Item>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="event-modal-grid-2col">
                 <Form.Item
                   name="first_name"
                   label={<span style={{ fontWeight: 600 }}>First Name</span>}
@@ -745,7 +742,7 @@ export default function EventDetailPage() {
                 <Input placeholder="name@company.com" size="large" />
               </Form.Item>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="event-modal-grid-2col">
                 <Form.Item
                   name="phone"
                   label={<span style={{ fontWeight: 600 }}>Phone / WhatsApp</span>}
@@ -761,7 +758,7 @@ export default function EventDetailPage() {
                 </Form.Item>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="event-modal-grid-2col">
                 <Form.Item
                   name="company_name"
                   label={<span style={{ fontWeight: 600 }}>Company / University</span>}
@@ -905,6 +902,69 @@ export default function EventDetailPage() {
           </div>
         )}
       </Modal>
+
+      {/* ── MOBILE BOTTOM STICKY REGISTRATION BAR (Visible only on screens < 768px) ── */}
+      <div 
+        className="event-mobile-bottom-bar"
+        style={{
+          background: darkMode ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+          borderTop: darkMode ? '1px solid #1E293B' : '1px solid #E2E8F0',
+        }}
+      >
+        <div>
+          <div className="event-mobile-bottom-price-label" style={{ color: darkMode ? '#94A3B8' : '#64748B' }}>
+            {isPast ? 'Status' : 'Ticket Price'}
+          </div>
+          <div className="event-mobile-bottom-price" style={{ color: isPast ? '#94A3B8' : '#10B981' }}>
+            {isPast ? 'Ended' : (event.ticket_type === 'free' ? 'FREE' : `₹${event.ticket_price}`)}
+          </div>
+        </div>
+
+        {isPast ? (
+          <Button disabled className="event-mobile-bottom-btn">
+            Event Ended
+          </Button>
+        ) : event.is_full ? (
+          <Button disabled className="event-mobile-bottom-btn">
+            Sold Out
+          </Button>
+        ) : event.registration_type === 'external' ? (
+          <a
+            href={event.registration_url || event.source_url || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none', flex: 1, maxWidth: 220 }}
+          >
+            <Button
+              type="primary"
+              icon={<LinkOutlined />}
+              block
+              style={{
+                height: 44,
+                fontWeight: 700,
+                fontSize: 14,
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, #0284C7 0%, #0369A1 100%)',
+                borderColor: '#0284C7'
+              }}
+            >
+              Register ↗
+            </Button>
+          </a>
+        ) : (
+          <Button
+            type="primary"
+            onClick={() => setIsModalOpen(true)}
+            className="event-mobile-bottom-btn"
+            style={{
+              background: 'linear-gradient(135deg, #F7941D 0%, #EA580C 100%)',
+              borderColor: '#F7941D'
+            }}
+          >
+            Register Now
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -3,20 +3,12 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Input, Tag, Spin, Empty, Typography } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { resolveContentRoute } from '../../lib/contentRoute';
 
 const { Text } = Typography;
 
-// ── Helper function to determine route based on content type ─────────
-const TYPE_ROUTE_MAP = {
-  article: 'article', blog: 'blog', news: 'news', interview: 'interview',
-  webinar: 'webinar', event: 'event', ebook: 'ebook', whitepaper: 'whitepaper',
-  report: 'report'
-};
-
 const getArticleRoute = (item) => {
-  const typeName = (item.content_type_name || '').toLowerCase().trim();
-  const routePrefix = TYPE_ROUTE_MAP[typeName] || 'article';
-  return `/${routePrefix}/${item.slug}`;
+  return resolveContentRoute(item).url;
 };
 
 const SearchResults = () => {
@@ -69,6 +61,8 @@ const SearchResults = () => {
               <Link
                 key={item.id}
                 to={getArticleRoute(item)}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{ textDecoration: 'none' }}
               >
                 <div style={{

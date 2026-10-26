@@ -3,7 +3,7 @@ import { Card, Tag, Spin } from 'antd';
 import { ExternalLink, Calendar, Link2, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../../context/ChatContext';
-import { navigateContentItem } from '../../../lib/contentRoute';
+import { navigateContentItem, resolveContentRoute } from '../../../lib/contentRoute';
 
 const RelatedContent = ({ contentId, title }) => {
   const { getRelatedContent, logClick } = useChat();
@@ -26,7 +26,6 @@ const RelatedContent = ({ contentId, title }) => {
 
   const handleContentClick = (content, index) => {
     logClick(content.id, index);
-    navigateContentItem(content, navigate);
   };
 
   if (!contentId) {
@@ -98,108 +97,118 @@ const RelatedContent = ({ contentId, title }) => {
         flexDirection: 'column',
         gap: 10
       }}>
-        {relatedContent.map((result, index) => (
-          <Card
-            key={result.id}
-            hoverable
-            onClick={() => handleContentClick(result, index)}
-            style={{
-              borderRadius: 8,
-              border: '1px solid var(--color-border)',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              padding: '12px'
-            }}
-            bodyStyle={{
-              padding: 0
-            }}
-          >
-            <div style={{
-              display: 'flex',
-              gap: 10,
-              alignItems: 'flex-start'
-            }}>
-              {result.banner_image && (
-                <img
-                  src={`/uploads/${result.banner_image}`}
-                  alt={result.title}
-                  style={{
-                    width: 60,
-                    height: 45,
-                    objectFit: 'cover',
-                    borderRadius: 6,
-                    flexShrink: 0
-                  }}
-                />
-              )}
-              <div style={{
-                flex: 1,
-                minWidth: 0
-              }}>
+        {relatedContent.map((result, index) => {
+          const targetRoute = resolveContentRoute(result);
+          return (
+            <a
+              key={result.id}
+              href={targetRoute.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => handleContentClick(result, index)}
+              style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+            >
+              <Card
+                hoverable
+                style={{
+                  borderRadius: 8,
+                  border: '1px solid var(--color-border)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  padding: '12px'
+                }}
+                bodyStyle={{
+                  padding: 0
+                }}
+              >
                 <div style={{
                   display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  marginBottom: 4,
-                  flexWrap: 'wrap'
+                  gap: 10,
+                  alignItems: 'flex-start'
                 }}>
-                  <Tag
-                    style={{
-                      margin: 0,
-                      background: 'var(--color-primary-light)',
-                      color: 'var(--color-primary)',
-                      border: 'none',
-                      borderRadius: 4,
-                      fontSize: 10,
-                      padding: '1px 6px'
-                    }}
-                  >
-                    {result.content_type}
-                  </Tag>
-                  {result.recommendation_reason && (
-                    <span style={{
-                      fontSize: 10,
-                      color: 'var(--color-muted)',
+                  {result.banner_image && (
+                    <img
+                      src={`/uploads/${result.banner_image}`}
+                      alt={result.title}
+                      style={{
+                        width: 60,
+                        height: 45,
+                        objectFit: 'cover',
+                        borderRadius: 6,
+                        flexShrink: 0
+                      }}
+                    />
+                  )}
+                  <div style={{
+                    flex: 1,
+                    minWidth: 0
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginBottom: 4,
+                      flexWrap: 'wrap'
+                    }}>
+                      <Tag
+                        style={{
+                          margin: 0,
+                          background: 'var(--color-primary-light)',
+                          color: 'var(--color-primary)',
+                          border: 'none',
+                          borderRadius: 4,
+                          fontSize: 10,
+                          padding: '1px 6px'
+                        }}
+                      >
+                        {result.content_type}
+                      </Tag>
+                      {result.recommendation_reason && (
+                        <span style={{
+                          fontSize: 10,
+                          color: 'var(--color-muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}>
+                          {getReasonIcon(result.recommendation_reason)}
+                          {getReasonLabel(result.recommendation_reason)}
+                        </span>
+                      )}
+                    </div>
+                    <h4 style={{
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: 'var(--color-heading)',
+                      margin: '0 0 4px 0',
+                      lineHeight: 1.3,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical'
+                    }}>
+                      {result.title}
+                    </h4>
+                    <div style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4
                     }}>
-                      {getReasonIcon(result.recommendation_reason)}
-                      {getReasonLabel(result.recommendation_reason)}
-                    </span>
-                  )}
+                      <span style={{
+                        fontSize: 10,
+                        color: 'var(--color-muted)'
+                      }}>
+                        {result.category}
+                      </span>
+                      <ExternalLink size={10} style={{ color: 'var(--color-primary)' }} />
+                    </div>
+                  </div>
                 </div>
-                <h4 style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: 'var(--color-heading)',
-                  margin: '0 0 4px 0',
-                  lineHeight: 1.3,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical'
-                }}>
-                  {result.title}
-                </h4>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4
-                }}>
-                  <span style={{
-                    fontSize: 10,
-                    color: 'var(--color-muted)'
-                  }}>
-                    {result.category}
-                  </span>
-                  <ExternalLink size={10} style={{ color: 'var(--color-primary)' }} />
-                </div>
-              </div>
-            </div>
-          </Card>
-        ))}
+              </Card>
+            </a>
+          );
+        })}
       </div>
     </div>
   );

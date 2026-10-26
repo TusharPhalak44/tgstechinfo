@@ -500,7 +500,12 @@ export default function EventsPage() {
                     }}
                   >
                     {/* Event Banner */}
-                    <div style={{ position: 'relative', height: 190, overflow: 'hidden', background: '#0B1F4D' }}>
+                    <Link 
+                      to={`/events/${event.slug}`} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      style={{ display: 'block', position: 'relative', height: 190, overflow: 'hidden', background: '#0B1F4D' }}
+                    >
                       <img
                         src={event.banner_image || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80'}
                         alt={event.title}
@@ -562,7 +567,7 @@ export default function EventsPage() {
                           <ClockCircleOutlined /> {countdown}
                         </div>
                       )}
-                    </div>
+                    </Link>
 
                     {/* Card Content */}
                     <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -575,7 +580,7 @@ export default function EventsPage() {
                       </div>
 
                       {/* Title */}
-                      <Link to={`/events/${event.slug}`} style={{ textDecoration: 'none' }}>
+                      <Link to={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                         <h3 style={{
                           fontSize: 18,
                           fontWeight: 700,
@@ -665,7 +670,7 @@ export default function EventsPage() {
                           )}
                         </div>
 
-                        <Link to={`/events/${event.slug}`}>
+                        <Link to={`/events/${event.slug}`} target="_blank" rel="noopener noreferrer">
                           <Button
                             type="primary"
                             style={{

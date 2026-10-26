@@ -81,7 +81,7 @@ export const resolveContentRoute = (item = {}) => {
   if (isFileLanding) {
     const targetSlug = slug || (rawUrl ? rawUrl.replace(/^\/lp\//, '') : '');
     const url = targetSlug ? `/lp/${encodeURIComponent(targetSlug)}` : (rawUrl || '/lp');
-    return { url, newTab: false, isFileLanding: true };
+    return { url, newTab: true, isFileLanding: true };
   }
 
   const isStandalone = Boolean(isHtmlBuilder || isLandingPageType);
@@ -91,12 +91,12 @@ export const resolveContentRoute = (item = {}) => {
     try {
       const parsed = new URL(rawUrl, origin);
       if (parsed.origin === origin) {
-        return { url: parsed.pathname + parsed.search + parsed.hash, newTab: false };
+        return { url: parsed.pathname + parsed.search + parsed.hash, newTab: true };
       }
       return { url: rawUrl, newTab: true };
     } catch {
       if (rawUrl.startsWith('/')) {
-        return { url: rawUrl, newTab: false };
+        return { url: rawUrl, newTab: true };
       }
       if (rawUrl.startsWith('#')) {
         return { url: rawUrl, newTab: false };
@@ -115,16 +115,16 @@ export const resolveContentRoute = (item = {}) => {
 
   const type = normalizeContentType(contentType || contentTypeName || 'article');
   if (type === 'event' || type === 'events' || item?.content_type_id === 5) {
-    return { url: `/events/${encodeURIComponent(slug)}`, newTab: false };
+    return { url: `/events/${encodeURIComponent(slug)}`, newTab: true };
   }
   const catSlug = extractCategorySlug(item) || 'general';
 
-  return { url: `/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`, newTab: false };
+  return { url: `/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`, newTab: true };
 };
 
 export const navigateContentItem = (item, navigate, options = {}) => {
   const resolved = resolveContentRoute(item);
-  const shouldOpenNewTab = options.newTab ?? resolved.newTab;
+  const shouldOpenNewTab = options.newTab ?? resolved.newTab ?? true;
 
   // File-based landing pages are served directly by Express via /lp/:slug
   // Use browser navigation to ensure static assets load properly

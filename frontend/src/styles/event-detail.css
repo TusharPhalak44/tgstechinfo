@@ -1,0 +1,397 @@
+/* =============================================================================
+   EVENT DETAIL PAGE - Fully Responsive Stylesheet
+   Supports: Large Desktop (1280px+), Desktop (1024px-1279px),
+             Tablet (768px-1023px), Mobile (320px-767px)
+   ============================================================================= */
+
+/* ── Top Navigation Bar ── */
+.event-top-bar {
+  padding: 14px 24px;
+  transition: all 0.2s ease;
+}
+
+.event-top-bar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ── Main Layout Container ── */
+.event-detail-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.event-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 36px;
+  align-items: start;
+}
+
+/* ── Left Content Column ── */
+.event-main-content {
+  min-width: 0; /* Prevents flex/grid overflow */
+  width: 100%;
+}
+
+.event-title {
+  font-size: clamp(1.5rem, 3.2vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.event-subtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 0 24px;
+  word-break: break-word;
+}
+
+/* ── Hero Image Banner ── */
+.event-hero-banner {
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 32px;
+  width: 100%;
+  max-height: 420px;
+  aspect-ratio: 16 / 9;
+  background-color: #0b1f4d15;
+}
+
+.event-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Highlights Grid ── */
+.event-highlights-card {
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  box-sizing: border-box;
+}
+
+.event-highlight-item {
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* ── Keynote Speaker Box ── */
+.event-speaker-card {
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 36px;
+  border-left: 5px solid #F7941D;
+  box-sizing: border-box;
+}
+
+.event-speaker-flex {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.event-speaker-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #0B1F4D;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.event-speaker-info {
+  min-width: 0;
+  flex: 1;
+}
+
+/* ── About Content & Agenda (Rich HTML sanitization protection) ── */
+.event-agenda-card {
+  border-radius: 14px;
+  padding: 32px 30px;
+  margin-bottom: 36px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.event-agenda-content {
+  font-size: 15px;
+  line-height: 1.8;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.event-agenda-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin: 16px 0;
+}
+
+.event-agenda-content table {
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 16px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.event-agenda-content table th,
+.event-agenda-content table td {
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+}
+
+.event-agenda-content pre,
+.event-agenda-content code {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.event-agenda-content iframe {
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+/* ── Venue Card ── */
+.event-venue-card {
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-bottom: 36px;
+  box-sizing: border-box;
+}
+
+/* ── Right Column Sticky Registration CTA ── */
+.event-sidebar-col {
+  position: sticky;
+  top: 90px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.event-registration-card {
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+/* ── Countdown Clock Grid ── */
+.event-countdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.event-countdown-cell {
+  padding: 8px 4px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.event-countdown-num {
+  font-size: clamp(16px, 2.5vw, 22px);
+  font-weight: 800;
+  color: #F7941D;
+  line-height: 1.1;
+}
+
+.event-countdown-label {
+  font-size: 10px;
+  color: #94A3B8;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ── Mobile Bottom Sticky Registration Floating Bar ── */
+.event-mobile-bottom-bar {
+  display: none; /* Hidden on desktop */
+}
+
+/* ── Modal Grid Responsive ── */
+.event-modal-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* =============================================================================
+   RESPONSIVE BREAKPOINTS
+   ============================================================================= */
+
+/* ── Tablet Breakpoint (1023px and below) ── */
+@media (max-width: 1023px) {
+  .event-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .event-sidebar-col {
+    position: static;
+    top: auto;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .event-highlights-card {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    padding: 20px;
+  }
+}
+
+/* ── Small Tablet & Large Mobile (767px and below) ── */
+@media (max-width: 767px) {
+  .event-top-bar {
+    padding: 12px 16px;
+  }
+
+  .event-detail-container {
+    padding: 20px 16px 100px; /* Extra bottom padding for mobile sticky bar */
+  }
+
+  .event-hero-banner {
+    border-radius: 12px;
+    margin-bottom: 24px;
+    max-height: 280px;
+  }
+
+  .event-highlights-card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 18px 16px;
+    margin-bottom: 24px;
+  }
+
+  .event-speaker-card {
+    padding: 20px 16px;
+    margin-bottom: 24px;
+  }
+
+  .event-speaker-flex {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .event-speaker-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 22px;
+  }
+
+  .event-agenda-card {
+    padding: 24px 18px;
+    margin-bottom: 24px;
+  }
+
+  .event-venue-card {
+    padding: 20px 16px;
+    margin-bottom: 24px;
+  }
+
+  .event-registration-card {
+    padding: 20px 16px;
+  }
+
+  /* Show mobile bottom sticky registration action bar */
+  .event-mobile-bottom-bar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .event-mobile-bottom-price-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    line-height: 1;
+    margin-bottom: 2px;
+  }
+
+  .event-mobile-bottom-price {
+    font-size: 20px;
+    font-weight: 800;
+    color: #10B981;
+    line-height: 1.1;
+  }
+
+  .event-mobile-bottom-btn {
+    flex: 1;
+    max-width: 220px;
+    height: 44px;
+    font-weight: 700;
+    font-size: 14px;
+    border-radius: 8px;
+  }
+
+  /* Modal turns to single column on mobile */
+  .event-modal-grid-2col {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* ── Tiny Mobile (420px and below) ── */
+@media (max-width: 420px) {
+  .event-title {
+    font-size: 1.4rem;
+  }
+
+  .event-speaker-flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .event-top-bar-inner {
+    justify-content: space-between;
+  }
+
+  .event-countdown-grid {
+    gap: 6px;
+  }
+
+  .event-countdown-num {
+    font-size: 16px;
+  }
+
+  .event-countdown-label {
+    font-size: 9px;
+  }
+}

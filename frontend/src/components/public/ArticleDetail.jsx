@@ -23,7 +23,7 @@ import useEngagementTracking from '../../hooks/useEngagementTracking';
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatDateForLongDisplay, formatDateForDisplay, DATE_FORMATS } from '../../utils/dateHelper';
 import ArticleNewsletterBanner from './ArticleNewsletterBanner';
-import { navigateContentItem } from '../../lib/contentRoute';
+import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import ContentShareModal from './ContentShareModal';
 
 const { Title, Text } = Typography;
@@ -1995,39 +1995,60 @@ const ArticleDetail = () => {
                   <div style={{ fontWeight: 700, fontSize: 14, color: darkMode ? '#f1f5f9' : '#1a1a2e', paddingBottom: 8, borderBottom: darkMode ? '2px solid #334155' : '2px solid #e8ecf4' }}>
                     Related Articles
                   </div>
-                  {relatedArticles.map(article => (
-                    <div
-                      key={article.id}
-                      onClick={() => navigateContentItem(article, navigate)}
-                      style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 10, border: darkMode ? '1px solid #334155' : '1px solid #e8ecf4', overflow: 'hidden', cursor: 'pointer' }}
-                      onMouseEnter={e => e.currentTarget.style.boxShadow = darkMode ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.08)'}
-                      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
-                    >
-                      {article.banner_image
-                        ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
-                        : <div style={{ height: 100, background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📄</div>
-                      }
-                      <div style={{ padding: '10px 12px' }}>
-                        <Tag color="blue" style={{ fontSize: 10, marginBottom: 6 }}>{article.category_name}</Tag>
-                        <div style={{
-                          fontWeight: 600, fontSize: 13, color: darkMode ? '#f1f5f9' : '#0f172a', lineHeight: 1.4, marginBottom: 4,
-                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                        }}>
-                          {article.title}
+                  {relatedArticles.map(article => {
+                    const targetRoute = resolveContentRoute(article);
+                    return (
+                      <a
+                        key={article.id}
+                        href={targetRoute.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          display: 'block',
+                          background: darkMode ? '#1e293b' : '#fff',
+                          borderRadius: 10,
+                          border: darkMode ? '1px solid #334155' : '1px solid #e8ecf4',
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          transition: 'box-shadow 0.2s ease, transform 0.2s ease'
+                        }}
+                        onMouseEnter={e => {
+                          e.currentTarget.style.boxShadow = darkMode ? '0 4px 16px rgba(0,0,0,0.4)' : '0 4px 16px rgba(0,0,0,0.08)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.boxShadow = 'none';
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        {article.banner_image
+                          ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: 140, objectFit: 'cover', display: 'block' }} />
+                          : <div style={{ height: 100, background: 'linear-gradient(135deg,#e0e9ff,#f0f4ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>📄</div>
+                        }
+                        <div style={{ padding: '10px 12px' }}>
+                          <Tag color="blue" style={{ fontSize: 10, marginBottom: 6 }}>{article.category_name}</Tag>
+                          <div style={{
+                            fontWeight: 600, fontSize: 13, color: darkMode ? '#f1f5f9' : '#0f172a', lineHeight: 1.4, marginBottom: 4,
+                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                          }}>
+                            {article.title}
+                          </div>
+                          <div style={{
+                            fontSize: 11.5, color: darkMode ? '#94a3b8' : '#6b7280', lineHeight: 1.4,
+                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
+                          }}>
+                            {article.short_description}
+                          </div>
+                          <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#9ca3af', marginTop: 6 }}>
+                            <CalendarOutlined style={{ marginRight: 3 }} />
+                            {formatContentPublishDate(article)}
+                          </div>
                         </div>
-                        <div style={{
-                          fontSize: 11.5, color: darkMode ? '#94a3b8' : '#6b7280', lineHeight: 1.4,
-                          display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
-                        }}>
-                          {article.short_description}
-                        </div>
-                        <div style={{ fontSize: 11, color: darkMode ? '#64748b' : '#9ca3af', marginTop: 6 }}>
-                          <CalendarOutlined style={{ marginRight: 3 }} />
-                          {formatContentPublishDate(article)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      </a>
+                    );
+                  })}
                 </div>
               )}
 

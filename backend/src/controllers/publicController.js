@@ -106,6 +106,19 @@ const forwardToWebhook = async (webhookUrl, payload) => {
         });
 
         const duration = Date.now() - startTime;
+        const isSuccess = response.status >= 200 && response.status < 300;
+        if (!isSuccess) {
+            console.error(`[Webhook] FAILED with status ${response.status} — ${normalizedUrl}`);
+            console.error(`[Webhook] Response status: ${response.status} ${response.statusText}`);
+            console.error(`[Webhook] Response data:`, JSON.stringify(response.data));
+            return {
+                success: false,
+                status: response.status,
+                data: response.data,
+                error: typeof response.data === 'string' ? response.data : JSON.stringify(response.data)
+            };
+        }
+
         console.log(`[Webhook] SUCCESS — ${normalizedUrl}`);
         console.log(`[Webhook] Response status: ${response.status} ${response.statusText}`);
         console.log(`[Webhook] Response time: ${duration}ms`);
@@ -330,6 +343,9 @@ exports.getContentBySlug = async (req, res) => {
     }
 };
 
+// In-memory cache for recent submissions to prevent duplicate double-submits within 3 seconds
+const recentSubmissionsCache = new Map();
+
 exports.submitLandingPage = async (req, res) => {
     try {
         console.log('========== FORM SUBMISSION START ==========');
@@ -343,6 +359,12 @@ exports.submitLandingPage = async (req, res) => {
 
         // Check if this submission is from a file-based landing page (/lp/:slug, landing_slug, or Referer /lp/:slug)
         let fileLandingSlug = req.body.landing_slug || req.body.landingSlug || req.query.landing_slug || req.query.slug || req.params.slug;
+        if (!fileLandingSlug && extra_fields) {
+            try {
+                const parsedExtra = typeof extra_fields === 'string' ? JSON.parse(extra_fields) : extra_fields;
+                fileLandingSlug = parsedExtra.landing_slug || parsedExtra.landingSlug;
+            } catch (e) { }
+        }
         if (!fileLandingSlug) {
             const referer = req.headers.referer || req.headers.referrer;
             if (referer) {
@@ -458,12 +480,63 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
+        // ── Prevent Duplicate Submissions (within 3 seconds) ──────────────────────
+        const dedupeKey = `${normalizedContentId || fileLandingSlug}:${String(submittedEmail || '').toLowerCase().trim()}`;
+        const lastSubmitTime = recentSubmissionsCache.get(dedupeKey);
+        const now = Date.now();
+        if (lastSubmitTime && (now - lastSubmitTime) < 3000) {
+            console.log(`[submitLandingPage] Duplicate submission detected for '${dedupeKey}' within 3 seconds. Skipping duplicate DB insert & webhook.`);
+            return res.json({
+                message: 'Access granted successfully.',
+                has_access: true,
+                duplicate: true,
+                redirect_url: extraData?.redirect_url || extraData?.page_url || content?.redirect_url || null
+            });
+        }
+        recentSubmissionsCache.set(dedupeKey, now);
+
         // ── Store Form Submission in Database ─────────────────────────────────────
-        const leadDataWithMeta = {
-            ...normalizedExtraData,
-            ip_address: req.ip,
-            user_agent: req.headers['user-agent']
-        };
+        // 1. Order keys so primary lead contact info appears first in database JSON previews
+        const priorityKeys = [
+            'first_name',
+            'last_name',
+            'contact',
+            'phone',
+            'phone_number',
+            'email',
+            'email_address',
+            'company',
+            'company_name',
+            'employee_size',
+            'industry',
+            'job_title',
+            'country'
+        ];
+
+        const orderedLeadData = {};
+        for (const pk of priorityKeys) {
+            if (normalizedExtraData[pk] !== undefined && normalizedExtraData[pk] !== '') {
+                orderedLeadData[pk] = normalizedExtraData[pk];
+            }
+        }
+        // Ensure contact key is present if phone exists
+        if (!orderedLeadData.contact && (orderedLeadData.phone || orderedLeadData.phone_number)) {
+            orderedLeadData.contact = orderedLeadData.phone || orderedLeadData.phone_number;
+        }
+
+        // Remaining submitted fields
+        for (const [k, v] of Object.entries(normalizedExtraData)) {
+            if (!priorityKeys.includes(k) && k !== 'session_uuid' && k !== 'consent_uuid' && k !== 'ip_address' && k !== 'user_agent') {
+                orderedLeadData[k] = v;
+            }
+        }
+        // Metadata fields placed at the end
+        if (normalizedExtraData.session_uuid) orderedLeadData.session_uuid = normalizedExtraData.session_uuid;
+        if (normalizedExtraData.consent_uuid) orderedLeadData.consent_uuid = normalizedExtraData.consent_uuid;
+        orderedLeadData.ip_address = req.ip;
+        orderedLeadData.user_agent = req.headers['user-agent'];
+
+        const leadDataWithMeta = orderedLeadData;
 
         let submissionRecord = null;
         if (normalizedContentId) {
@@ -529,6 +602,7 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
+        let webhookResult = null;
         if (targetWebhookUrl) {
             console.log('[Webhook] ✅ Processing webhook for content:', normalizedContentId);
             console.log('[Webhook] Target Webhook URL:', targetWebhookUrl);
@@ -565,7 +639,14 @@ exports.submitLandingPage = async (req, res) => {
                 ['phone', 'phoneNumber'],
                 ['email_address', 'email'],
                 ['email', 'emailAddress'],
-                ['first_name', 'name']
+                ['first_name', 'name'],
+                // Add aliases for Software Advice & other client CRM endpoints:
+                ['first_name', 'f_name'],
+                ['firstName', 'f_name'],
+                ['last_name', 'l_name'],
+                ['lastName', 'l_name'],
+                ['lead_type', 'type'],
+                ['partner_source', 'utm_source']
             ];
 
             for (const [snake, camel] of keyAliases) {
@@ -573,6 +654,22 @@ exports.submitLandingPage = async (req, res) => {
                     webhookPayload[camel] = webhookPayload[snake];
                 } else if (webhookPayload[camel] !== undefined && webhookPayload[snake] === undefined) {
                     webhookPayload[snake] = webhookPayload[camel];
+                }
+            }
+
+            // Software Advice / Gartner partner-conversion specific requirements
+            if (targetWebhookUrl.includes('softwareadvice.com') || targetWebhookUrl.includes('partner-conversion')) {
+                if (!webhookPayload.f_name && (webhookPayload.first_name || webhookPayload.firstName)) {
+                    webhookPayload.f_name = webhookPayload.first_name || webhookPayload.firstName;
+                }
+                if (!webhookPayload.l_name && (webhookPayload.last_name || webhookPayload.lastName)) {
+                    webhookPayload.l_name = webhookPayload.last_name || webhookPayload.lastName;
+                }
+                if (!webhookPayload.type) {
+                    webhookPayload.type = webhookPayload.lead_type || 'download';
+                }
+                if (!webhookPayload.utm_source) {
+                    webhookPayload.utm_source = webhookPayload.partner_source || 'tgst';
                 }
             }
 
@@ -598,17 +695,25 @@ exports.submitLandingPage = async (req, res) => {
             console.log('[Webhook] Final Webhook Payload:', JSON.stringify(webhookPayload, null, 2));
 
             // Call webhook
-            forwardToWebhook(targetWebhookUrl, webhookPayload)
-                .then((res) => {
-                    console.log(`[Webhook] Successfully forwarded to client URL (${targetWebhookUrl}) - Status:`, res?.status);
-                })
-                .catch((err) => {
-                    console.error('[Webhook] Failed to forward to client URL:', err.message);
+            try {
+                webhookResult = await forwardToWebhook(targetWebhookUrl, webhookPayload);
+                if (webhookResult && !webhookResult.success) {
+                    console.error(`[Webhook] Client endpoint returned failure (${webhookResult.status}):`, webhookResult.error);
                     pool.query(
                         'INSERT INTO webhook_failures (content_id, webhook_url, payload, error_message) VALUES (?, ?, ?, ?)',
-                        [normalizedContentId, targetWebhookUrl, JSON.stringify(webhookPayload), err.message]
+                        [normalizedContentId, targetWebhookUrl, JSON.stringify(webhookPayload), `HTTP ${webhookResult.status}: ${JSON.stringify(webhookResult.data)}`]
                     ).catch(dbErr => console.error('[Webhook] Failed to log webhook failure:', dbErr.message));
-                });
+                } else {
+                    console.log(`[Webhook] Successfully forwarded to client URL (${targetWebhookUrl}) - Status:`, webhookResult?.status);
+                }
+            } catch (err) {
+                console.error('[Webhook] Failed to forward to client URL:', err.message);
+                webhookResult = { success: false, status: 500, error: err.message };
+                pool.query(
+                    'INSERT INTO webhook_failures (content_id, webhook_url, payload, error_message) VALUES (?, ?, ?, ?)',
+                    [normalizedContentId, targetWebhookUrl, JSON.stringify(webhookPayload), err.message]
+                ).catch(dbErr => console.error('[Webhook] Failed to log webhook failure:', dbErr.message));
+            }
         } else {
             console.log('[Webhook] No webhook URL configured or found for content:', normalizedContentId);
         }
@@ -773,7 +878,11 @@ exports.submitLandingPage = async (req, res) => {
             has_access: true,
             pdf_file: content?.pdf_file || null,
             download_url: downloadUrl || null,
-            redirect_url: redirectUrl || null
+            redirect_url: redirectUrl || null,
+            webhook_success: webhookResult ? webhookResult.success : null,
+            webhook_status: webhookResult ? webhookResult.status : null,
+            webhook_data: webhookResult ? webhookResult.data : null,
+            webhook_error: webhookResult && !webhookResult.success ? (webhookResult.error || webhookResult.data) : null
         });
         console.log('========== FORM SUBMISSION END (SUCCESS) ==========');
     } catch (error) {

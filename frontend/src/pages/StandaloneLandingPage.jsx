@@ -187,10 +187,19 @@ const StandaloneLandingPage = () => {
         document.addEventListener('submit', function(e) {
           const form = e.target;
           if (!form || form.tagName !== 'FORM') return;
-          
-          // Prevent standard browser GET/POST page navigation
-          e.preventDefault();
-          e.stopPropagation();
+
+          // If this form has its own custom AJAX script handler (like saLeadForm), do not double-submit!
+          if (form.id === 'saLeadForm' || form.hasAttribute('data-custom-submit') || form.getAttribute('data-tgs-handled')) {
+            return;
+          }
+
+          // Debounce / prevent double submission
+          if (form.getAttribute('data-tgs-submitting') === 'true') {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          form.setAttribute('data-tgs-submitting', 'true');
 
           console.log('🚀 Form submission intercepted on HTML Builder page');
           const formData = new FormData(form);
@@ -340,7 +349,6 @@ const StandaloneLandingPage = () => {
             }
             
             // Hide error alert if previously shown
-            const errBox = form.querySelector('.form-error-alert');
             if (errBox) errBox.style.display = 'none';
 
             // Auto-trigger PDF download if file is returned

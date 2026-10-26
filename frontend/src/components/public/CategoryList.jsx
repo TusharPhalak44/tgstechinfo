@@ -5,7 +5,7 @@ import { CalendarOutlined, EyeOutlined, UserOutlined, SearchOutlined, CompassOut
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
-import { navigateContentItem } from '../../lib/contentRoute';
+import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatWebinarDate } from '../../utils/dateHelper';
 import { formatViewsToM } from '../../utils/numberHelper';
@@ -34,7 +34,7 @@ const INITIAL_SHOW = 9;
 const SEE_MORE_STEP = 3;
 
 const navigateContent = (item, navigate) => {
-  navigateContentItem(item, navigate);
+  navigateContentItem(item, navigate, { newTab: true });
 };
 
 const TYPE_MAP = {
@@ -302,10 +302,14 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
             const isFeaturedWebinar = featuredType === 'webinar';
             const isFeaturedLiveWebinar = isFeaturedWebinar && (featuredPost.webinar_type === 'live' || (!featuredPost.webinar_type && featuredPost.webinar_date));
             const isFeaturedOnDemandWebinar = isFeaturedWebinar && (featuredPost.webinar_type === 'on_demand' || (!isFeaturedLiveWebinar && featuredPost.video_file));
+            const featuredRoute = resolveContentRoute(featuredPost);
+            const featuredUrl = featuredRoute?.url || '#';
 
             return (
-              <div
-                onClick={() => navigateContentItem(featuredPost, navigate)}
+              <a
+                href={featuredUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
                   width: isTabletOrMobile ? '100%' : 440,
                   maxWidth: 440,
@@ -321,7 +325,10 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
                   cursor: 'pointer',
                   transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                   boxShadow: darkMode ? '0 12px 35px rgba(0,0,0,0.5)' : '0 12px 30px rgba(0,0,0,0.08)',
-                  position: 'relative'
+                  position: 'relative',
+                  display: 'block',
+                  textDecoration: 'none',
+                  color: 'inherit'
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)';
@@ -437,7 +444,7 @@ const PublishingHeroHeader = ({ title, accent, totalCount, featuredPost, navigat
                 }}>
                   {featuredPost.short_description}
                 </p>
-              </div>
+              </a>
             );
           })()}
 
@@ -464,17 +471,23 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
   const isLive = isWebinar && (item.webinar_type === 'live' || (!item.webinar_type && item.webinar_date));
   const isOnDemand = isWebinar && (item.webinar_type === 'on_demand' || item.video_file);
   const bannerSrc = getBannerSrc(item.banner_image);
+  const targetRoute = resolveContentRoute(item);
+  const targetUrl = targetRoute?.url || '#';
 
   return (
-    <div style={{
-      display: 'flex', gap: isMobile ? 12 : 20, padding: isMobile ? '16px 0' : '20px 0',
-      borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer',
-      transition: 'background .15s', borderRadius: 6,
-      flexDirection: isMobile ? 'column' : 'row',
-      width: '100%', maxWidth: '100%', boxSizing: 'border-box'
-    }}
+    <a
+      href={targetUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'flex', gap: isMobile ? 12 : 20, padding: isMobile ? '16px 0' : '20px 0',
+        borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer',
+        transition: 'background .15s', borderRadius: 6,
+        flexDirection: isMobile ? 'column' : 'row',
+        width: '100%', maxWidth: '100%', boxSizing: 'border-box',
+        textDecoration: 'none', color: 'inherit'
+      }}
       className="cat-list-item"
-      onClick={() => navigateContent(item, navigate)}
       onMouseEnter={e => e.currentTarget.style.background = darkMode ? '#1e293b' : '#fafbff'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
@@ -608,7 +621,7 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
           </span>
         </div>
       </div>
-    </div>
+    </a>
   );
 };
 
@@ -617,9 +630,27 @@ const SidebarPost = ({ item, index = 0, navigate, accent, darkMode, isCategoryPa
   const isMobile = window.innerWidth < 768;
   const isLandingPage = isHtmlBuilderContent(item);
   const views = Number(item.views_count || item.view_count || 0);
+  const targetRoute = resolveContentRoute(item);
+  const targetUrl = targetRoute?.url || '#';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', gap: isMobile ? 12 : 10, padding: isMobile ? '10px 0' : '12px 0', borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', cursor: 'pointer', alignItems: 'flex-start' }}
-      onClick={() => navigateContent(item, navigate)}
+    <a 
+      href={targetUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{ 
+        display: 'flex', 
+        flexDirection: 'row', 
+        gap: isMobile ? 12 : 10, 
+        padding: isMobile ? '10px 0' : '12px 0', 
+        borderBottom: darkMode ? '1px solid #334155' : '1px solid #eef0f5', 
+        cursor: 'pointer', 
+        alignItems: 'flex-start',
+        textDecoration: 'none',
+        color: 'inherit'
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
       <div style={{ width: isMobile ? 80 : 64, height: isMobile ? 60 : 52, flexShrink: 0, borderRadius: 7, overflow: 'hidden', background: darkMode ? '#1e293b' : '#f0f4ff', position: 'relative' }}>
         {getBannerSrc(item.banner_image)
@@ -681,7 +712,7 @@ const SidebarPost = ({ item, index = 0, navigate, accent, darkMode, isCategoryPa
           )}
         </div>
       </div>
-    </div>
+    </a>
   );
 };
 

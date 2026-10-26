@@ -3,7 +3,7 @@ import { Card, Tag } from 'antd';
 import { ExternalLink, Calendar, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useChat } from '../../../context/ChatContext';
-import { navigateContentItem } from '../../../lib/contentRoute';
+import { navigateContentItem, resolveContentRoute } from '../../../lib/contentRoute';
 import { formatViewsToM } from '../../../utils/numberHelper';
 
 const SearchResults = ({ query }) => {
@@ -12,7 +12,6 @@ const SearchResults = ({ query }) => {
 
   const handleContentClick = (content, index) => {
     logClick(content.id, index);
-    navigateContentItem(content, navigate);
   };
 
   // If no results, return null - ChatContext handles showing suggestions/query form
@@ -25,19 +24,27 @@ const SearchResults = ({ query }) => {
       <p style={{ fontSize: 12, color: 'var(--color-muted)', margin: '0 0 4px 0' }}>
         {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "<strong>{query}</strong>"
       </p>
-      {searchResults.map((result, index) => (
-        <Card
-          key={result.id}
-          hoverable
-          onClick={() => handleContentClick(result, index)}
-          style={{
-            borderRadius: 12,
-            border: '1px solid var(--color-border)',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-          styles={{ body: { padding: '16px' } }}
-        >
+      {searchResults.map((result, index) => {
+        const targetRoute = resolveContentRoute(result);
+        return (
+          <a
+            key={result.id}
+            href={targetRoute.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => handleContentClick(result, index)}
+            style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+          >
+            <Card
+              hoverable
+              style={{
+                borderRadius: 12,
+                border: '1px solid var(--color-border)',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              styles={{ body: { padding: '16px' } }}
+            >
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
             {result.banner_image && (
               <img
@@ -86,7 +93,9 @@ const SearchResults = ({ query }) => {
             </div>
           </div>
         </Card>
-      ))}
+      </a>
+    );
+    })}
     </div>
   );
 };
