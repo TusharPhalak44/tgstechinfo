@@ -13,9 +13,30 @@ class LandingPage {
 
     // Find by any email-type field value stored in extra_fields
     static async findByEmailAndContent(email, content_id) {
+        if (!email) return null;
+        const normalized = String(email).toLowerCase().trim();
         const [rows] = await pool.query(
-            `SELECT * FROM landing_page_submissions WHERE content_id = ? AND JSON_SEARCH(extra_fields, 'one', ?) IS NOT NULL`,
-            [content_id, email]
+            `SELECT * FROM landing_page_submissions 
+             WHERE content_id = ? 
+               AND (
+                 JSON_SEARCH(LOWER(extra_fields), 'one', ?) IS NOT NULL
+                 OR extra_fields LIKE ?
+               ) LIMIT 1`,
+            [content_id, normalized, `%"${normalized}"%`]
+        );
+        return rows[0];
+    }
+
+    // Find any previous submission across all landing pages by email
+    static async findByEmail(email) {
+        if (!email) return null;
+        const normalized = String(email).toLowerCase().trim();
+        const [rows] = await pool.query(
+            `SELECT * FROM landing_page_submissions 
+             WHERE JSON_SEARCH(LOWER(extra_fields), 'one', ?) IS NOT NULL
+                OR extra_fields LIKE ?
+             LIMIT 1`,
+            [normalized, `%"${normalized}"%`]
         );
         return rows[0];
     }

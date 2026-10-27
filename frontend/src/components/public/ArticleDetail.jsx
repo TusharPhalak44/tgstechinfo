@@ -455,7 +455,12 @@ const ArticleDetail = () => {
         }
       }
     } catch (error) {
-      messageApi.error(error.response?.data?.message || 'Failed to submit');
+      const isAlreadySub = error.response?.status === 409 || error.response?.data?.alreadySubscribed;
+      const msg = isAlreadySub
+        ? (error.response?.data?.message || 'This email has been already subscribed')
+        : (error.response?.data?.message || 'Failed to submit');
+      if (isAlreadySub) alert(msg);
+      messageApi.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -522,7 +527,12 @@ const ArticleDetail = () => {
       });
       messageApi.success('Subscription email sent! Check your inbox.');
     } catch (error) {
-      messageApi.error(error.response?.data?.message || 'Failed to subscribe');
+      const isAlreadySub = error.response?.status === 409 || error.response?.data?.alreadySubscribed;
+      const msg = isAlreadySub
+        ? (error.response?.data?.message || 'This email has been already subscribed')
+        : (error.response?.data?.message || 'Failed to subscribe');
+      if (isAlreadySub) alert(msg);
+      messageApi.error(msg);
     } finally {
       setSubscribing(false);
     }
@@ -540,7 +550,12 @@ const ArticleDetail = () => {
       messageApi.success('Successfully subscribed to newsletter!');
       setNewsletterEmail('');
     } catch (error) {
-      messageApi.error(error.response?.data?.message || 'Failed to subscribe. Please try again.');
+      const isAlreadySub = error.response?.status === 409 || error.response?.data?.alreadySubscribed;
+      const msg = isAlreadySub
+        ? (error.response?.data?.message || 'This email has been already subscribed')
+        : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
+      if (isAlreadySub) alert(msg);
+      messageApi.error(msg);
     } finally {
       setNewsletterSubscribing(false);
     }
@@ -625,25 +640,6 @@ const ArticleDetail = () => {
           {/* Main Content - 70% */}
           <Col xs={24} lg={17} style={{ order: 1 }}>
             <div style={{ background: darkMode ? '#1e293b' : '#fff', padding: 32, borderRadius: 8, boxShadow: darkMode ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)' }} className="article-content-card">
-              {/* Back Button */}
-              <div style={{ marginBottom: 16 }}>
-                <button
-                  onClick={() => navigate(-1)}
-                  style={{
-                    background: 'none', border: darkMode ? '1.5px solid #475569' : '1.5px solid #d9d9d9', borderRadius: 8,
-                    padding: '4px 12px', cursor: 'pointer', fontSize: 13,
-                    color: darkMode ? '#cbd5e1' : '#374151', display: 'flex', alignItems: 'center', gap: 6,
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = darkMode ? '#334155' : '#f5f5f5';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'none';
-                  }}
-                >← Back</button>
-              </div>
-
               {/* Category & Event Tags */}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
                 <Tag color="blue">{content.category_name}</Tag>

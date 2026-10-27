@@ -237,7 +237,7 @@ const Footer = ({ simplified = false }) => {
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>The Space Business Complex Office No 512-516, Grant Rd, Kharadi, Pune, Maharashtra 411014</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>The Space Business Complex Office No 512-517, Grant Rd, Kharadi, Pune, Maharashtra 411014</span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

@@ -341,7 +341,7 @@ const DataRequests = () => {
                 <div style={{ padding: 'clamp(14px, 2.5vw, 20px) clamp(16px, 3vw, 24px)', background: darkMode ? 'rgba(74, 124, 255, 0.1)' : '#f0f4ff', borderRadius: 12, borderLeft: '4px solid #4a7cff' }}>
                   <p style={{ margin: '0 0 6px', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', fontSize: 'clamp(14px, 1.6vw, 15px)' }}>TGS Tech Info - Privacy Officer</p>
                   <p style={{ margin: '0 0 4px', color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>Email: <a href="mailto:privacy@tgstechinfo.com" style={{ color: '#4a7cff' }}>privacy@tgstechinfo.com</a></p>
-                  <p style={{ margin: 0, color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>DPO: <a href="mailto:sagar.machale@tgstechinfo.com" style={{ color: '#4a7cff' }}>sagar.machale@tgstechinfo.com</a></p>
+                  <p style={{ margin: 0, color: darkMode ? '#cbd5e1' : '#374151', fontSize: 'clamp(13px, 1.5vw, 14px)' }}>DPO: <a href="mailto:sagar.m@tgstechinfo.com" style={{ color: '#4a7cff' }}>sagar.m@tgstechinfo.com</a></p>
                 </div>
               </Section>
             </>

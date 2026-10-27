@@ -236,15 +236,35 @@ const StandaloneLandingPage = () => {
           fetch('/api/public/landing-page', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
             },
             body: JSON.stringify(payload)
           })
-          .then(res => {
-            if (!res.ok) throw new Error('HTTP status ' + res.status);
-            return res.json();
+          .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (res.status === 409 || data.alreadySubscribed || data.already_submitted) {
+              const msg = data.message || 'This email has been already subscribed';
+              alert(msg);
+              let alertBox = form.querySelector('.form-error-alert');
+              if (!alertBox) {
+                alertBox = document.createElement('div');
+                alertBox.className = 'form-error-alert';
+                alertBox.style.cssText = 'padding: 12px 16px; margin-top: 16px; background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center;';
+                form.appendChild(alertBox);
+              }
+              alertBox.style.display = 'block';
+              alertBox.innerText = msg;
+              form.removeAttribute('data-tgs-submitting');
+              return null;
+            }
+            if (!res.ok) {
+              throw new Error(data.message || ('HTTP status ' + res.status));
+            }
+            return data;
           })
           .then(data => {
+            if (!data) return;
             console.log('✅ Lead form submit success:', data);
 
             // Hide error alert if previously shown

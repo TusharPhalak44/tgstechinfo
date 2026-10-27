@@ -1071,10 +1071,12 @@ exports.getDashboardKPIs = async (req, res) => {
         }
 
         const rawViews = Number(totalViews || 0);
-        const viewsInMillions = rawViews / 1000000;
-        const totalViewsFormatted = rawViews >= 1000000
-            ? `${viewsInMillions.toFixed(1).replace(/\.0$/, '')}M`
-            : (rawViews >= 1000 ? `${(rawViews / 1000).toFixed(1)}k` : String(rawViews));
+        const viewsInK = rawViews / 1000;
+        const totalViewsFormatted = rawViews >= 1000
+            ? (viewsInK >= 1000
+                ? `${viewsInK.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}k`
+                : `${viewsInK.toFixed(1).replace(/\.0$/, '')}k`)
+            : (rawViews > 0 ? `${viewsInK.toFixed(1)}k` : '0k');
         const viewsFormatted = totalViewsFormatted;
 
         const totalPublished = isAll ? (allTimePublished || 0) : (periodPublished || 0);
@@ -1588,5 +1590,66 @@ exports.getWebinarRegistrations = async (req, res) => {
     } catch (error) {
         console.error('[getWebinarRegistrations] Error:', error);
         res.status(500).json({ message: 'Failed to fetch webinar registrations.' });
+    }
+};
+
+exports.getContactSubmissions = async (req, res) => {
+    try {
+        const { status, category, search } = req.query;
+        let query = 'SELECT * FROM contact_submissions WHERE 1=1';
+        const values = [];
+
+        if (status && status !== 'all') {
+            query += ' AND status = ?';
+            values.push(status);
+        }
+
+        if (category && category !== 'all') {
+            query += ' AND inquiry_category = ?';
+            values.push(category);
+        }
+
+        if (search) {
+            query += ' AND (full_name LIKE ? OR email LIKE ? OR company LIKE ? OR subject LIKE ? OR message LIKE ?)';
+            const q = `%${search}%`;
+            values.push(q, q, q, q, q);
+        }
+
+        query += ' ORDER BY created_at DESC';
+
+        const [rows] = await pool.query(query, values);
+        res.json({ success: true, submissions: rows, total: rows.length });
+    } catch (error) {
+        console.error('[getContactSubmissions] Error:', error);
+        res.status(500).json({ message: 'Failed to fetch contact submissions.' });
+    }
+};
+
+exports.updateContactSubmissionStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const [result] = await pool.query('UPDATE contact_submissions SET status = ? WHERE id = ?', [status, id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+        res.json({ success: true, message: 'Status updated successfully' });
+    } catch (error) {
+        console.error('[updateContactSubmissionStatus] Error:', error);
+        res.status(500).json({ message: 'Failed to update contact submission status.' });
+    }
+};
+
+exports.deleteContactSubmission = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [result] = await pool.query('DELETE FROM contact_submissions WHERE id = ?', [id]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Submission not found' });
+        }
+        res.json({ success: true, message: 'Submission deleted successfully' });
+    } catch (error) {
+        console.error('[deleteContactSubmission] Error:', error);
+        res.status(500).json({ message: 'Failed to delete contact submission.' });
     }
 };

@@ -39,7 +39,7 @@ const ContactPrivacyOfficer = () => {
       <div style={{ maxWidth: 1200, margin: '0 auto clamp(16px, 3vw, 24px)', background: 'linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)', borderRadius: 16, padding: 'clamp(24px, 5vw, 40px) clamp(20px, 4vw, 32px)', color: '#fff', textAlign: 'center' }}>
         <div style={{ fontSize: 'clamp(11px, 1.3vw, 12px)', fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 12 }}>Legal</div>
         <h1 style={{ fontSize: 'clamp(26px, 4vw, 32px)', fontWeight: 800, margin: '0 0 10px', color: '#fff' }}>Contact Privacy Officer</h1>
-        <p style={{ fontSize: 'clamp(13px, 1.5vw, 14px)', color: '#94a3b8', margin: 0 }}>Privacy inquiries, data requests &amp; DPO contact | Last updated: {UPDATED}</p>
+        <p style={{ fontSize: 'clamp(13px, 1.5vw, 14px)', color: '#94a3b8', margin: 0 }}>Privacy enquiries, data requests &amp; DPO contact | Last updated: {UPDATED}</p>
       </div>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'clamp(1fr, 2fr, 1fr 1.6fr)', gap: 28, alignItems: 'start' }}>
@@ -59,7 +59,7 @@ const ContactPrivacyOfficer = () => {
             </div>
             {[
               { icon: '📧', label: 'Privacy Email', value: 'privacy@tgstechinfo.com', href: 'mailto:privacy@tgstechinfo.com' },
-              { icon: '🛡️', label: 'DPO Email', value: 'sagar.machale@tgstechinfo.com', href: 'mailto:sagar.machale@tgstechinfo.com' },
+              { icon: '🛡️', label: 'DPO Email', value: 'sagar.m@tgstechinfo.com', href: 'mailto:sagar.m@tgstechinfo.com' },
               { icon: '⚖️', label: 'Legal Email', value: 'legal@tgstechinfo.com', href: 'mailto:legal@tgstechinfo.com' },
               { icon: '🌐', label: 'Website', value: 'tgstechinfo.com', href: 'https://tgstechinfo.com' },
             ].map(({ icon, label, value, href }) => (
@@ -77,7 +77,7 @@ const ContactPrivacyOfficer = () => {
           <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 16, padding: 'clamp(18px, 3vw, 24px)', boxShadow: darkMode ? '0 2px 16px rgba(0,0,0,0.3)' : '0 2px 16px rgba(0,0,0,0.07)' }}>
             <div style={{ fontSize: 'clamp(10px, 1.2vw, 11px)', fontWeight: 700, color: '#00b894', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 14 }}>Response Timelines</div>
             {[
-              { label: 'General Privacy Inquiries', time: '3–5 business days' },
+              { label: 'General Privacy Enquiries', time: '3–5 business days' },
               { label: 'GDPR / UK GDPR Requests', time: '30 days' },
               { label: 'CCPA / CPRA Requests', time: '45 days' },
               { label: 'Do Not Sell Opt-Out', time: '15 business days' },
@@ -124,7 +124,7 @@ const ContactPrivacyOfficer = () => {
           ) : (
             <>
               <div style={{ marginBottom: 'clamp(20px, 3vw, 28px)' }}>
-                <h2 style={{ fontSize: 'clamp(18px, 2.5vw, 20px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', margin: '0 0 8px' }}>Send a Privacy Inquiry</h2>
+                <h2 style={{ fontSize: 'clamp(18px, 2.5vw, 20px)', fontWeight: 700, color: darkMode ? '#f1f5f9' : '#1a1a2e', margin: '0 0 8px' }}>Send a Privacy Enquiry</h2>
                 <p style={{ fontSize: 'clamp(12px, 1.4vw, 13.5px)', color: darkMode ? '#94a3b8' : '#6b7280', margin: 0 }}>
                   Use this form for privacy questions, data requests, consent withdrawals, or any other privacy-related matter. For formal data subject requests, please use our <Link to="/data-requests" style={{ color: '#4a7cff' }}>Data Request Form</Link>.
                 </p>
@@ -143,25 +143,25 @@ const ContactPrivacyOfficer = () => {
                 <Field label="Subject" required darkMode={darkMode}>
                   <select style={inputStyle} value={form.subject} onChange={e => set('subject', e.target.value)} required>
                     <option value="">Select a subject...</option>
-                    <option value="general">General Privacy Inquiry</option>
+                    <option value="general">General Privacy Enquiry</option>
                     <option value="data_request">Data Subject Request (DSAR)</option>
                     <option value="consent">Consent Withdrawal</option>
                     <option value="marketing_opt_out">Marketing Opt-Out</option>
                     <option value="do_not_sell">Do Not Sell / Share (CCPA)</option>
                     <option value="data_breach">Data Breach Notification</option>
-                    <option value="cookie">Cookie Inquiry</option>
+                    <option value="cookie">Cookie Enquiry</option>
                     <option value="complaint">Privacy Complaint</option>
                     <option value="other">Other</option>
                   </select>
                 </Field>
                 <Field label="Message" required darkMode={darkMode}>
-                  <textarea style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }} value={form.message} onChange={e => set('message', e.target.value)} required placeholder="Describe your privacy inquiry in detail..." />
+                  <textarea style={{ ...inputStyle, minHeight: 100, resize: 'vertical' }} value={form.message} onChange={e => set('message', e.target.value)} required placeholder="Describe your privacy enquiry in detail..." />
                 </Field>
                 <div style={{ background: darkMode ? '#0f172a' : '#f8faff', borderRadius: 10, padding: 'clamp(12px, 2vw, 14px) clamp(14px, 2.5vw, 16px)', marginBottom: 20 }}>
                   <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
                     <input type="checkbox" checked={form.consent} onChange={e => set('consent', e.target.checked)} style={{ marginTop: 3, flexShrink: 0 }} />
                     <span style={{ fontSize: 'clamp(12px, 1.4vw, 13px)', color: darkMode ? '#cbd5e1' : '#374151' }}>
-                      I consent to TGS Tech Info processing my personal data to respond to this inquiry. I have read the <Link to="/privacy-policy" style={{ color: '#4a7cff' }}>Privacy Policy</Link>.
+                      I consent to TGS Tech Info processing my personal data to respond to this enquiry. I have read the <Link to="/privacy-policy" style={{ color: '#4a7cff' }}>Privacy Policy</Link>.
                     </span>
                   </label>
                 </div>

@@ -132,7 +132,8 @@ function detectIntent(query) {
     'consult', 'contact sales', 'sales team', 'meeting', 
     'schedule meeting', 'request demo', 'collaboration', 'bulk purchase', 
     'vendor', 'become a partner', 'discuss partnership', 'need demo', 
-    'want demo', 'sales team contact', 'implementation support'
+    'want demo', 'sales team contact', 'implementation support',
+    'business enquiry', 'enquiry', 'enquiries', 'business inquiry', 'inquiry', 'inquiries'
   ];
   
   const isBusinessInquiry = businessInquiryKeywords.some(keyword => {

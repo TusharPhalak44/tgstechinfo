@@ -7,6 +7,10 @@ const User = require('../models/User');
 const hasPermission = (permissionName) => {
     return async (req, res, next) => {
         try {
+            if (req.user && req.user.role === 'admin') {
+                return next();
+            }
+
             const hasPermission = await User.hasPermission(req.user.id, permissionName);
             
             if (!hasPermission) {
@@ -25,19 +29,34 @@ const hasPermission = (permissionName) => {
 };
 
 /**
- * Check if user has any permission for a resource and action
- * @param {string} resource - The resource (e.g., 'content', 'user')
- * @param {string} action - The action (e.g., 'create', 'read', 'update', 'delete')
+ * Check if user has any permission for a resource and action, or any from an array of permissions
+ * @param {string|string[]} resourceOrPermissions - The resource or array of permission names
+ * @param {string} [action] - The action (e.g., 'create', 'read', 'update', 'delete')
  */
-const hasAnyPermission = (resource, action) => {
+const hasAnyPermission = (resourceOrPermissions, action) => {
     return async (req, res, next) => {
         try {
-            const hasPermission = await User.hasAnyPermission(req.user.id, resource, action);
+            if (req.user && req.user.role === 'admin') {
+                return next();
+            }
+
+            if (Array.isArray(resourceOrPermissions)) {
+                for (const perm of resourceOrPermissions) {
+                    const ok = await User.hasPermission(req.user.id, perm);
+                    if (ok) return next();
+                }
+                return res.status(403).json({ 
+                    message: 'Access denied. You do not have the required permission.',
+                    required: resourceOrPermissions.join(' or ')
+                });
+            }
+
+            const hasPermission = await User.hasAnyPermission(req.user.id, resourceOrPermissions, action);
             
             if (!hasPermission) {
                 return res.status(403).json({ 
                     message: 'Access denied. You do not have the required permission.',
-                    required: `${resource}.${action}`
+                    required: `${resourceOrPermissions}.${action}`
                 });
             }
             

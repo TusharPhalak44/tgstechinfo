@@ -4,7 +4,7 @@ import { MapPin, Clock, Phone, Navigation, ExternalLink, Building2, Globe } from
 
 export const OfficeMap = () => {
   const addressQuery = encodeURIComponent(
-    'The Space Business Complex, Office No 512 - 516, Grant Rd, Kharadi, Pune, Maharashtra 411014, India'
+    'The Space Business Complex, Office No 512 - 517, Grant Rd, Kharadi, Pune, Maharashtra 411014, India'
   );
   const mapsDirectionsUrl = `https://www.google.com/maps/search/?api=1&query=${addressQuery}`;
   
@@ -69,7 +69,7 @@ export const OfficeMap = () => {
             The Space Business Complex
           </p>
           <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
-            Office No 512 - 516, Grant Rd, Kharadi, Pune, MH 411014, India
+            Office No 512 - 517, Grant Rd, Kharadi, Pune, MH 411014, India
           </p>
         </div>
 

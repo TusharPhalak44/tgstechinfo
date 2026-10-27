@@ -113,7 +113,14 @@ export default function FormRenderer({ node, contentWebhookUrl }) {
       }
     } catch (err) {
       console.error('Form submission error:', err);
-      antMessage.error(err.response?.data?.message || 'Submission failed. Please try again.');
+      const isAlreadySub = err.response?.status === 409 || err.response?.data?.alreadySubscribed;
+      const errorMsg = isAlreadySub
+        ? (err.response?.data?.message || 'This email has been already subscribed')
+        : (err.response?.data?.message || 'Submission failed. Please try again.');
+      if (isAlreadySub) {
+        alert(errorMsg);
+      }
+      antMessage.error(errorMsg);
     } finally {
       setSubmitting(false);
     }

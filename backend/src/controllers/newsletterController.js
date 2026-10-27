@@ -25,3 +25,14 @@ exports.removeSubscriber = async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 };
+
+exports.resubscribe = async (req, res) => {
+    try {
+        const { email } = req.params;
+        const subscriber = await Newsletter.subscribe(email);
+        res.json({ success: true, message: 'Subscriber activated successfully', subscriber });
+    } catch (error) {
+        console.error('Resubscribe error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};

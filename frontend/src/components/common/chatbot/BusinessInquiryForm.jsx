@@ -34,12 +34,12 @@ const BusinessInquiryForm = () => {
 
     setIsSubmitting(true);
     try {
-      // Submit as a query with business inquiry metadata
-      const queryText = `Business Inquiry - ${formData.companyName}: ${formData.requirement}`;
+      // Submit as a query with business enquiry metadata
+      const queryText = `Business Enquiry - ${formData.companyName}: ${formData.requirement}`;
       await submitQuery(formData.email, queryText);
       
       // Add success message to chat
-      addBotMessage('✅ Thank you for your business inquiry.\n\nYour request has been submitted successfully.\n\nOur team will contact you shortly to discuss your requirements.', 'query_success', {
+      addBotMessage('✅ Thank you for your business enquiry.\n\nYour request has been submitted successfully.\n\nOur team will contact you shortly to discuss your requirements.', 'query_success', {
         onContinueChat: () => {
           setShowQueryForm(false);
         },
@@ -49,8 +49,8 @@ const BusinessInquiryForm = () => {
         }
       });
     } catch (error) {
-      console.error('Failed to submit inquiry:', error);
-      message.error('Failed to submit inquiry. Please try again.');
+      console.error('Failed to submit enquiry:', error);
+      message.error('Failed to submit enquiry. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,7 +74,7 @@ const BusinessInquiryForm = () => {
         color: 'var(--color-heading)',
         margin: '0 0 16px 0'
       }}>
-        Business Inquiry
+        Business Enquiry
       </h4>
       
       <div style={{ marginBottom: 12 }}>

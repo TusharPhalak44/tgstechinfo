@@ -87,7 +87,7 @@ export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
           transition={{ duration: 0.9, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="mt-5 text-base sm:text-lg text-slate-100 max-w-3xl mx-auto font-medium leading-relaxed drop-shadow"
         >
-          Pitch tech news stories, guest opinion columns, corporate press releases, or sponsorship inquiries directly to our publishing board.
+          Pitch tech news stories, guest opinion columns, corporate press releases, or sponsorship enquiries directly to our publishing board.
         </motion.p>
 
         {/* Quick Stats Cards with Staggered Entrance & Hover Motion */}
@@ -130,7 +130,7 @@ export const ContactHero = ({ bgImage = '/contact_hero_bg.jpg' }) => {
             <ShieldCheck className="w-7 h-7 text-purple-400 shrink-0" />
             <div>
               <div className="text-base font-extrabold text-white">Verified Privacy</div>
-              <div className="text-[11px] text-slate-200">Protected Inquiries</div>
+              <div className="text-[11px] text-slate-200">Protected Enquiries</div>
             </div>
           </motion.div>
         </div>

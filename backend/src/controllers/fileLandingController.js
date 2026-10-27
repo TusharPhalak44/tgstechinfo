@@ -304,6 +304,27 @@ exports.serveLandingPageOrAsset = async (req, res) => {
           });
 
           var resData = await response.json().catch(function() { return {}; });
+
+          if (response.status === 409 || resData.alreadySubscribed || resData.already_submitted) {
+            alert(resData.message || 'This email has been already subscribed');
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              if (submitBtn.innerText) submitBtn.innerText = originalText;
+              else if (submitBtn.value) submitBtn.value = originalText;
+            }
+            return;
+          }
+
+          if (!response.ok) {
+            alert(resData.message || 'Submission failed. Please try again.');
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              if (submitBtn.innerText) submitBtn.innerText = originalText;
+              else if (submitBtn.value) submitBtn.value = originalText;
+            }
+            return;
+          }
+
           var target = resData.redirect_url || resData.page_url || fallbackRedirect;
 
           if (target && target !== window.location.href) {
@@ -313,6 +334,7 @@ exports.serveLandingPageOrAsset = async (req, res) => {
             if (submitBtn) {
               submitBtn.disabled = false;
               if (submitBtn.innerText) submitBtn.innerText = originalText;
+              else if (submitBtn.value) submitBtn.value = originalText;
             }
           }
         } catch (err) {

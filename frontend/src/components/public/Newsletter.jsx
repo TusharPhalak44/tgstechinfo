@@ -17,7 +17,12 @@ const Newsletter = () => {
       form.resetFields();
     } catch (error) {
       console.error('Newsletter subscription error:', error);
-      message.error(error.response?.data?.message || 'Failed to subscribe');
+      const isAlreadySub = error.response?.status === 409 || error.response?.data?.alreadySubscribed;
+      const msg = isAlreadySub
+        ? (error.response?.data?.message || 'This email has been already subscribed')
+        : (error.response?.data?.message || 'Failed to subscribe');
+      if (isAlreadySub) alert(msg);
+      message.error(msg);
     } finally {
       setLoading(false);
     }

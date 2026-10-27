@@ -88,7 +88,7 @@ const AcceptableUsePolicy = () => {
           <Li>Bulk downloading of whitepapers, reports, or gated content</Li>
           <Li>Using AI training pipelines to harvest content without consent</Li>
         </ul>
-        <p style={{ marginTop: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>Authorized research or academic use may be permitted with prior written approval. Contact <a href="mailto:legal@tgstechinfo.com" style={{ color: '#4a7cff' }}>legal@tgstechinfo.com</a> for licensing inquiries.</p>
+        <p style={{ marginTop: 12, color: darkMode ? '#cbd5e1' : '#374151' }}>Authorized research or academic use may be permitted with prior written approval. Contact <a href="mailto:legal@tgstechinfo.com" style={{ color: '#4a7cff' }}>legal@tgstechinfo.com</a> for licensing enquiries.</p>
       </Section>
 
       <Section title="6. Email and Marketing Communications" darkMode={darkMode}>

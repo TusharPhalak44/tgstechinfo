@@ -469,7 +469,7 @@ export const About = () => {
                 className="px-5 py-3 rounded-xl font-bold text-xs border transition-all hover:bg-slate-500/10"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-heading)' }}
               >
-                Editorial Inquiries
+                Editorial Enquiries
               </Link>
             </div>
           </motion.div>

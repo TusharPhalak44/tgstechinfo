@@ -459,7 +459,7 @@ export const ChatProvider = ({ children }) => {
       }
 
       if (intentResult.intent === 'thank_you') {
-        addBotMessage('Thank you for chatting with us at Taraj Global! 🙏\n\nWe appreciate your time and hope we could help you find the information you were looking for.\n\nFeel free to reach out anytime if you need assistance with our content, whitepapers, reports, or any other inquiries.\n\nHave a wonderful day! 😊', 'text');
+        addBotMessage('Thank you for chatting with us at Taraj Global! 🙏\n\nWe appreciate your time and hope we could help you find the information you were looking for.\n\nFeel free to reach out anytime if you need assistance with our content, whitepapers, reports, or any other enquiries.\n\nHave a wonderful day! 😊', 'text');
         setChatEnded(true);
         setSearchedQuery(q);
         setIsSearching(false);
@@ -467,7 +467,7 @@ export const ChatProvider = ({ children }) => {
       }
 
       if (intentResult.intent === 'business_inquiry') {
-        addBotMessage('I can help you with business inquiries. Please provide your details below.', 'text');
+        addBotMessage('I can help you with business enquiries. Please provide your details below.', 'text');
         setShowBusinessInquiryForm(true);
         setSearchedQuery(q);
         setIsSearching(false);

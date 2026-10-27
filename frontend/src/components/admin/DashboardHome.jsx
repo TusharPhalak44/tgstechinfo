@@ -546,13 +546,15 @@ const DashboardHome = () => {
   const userCount = useCountUp(kpis.totalUsers);
   const leadCount = useCountUp(leadsData.totalSubmissions);
 
-  // Total Readership formatted in Millions ("M")
+  // Total Readership formatted in thousands ("k")
   const rawViews = Number(kpis.totalViews || 0);
-  const viewsInMillions = rawViews / 1000000;
+  const viewsInK = rawViews / 1000;
   const formattedViewsDisplay = kpis.totalViewsFormatted || (
-    rawViews >= 1000000
-      ? `${viewsInMillions.toFixed(1).replace(/\.0$/, '')}M`
-      : (rawViews >= 1000 ? `${(rawViews / 1000).toFixed(1)}k` : String(rawViews))
+    rawViews >= 1000
+      ? (viewsInK >= 1000
+          ? `${viewsInK.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}k`
+          : `${viewsInK.toFixed(1).replace(/\.0$/, '')}k`)
+      : (rawViews > 0 ? `${viewsInK.toFixed(1)}k` : '0k')
   );
 
   // Business Professionals count formatted identically to the Audience page

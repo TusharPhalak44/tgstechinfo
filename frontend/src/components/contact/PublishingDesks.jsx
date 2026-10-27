@@ -18,7 +18,7 @@ const desks = [
     title: 'Media & Advertising',
     badge: 'Sponsorships',
     email: 'partnerships@tgstechinfo.com',
-    desc: 'Inquire about corporate sponsorships, native advertising, media kits, or events.',
+    desc: 'Enquire about corporate sponsorships, native advertising, media kits, or events.',
     icon: Megaphone,
     categoryKey: 'partnership',
     highlights: ['Media Kits', 'Sponsored Ads']
@@ -38,7 +38,7 @@ const desks = [
     title: 'Corporate & HQ Desk',
     badge: 'Operations',
     email: 'tgs.admin001@gmail.com',
-    desc: 'General inquiries, corporate communications, data privacy, or office visits.',
+    desc: 'General enquiries, corporate communications, data privacy, or office visits.',
     icon: Building2,
     categoryKey: 'general',
     highlights: ['General Q&A', 'Data Requests']

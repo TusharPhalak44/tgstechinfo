@@ -449,6 +449,94 @@ exports.submitLandingPage = async (req, res) => {
             normalizedExtraData[sanitizeColumnName(key)] = val;
         }
 
+        // Find email field
+        let submittedEmail = normalizedExtraData.email || normalizedExtraData.email_address || normalizedExtraData.work_email || extraData.email;
+        const normalizedSubmittedEmail = String(submittedEmail || '').toLowerCase().trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // ── Check if this email has already subscribed / submitted FIRST ───────────────
+        if (normalizedSubmittedEmail) {
+            if (!emailRegex.test(normalizedSubmittedEmail)) {
+                return res.status(400).json({ message: 'Invalid email address format' });
+            }
+
+            let alreadySubmitted = false;
+
+            // 1. Check for specific content ID in LandingPage and dynamic table
+            if (normalizedContentId) {
+                const existing = await LandingPage.findByEmailAndContent(normalizedSubmittedEmail, normalizedContentId);
+                if (existing) {
+                    alreadySubmitted = true;
+                } else {
+                    try {
+                        const [dynRows] = await pool.query(
+                            `SELECT id FROM form_submissions_${normalizedContentId} WHERE LOWER(email) = ? LIMIT 1`,
+                            [normalizedSubmittedEmail]
+                        );
+                        if (dynRows && dynRows.length > 0) alreadySubmitted = true;
+                    } catch (e) { /* dynamic table may not exist yet */ }
+                }
+            }
+
+            // 2. Check across all landing page submissions (and file-based landings)
+            if (!alreadySubmitted) {
+                const lpExisting = await LandingPage.findByEmail(normalizedSubmittedEmail);
+                if (lpExisting) alreadySubmitted = true;
+            }
+
+            // 3. Check active newsletter subscribers
+            if (!alreadySubmitted) {
+                try {
+                    const [newsRows] = await pool.query(
+                        'SELECT id FROM newsletter_subscribers WHERE email = ? AND is_active = 1 LIMIT 1',
+                        [normalizedSubmittedEmail]
+                    );
+                    if (newsRows && newsRows.length > 0) alreadySubmitted = true;
+                } catch (e) { /* table might be empty/error */ }
+            }
+
+            if (alreadySubmitted) {
+                console.log(`[submitLandingPage] Email '${normalizedSubmittedEmail}' has already submitted/subscribed. Blocking duplicate.`);
+                
+                const contentType = req.headers['content-type'] || '';
+                const acceptHeader = req.headers.accept || '';
+                const isFormPost = contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data');
+                const isAjax = Boolean(req.xhr || req.headers['x-requested-with'] === 'XMLHttpRequest' || (acceptHeader.includes('application/json') && !acceptHeader.includes('text/html')) || contentType.includes('application/json'));
+
+                if (isFormPost && !isAjax) {
+                    const referer = req.headers.referer || req.headers.referrer || '/';
+                    return res.status(409).send(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head><meta charset="utf-8"><title>Notice</title></head>
+                        <body style="font-family: Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc;">
+                          <script>
+                            alert("This email has been already subscribed");
+                            if (window.history.length > 1) {
+                              window.history.back();
+                            } else {
+                              window.location.href = ${JSON.stringify(referer)};
+                            }
+                          </script>
+                          <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; max-width: 400px;">
+                            <h3 style="color: #dc2626; margin-top: 0;">Notice</h3>
+                            <p style="color: #4b5563; font-size: 16px;">This email has been already subscribed.</p>
+                            <a href="javascript:history.back()" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">Go Back</a>
+                          </div>
+                        </body>
+                        </html>
+                    `);
+                }
+
+                return res.status(409).json({
+                    success: false,
+                    alreadySubscribed: true,
+                    already_submitted: true,
+                    message: 'This email has been already subscribed'
+                });
+            }
+        }
+
         // Validate required fields — only for standard CMS pages when customFieldsDef has entries
         // HTML file-based landing pages have their own form structure and client-side validation
         if (!fileLandingSlug && customFieldsDef.length > 0) {
@@ -460,19 +548,9 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
-        // Always validate standard lead fields if present, or enforce basic presence for file-based landing pages
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        
-        // Find email field
-        let submittedEmail = normalizedExtraData.email || normalizedExtraData.email_address || normalizedExtraData.work_email || extraData.email;
-        
         // Enforce required email for standard submissions if it's missing (unless customFieldsDef makes it optional)
         if (!submittedEmail && fileLandingSlug) {
             return res.status(400).json({ message: 'Email address is required' });
-        }
-
-        if (submittedEmail && !emailRegex.test(String(submittedEmail).trim())) {
-            return res.status(400).json({ message: 'Invalid email address format' });
         }
 
         // For file-based landing pages, enforce at least a name
@@ -483,17 +561,16 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
-        // ── Prevent Duplicate Submissions (within 3 seconds) ──────────────────────
-        const dedupeKey = `${normalizedContentId || fileLandingSlug}:${String(submittedEmail || '').toLowerCase().trim()}`;
+        // ── Prevent Duplicate Rapid Submissions (within 3 seconds) ──────────────────
+        const dedupeKey = `${normalizedContentId || fileLandingSlug}:${normalizedSubmittedEmail}`;
         const lastSubmitTime = recentSubmissionsCache.get(dedupeKey);
         const now = Date.now();
         if (lastSubmitTime && (now - lastSubmitTime) < 3000) {
-            console.log(`[submitLandingPage] Duplicate submission detected for '${dedupeKey}' within 3 seconds. Skipping duplicate DB insert & webhook.`);
-            return res.json({
-                message: 'Access granted successfully.',
-                has_access: true,
-                duplicate: true,
-                redirect_url: extraData?.redirect_url || extraData?.page_url || content?.redirect_url || null
+            console.log(`[submitLandingPage] Rapid duplicate submission detected for '${dedupeKey}' within 3 seconds.`);
+            return res.status(409).json({
+                success: false,
+                alreadySubscribed: true,
+                message: 'This email has been already subscribed'
             });
         }
         recentSubmissionsCache.set(dedupeKey, now);
@@ -938,20 +1015,26 @@ exports.subscribeContent = async (req, res) => {
         const contentTitle = content?.title || 'the requested content';
 
         const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, Number(content_id)) : null;
-        if (!existing) {
-            // Store in dynamic table if it exists
-            try {
-                await insertIntoDynamicTable(Number(content_id), {
-                    ...extraData,
-                    subscription: true,
-                    ip_address: req.ip,
-                    user_agent: req.headers['user-agent']
-                });
-            } catch (dynamicTableError) {
-                console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
-                // Fallback to JSON storage
-                await LandingPage.create({ content_id: Number(content_id), extra_fields: { ...extraData, subscription: true } });
-            }
+        if (existing) {
+            return res.status(409).json({
+                success: false,
+                alreadySubscribed: true,
+                message: 'This email has been already subscribed'
+            });
+        }
+
+        // Store in dynamic table if it exists
+        try {
+            await insertIntoDynamicTable(Number(content_id), {
+                ...extraData,
+                subscription: true,
+                ip_address: req.ip,
+                user_agent: req.headers['user-agent']
+            });
+        } catch (dynamicTableError) {
+            console.error('Dynamic table insert failed, falling back to JSON:', dynamicTableError);
+            // Fallback to JSON storage
+            await LandingPage.create({ content_id: Number(content_id), extra_fields: { ...extraData, subscription: true } });
         }
 
         // Forward to webhook using each field's webhook_key
@@ -1000,10 +1083,10 @@ exports.subscribeNewsletter = async (req, res) => {
         if (existing.length > 0) {
             const subscriber = existing[0];
             if (subscriber.is_active) {
-                return res.status(200).json({
-                    success: true,
+                return res.status(409).json({
+                    success: false,
                     alreadySubscribed: true,
-                    message: 'Email already subscribed'
+                    message: 'This email has been already subscribed'
                 });
             }
 
@@ -1025,6 +1108,16 @@ exports.subscribeNewsletter = async (req, res) => {
             }
 
             return res.json({ message: 'Subscribed to newsletter successfully' });
+        }
+
+        // Also check if previously submitted on landing page
+        const lpExisting = await LandingPage.findByEmail(normalizedEmail);
+        if (lpExisting) {
+            return res.status(409).json({
+                success: false,
+                alreadySubscribed: true,
+                message: 'This email has been already subscribed'
+            });
         }
 
         // New subscriber

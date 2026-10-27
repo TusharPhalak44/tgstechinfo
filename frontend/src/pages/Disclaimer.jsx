@@ -138,7 +138,7 @@ const Disclaimer = () => {
         </Section>
 
         <Section title="14. Contact" darkMode={darkMode}>
-          <p style={{ fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>For permissions, licensing inquiries, or copyright questions, contact us at <a href="mailto:legal@tgstechinfo.com" style={{ color: '#4a7cff' }}>legal@tgstechinfo.com</a>.</p>
+          <p style={{ fontSize: 'clamp(14px, 1.5vw, 15.5px)', color: darkMode ? '#cbd5e1' : '#374151' }}>For permissions, licensing enquiries, or copyright questions, contact us at <a href="mailto:legal@tgstechinfo.com" style={{ color: '#4a7cff' }}>legal@tgstechinfo.com</a>.</p>
         </Section>
       </div>
 

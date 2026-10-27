@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Input, message, Tag, Badge, Segmented, Select } from 'antd';
+import { Table, Button, Input, message, Tag, Badge, Segmented, Select, Modal, Descriptions, Popconfirm, Space, Tooltip } from 'antd';
 import {
   SearchOutlined, ReloadOutlined,
   FileTextOutlined, UserOutlined,
   TableOutlined, ArrowLeftOutlined, DatabaseOutlined,
-  FileExcelOutlined, VideoCameraOutlined, UsergroupAddOutlined, CalendarOutlined, PhoneOutlined, BankOutlined, IdcardOutlined
+  FileExcelOutlined, VideoCameraOutlined, UsergroupAddOutlined, CalendarOutlined, PhoneOutlined, BankOutlined, IdcardOutlined,
+  MailOutlined, SendOutlined, CheckCircleOutlined, ClockCircleOutlined, EyeOutlined, DeleteOutlined, InfoCircleOutlined,
+  CloseCircleOutlined, GlobalOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -70,7 +72,7 @@ const exportToExcel = (columns, rows, fileNamePrefix = 'form_submissions') => {
 };
 
 const AdminSubmissions = () => {
-  const [activeTab, setActiveTab] = useState('forms'); // 'forms' | 'webinars'
+  const [activeTab, setActiveTab] = useState('forms'); // 'forms' | 'webinars' | 'contacts' | 'newsletter'
   const [tables, setTables] = useState([]);
   const [loadingTables, setLoadingTables] = useState(true);
   const [searchTable, setSearchTable] = useState('');
@@ -80,6 +82,20 @@ const AdminSubmissions = () => {
   const [loadingWebinarRegs, setLoadingWebinarRegs] = useState(false);
   const [webinarSearch, setWebinarSearch] = useState('');
   const [webinarFilterId, setWebinarFilterId] = useState(null);
+
+  // Contact Form Submissions state
+  const [contactSubmissions, setContactSubmissions] = useState([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [contactSearch, setContactSearch] = useState('');
+  const [contactCategoryFilter, setContactCategoryFilter] = useState('all');
+  const [contactStatusFilter, setContactStatusFilter] = useState('all');
+  const [selectedContact, setSelectedContact] = useState(null);
+
+  // Newsletter Subscriptions state
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState([]);
+  const [loadingNewsletter, setLoadingNewsletter] = useState(false);
+  const [newsletterSearch, setNewsletterSearch] = useState('');
+  const [newsletterStatusFilter, setNewsletterStatusFilter] = useState('all');
 
   // Table details view state
   const [selectedTable, setSelectedTable] = useState(null);
@@ -91,6 +107,8 @@ const AdminSubmissions = () => {
   useEffect(() => {
     fetchTables();
     fetchWebinarRegistrations();
+    fetchContactSubmissions();
+    fetchNewsletterSubscribers();
   }, []);
 
   const fetchTables = async () => {
@@ -121,6 +139,92 @@ const AdminSubmissions = () => {
       console.error('Error loading webinar registrations:', err);
     } finally {
       setLoadingWebinarRegs(false);
+    }
+  };
+
+  const fetchContactSubmissions = async () => {
+    setLoadingContacts(true);
+    try {
+      const res = await axios.get('/api/admin/contact-submissions');
+      if (res.data?.success) {
+        setContactSubmissions(res.data.submissions || []);
+      } else if (Array.isArray(res.data)) {
+        setContactSubmissions(res.data);
+      }
+    } catch (err) {
+      console.error('Error loading contact submissions:', err);
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
+  const fetchNewsletterSubscribers = async () => {
+    setLoadingNewsletter(true);
+    try {
+      const res = await axios.get('/api/admin/newsletter');
+      if (Array.isArray(res.data)) {
+        setNewsletterSubscribers(res.data);
+      } else if (res.data?.subscribers) {
+        setNewsletterSubscribers(res.data.subscribers);
+      }
+    } catch (err) {
+      console.error('Error loading newsletter subscribers:', err);
+    } finally {
+      setLoadingNewsletter(false);
+    }
+  };
+
+  const handleUpdateContactStatus = async (id, newStatus) => {
+    try {
+      const res = await axios.put(`/api/admin/contact-submissions/${id}/status`, { status: newStatus });
+      if (res.data?.success) {
+        message.success(`Status updated to ${newStatus}`);
+        setContactSubmissions(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
+        if (selectedContact && selectedContact.id === id) {
+          setSelectedContact(prev => ({ ...prev, status: newStatus }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      message.error('Failed to update submission status');
+    }
+  };
+
+  const handleDeleteContact = async (id) => {
+    try {
+      const res = await axios.delete(`/api/admin/contact-submissions/${id}`);
+      if (res.data?.success) {
+        message.success('Submission record deleted');
+        setContactSubmissions(prev => prev.filter(c => c.id !== id));
+        if (selectedContact && selectedContact.id === id) {
+          setSelectedContact(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete contact submission:', err);
+      message.error('Failed to delete submission');
+    }
+  };
+
+  const handleUnsubscribeNewsletter = async (email) => {
+    try {
+      await axios.delete(`/api/admin/newsletter/${encodeURIComponent(email)}`);
+      message.success(`Subscriber ${email} marked as unsubscribed`);
+      fetchNewsletterSubscribers();
+    } catch (err) {
+      console.error('Error removing subscriber:', err);
+      message.error('Failed to unsubscribe');
+    }
+  };
+
+  const handleSubscribeNewsletter = async (email) => {
+    try {
+      await axios.put(`/api/admin/newsletter/${encodeURIComponent(email)}/subscribe`);
+      message.success(`Subscriber ${email} re-activated and subscribed successfully`);
+      fetchNewsletterSubscribers();
+    } catch (err) {
+      console.error('Error subscribing member:', err);
+      message.error('Failed to activate subscription');
     }
   };
 
@@ -307,6 +411,15 @@ const AdminSubmissions = () => {
     };
   });
 
+  const categoryColorMap = {
+    general: 'blue',
+    partnership: 'purple',
+    media: 'cyan',
+    feedback: 'green',
+    issue: 'volcano',
+    other: 'default'
+  };
+
   return (
     <div style={{ padding: '24px', background: '#f8fafc', minHeight: '100vh' }}>
 
@@ -336,6 +449,24 @@ const AdminSubmissions = () => {
                   </div>
                 ),
                 value: 'webinars'
+              },
+              {
+                label: (
+                  <div style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                    <MailOutlined style={{ color: '#0284c7' }} />
+                    Contact Form Submissions ({contactSubmissions.length})
+                  </div>
+                ),
+                value: 'contacts'
+              },
+              {
+                label: (
+                  <div style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                    <SendOutlined style={{ color: '#10b981' }} />
+                    Newsletter Subscriptions ({newsletterSubscribers.length})
+                  </div>
+                ),
+                value: 'newsletter'
               }
             ]}
           />
@@ -707,6 +838,542 @@ const AdminSubmissions = () => {
           </>
         );
       })()}
+
+      {/* VIEW 4: CONTACT FORM SUBMISSIONS TAB VIEW */}
+      {!selectedTable && activeTab === 'contacts' && (() => {
+        const filteredContacts = contactSubmissions.filter(c => {
+          if (contactCategoryFilter && contactCategoryFilter !== 'all' && c.inquiry_category !== contactCategoryFilter) return false;
+          if (contactStatusFilter && contactStatusFilter !== 'all' && c.status !== contactStatusFilter) return false;
+          if (!contactSearch) return true;
+          const q = contactSearch.toLowerCase();
+          return (
+            (c.full_name && c.full_name.toLowerCase().includes(q)) ||
+            (c.email && c.email.toLowerCase().includes(q)) ||
+            (c.company && c.company.toLowerCase().includes(q)) ||
+            (c.subject && c.subject.toLowerCase().includes(q)) ||
+            (c.message && c.message.toLowerCase().includes(q))
+          );
+        });
+
+        const contactColumns = [
+          {
+            title: 'Sender',
+            key: 'sender',
+            width: 220,
+            render: (_, r) => (
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <UserOutlined style={{ color: '#0284c7' }} />
+                  {r.full_name}
+                </div>
+                <div style={{ marginTop: 3 }}>
+                  <a href={`mailto:${r.email}`} style={{ color: '#0284c7', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <MailOutlined style={{ fontSize: 11 }} /> {r.email}
+                  </a>
+                </div>
+              </div>
+            )
+          },
+          {
+            title: 'Company',
+            dataIndex: 'company',
+            key: 'company',
+            width: 170,
+            render: (v) => v ? (
+              <span style={{ fontSize: 13, color: '#334155' }}>
+                <BankOutlined style={{ color: '#059669', marginRight: 6 }} />
+                {v}
+              </span>
+            ) : <span style={{ color: '#cbd5e1' }}>—</span>
+          },
+          {
+            title: 'Category',
+            dataIndex: 'inquiry_category',
+            key: 'inquiry_category',
+            width: 140,
+            render: (v) => (
+              <Tag color={categoryColorMap[v] || 'default'} style={{ textTransform: 'capitalize', fontWeight: 600, borderRadius: 4, padding: '2px 8px' }}>
+                {v || 'general'}
+              </Tag>
+            )
+          },
+          {
+            title: 'Subject & Message',
+            key: 'subject_message',
+            width: 280,
+            render: (_, r) => (
+              <div style={{ cursor: 'pointer' }} onClick={() => setSelectedContact(r)}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {r.subject || '(No Subject)'}
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>
+                  {r.message}
+                </div>
+              </div>
+            )
+          },
+          {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            width: 140,
+            render: (v, r) => (
+              <Select
+                size="small"
+                value={v || 'pending'}
+                onChange={(newVal) => handleUpdateContactStatus(r.id, newVal)}
+                style={{ width: 125 }}
+                options={[
+                  { value: 'pending', label: <Tag color="gold" style={{ margin: 0, fontSize: 11 }}>Pending</Tag> },
+                  { value: 'in_progress', label: <Tag color="blue" style={{ margin: 0, fontSize: 11 }}>In Progress</Tag> },
+                  { value: 'resolved', label: <Tag color="green" style={{ margin: 0, fontSize: 11 }}>Resolved</Tag> },
+                  { value: 'closed', label: <Tag color="default" style={{ margin: 0, fontSize: 11 }}>Closed</Tag> }
+                ]}
+              />
+            )
+          },
+          {
+            title: 'Submitted At',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            width: 160,
+            render: (v) => <span style={{ fontSize: 12, color: '#64748b' }}>{formatDateForDisplay(v, 'YYYY-MM-DD HH:mm')}</span>
+          },
+          {
+            title: 'Action',
+            key: 'action',
+            width: 110,
+            render: (_, r) => (
+              <Space size="small">
+                <Tooltip title="View Full Message">
+                  <Button
+                    type="primary"
+                    ghost
+                    size="small"
+                    icon={<EyeOutlined />}
+                    onClick={() => setSelectedContact(r)}
+                    style={{ borderRadius: 6 }}
+                  />
+                </Tooltip>
+                <Popconfirm
+                  title="Delete Contact Enquiry"
+                  description="Are you sure you want to delete this enquiry record?"
+                  onConfirm={() => handleDeleteContact(r.id)}
+                  okText="Yes"
+                  cancelText="No"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Tooltip title="Delete">
+                    <Button
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<DeleteOutlined />}
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              </Space>
+            )
+          }
+        ];
+
+        return (
+          <>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <MailOutlined style={{ color: '#0284c7' }} />
+                  Contact Us Form Submissions
+                </h1>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+                  All enquiries, feedback and messages received through website Contact Us form in database table (<code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>contact_submissions</code>)
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button
+                  icon={<FileExcelOutlined />}
+                  type="primary"
+                  onClick={() => exportToExcel([
+                    { field: 'id', title: 'ID' },
+                    { field: 'full_name', title: 'Full Name' },
+                    { field: 'email', title: 'Email Address' },
+                    { field: 'company', title: 'Company Name' },
+                    { field: 'inquiry_category', title: 'Category' },
+                    { field: 'subject', title: 'Subject' },
+                    { field: 'message', title: 'Message' },
+                    { field: 'status', title: 'Status' },
+                    { field: 'created_at', title: 'Submitted At' },
+                    { field: 'ip_address', title: 'IP Address' }
+                  ], filteredContacts, 'contact_submissions')}
+                  style={{ background: '#10b981', borderColor: '#10b981', borderRadius: 8 }}
+                >
+                  Export Enquiries to Excel
+                </Button>
+                <Button icon={<ReloadOutlined />} onClick={fetchContactSubmissions} loading={loadingContacts} style={{ borderRadius: 8 }}>
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            {/* Stat Cards */}
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+              <StatCard icon={<MailOutlined />} label="Total Enquiries" value={contactSubmissions.length} color="#0284c7" />
+              <StatCard icon={<ClockCircleOutlined />} label="Pending Review" value={contactSubmissions.filter(c => c.status === 'pending').length} color="#f59e0b" />
+              <StatCard icon={<CheckCircleOutlined />} label="Resolved / Closed" value={contactSubmissions.filter(c => c.status === 'resolved' || c.status === 'closed').length} color="#10b981" />
+              <StatCard icon={<CalendarOutlined />} label="Enquiries Today" value={contactSubmissions.filter(c => moment(c.created_at).isSame(moment(), 'day')).length} color="#8b5cf6" />
+            </div>
+
+            {/* Search & Filter Bar */}
+            <div style={{
+              background: '#fff', borderRadius: 12, padding: '16px 20px',
+              border: '1px solid #e2e8f0', marginBottom: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: 1 }}>
+                <Input
+                  placeholder="Search sender name, email, company, subject, message..."
+                  prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                  value={contactSearch}
+                  onChange={e => setContactSearch(e.target.value)}
+                  allowClear
+                  style={{ width: 340, borderRadius: 8 }}
+                />
+                <Select
+                  value={contactCategoryFilter}
+                  onChange={setContactCategoryFilter}
+                  style={{ width: 170 }}
+                  options={[
+                    { value: 'all', label: 'All Categories' },
+                    { value: 'general', label: 'General Enquiry' },
+                    { value: 'partnership', label: 'Partnership' },
+                    { value: 'media', label: 'Media & Press' },
+                    { value: 'feedback', label: 'Feedback' },
+                    { value: 'issue', label: 'Technical Issue' },
+                    { value: 'other', label: 'Other' }
+                  ]}
+                />
+                <Select
+                  value={contactStatusFilter}
+                  onChange={setContactStatusFilter}
+                  style={{ width: 150 }}
+                  options={[
+                    { value: 'all', label: 'All Statuses' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'in_progress', label: 'In Progress' },
+                    { value: 'resolved', label: 'Resolved' },
+                    { value: 'closed', label: 'Closed' }
+                  ]}
+                />
+              </div>
+              <div style={{ fontSize: 13, color: '#64748b' }}>
+                Showing <strong style={{ color: '#0f172a' }}>{filteredContacts.length}</strong> of <strong style={{ color: '#0f172a' }}>{contactSubmissions.length}</strong> enquiries
+              </div>
+            </div>
+
+            {/* Contact Submissions Table */}
+            <div style={{
+              background: '#fff', borderRadius: 12,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              overflow: 'hidden'
+            }}>
+              <Table
+                dataSource={filteredContacts}
+                columns={contactColumns}
+                rowKey="id"
+                loading={loadingContacts}
+                pagination={{ pageSize: 15, showSizeChanger: true }}
+                scroll={{ x: 1100 }}
+              />
+            </div>
+          </>
+        );
+      })()}
+
+      {/* VIEW 5: NEWSLETTER SUBSCRIPTIONS TAB VIEW */}
+      {!selectedTable && activeTab === 'newsletter' && (() => {
+        const filteredNewsletter = newsletterSubscribers.filter(s => {
+          if (newsletterStatusFilter === 'active' && !s.is_active) return false;
+          if (newsletterStatusFilter === 'inactive' && s.is_active) return false;
+          if (!newsletterSearch) return true;
+          return s.email && s.email.toLowerCase().includes(newsletterSearch.toLowerCase());
+        });
+
+        const activeCount = newsletterSubscribers.filter(s => s.is_active).length;
+        const inactiveCount = newsletterSubscribers.filter(s => !s.is_active).length;
+        const thisMonthCount = newsletterSubscribers.filter(s => moment(s.created_at).isSame(moment(), 'month')).length;
+
+        const newsletterColumns = [
+          {
+            title: 'Subscriber Email',
+            dataIndex: 'email',
+            key: 'email',
+            width: 300,
+            render: (v) => (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  background: '#ecfdf5', color: '#10b981',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 16, flexShrink: 0
+                }}>
+                  <MailOutlined />
+                </div>
+                <div>
+                  <a href={`mailto:${v}`} style={{ color: '#0f172a', fontWeight: 600, fontSize: 13 }}>
+                    {v}
+                  </a>
+                </div>
+              </div>
+            )
+          },
+          {
+            title: 'Status',
+            dataIndex: 'is_active',
+            key: 'is_active',
+            width: 160,
+            render: (v) => v ? (
+              <Tag color="green" style={{ borderRadius: 6, fontWeight: 700, padding: '3px 10px', fontSize: 12 }}>
+                <CheckCircleOutlined style={{ marginRight: 4 }} /> Active
+              </Tag>
+            ) : (
+              <Tag color="red" style={{ borderRadius: 6, fontWeight: 700, padding: '3px 10px', fontSize: 12 }}>
+                <CloseCircleOutlined style={{ marginRight: 4 }} /> Unsubscribed
+              </Tag>
+            )
+          },
+          {
+            title: 'Subscribed Date',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            width: 200,
+            render: (v) => <span style={{ fontSize: 13, color: '#334155' }}>{formatDateForDisplay(v, 'YYYY-MM-DD HH:mm')}</span>
+          },
+          {
+            title: 'Unsubscribed Date',
+            dataIndex: 'unsubscribed_at',
+            key: 'unsubscribed_at',
+            width: 200,
+            render: (v) => v ? (
+              <span style={{ fontSize: 13, color: '#ef4444' }}>{formatDateForDisplay(v, 'YYYY-MM-DD HH:mm')}</span>
+            ) : <span style={{ color: '#cbd5e1' }}>—</span>
+          },
+          {
+            title: 'Action',
+            key: 'action',
+            width: 150,
+            render: (_, r) => r.is_active ? (
+              <Popconfirm
+                title="Unsubscribe Member"
+                description={`Are you sure you want to unsubscribe ${r.email}?`}
+                onConfirm={() => handleUnsubscribeNewsletter(r.email)}
+                okText="Unsubscribe"
+                cancelText="Cancel"
+                okButtonProps={{ danger: true }}
+              >
+                <Button type="link" danger size="small" style={{ fontWeight: 600, padding: 0 }}>
+                  Unsubscribe
+                </Button>
+              </Popconfirm>
+            ) : (
+              <Popconfirm
+                title="Re-activate Subscription"
+                description={`Re-subscribe ${r.email} to newsletter list?`}
+                onConfirm={() => handleSubscribeNewsletter(r.email)}
+                okText="Subscribe"
+                cancelText="Cancel"
+              >
+                <Button type="link" size="small" style={{ color: '#10b981', fontWeight: 700, padding: 0 }}>
+                  Subscribe
+                </Button>
+              </Popconfirm>
+            )
+          }
+        ];
+
+        return (
+          <>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <SendOutlined style={{ color: '#10b981' }} />
+                  Newsletter Subscriptions Database
+                </h1>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+                  All website readers and visitors subscribed to newsletters in database table (<code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>newsletter_subscribers</code>)
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button
+                  icon={<FileExcelOutlined />}
+                  type="primary"
+                  onClick={() => exportToExcel([
+                    { field: 'id', title: 'ID' },
+                    { field: 'email', title: 'Subscriber Email' },
+                    { field: 'is_active', title: 'Is Active (1/0)' },
+                    { field: 'created_at', title: 'Subscribed Date' },
+                    { field: 'unsubscribed_at', title: 'Unsubscribed Date' }
+                  ], filteredNewsletter, 'newsletter_subscribers')}
+                  style={{ background: '#10b981', borderColor: '#10b981', borderRadius: 8 }}
+                >
+                  Export Subscribers to Excel
+                </Button>
+                <Button icon={<ReloadOutlined />} onClick={fetchNewsletterSubscribers} loading={loadingNewsletter} style={{ borderRadius: 8 }}>
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            {/* Stat Cards */}
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+              <StatCard icon={<SendOutlined />} label="Total Subscribers" value={newsletterSubscribers.length} color="#10b981" />
+              <StatCard icon={<CheckCircleOutlined />} label="Active Subscribers" value={activeCount} color="#059669" />
+              <StatCard icon={<CloseCircleOutlined />} label="Unsubscribed" value={inactiveCount} color="#ef4444" />
+              <StatCard icon={<CalendarOutlined />} label="Joined This Month" value={thisMonthCount} color="#6366f1" />
+            </div>
+
+            {/* Search & Filter Bar */}
+            <div style={{
+              background: '#fff', borderRadius: 12, padding: '16px 20px',
+              border: '1px solid #e2e8f0', marginBottom: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', flex: 1 }}>
+                <Input
+                  placeholder="Search subscriber email address..."
+                  prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                  value={newsletterSearch}
+                  onChange={e => setNewsletterSearch(e.target.value)}
+                  allowClear
+                  style={{ width: 340, borderRadius: 8 }}
+                />
+                <Select
+                  value={newsletterStatusFilter}
+                  onChange={setNewsletterStatusFilter}
+                  style={{ width: 170 }}
+                  options={[
+                    { value: 'all', label: 'All Subscribers' },
+                    { value: 'active', label: 'Active Only' },
+                    { value: 'inactive', label: 'Unsubscribed Only' }
+                  ]}
+                />
+              </div>
+              <div style={{ fontSize: 13, color: '#64748b' }}>
+                Showing <strong style={{ color: '#0f172a' }}>{filteredNewsletter.length}</strong> of <strong style={{ color: '#0f172a' }}>{newsletterSubscribers.length}</strong> subscribers
+              </div>
+            </div>
+
+            {/* Newsletter Table */}
+            <div style={{
+              background: '#fff', borderRadius: 12,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              overflow: 'hidden'
+            }}>
+              <Table
+                dataSource={filteredNewsletter}
+                columns={newsletterColumns}
+                rowKey="id"
+                loading={loadingNewsletter}
+                pagination={{ pageSize: 15, showSizeChanger: true }}
+                scroll={{ x: 1000 }}
+              />
+            </div>
+          </>
+        );
+      })()}
+
+      {/* DETAIL MODAL FOR CONTACT ENQUIRY */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 17, fontWeight: 700 }}>
+            <MailOutlined style={{ color: '#0284c7' }} />
+            <span>Contact Enquiry Details #{selectedContact?.id}</span>
+          </div>
+        }
+        open={!!selectedContact}
+        onCancel={() => setSelectedContact(null)}
+        footer={[
+          <Button key="close" onClick={() => setSelectedContact(null)} style={{ borderRadius: 8 }}>
+            Close
+          </Button>,
+          <Button
+            key="email"
+            type="primary"
+            icon={<SendOutlined />}
+            href={`mailto:${selectedContact?.email}?subject=Re: ${encodeURIComponent(selectedContact?.subject || 'Your Enquiry')}`}
+            style={{ borderRadius: 8, background: '#0284c7', borderColor: '#0284c7' }}
+          >
+            Reply via Email
+          </Button>
+        ]}
+        width={680}
+      >
+        {selectedContact && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="Full Name">
+                <strong>{selectedContact.full_name}</strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="Email">
+                <a href={`mailto:${selectedContact.email}`}>{selectedContact.email}</a>
+              </Descriptions.Item>
+              <Descriptions.Item label="Company">
+                {selectedContact.company || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Category">
+                <Tag color={categoryColorMap[selectedContact.inquiry_category] || 'default'} style={{ textTransform: 'capitalize' }}>
+                  {selectedContact.inquiry_category}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Status">
+                <Select
+                  size="small"
+                  value={selectedContact.status || 'pending'}
+                  onChange={(newVal) => handleUpdateContactStatus(selectedContact.id, newVal)}
+                  style={{ width: 130 }}
+                  options={[
+                    { value: 'pending', label: <Tag color="gold" style={{ margin: 0 }}>Pending</Tag> },
+                    { value: 'in_progress', label: <Tag color="blue" style={{ margin: 0 }}>In Progress</Tag> },
+                    { value: 'resolved', label: <Tag color="green" style={{ margin: 0 }}>Resolved</Tag> },
+                    { value: 'closed', label: <Tag color="default" style={{ margin: 0 }}>Closed</Tag> }
+                  ]}
+                />
+              </Descriptions.Item>
+              <Descriptions.Item label="Submitted At">
+                {formatDateForDisplay(selectedContact.created_at, DATE_FORMATS.DATE_TIME)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Consent Given">
+                {selectedContact.consent_given ? <Tag color="green">Yes (Opted In)</Tag> : <Tag color="default">No</Tag>}
+              </Descriptions.Item>
+              <Descriptions.Item label="IP Address">
+                <code style={{ fontSize: 11 }}>{selectedContact.ip_address || '—'}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="Subject" span={2}>
+                <strong>{selectedContact.subject}</strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="Message" span={2}>
+                <div style={{
+                  background: '#f8fafc',
+                  padding: '12px 16px',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: 1.6,
+                  color: '#1e293b'
+                }}>
+                  {selectedContact.message}
+                </div>
+              </Descriptions.Item>
+            </Descriptions>
+          </div>
+        )}
+      </Modal>
+
     </div>
   );
 };

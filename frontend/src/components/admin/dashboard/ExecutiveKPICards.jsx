@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Skeleton } from "antd";
 import {
   FileTextOutlined, EyeOutlined, UserOutlined, CheckCircleOutlined,
@@ -6,6 +6,7 @@ import {
   FieldTimeOutlined, TeamOutlined, ThunderboltOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
+import { formatViewsToK } from "../../../utils/numberHelper";
 
 function useCountUp(target, duration, active) {
   const [val, setVal] = useState(0);
@@ -31,11 +32,9 @@ function KPICard({ icon, label, value, delta, accent, dark, suffix = "", loading
   const displayed = useCountUp(value, 1400, !loading);
   const formatted = format
     ? format(displayed)
-    : displayed >= 1000000
-      ? `${(displayed / 1000000).toFixed(1)}M`
-      : displayed >= 1000
-        ? `${(displayed / 1000).toFixed(1)}K`
-        : String(displayed);
+    : displayed >= 1000
+      ? `${(displayed / 1000 >= 1000 ? (displayed / 1000).toLocaleString('en-US', { maximumFractionDigits: 1 }) : (displayed / 1000).toFixed(1).replace(/\.0$/, ''))}k`
+      : String(displayed);
 
   return (
     <div
@@ -117,7 +116,7 @@ const ExecutiveKPICards = ({ dark, period, onPeriodChange }) => {
     { icon: <CheckCircleOutlined />, label: "Published Articles",  value: kpi.totalPublished,   delta: 12.4,          accent: "#10B981" },
     { icon: <ClockCircleOutlined />, label: "Pending Review",      value: kpi.totalPending,     delta: -5.2,          accent: "#F59E0B" },
     { icon: <FileTextOutlined />,    label: "Total Drafts",        value: kpi.totalDrafts,      delta: null,          accent: "#2563EB" },
-    { icon: <EyeOutlined />,         label: "Total Page Views",    value: kpi.totalViews,       delta: kpi.viewsDelta, accent: "#7C3AED" },
+    { icon: <EyeOutlined />,         label: "Total Page Views",    value: kpi.totalViews,       delta: kpi.viewsDelta, accent: "#7C3AED", format: (v) => formatViewsToK(v) },
     { icon: <UserOutlined />,        label: "Registered Users",    value: kpi.totalUsers,       delta: null,          accent: "#0D9488" },
     { icon: <TeamOutlined />,        label: "Subscribers",         value: kpi.totalSubscribers, delta: null,          accent: "#EA580C" },
     {

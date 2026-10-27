@@ -19,10 +19,10 @@ import { useTheme } from '../../context/ThemeContext';
 const categoryOptions = [
   { id: 'editorial', label: 'Editorial / Pitch', desc: 'Articles, Press Releases, News' },
   { id: 'partnership', label: 'Partnerships & Media', desc: 'Sponsorships, Ads, Media Kits' },
-  { id: 'general', label: 'General Inquiry', desc: 'Platform questions & Info' },
+  { id: 'general', label: 'General Enquiry', desc: 'Platform questions & Info' },
   { id: 'feedback', label: 'Feedback / Authors', desc: 'Writer account & platform help' },
   { id: 'issue', label: 'Report Issue', desc: 'Technical bugs or broken links' },
-  { id: 'other', label: 'Other Inquiries', desc: 'Miscellaneous requests' },
+  { id: 'other', label: 'Other Enquiries', desc: 'Miscellaneous requests' },
 ];
 
 export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryChange }) => {
@@ -38,6 +38,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [modalPopup, setModalPopup] = useState(null);
 
   // Sync category if passed from parent (e.g. via PublishingDesks click)
   useEffect(() => {
@@ -65,12 +66,18 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
     setSuccess('');
 
     if (!agreed) {
-      setError('You must agree to the Privacy Policy before submitting your message.');
+      const errMsg = 'You must agree to the Privacy Policy before submitting your message.';
+      setError(errMsg);
+      alert(errMsg);
+      setModalPopup({ type: 'error', message: errMsg });
       return;
     }
 
     if (!formData.full_name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
-      setError('Please fill in all required fields marked with (*).');
+      const errMsg = 'Please fill in all required fields marked with (*).';
+      setError(errMsg);
+      alert(errMsg);
+      setModalPopup({ type: 'error', message: errMsg });
       return;
     }
 
@@ -81,7 +88,11 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
         consent_given: agreed
       });
 
-      setSuccess(response.data?.message || 'Thank you! Your message has been routed to our team.');
+      const successMsg = response.data?.message || 'Contact form submitted successfully. We will get back to you soon.';
+      setSuccess(successMsg);
+      alert(successMsg);
+      setModalPopup({ type: 'success', message: successMsg });
+
       setFormData({
         full_name: '',
         email: '',
@@ -92,7 +103,10 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
       });
       setAgreed(false);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send message. Please check your details and try again.');
+      const errMsg = err.response?.data?.message || 'Failed to send message. Please check your details and try again.';
+      setError(errMsg);
+      alert(errMsg);
+      setModalPopup({ type: 'error', message: errMsg });
     } finally {
       setLoading(false);
     }
@@ -175,7 +189,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
         {/* Category Visual Chips */}
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider mb-2.5" style={{ color: 'var(--color-heading)' }}>
-            1. Select Inquiry Topic <span className="text-amber-500">*</span>
+            1. Select Enquiry Topic <span className="text-amber-500">*</span>
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {categoryOptions.map((cat) => {
@@ -292,7 +306,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
         {/* Message Details */}
         <div className="space-y-4">
           <label className="block text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-heading)' }}>
-            3. Inquiry Details
+            3. Enquiry Details
           </label>
 
           {/* Subject Line */}
@@ -306,7 +320,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
                 type="text"
                 name="subject"
                 required
-                placeholder="Brief summary of your inquiry..."
+                placeholder="Brief summary of your enquiry..."
                 value={formData.subject}
                 onChange={handleChange}
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm border focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all"
@@ -356,7 +370,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
             className="mt-0.5 w-4 h-4 rounded text-amber-500 focus:ring-amber-500 cursor-pointer"
           />
           <label htmlFor="consent" className="text-xs leading-relaxed cursor-pointer" style={{ color: 'var(--color-body)' }}>
-            I agree to allow TGS Tech Info to process my details to respond to this inquiry in accordance with the{' '}
+            I agree to allow TGS Tech Info to process my details to respond to this enquiry in accordance with the{' '}
             <a href="/privacy-policy" className="font-semibold text-amber-500 hover:underline" target="_blank" rel="noopener noreferrer">
               Privacy Policy
             </a>. *
@@ -401,6 +415,53 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
           </button>
         </div>
       </form>
+
+      {/* Visual Popup Modal */}
+      <AnimatePresence>
+        {modalPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="max-w-md w-full p-6 sm:p-8 rounded-2xl shadow-2xl text-center relative border"
+              style={{
+                backgroundColor: 'var(--color-surface, #ffffff)',
+                borderColor: 'var(--color-border, #e2e8f0)',
+                color: 'var(--color-heading, #0f172a)'
+              }}
+            >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center shadow-md">
+                {modalPopup.type === 'success' ? (
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 flex items-center justify-center">
+                    <CheckCircle2 className="w-10 h-10" />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400 flex items-center justify-center">
+                    <AlertCircle className="w-10 h-10" />
+                  </div>
+                )}
+              </div>
+
+              <h3 className="text-xl font-bold mb-2">
+                {modalPopup.type === 'success' ? 'Message Sent!' : 'Submission Notice'}
+              </h3>
+
+              <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-muted, #64748b)' }}>
+                {modalPopup.message}
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setModalPopup(null)}
+                className="w-full py-3 px-6 rounded-xl font-bold text-sm text-white shadow-md transition-all bg-amber-500 hover:bg-amber-600"
+              >
+                OK
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

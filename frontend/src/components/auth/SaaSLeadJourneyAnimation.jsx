@@ -288,7 +288,7 @@ export default function SaaSLeadJourneyAnimation() {
                 <span className="mech-icon-wrap">📋</span>
                 <span className="mech-title">Engage & Capture Leads</span>
               </div>
-              <div className="mech-desc">In-article Forms • Consultation Requests • Inquiries</div>
+              <div className="mech-desc">In-article Forms • Consultation Requests • Enquiries</div>
               <div className="mech-form-preview">
                 <div className="mech-form-field"><span>Name:</span> <b>Sarah J. (CTO)</b></div>
                 <div className="mech-form-field"><span>Intent:</span> <b style={{ color: '#F7941D' }}>Request Demo ✓</b></div>

@@ -23,8 +23,8 @@ const faqData = [
   },
   {
     category: 'general',
-    question: 'What is the typical response timeline for inquiries?',
-    answer: 'Standard editorial and partnership inquiries receive a response within 24 to 48 business hours (Mon–Fri, 9:00 AM – 6:00 PM EST). Urgent press announcements can flag "Urgent Press" in the subject line.',
+    question: 'What is the typical response timeline for enquiries?',
+    answer: 'Standard editorial and partnership enquiries receive a response within 24 to 48 business hours (Mon–Fri, 9:00 AM – 6:00 PM EST). Urgent press announcements can flag "Urgent Press" in the subject line.',
     icon: Clock
   },
   {

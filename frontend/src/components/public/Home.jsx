@@ -35,11 +35,14 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
       message.success('Successfully subscribed to newsletter!');
       setEmail('');
     } catch (error) {
-      if (error.response?.status === 400) {
-        message.error(error.response.data.message || 'Email already subscribed');
-      } else {
-        message.error('Failed to subscribe. Please try again.');
+      const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
+      const msg = isAlreadySub
+        ? (error.response?.data?.message || 'This email has been already subscribed')
+        : 'Failed to subscribe. Please try again.';
+      if (isAlreadySub) {
+        alert(msg);
       }
+      message.error(msg);
     } finally {
       setLoading(false);
     }
@@ -1016,8 +1019,8 @@ const PIPELINE_CARDS = [
     tag: 'FOR TECH BRANDS',
     status: 'LEAD ENGINE',
     icon: '🎯',
-    title: 'Whitepapers & B2B Inquiries',
-    desc: 'Free Research Downloads • In-depth Case Studies • B2B Inquiry Engine',
+    title: 'Whitepapers & B2B Enquiries',
+    desc: 'Free Research Downloads • In-depth Case Studies • B2B Enquiry Engine',
     subtitle: 'Download research papers for free, or publish your whitepaper to capture leads.',
     accentColor: '#F7941D',
     leftHeader: '📄 Research Library',
@@ -1028,7 +1031,7 @@ const PIPELINE_CARDS = [
     rightHeader: '👥 B2B Lead Engine',
     rightSubtitle: 'CRM Connected',
     rightTitle: 'Connect With Tech Buyers',
-    rightDesc: 'Tech companies capture high-intent inquiries from verified enterprise decision makers.',
+    rightDesc: 'Tech companies capture high-intent enquiries from verified enterprise decision makers.',
     rightBadges: ['Verified CXO Leads ✓', 'Instant CRM Sync', 'High Intent'],
   },
   {

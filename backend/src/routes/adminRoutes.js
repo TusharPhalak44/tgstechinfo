@@ -82,6 +82,9 @@ router.get('/submissions/:id', hasPermission('content.publish'), adminController
 router.get('/submission-tables', hasPermission('content.publish'), adminController.getSubmissionTables);
 router.get('/submission-tables/:contentId', hasPermission('content.publish'), adminController.getSubmissionTableDetails);
 router.get('/webinar-registrations', hasPermission('content.publish'), adminController.getWebinarRegistrations);
+router.get('/contact-submissions', hasAnyPermission(['content.publish', 'user.read']), adminController.getContactSubmissions);
+router.put('/contact-submissions/:id/status', hasAnyPermission(['content.publish', 'user.update']), adminController.updateContactSubmissionStatus);
+router.delete('/contact-submissions/:id', hasAnyPermission(['content.publish', 'user.delete']), adminController.deleteContactSubmission);
 
 // Data requests (DSAR + Do Not Sell)
 router.get('/data-requests', hasPermission('user.read'), adminController.getDataRequests);
@@ -89,8 +92,9 @@ router.put('/data-requests/:id/status', hasPermission('user.update'), adminContr
 
 // Newsletter subscriber management
 const newsletterController = require('../controllers/newsletterController');
-router.get('/newsletter', hasPermission('user.read'), newsletterController.getSubscribers);
-router.delete('/newsletter/:email', hasPermission('user.delete'), newsletterController.removeSubscriber);
+router.get('/newsletter', hasAnyPermission(['user.read', 'content.publish']), newsletterController.getSubscribers);
+router.put('/newsletter/:email/subscribe', hasAnyPermission(['user.update', 'content.publish']), newsletterController.resubscribe);
+router.delete('/newsletter/:email', hasAnyPermission(['user.delete', 'content.publish']), newsletterController.removeSubscriber);
 
 
 // Content editing and deletion
