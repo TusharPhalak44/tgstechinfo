@@ -868,16 +868,17 @@ exports.submitLandingPage = async (req, res) => {
         const contentType = req.headers['content-type'] || '';
         const acceptHeader = req.headers.accept || '';
         const isJson = (typeof req.is === 'function' ? req.is('json') : false) || contentType.includes('application/json');
+        const isFormPost = contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data');
 
-        const isAjaxOrFetch = Boolean(
+        const isAjaxOrFetch = !isFormPost && Boolean(
             req.xhr ||
             req.headers['x-requested-with'] === 'XMLHttpRequest' ||
             (acceptHeader.includes('application/json') && !acceptHeader.includes('text/html')) ||
-            isJson ||
-            req.headers['sec-fetch-dest'] === 'empty'
+            isJson
         );
 
-        const isBrowserNavigation = req.headers['sec-fetch-mode'] === 'navigate' ||
+        const isBrowserNavigation = isFormPost ||
+            req.headers['sec-fetch-mode'] === 'navigate' ||
             req.headers['sec-fetch-dest'] === 'document' ||
             (acceptHeader.includes('text/html') && !isAjaxOrFetch);
 

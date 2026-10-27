@@ -193,12 +193,8 @@ const StandaloneLandingPage = () => {
             return;
           }
 
-          // Debounce / prevent double submission
-          if (form.getAttribute('data-tgs-submitting') === 'true') {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
+          // Prevent native form submission so page does not navigate to raw API JSON
+          e.preventDefault();
           form.setAttribute('data-tgs-submitting', 'true');
 
           console.log('🚀 Form submission intercepted on HTML Builder page');
