@@ -148,8 +148,8 @@ export default function Audience() {
     if (!rawCount && stats?.country_breakdown) {
       rawCount = stats.country_breakdown
         .filter(c => {
-          if (reg.code === 'NA') return ['US', 'CA'].includes(c.iso_code);
-          if (reg.code === 'LATAM') return ['BR', 'MX', 'CO', 'PE', 'CL', 'AR', 'VE', 'EC', 'GT', 'CU', 'BO', 'DOM', 'HN', 'PY', 'SV', 'NI', 'CR', 'PA', 'UY'].includes(c.iso_code);
+          if (reg.code === 'NA') return ['US', 'CA', 'PA', 'CR', 'DO', 'DOM', 'GT', 'TT'].includes(c.iso_code);
+          if (reg.code === 'LATAM') return ['BR', 'MX', 'CO', 'PE', 'CL', 'AR', 'VE', 'EC', 'CU', 'BO', 'HN', 'PY', 'SV', 'NI', 'UY'].includes(c.iso_code);
           if (reg.code === 'EMEA') return ['GB', 'DE', 'FR', 'NL', 'IT', 'ES', 'AE', 'SA', 'ZA', 'SE', 'CH', 'BE', 'AT', 'PL', 'IE', 'NO', 'DK', 'FI', 'PT', 'GR', 'CZ', 'RO', 'HU', 'IL', 'EG', 'TR', 'CY', 'QA', 'KW', 'OM', 'BH'].includes(c.iso_code);
           if (reg.code === 'APAC') return ['IN', 'AU', 'JP', 'SG', 'KR', 'ID', 'MY', 'PH', 'NZ', 'CN', 'TH', 'VN', 'TW', 'HK', 'PK', 'BD', 'LK'].includes(c.iso_code);
           return false;

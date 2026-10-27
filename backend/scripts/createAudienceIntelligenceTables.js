@@ -153,9 +153,14 @@ const seedData = async () => {
 
     // 4. Country Master (Comprehensive Global List)
     const countries = [
-        // North America
+        // North America & Central America / Caribbean
         { name: 'United States', iso: 'US', iso3: 'USA', num: '840', continent: 'North America', lat: 37.090, lon: -95.712, order: 1, groups: ['NORTH_AMERICA'], macro: 'NORTH_AMERICA' },
         { name: 'Canada', iso: 'CA', iso3: 'CAN', num: '124', continent: 'North America', lat: 56.130, lon: -106.346, order: 2, groups: ['NORTH_AMERICA'], macro: 'NORTH_AMERICA' },
+        { name: 'Dominican Republic', iso: 'DO', iso3: 'DOM', num: '214', continent: 'North America', lat: 18.7357, lon: -70.1627, order: 3, groups: ['NORTH_AMERICA'], macro: 'NORTH_AMERICA' },
+        { name: 'Guatemala', iso: 'GT', iso3: 'GTM', num: '320', continent: 'North America', lat: 15.7835, lon: -90.2308, order: 4, groups: ['NORTH_AMERICA'], macro: 'NORTH_AMERICA' },
+        { name: 'Costa Rica', iso: 'CR', iso3: 'CRI', num: '188', continent: 'North America', lat: 9.748, lon: -83.753, order: 5, groups: ['NORTH_AMERICA'], macro: 'NORTH_AMERICA' },
+        { name: 'Panama', iso: 'PA', iso3: 'PAN', num: '591', continent: 'North America', lat: 8.5379, lon: -80.7821, order: 6, groups: ['NORTH_AMERICA'], macro: 'NORTH_AMERICA' },
+        { name: 'Trinidad and Tobago', iso: 'TT', iso3: 'TTO', num: '780', continent: 'North America', lat: 10.6918, lon: -61.2225, order: 7, groups: ['NORTH_AMERICA'], macro: 'NORTH_AMERICA' },
 
         // LATAM
         { name: 'Brazil', iso: 'BR', iso3: 'BRA', num: '076', continent: 'South America', lat: -14.235, lon: -51.925, order: 10, groups: ['LATAM'], macro: 'LATAM' },
@@ -164,7 +169,6 @@ const seedData = async () => {
         { name: 'Peru', iso: 'PE', iso3: 'PER', num: '604', continent: 'South America', lat: -9.189, lon: -75.015, order: 13, groups: ['LATAM'], macro: 'LATAM' },
         { name: 'Chile', iso: 'CL', iso3: 'CHL', num: '152', continent: 'South America', lat: -35.675, lon: -71.542, order: 14, groups: ['LATAM'], macro: 'LATAM' },
         { name: 'Argentina', iso: 'AR', iso3: 'ARG', num: '032', continent: 'South America', lat: -38.416, lon: -63.616, order: 15, groups: ['LATAM'], macro: 'LATAM' },
-        { name: 'Costa Rica', iso: 'CR', iso3: 'CRI', num: '188', continent: 'North America', lat: 9.748, lon: -83.753, order: 16, groups: ['LATAM'], macro: 'LATAM' },
         { name: 'Venezuela', iso: 'VE', iso3: 'VEN', num: '862', continent: 'South America', lat: 6.423, lon: -66.589, order: 17, groups: ['LATAM'], macro: 'LATAM' },
         { name: 'Ecuador', iso: 'EC', iso3: 'ECU', num: '218', continent: 'South America', lat: -1.831, lon: -78.183, order: 18, groups: ['LATAM'], macro: 'LATAM' },
         { name: 'Bolivia', iso: 'BO', iso3: 'BOL', num: '068', continent: 'South America', lat: -16.290, lon: -63.588, order: 19, groups: ['LATAM'], macro: 'LATAM' },
@@ -452,14 +456,18 @@ const seedData = async () => {
         'PE': { region: 'LATAM', total: 580000 },
         'CL': { region: 'LATAM', total: 470000 },
         'AR': { region: 'LATAM', total: 410000 },
-        'CR': { region: 'LATAM', total: 190000 },
         'EC': { region: 'LATAM', total: 130000 },
         'VE': { region: 'LATAM', total: 95000 },
         'BO': { region: 'LATAM', total: 55000 },
 
-        // North America (~26.5M)
+        // North America & Central America / Caribbean (~28.9M)
         'US': { region: 'NORTH_AMERICA', total: 23500000 },
         'CA': { region: 'NORTH_AMERICA', total: 3000000 },
+        'DO': { region: 'NORTH_AMERICA', total: 720000 },
+        'GT': { region: 'NORTH_AMERICA', total: 580000 },
+        'CR': { region: 'NORTH_AMERICA', total: 490000 },
+        'PA': { region: 'NORTH_AMERICA', total: 380000 },
+        'TT': { region: 'NORTH_AMERICA', total: 230000 },
 
         // APAC (~19.9M)
         'IN': { region: 'APAC', total: 9800000 },

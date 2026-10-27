@@ -17,13 +17,18 @@ export const REGIONAL_DATA = [
     id: 'NORTH_AMERICA',
     name: 'North America',
     code: 'NA',
-    contacts: '26.5M+',
-    companies: '1.45M+',
-    countriesCount: '2 Countries',
+    contacts: '27.8M+',
+    companies: '1.55M+',
+    countriesCount: '7 Countries',
     color: '#7C3AED',
     countries: [
-      { name: 'United States', code: 'US', contacts: '23.50M+', share: '88.7%' },
-      { name: 'Canada', code: 'CA', contacts: '3.00M+', share: '11.3%' }
+      { name: 'United States', code: 'US', contacts: '22.50M+', share: '80.9%', description: "Enterprise technology, capital markets, and Fortune 500 decision-maker coverage." },
+      { name: 'Canada', code: 'CA', contacts: '2.90M+', share: '10.4%', description: "Bilingual market presence with heavy concentrations in financial services, natural resources, and tech corridors." },
+      { name: 'Dominican Republic', code: 'DO', contacts: '720K+', share: '2.6%', description: "The Caribbean's largest economy; strong data in tourism, telecom, and free-trade zones." },
+      { name: 'Guatemala', code: 'GT', contacts: '580K+', share: '2.1%', description: "The largest population in Central America; high volume of SMB and agricultural data." },
+      { name: 'Costa Rica', code: 'CR', contacts: '490K+', share: '1.8%', description: "High concentration of tech, medical device manufacturing, and corporate shared services data." },
+      { name: 'Panama', code: 'PA', contacts: '380K+', share: '1.4%', description: "Central America's primary logistics and international banking hub." },
+      { name: 'Trinidad and Tobago', code: 'TT', contacts: '230K+', share: '0.8%', description: "Industrialized economy with deep data pools in oil, gas, and energy services." }
     ]
   },
   {
@@ -116,9 +121,14 @@ export const COUNTRY_DOTS = [
   { id: 'sa', name: 'Saudi Arabia', regionName: 'MIDDLE EAST • GCC', count: '680K', rawCount: 680000, x: 605, y: 215, region: 'EMEA' },
   { id: 'za', name: 'South Africa', regionName: 'AFRICA • SOUTHERN AFRICA', count: '550K', rawCount: 550000, x: 545, y: 400, region: 'EMEA' },
 
-  // North America
-  { id: 'us', name: 'United States', regionName: 'NORTH AMERICA • USA', count: '23.5M', rawCount: 23500000, x: 240, y: 150, region: 'NA' },
-  { id: 'ca', name: 'Canada', regionName: 'NORTH AMERICA • CANADA', count: '3.0M', rawCount: 3000000, x: 235, y: 95, region: 'NA' },
+  // North America & Central America / Caribbean
+  { id: 'us', name: 'United States', regionName: 'NORTH AMERICA • USA', count: '22.5M', rawCount: 22500000, x: 240, y: 150, region: 'NA' },
+  { id: 'ca', name: 'Canada', regionName: 'NORTH AMERICA • CANADA', count: '2.9M', rawCount: 2900000, x: 235, y: 95, region: 'NA' },
+  { id: 'do', name: 'Dominican Republic', regionName: 'CARIBBEAN • DOMINICAN REPUBLIC', count: '720K', rawCount: 720000, x: 282, y: 228, region: 'NA' },
+  { id: 'gt', name: 'Guatemala', regionName: 'CENTRAL AMERICA • GUATEMALA', count: '580K', rawCount: 580000, x: 232, y: 238, region: 'NA' },
+  { id: 'cr', name: 'Costa Rica', regionName: 'CENTRAL AMERICA • COSTA RICA', count: '490K', rawCount: 490000, x: 252, y: 258, region: 'NA' },
+  { id: 'pa', name: 'Panama', regionName: 'CENTRAL AMERICA • PANAMA', count: '380K', rawCount: 380000, x: 265, y: 266, region: 'NA' },
+  { id: 'tt', name: 'Trinidad and Tobago', regionName: 'CARIBBEAN • TRINIDAD & TOBAGO', count: '230K', rawCount: 230000, x: 310, y: 262, region: 'NA' },
   { id: 'mx', name: 'Mexico', regionName: 'NORTH AMERICA • LATIN AMERICA', count: '2.45M', rawCount: 2450000, x: 225, y: 220, region: 'LATAM' },
 
   // South America / LATAM

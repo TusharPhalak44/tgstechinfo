@@ -13,9 +13,9 @@ const REGIONAL_POLYGONS = [
   {
     id: 'NORTH_AMERICA',
     name: 'North America',
-    contacts: '26.5M+',
-    companies: '1.45M+',
-    countriesCount: '2 Countries (USA, Canada)',
+    contacts: '27.8M+',
+    companies: '1.55M+',
+    countriesCount: '7 Countries (USA, Canada, Dominican Rep., Guatemala, Costa Rica, Panama, Trinidad & Tobago)',
     color: '#0284C7',
     hoverColor: '#38BDF8',
     glow: 'rgba(56, 189, 248, 0.4)',

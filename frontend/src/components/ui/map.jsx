@@ -68,10 +68,15 @@ const MAP_CLUSTERS = [
 
 // Individual Country Marker Dots with collision-free placement offsets
 const COUNTRY_MARKERS = [
-  // North America
-  { id: 'us', name: 'United States', shortName: 'USA', flag: '🇺🇸', coordinates: [-98, 39], contacts: '23.5M+', accounts: '1.35M+', region: 'NA', subRegion: 'NORTH AMERICA • USA', labelOffset: [0, -14], textAnchor: 'middle' },
-  { id: 'ca', name: 'Canada', shortName: 'Canada', flag: '🇨🇦', coordinates: [-106, 56], contacts: '3.0M+', accounts: '150K+', region: 'NA', subRegion: 'NORTH AMERICA • CANADA', labelOffset: [0, -14], textAnchor: 'middle' },
-  { id: 'mx', name: 'Mexico', shortName: 'Mexico', flag: '🇲🇽', coordinates: [-102, 23], contacts: '2.45M+', accounts: '140K+', region: 'LATAM', subRegion: 'NORTH AMERICA • MEXICO', labelOffset: [0, 14], textAnchor: 'middle' },
+  // North America & Central America / Caribbean
+  { id: 'us', name: 'United States', shortName: 'USA', flag: '🇺🇸', coordinates: [-98, 39], contacts: '22.5M+', accounts: '1.30M+', region: 'NA', subRegion: 'NORTH AMERICA • USA', labelOffset: [0, -14], textAnchor: 'middle', description: 'Enterprise technology, capital markets, and Fortune 500 decision-maker coverage.' },
+  { id: 'ca', name: 'Canada', shortName: 'Canada', flag: '🇨🇦', coordinates: [-106, 56], contacts: '2.9M+', accounts: '145K+', region: 'NA', subRegion: 'NORTH AMERICA • CANADA', labelOffset: [0, -14], textAnchor: 'middle', description: 'Bilingual market presence with heavy concentrations in financial services, natural resources, and tech corridors.' },
+  { id: 'do', name: 'Dominican Republic', shortName: 'Dominican Rep.', flag: '🇩🇴', coordinates: [-70.2, 18.7], contacts: '720K+', accounts: '42K+', region: 'NA', subRegion: 'CARIBBEAN • DOMINICAN REPUBLIC', labelOffset: [16, -10], textAnchor: 'start', description: "The Caribbean's largest economy; strong data in tourism, telecom, and free-trade zones." },
+  { id: 'gt', name: 'Guatemala', shortName: 'Guatemala', flag: '🇬🇹', coordinates: [-90.2, 15.8], contacts: '580K+', accounts: '36K+', region: 'NA', subRegion: 'CENTRAL AMERICA • GUATEMALA', labelOffset: [-16, -10], textAnchor: 'end', description: 'The largest population in Central America; high volume of SMB and agricultural data.' },
+  { id: 'cr', name: 'Costa Rica', shortName: 'Costa Rica', flag: '🇨🇷', coordinates: [-84.1, 9.9], contacts: '490K+', accounts: '31K+', region: 'NA', subRegion: 'CENTRAL AMERICA • COSTA RICA', labelOffset: [-16, 8], textAnchor: 'end', description: 'High concentration of tech, medical device manufacturing, and corporate shared services data.' },
+  { id: 'pa', name: 'Panama', shortName: 'Panama', flag: '🇵🇦', coordinates: [-80.8, 8.5], contacts: '380K+', accounts: '22K+', region: 'NA', subRegion: 'CENTRAL AMERICA • PANAMA', labelOffset: [16, 10], textAnchor: 'start', description: "Central America's primary logistics and international banking hub." },
+  { id: 'tt', name: 'Trinidad and Tobago', shortName: 'Trinidad & Tobago', flag: '🇹🇹', coordinates: [-61.2, 10.7], contacts: '230K+', accounts: '15K+', region: 'NA', subRegion: 'CARIBBEAN • TRINIDAD & TOBAGO', labelOffset: [16, 8], textAnchor: 'start', description: 'Industrialized economy with deep data pools in oil, gas, and energy services.' },
+  { id: 'mx', name: 'Mexico', shortName: 'Mexico', flag: '🇲🇽', coordinates: [-102, 23], contacts: '2.45M+', accounts: '140K+', region: 'LATAM', subRegion: 'NORTH AMERICA • MEXICO', labelOffset: [0, 14], textAnchor: 'middle', description: 'Nearshoring manufacturing powerhouse, fintech innovation, and enterprise supply chain data.' },
 
   // South America / LATAM
   { id: 'br', name: 'Brazil', shortName: 'Brazil', flag: '🇧🇷', coordinates: [-51, -14], contacts: '3.1M+', accounts: '180K+', region: 'LATAM', subRegion: 'LATIN AMERICA • BRAZIL', labelOffset: [18, 0], textAnchor: 'start' },
@@ -121,8 +126,8 @@ const FLIGHT_ARCS = [
 // Regional Camera Presets
 const REGION_PRESETS = {
   GLOBAL: { coordinates: [10, 15], zoom: 1 },
-  NORTH_AMERICA: { coordinates: [-95, 42], zoom: 2.3 },
-  NA: { coordinates: [-95, 42], zoom: 2.3 },
+  NORTH_AMERICA: { coordinates: [-86, 28], zoom: 1.95 },
+  NA: { coordinates: [-86, 28], zoom: 1.95 },
   LATAM: { coordinates: [-62, -18], zoom: 2.2 },
   SOUTH_AMERICA: { coordinates: [-62, -18], zoom: 2.2 },
   EMEA: { coordinates: [20, 48], zoom: 2.4 },
@@ -526,9 +531,15 @@ export function Map({
                 {selectedCountry.name}
               </h4>
 
-              <div className="text-[11px] font-bold uppercase tracking-widest text-[#0AAEEF] mb-3">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-[#0AAEEF] mb-2">
                 {selectedCountry.subRegion}
               </div>
+
+              {selectedCountry.description && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 px-1 leading-relaxed">
+                  {selectedCountry.description}
+                </p>
+              )}
 
               <div className="text-4xl font-extrabold bg-gradient-to-r from-[#0AAEEF] to-[#F7941D] bg-clip-text text-transparent font-mono tracking-tight my-2">
                 {selectedCountry.contacts}

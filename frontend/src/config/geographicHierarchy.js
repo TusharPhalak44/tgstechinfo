@@ -12,7 +12,7 @@ export const BUSINESS_REGIONS = {
     center: { lat: 28.5, lon: -85.0 },
     color: '#0AAEEF',
     glowColor: 'rgba(10, 174, 239, 0.45)',
-    countries: ['US', 'CA', 'MX', 'BR', 'AR', 'CL', 'CO', 'PE'],
+    countries: ['US', 'CA', 'MX', 'BR', 'AR', 'CL', 'CO', 'PE', 'PA', 'CR', 'DO', 'GT', 'TT'],
     description: 'North America, Latin America & Caribbean markets'
   },
   EMEA: {
@@ -92,6 +92,61 @@ export const COUNTRY_REGISTRY = {
     cities: [
       { name: 'São Paulo', state: 'SP', lat: -23.5505, lon: -46.6333 },
       { name: 'Rio de Janeiro', state: 'RJ', lat: -22.9068, lon: -43.1729 }
+    ]
+  },
+  PA: {
+    name: 'Panama',
+    iso2: 'PA',
+    iso3: 'PAN',
+    region: 'AMER',
+    flag: '🇵🇦',
+    center: { lat: 8.5379, lon: -80.7821 },
+    cities: [
+      { name: 'Panama City', state: 'Panamá', lat: 8.9824, lon: -79.5199 }
+    ]
+  },
+  CR: {
+    name: 'Costa Rica',
+    iso2: 'CR',
+    iso3: 'CRI',
+    region: 'AMER',
+    flag: '🇨🇷',
+    center: { lat: 9.7489, lon: -83.7534 },
+    cities: [
+      { name: 'San José', state: 'San José', lat: 9.9281, lon: -84.0907 }
+    ]
+  },
+  DO: {
+    name: 'Dominican Republic',
+    iso2: 'DO',
+    iso3: 'DOM',
+    region: 'AMER',
+    flag: '🇩🇴',
+    center: { lat: 18.7357, lon: -70.1627 },
+    cities: [
+      { name: 'Santo Domingo', state: 'Distrito Nacional', lat: 18.4861, lon: -69.9312 }
+    ]
+  },
+  GT: {
+    name: 'Guatemala',
+    iso2: 'GT',
+    iso3: 'GTM',
+    region: 'AMER',
+    flag: '🇬🇹',
+    center: { lat: 15.7835, lon: -90.2308 },
+    cities: [
+      { name: 'Guatemala City', state: 'Guatemala', lat: 14.6349, lon: -90.5069 }
+    ]
+  },
+  TT: {
+    name: 'Trinidad and Tobago',
+    iso2: 'TT',
+    iso3: 'TTO',
+    region: 'AMER',
+    flag: '🇹🇹',
+    center: { lat: 10.6918, lon: -61.2225 },
+    cities: [
+      { name: 'Port of Spain', state: 'Port of Spain', lat: 10.6549, lon: -61.5019 }
     ]
   },
 
