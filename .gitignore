@@ -48,3 +48,8 @@ Thumbs.db
 # *.jpeg
 # Database backup files
 backend/database/backups/*.sql
+
+# Exported files & scratch
+backend/exports/
+scratch/
+

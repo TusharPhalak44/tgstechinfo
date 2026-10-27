@@ -78,13 +78,13 @@ const getEmailTransporter = () => {
         });
     }
 
-    const user = process.env.EMAIL_USER ? process.env.EMAIL_USER.trim() : '';
-    const rawPass = process.env.EMAIL_PASSWORD || '';
+    const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+    const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '';
     // Strip surrounding quotes
     const pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
 
-    let host = (process.env.EMAIL_HOST || '').trim();
-    let port = Number(process.env.EMAIL_PORT || 465);
+    let host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || '').trim();
+    let port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
 
     // Auto-detect Gmail if user is @gmail.com or host contains gmail
     const isGmailUser = user && user.toLowerCase().endsWith('@gmail.com');
@@ -92,7 +92,7 @@ const getEmailTransporter = () => {
 
     if (isGmailUser || isGmailHost) {
         host = 'smtp.gmail.com';
-        if (!process.env.EMAIL_PORT) {
+        if (!process.env.EMAIL_PORT && !process.env.SMTP_PORT) {
             port = 465;
         }
         console.log(`[Email] Using Gmail SMTP (${host}:${port}) for ${user}`);
@@ -273,18 +273,22 @@ const sendEmail = async (to, subject, html, options = {}) => {
         return { success: false, skipped: true, reason: 'no_recipient' };
     }
 
-    const fromAddress = process.env.EMAIL_FROM || 'tgs.admin001@gmail.com';
+    const rawFrom = process.env.EMAIL_FROM || process.env.SMTP_FROM || 'info@tgstechinfo.com';
+    // Clean "Name" <email@domain.com> to extract email address for default replyTo if needed
+    const fromAddress = rawFrom.includes('<') && rawFrom.includes('>')
+        ? rawFrom.match(/<([^>]+)>/)?.[1] || rawFrom
+        : rawFrom;
     const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
     const organization = process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
 
     // Validate email configuration
-    const user = process.env.EMAIL_USER;
-    const rawPass = process.env.EMAIL_PASSWORD;
+    const user = process.env.EMAIL_USER || process.env.SMTP_USER;
+    const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD;
     const pass = rawPass ? rawPass.replace(/^['"](.*)['"]$/g, '$1') : rawPass;
 
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
         if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY.includes('placeholder')) {
-            console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD or SENDGRID_API_KEY.');
+            console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD or SMTP_USER/SMTP_PASS or SENDGRID_API_KEY.');
             return { success: false, skipped: true, reason: 'credentials_not_configured', from: fromAddress };
         }
     }
