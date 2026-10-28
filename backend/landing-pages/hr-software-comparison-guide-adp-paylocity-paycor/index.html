@@ -1,0 +1,1034 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HR Software Comparison Guide | Software Advice</title>
+  
+  <!-- Bootstrap 5.3 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Software Advice Native Styles Embedded -->
+  <style>
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+    :root {
+      --sa-bg: #0b1220;
+      --sa-surface: #ffffff;
+      --sa-muted: #6c757d;
+      --sa-border: rgba(16, 24, 40, 0.12);
+      --sa-shadow: 0 18px 45px rgba(11, 18, 32, 0.14);
+      --sa-shadow-soft: 0 10px 30px rgba(11, 18, 32, 0.10);
+      --sa-radius: 16px;
+      --sa-primary: #2d2b55;
+      --sa-primary-hover: #241f46;
+      --sa-accent: #ff8a00;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1e293b;
+      background: radial-gradient(1200px 800px at 15% 10%, rgba(13, 110, 253, 0.16), rgba(13, 110, 253, 0) 60%),
+                  radial-gradient(900px 600px at 90% 20%, rgba(25, 135, 84, 0.12), rgba(25, 135, 84, 0) 55%),
+                  #f7f9fc;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .btn-primary {
+      background-color: var(--sa-primary);
+      border-color: var(--sa-primary);
+    }
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background-color: var(--sa-primary-hover);
+      border-color: var(--sa-primary-hover);
+    }
+    .btn-outline-primary {
+      color: var(--sa-primary);
+      border-color: rgba(45, 43, 85, 0.35);
+    }
+    .btn-outline-primary:hover,
+    .btn-outline-primary:focus {
+      background-color: rgba(45, 43, 85, 0.08);
+      border-color: rgba(45, 43, 85, 0.45);
+      color: var(--sa-primary);
+    }
+    .sa-header {
+      position: sticky;
+      top: 0;
+      z-index: 1030;
+      background: rgba(255, 255, 255, 0.90);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .sa-logo {
+      height: 34px;
+      width: auto;
+      max-width: 260px;
+    }
+    .sa-hero {
+      padding-top: 36px;
+      padding-bottom: 36px;
+    }
+    .sa-hero-head {
+      max-width: 980px;
+    }
+    .sa-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border: 1px solid rgba(45, 43, 85, 0.18);
+      background: rgba(45, 43, 85, 0.06);
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--sa-primary);
+    }
+    .sa-check {
+      color: var(--sa-accent);
+      font-weight: 900;
+      line-height: 1.4;
+    }
+    .sa-benefits li + li {
+      margin-top: 10px;
+    }
+    .sa-poster {
+      border-radius: var(--sa-radius);
+      border: 1px solid var(--sa-border);
+      overflow: hidden;
+      box-shadow: var(--sa-shadow-soft);
+      background: #ffffff;
+      height: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .sa-poster img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    @media (max-width: 991.98px) {
+      .sa-poster {
+        height: auto;
+      }
+      .sa-poster img {
+        height: auto;
+        max-height: 320px;
+      }
+    }
+    .sa-card {
+      border-radius: var(--sa-radius);
+      border: 1px solid var(--sa-border);
+      box-shadow: var(--sa-shadow);
+      background: #ffffff;
+    }
+    .sa-card .card-body {
+      padding: 24px;
+    }
+    .sa-form-card {
+      box-shadow: 0 22px 60px rgba(11, 18, 32, 0.16);
+    }
+    @media (min-width: 992px) {
+      .sa-form-card {
+        position: sticky;
+        top: 86px;
+      }
+    }
+    .sa-card-title {
+      letter-spacing: -0.02em;
+      color: #0f172a;
+    }
+    .sa-help {
+      color: var(--sa-muted);
+      font-size: 0.95rem;
+    }
+    .sa-mini-card {
+      background: #ffffff;
+      border: 1px solid var(--sa-border);
+      border-radius: var(--sa-radius);
+      box-shadow: var(--sa-shadow-soft);
+    }
+    .sa-section {
+      padding: 56px 0;
+    }
+    .sa-section-head {
+      max-width: 820px;
+    }
+    .sa-bullets {
+      padding-left: 1.15rem;
+      margin: 0;
+    }
+    .sa-bullets li + li {
+      margin-top: 10px;
+    }
+    .sa-advisor {
+      border-radius: 14px;
+      border: 1px solid rgba(45, 43, 85, 0.16);
+      background: rgba(45, 43, 85, 0.04);
+    }
+    .sa-bottom-cta {
+      padding: 12px 0 64px;
+    }
+    .sa-bottom-cta-inner {
+      border-radius: calc(var(--sa-radius) + 4px);
+      border: 1px solid rgba(45, 43, 85, 0.14);
+      background: linear-gradient(135deg, rgba(45, 43, 85, 0.08), rgba(255, 138, 0, 0.08));
+      box-shadow: var(--sa-shadow-soft);
+    }
+    .sa-footer {
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+    }
+    .sa-footer a {
+      color: var(--sa-primary);
+      text-decoration: none;
+    }
+    .sa-footer a:hover {
+      text-decoration: underline;
+    }
+    .sa-next li + li {
+      margin-top: 10px;
+    }
+    .form-control,
+    .form-select {
+      border-radius: 10px;
+      border-color: rgba(16, 24, 40, 0.16);
+      padding: 9px 12px;
+      font-size: 0.92rem;
+    }
+    .form-control:focus,
+    .form-select:focus {
+      border-color: rgba(13, 110, 253, 0.55);
+      box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    .btn-sa {
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+    .sa-success {
+      display: none;
+    }
+    .sa-success.is-visible {
+      display: block;
+    }
+    .sa-form.is-hidden {
+      display: none;
+    }
+    .sa-smallprint {
+      color: #667085;
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sticky Header -->
+  <header class="sa-header">
+    <div class="container py-3">
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="d-flex align-items-center gap-3">
+          <img src="https://tgstechinfo.net/uploads/1791905460911-94764910.png" 
+               onerror="this.onerror=null; this.src='assets/images/softwareadvice-logo.png';" 
+               alt="Software Advice" 
+               class="sa-logo">
+        </div>
+        <div class="d-none d-sm-block">
+          <span class="badge bg-light text-secondary border px-3 py-2">Gartner Digital Markets Partner</span>
+        </div>
+      </div>
+    </div>
+  </header>
+  <!-- Hero Section -->
+  <main class="sa-hero">
+    <div class="container">
+      
+      <!-- Hero Headline & Intro -->
+      <div class="sa-hero-head">
+        <div class="mb-3">
+          <span class="sa-badge">Software Advice Comparison Guide</span>
+        </div>
+        <h1 class="display-6 fw-bold mb-2">Find the Right HR & Payroll Software for Your Business</h1>
+        <p class="lead text-secondary mb-0">Compare leading HR, Payroll, Workforce Management, and Employee Experience platforms trusted by organizations across industries.</p>
+        <div class="d-none d-lg-block mt-3">
+          <button type="button" class="btn btn-primary btn-sa" onclick="document.getElementById('lead-form-card').scrollIntoView({behavior: 'smooth'})">Get Comparison Details</button>
+        </div>
+      </div>
+      <!-- Main Two-Column Row -->
+      <div class="row g-4 align-items-start mt-1">
+        
+        <!-- Left Column: Form Card -->
+        <div class="col-lg-5 order-2 order-lg-1">
+          <div class="card sa-card sa-form-card" id="lead-form-card">
+            <div class="card-body">
+              
+              <!-- Form View -->
+              <div id="saFormWrap" class="sa-form">
+                <h2 class="h4 fw-bold sa-card-title mb-1">Get Instant Access</h2>
+                <p class="sa-help mb-3">Complete the form below to access your free resource.</p>
+                <div class="alert alert-danger d-none" role="alert" id="formAlertBox"></div>
+                <form id="saLeadForm" action="javascript:void(0);" onsubmit="window.handleSoftwareAdviceSubmit && window.handleSoftwareAdviceSubmit(event); return false;" data-custom-submit="true" data-tgs-handled="true" novalidate>
+                  <!-- Dynamic Content ID: Populated automatically without hardcoding -->
+                  <input type="hidden" name="content_id" value="" id="form-content-id" />
+                  <!-- Software Advice Campaign Configuration -->
+                  <input type="hidden" name="landing_slug" id="form-landing-slug" value="hr-software-comparison-guide-adp-paylocity-paycor" />
+                  <input type="hidden" name="campaign_slug" value="hr-guide" />
+                  <input type="hidden" name="campaign_key" value="hr" />
+                  <input type="hidden" name="campaign" value="HR">
+                  <input type="hidden" name="campaign_name" value="Software Advice HR Comparison Guide 2025">
+                  <input type="hidden" name="lead_type" value="faststart">
+                  <!-- Specific fields expected by Software Advice API -->
+                  <input type="hidden" name="type" value="download">
+                  <input type="hidden" name="lead_source" value="Software Advice">
+                  <input type="hidden" name="category" value="HR & Payroll Software">
+                  <input type="hidden" name="market_id" value="13">
+                  <input type="hidden" name="size_id" value="896">
+                  <input type="hidden" name="segment_id" value="441">
+                  <input type="hidden" name="asset" value="hr-comparison-guide-adp-workforce-now-vs-paylocity-vs-paycor-2025">
+                  <input type="hidden" name="asset_type" value="Comparison Guide">
+                  <input type="hidden" name="partner_source" value="tgst">
+                  <input type="hidden" name="utm_source" value="tgst">
+                  <input type="hidden" name="partner_api_key" value="944ab8222f7331f9a8efe3d0736837dc5bf6210f">
+                  <input type="hidden" name="webhook_url" value="https://lead-acquisition-service.softwareadvice.com/api/partner-conversion/?api_key=944ab8222f7331f9a8efe3d0736837dc5bf6210f">
+                  <input type="hidden" name="f_name" id="f_name_hidden" value="" />
+                  <input type="hidden" name="l_name" id="l_name_hidden" value="" />
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <label class="form-label small fw-semibold" for="first_name">First Name</label>
+                      <input class="form-control" id="first_name" name="first_name" type="text" autocomplete="given-name" placeholder="John" required>
+                      <div class="invalid-feedback">First name is required.</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-semibold" for="last_name">Last Name</label>
+                      <input class="form-control" id="last_name" name="last_name" type="text" autocomplete="family-name" placeholder="Doe" required>
+                      <div class="invalid-feedback">Last name is required.</div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small fw-semibold" for="email">Business Email</label>
+                      <input class="form-control" id="email" name="email" type="email" autocomplete="email" placeholder="john@company.com" required>
+                      <div class="invalid-feedback">Please enter your business email address.</div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small fw-semibold" for="phone">Phone Number</label>
+                      <input class="form-control" id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+1 (555) 000-0000" required>
+                      <div class="invalid-feedback">Please enter a valid phone number.</div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small fw-semibold" for="company">Company Name</label>
+                      <input class="form-control" id="company" name="company" type="text" autocomplete="organization" placeholder="Company Inc." required>
+                      <div class="invalid-feedback">Company name is required.</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-semibold" for="employee_size">Employee Size</label>
+                      <select class="form-select" id="employee_size" name="employee_size" required>
+                        <option value="">Select...</option>
+                        <option value="1-10">1-10</option>
+                        <option value="11-50">11-50</option>
+                        <option value="51-200">51-200</option>
+                        <option value="201-500">201-500</option>
+                        <option value="501-1000">501-1000</option>
+                        <option value="1000-5000">1000-5000</option>
+                        <option value="5000-10000">5000-10000</option>
+                        <option value="10000+">10000+</option>
+                      </select>
+                      <div class="invalid-feedback">Employee size is required.</div>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label small fw-semibold" for="industry">Industry Vertical</label>
+                      <select class="form-select" id="industry" name="industry" required>
+                        <option value="">Select...</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Financial Services">Financial Services</option>
+                        <option value="Retail">Retail</option>
+                        <option value="Education">Education</option>
+                        <option value="Government">Government</option>
+                        <option value="Professional Services">Professional Services</option>
+                        <option value="Construction">Construction</option>
+                        <option value="Logistics">Logistics</option>
+                        <option value="Other">Other</option>
+                      </select>
+                      <div class="invalid-feedback">Industry is required.</div>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label small fw-semibold" for="job_title">Job Title</label>
+                      <input class="form-control" id="job_title" name="job_title" type="text" autocomplete="organization-title" placeholder="HR Director / VP People" required>
+                      <div class="invalid-feedback">Job title is required.</div>
+                    </div>
+                    <div class="col-12">
+                      <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="1" id="gdpr_consent" name="gdpr_consent" required checked>
+                        <label class="form-check-label small text-muted" for="gdpr_consent">
+                          I consent to Software Advice processing my information and contacting me regarding software recommendations and related content.
+                        </label>
+                        <div class="invalid-feedback">Consent is required.</div>
+                      </div>
+                      <div class="sa-smallprint mt-2">
+                        By submitting, you agree to our <a href="https://www.softwareadvice.com/about/privacy/" target="_blank" rel="noopener">privacy policy</a>.
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <button type="button" id="submitBtn" onclick="window.handleSoftwareAdviceSubmit && window.handleSoftwareAdviceSubmit(event)" class="btn btn-primary w-100 btn-sa">Submit Request</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              
+              <!-- Thank You View (Appears on submit - No auto-download, No redirect) -->
+              <div id="saSuccessWrap" class="sa-success" aria-live="polite">
+                <div class="sa-thankyou">
+                  <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 72px; height: 72px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" fill="#198754" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0m-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                      </svg>
+                    </div>
+                    <h3 class="h4 fw-bold mb-2" style="color: #0f172a;">Thank You for Submitting!</h3>
+                    <p class="text-secondary mb-0">Your request has been successfully received and confirmed.</p>
+                  </div>
+
+                  <div class="alert alert-success border-0 py-3 mb-4" style="background: rgba(25, 135, 84, 0.08); color: #0f5132; border-radius: 12px; font-size: 0.95rem;">
+                    <strong>✓ Confirmation:</strong> Your information has been registered. Our Software Advice specialists will review your requirements and provide software recommendations tailored to your organization.
+                  </div>
+                  
+                  <div class="mb-4">
+                    <div class="fw-bold mb-2" style="color: #0f172a;">What happens next:</div>
+                    <ul class="list-unstyled mb-0 sa-next">
+                      <li class="d-flex gap-2 align-items-start"><span class="sa-check" aria-hidden="true">✔</span><span>Our advisors evaluate your business requirements and team size</span></li>
+                      <li class="d-flex gap-2 align-items-start"><span class="sa-check" aria-hidden="true">✔</span><span>Review detailed feature comparisons across top HR & Payroll solutions</span></li>
+                      <li class="d-flex gap-2 align-items-start"><span class="sa-check" aria-hidden="true">✔</span><span>Receive expert insights to help make an informed software decision</span></li>
+                    </ul>
+                  </div>
+
+                  <div class="sa-advisor p-3">
+                    <div class="fw-bold mb-1">Need immediate assistance?</div>
+                    <div class="text-secondary small">A Software Advisor may contact you to better understand your business requirements and provide customized software options.</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        <!-- Right Column: Visual Info Cards & Poster -->
+        <div class="col-lg-7 order-1 order-lg-2">
+          
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="sa-mini-card p-4 h-100">
+                <div class="fw-bold mb-2">Why this guide matters</div>
+                <p class="text-secondary mb-3">Making the wrong HR software decision can impact payroll accuracy, employee satisfaction, compliance, and operational efficiency.</p>
+                <p class="text-secondary mb-0">Download this free comparison guide to evaluate three leading HR solutions and discover which platform best aligns with your business requirements.</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="sa-mini-card p-4 h-100">
+                <div class="fw-bold mb-3">Key benefits</div>
+                <div class="sa-benefits">
+                  <div class="row g-2">
+                    <div class="col-12 d-flex gap-2 align-items-start">
+                      <span class="sa-check" aria-hidden="true">✔</span><span>Payroll & Tax Management Comparison</span>
+                    </div>
+                    <div class="col-12 d-flex gap-2 align-items-start">
+                      <span class="sa-check" aria-hidden="true">✔</span><span>HR Administration & Workforce Tools</span>
+                    </div>
+                    <div class="col-12 d-flex gap-2 align-items-start">
+                      <span class="sa-check" aria-hidden="true">✔</span><span>Employee Self-Service Capabilities</span>
+                    </div>
+                    <div class="col-12 d-flex gap-2 align-items-start">
+                      <span class="sa-check" aria-hidden="true">✔</span><span>Compliance & Reporting Features</span>
+                    </div>
+                    <div class="col-12 d-flex gap-2 align-items-start">
+                      <span class="sa-check" aria-hidden="true">✔</span><span>Verified User Reviews</span>
+                    </div>
+                    <div class="col-12 d-flex gap-2 align-items-start">
+                      <span class="sa-check" aria-hidden="true">✔</span><span>Feature & Pricing Insights</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Poster Image Card -->
+          <div class="sa-poster">
+            <img src="https://tgstechinfo.net/uploads/1791910298434-857507817.png" 
+                 onerror="this.onerror=null; this.src='assets/images/HRIS_Poster.png';" 
+                 alt="HR Software Comparison Guide Cover" 
+                 loading="lazy">
+          </div>
+        </div>
+      </div>
+      <!-- Trust Badges Row -->
+      <div class="row g-3 mt-4 sa-trust">
+        <div class="col-md-4">
+          <div class="sa-mini-card p-3 h-100">
+            <div class="fw-bold mb-1">Trusted Insights</div>
+            <div class="text-secondary small">Independent comparisons built to support confident software decisions.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="sa-mini-card p-3 h-100">
+            <div class="fw-bold mb-1">Verified Reviews</div>
+            <div class="text-secondary small">Ratings and feedback to help you evaluate real-world fit.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="sa-mini-card p-3 h-100">
+            <div class="fw-bold mb-1">Secure Submission</div>
+            <div class="text-secondary small">Protected form with validation, CSRF protection, and server-side safeguards.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <!-- Detailed Solution Comparisons -->
+  <section class="sa-section">
+    <div class="container">
+      
+      <!-- Compare Leading Solutions -->
+      <div class="sa-section-head mb-4">
+        <h2 class="h3 fw-bold mb-2">Compare Leading HR Solutions</h2>
+        <p class="text-secondary mb-0">This guide provides an independent comparison of three widely adopted HR and Payroll platforms.</p>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="sa-mini-card p-4 h-100">
+            <div class="fw-bold mb-2">ADP Workforce Now</div>
+            <div class="text-secondary small">Comprehensive workforce management platform offering payroll processing, benefits administration, compliance management, and HR automation.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="sa-mini-card p-4 h-100">
+            <div class="fw-bold mb-2">Paylocity</div>
+            <div class="text-secondary small">Modern HR and payroll platform focused on employee engagement, workforce collaboration, and operational efficiency.</div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="sa-mini-card p-4 h-100">
+            <div class="fw-bold mb-2">Paycor</div>
+            <div class="text-secondary small">Integrated HR, payroll, recruiting, onboarding, and talent management solution designed for growing organizations.</div>
+          </div>
+        </div>
+      </div>
+      <!-- What You'll Learn -->
+      <div class="sa-section-head mt-5 mb-4">
+        <h2 class="h3 fw-bold mb-2">What You'll Learn</h2>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="sa-mini-card p-4 h-100">
+            <div class="fw-bold mb-2">Payroll & Tax Automation</div>
+            <div class="text-secondary small">Understand how each platform handles payroll processing, tax management, deductions, reporting, and compliance requirements.</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="sa-mini-card p-4 h-100">
+            <div class="fw-bold mb-2">Workforce Management</div>
+            <div class="text-secondary small">Evaluate employee management capabilities, scheduling tools, attendance tracking, and workforce planning features.</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="sa-mini-card p-4 h-100">
+            <div class="fw-bold mb-2">Employee Experience</div>
+            <div class="text-secondary small">Compare employee self-service functionality, mobile accessibility, onboarding processes, and engagement tools.</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="sa-mini-card p-4 h-100">
+            <div class="fw-bold mb-2">Core HR, Benefits & Reporting</div>
+            <div class="text-secondary small">Review core HR features including employee records, benefits administration, analytics dashboards, and custom reporting capabilities.</div>
+          </div>
+        </div>
+      </div>
+      <!-- Why Businesses Download This Guide -->
+      <div class="sa-section-head mt-5 mb-3">
+        <h2 class="h3 fw-bold mb-2">Why Businesses Download This Guide</h2>
+      </div>
+      <div class="sa-mini-card p-4">
+        <ul class="mb-0 sa-bullets">
+          <li>Save time by comparing leading platforms in a single comprehensive report</li>
+          <li>Evaluate feature sets against your organization's specific requirements</li>
+          <li>Understand user ratings and satisfaction across key functional categories</li>
+          <li>Identify the platform best suited for your team size and operational complexity</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  <!-- Bottom CTA -->
+  <section class="sa-bottom-cta">
+    <div class="container">
+      <div class="sa-bottom-cta-inner p-4 p-md-5">
+        <div class="row g-3 align-items-center">
+          <div class="col-lg-8">
+            <h2 class="h3 fw-bold mb-2">Ready to Compare?</h2>
+            <p class="text-secondary mb-0">Get immediate access to the full HR Software Comparison Guide and make a more informed choice for your organization.</p>
+          </div>
+          <div class="col-lg-4 d-grid">
+            <button type="button" class="btn btn-primary btn-sa" onclick="document.getElementById('lead-form-card').scrollIntoView({behavior: 'smooth'})">Get Comparison Details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Footer -->
+  <footer class="sa-footer py-4">
+    <div class="container">
+      <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2 small text-muted">
+        <div>
+          © 2025 Software Advice, Inc. All rights reserved.
+        </div>
+        <div>
+          <a href="https://www.softwareadvice.com/about/privacy/" target="_blank" rel="noopener">Privacy Policy</a>
+          <span class="mx-2">•</span>
+          <a href="https://www.softwareadvice.com/about/terms/" target="_blank" rel="noopener">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <!-- Dynamic Content ID Detection & Submission Handler Script -->
+  <script>
+    // 1. Dynamic Content ID Resolver (Detects active ID on local=510, live=1033, etc.)
+    function getDynamicContentId() {
+      // 1. Injected by parent/window
+      if (typeof window.__CONTENT_ID !== 'undefined' && window.__CONTENT_ID && String(window.__CONTENT_ID).trim() !== '') {
+        return String(window.__CONTENT_ID).trim();
+      }
+      if (typeof window.CONTENT_ID !== 'undefined' && window.CONTENT_ID && String(window.CONTENT_ID).trim() !== '') {
+        return String(window.CONTENT_ID).trim();
+      }
+      if (typeof window.__contentId !== 'undefined' && window.__contentId && String(window.__contentId).trim() !== '') {
+        return String(window.__contentId).trim();
+      }
+      // 2. Parent window (if in iframe)
+      try {
+        if (window.parent && window.parent !== window) {
+          if (window.parent.__CONTENT_ID) return String(window.parent.__CONTENT_ID).trim();
+          var pParams = new URLSearchParams(window.parent.location.search);
+          var pid = pParams.get('content_id') || pParams.get('contentId') || pParams.get('id') || pParams.get('cid');
+          if (pid && pid.trim() !== '' && pid !== '1033') return pid.trim();
+        }
+      } catch (e) {}
+      // 3. Query string (?content_id=510 or ?id=510)
+      try {
+        var urlParams = new URLSearchParams(window.location.search);
+        var qId = urlParams.get('content_id') || urlParams.get('contentId') || urlParams.get('id') || urlParams.get('cid');
+        if (qId && qId.trim() !== '' && qId !== '1033') return qId.trim();
+      } catch (e) {}
+      // 4. URL path: /content/:id or /lp/:id
+      try {
+        var pathMatch = window.location.pathname.match(/\\/(?:content|landing-page|lp)\\/(\\d+)/i);
+        if (pathMatch && pathMatch[1] && pathMatch[1] !== '1033') return pathMatch[1];
+      } catch (e) {}
+      // 5. Existing input value (if NOT hardcoded 1033)
+      var cidInput = document.getElementById('form-content-id');
+      if (cidInput && cidInput.value && cidInput.value.trim() !== '' && cidInput.value.trim() !== '1033') {
+        return cidInput.value.trim();
+      }
+      return '';
+    }
+
+    // Synchronize content_id to the hidden input
+    function syncContentIdField() {
+      var detectedId = getDynamicContentId();
+      var contentIdInput = document.getElementById('form-content-id');
+      if (contentIdInput && detectedId) {
+        if (contentIdInput.value !== detectedId) {
+          contentIdInput.value = detectedId;
+          console.log('📌 [Content ID Watcher] Synchronized dynamic content_id:', detectedId);
+        }
+        return detectedId;
+      }
+      return detectedId || '';
+    }
+
+    // Active synchronization watcher
+    (function initWatcher() {
+      syncContentIdField();
+      var attempts = 0;
+      var interval = setInterval(function() {
+        attempts++;
+        var id = syncContentIdField();
+        if (id || attempts >= 40) {
+          clearInterval(interval);
+          if (id) console.log('🎯 [Content ID Watcher] Locked active content_id:', id);
+        }
+      }, 100);
+
+      window.addEventListener('message', function(ev) {
+        if (!ev || !ev.data) return;
+        var msgId = ev.data.content_id || ev.data.contentId || (ev.data.type === 'SET_CONTENT_ID' && ev.data.id);
+        if (msgId) {
+          window.__CONTENT_ID = msgId;
+          syncContentIdField();
+        }
+      });
+    })();
+
+    // 2. Main Form Submission Handler
+    (function() {
+      var form = document.getElementById('saLeadForm');
+      var formWrap = document.getElementById('saFormWrap');
+      var successWrap = document.getElementById('saSuccessWrap');
+      var alertBox = document.getElementById('formAlertBox');
+      var submitBtn = document.getElementById('submitBtn');
+      var personalDomains = new Set([
+        'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+        'aol.com', 'icloud.com', 'mail.com', 'zoho.com', 'protonmail.com'
+      ]);
+
+      function showError(msg) {
+        if (alertBox) {
+          alertBox.className = 'alert alert-warning';
+          alertBox.classList.remove('d-none');
+          alertBox.style.display = 'block';
+          alertBox.innerText = msg;
+          alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          alert(msg);
+        }
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = origText;
+        }
+      }
+
+      window.handleSoftwareAdviceSubmit = async function(e) {
+        if (e) {
+          if (typeof e.preventDefault === 'function') e.preventDefault();
+          if (typeof e.stopPropagation === 'function') e.stopPropagation();
+          if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        }
+
+        form = form || document.getElementById('saLeadForm');
+        formWrap = formWrap || document.getElementById('saFormWrap');
+        successWrap = successWrap || document.getElementById('saSuccessWrap');
+        alertBox = alertBox || document.getElementById('formAlertBox');
+        submitBtn = submitBtn || document.getElementById('submitBtn');
+
+        if (!form) return false;
+
+        if (alertBox) {
+          alertBox.classList.add('d-none');
+          alertBox.style.display = 'none';
+          alertBox.className = 'alert alert-danger d-none';
+          alertBox.innerText = '';
+        }
+
+        var origText = submitBtn ? submitBtn.innerText : 'Submit Request';
+
+        // 1. Direct DOM Element Extraction
+        var fnInput = document.getElementById('first_name') || form.querySelector('input[name="first_name"]');
+        var lnInput = document.getElementById('last_name') || form.querySelector('input[name="last_name"]');
+        var emailInput = document.getElementById('email') || form.querySelector('input[name="email"]');
+        var phoneInput = document.getElementById('phone') || form.querySelector('input[name="phone"]');
+        var compInput = document.getElementById('company') || form.querySelector('input[name="company"]');
+        var sizeInput = document.getElementById('employee_size') || form.querySelector('select[name="employee_size"]');
+        var indInput = document.getElementById('industry') || form.querySelector('select[name="industry"]');
+        var titleInput = document.getElementById('job_title') || form.querySelector('input[name="job_title"]');
+        var consentBox = document.getElementById('gdpr_consent') || form.querySelector('input[name="gdpr_consent"]');
+
+        var payload = {};
+        // Harvest all inputs from the form
+        var formElements = form.querySelectorAll('input, select, textarea');
+        formElements.forEach(function(el) {
+          var name = el.name || el.id;
+          if (!name) return;
+          if (el.type === 'checkbox') {
+            payload[name] = el.checked ? 1 : 0;
+          } else if (el.type === 'radio') {
+            if (el.checked) payload[name] = el.value;
+          } else {
+            payload[name] = (el.value || '').trim();
+          }
+        });
+
+        // Overlay with explicit direct DOM values
+        if (fnInput) payload.first_name = (fnInput.value || '').trim();
+        if (lnInput) payload.last_name = (lnInput.value || '').trim();
+        if (emailInput) payload.email = (emailInput.value || '').trim();
+        if (phoneInput) payload.phone = (phoneInput.value || '').trim();
+        if (compInput) payload.company = (compInput.value || '').trim();
+        if (sizeInput) payload.employee_size = (sizeInput.value || '').trim();
+        if (indInput) payload.industry = (indInput.value || '').trim();
+        if (titleInput) payload.job_title = (titleInput.value || '').trim();
+        if (consentBox) payload.gdpr_consent = consentBox.checked ? 1 : 0;
+
+        // 2. Strict Client-Side Required Field Validation
+        if (!payload.first_name) {
+          showError('Please enter your first name.');
+          if (fnInput) fnInput.focus();
+          return false;
+        }
+        if (!payload.last_name) {
+          showError('Please enter your last name.');
+          if (lnInput) lnInput.focus();
+          return false;
+        }
+        if (!payload.email) {
+          showError('Please enter your business email address.');
+          if (emailInput) emailInput.focus();
+          return false;
+        }
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(payload.email)) {
+          showError('Please enter a valid email address (e.g. name@company.com).');
+          if (emailInput) emailInput.focus();
+          return false;
+        }
+        var atIdx = payload.email.lastIndexOf('@');
+        if (atIdx > 0) {
+          var domain = payload.email.substring(atIdx + 1).toLowerCase();
+          if (personalDomains.has(domain)) {
+            showError('Please enter your corporate business email address (e.g. name@company.com). Personal email providers like ' + domain + ' are not accepted.');
+            if (emailInput) emailInput.focus();
+            return false;
+          }
+        }
+        if (!payload.phone) {
+          showError('Please enter your phone number.');
+          if (phoneInput) phoneInput.focus();
+          return false;
+        }
+        if (!payload.company) {
+          showError('Please enter your company name.');
+          if (compInput) compInput.focus();
+          return false;
+        }
+        if (!payload.employee_size) {
+          showError('Please select your company employee size.');
+          if (sizeInput) sizeInput.focus();
+          return false;
+        }
+        if (!payload.industry) {
+          showError('Please select your industry vertical.');
+          if (indInput) indInput.focus();
+          return false;
+        }
+        if (!payload.job_title) {
+          showError('Please enter your job title.');
+          if (titleInput) titleInput.focus();
+          return false;
+        }
+        if (consentBox && !consentBox.checked) {
+          showError('Please accept the consent checkbox to continue.');
+          if (consentBox) consentBox.focus();
+          return false;
+        }
+
+        // Show loading state on submit button
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerText = 'Submitting Your Details...';
+        }
+
+        // Dynamic Content ID Resolution
+        var activeContentId = getDynamicContentId() || '';
+        var slugVal = document.getElementById('form-landing-slug') ? document.getElementById('form-landing-slug').value : 'hr-software-comparison-guide-adp-paylocity-paycor';
+
+        if (!activeContentId && slugVal) {
+          try {
+            var lookupRes = await fetch('/api/public/landing-page/' + encodeURIComponent(slugVal));
+            if (lookupRes.ok) {
+              var lookupData = await lookupRes.json();
+              var foundId = lookupData.content?.id || lookupData.id || lookupData.content_id;
+              if (foundId) activeContentId = String(foundId);
+            }
+          } catch (e) {}
+        }
+
+        var contentIdField = document.getElementById('form-content-id');
+        if (contentIdField && activeContentId) {
+          contentIdField.value = activeContentId;
+        }
+
+        var firstName = payload.first_name;
+        var lastName = payload.last_name;
+        payload.f_name = firstName;
+        payload.l_name = lastName;
+        payload.first_name = firstName;
+        payload.last_name = lastName;
+        payload.type = payload.lead_type || 'download';
+        payload.utm_source = payload.partner_source || 'tgst';
+        payload.optin = payload.gdpr_consent ? 1 : 0;
+        payload.landing_slug = slugVal;
+
+        // Hidden input syncing
+        var fHidden = document.getElementById('f_name_hidden'); if (fHidden) fHidden.value = firstName;
+        var lHidden = document.getElementById('l_name_hidden'); if (lHidden) lHidden.value = lastName;
+
+        // Construct Flat Request Body with ALL fields at root AND mirrored in extra_fields
+        var requestBody = Object.assign({}, payload, {
+          content_id: activeContentId || undefined,
+          landing_slug: slugVal,
+          email: payload.email,
+          first_name: firstName,
+          last_name: lastName,
+          f_name: firstName,
+          l_name: lastName,
+          phone: payload.phone,
+          company: payload.company,
+          employee_size: payload.employee_size,
+          industry: payload.industry,
+          job_title: payload.job_title,
+          gdpr_consent: payload.gdpr_consent,
+          type: payload.type || 'download',
+          lead_type: 'faststart',
+          lead_source: 'Software Advice',
+          category: 'HR & Payroll Software',
+          market_id: '13',
+          size_id: '896',
+          segment_id: '441',
+          asset: 'hr-comparison-guide-adp-workforce-now-vs-paylocity-vs-paycor-2025',
+          asset_type: 'Comparison Guide',
+          campaign: 'HR',
+          campaign_slug: 'hr-guide',
+          campaign_key: 'hr',
+          partner_source: 'tgst',
+          utm_source: 'tgst',
+          partner_api_key: '944ab8222f7331f9a8efe3d0736837dc5bf6210f',
+          webhook_url: 'https://lead-acquisition-service.softwareadvice.com/api/partner-conversion/?api_key=944ab8222f7331f9a8efe3d0736837dc5bf6210f'
+        });
+        requestBody.extra_fields = Object.assign({}, requestBody);
+
+        console.log('[Form Submission] Submitting lead payload:', {
+          content_id: activeContentId || '(dynamic auto-resolve on backend)',
+          landing_slug: requestBody.landing_slug,
+          name: firstName + ' ' + lastName,
+          email: requestBody.email,
+          phone: requestBody.phone,
+          company: requestBody.company,
+          webhook_url: requestBody.webhook_url
+        });
+
+        try {
+          var response = await fetch('/api/public/landing-page', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          var resData = await response.json().catch(function(jsonErr) {
+            console.error('❌ [Response Parse Error] Failed to parse JSON response:', jsonErr);
+            return {};
+          });
+
+          console.log('[Form Submission] Server response received:', {
+            status: response.status,
+            ok: response.ok,
+            data: resData
+          });
+
+          // Check for Duplicate Submission (409)
+          if (response.status === 409 || resData.alreadySubscribed || resData.already_submitted) {
+            var dupMsg = resData.message || 'This email has been already subscribed';
+            console.warn('⚠️ [Duplicate Submission]', dupMsg);
+            if (alertBox) {
+              alertBox.className = 'alert alert-info';
+              alertBox.classList.remove('d-none');
+              alertBox.style.display = 'block';
+              alertBox.innerText = dupMsg;
+            } else {
+              alert(dupMsg);
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerText = origText;
+            }
+            return false;
+          }
+
+          // Check if our database save succeeded
+          var isOurDbSuccess = response.ok && (resData.success || resData.has_access || resData.id || resData.submission_id || resData.message);
+          if (!isOurDbSuccess) {
+            var dbErrMsg = (resData && resData.message) ? resData.message : ('Submission failed with status HTTP ' + response.status);
+            console.error('❌ [Our Database Error] Failed to store lead data in our database:', {
+              http_status: response.status,
+              error_message: dbErrMsg,
+              response_data: resData
+            });
+            if (alertBox) {
+              alertBox.className = 'alert alert-danger';
+              alertBox.classList.remove('d-none');
+              alertBox.style.display = 'block';
+              alertBox.innerText = dbErrMsg;
+            } else {
+              alert(dbErrMsg);
+            }
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerText = origText;
+            }
+            return false;
+          }
+
+          var resolvedId = resData.content_id || activeContentId || resData.id || resData.submission_id;
+          console.log('✅ [Our Database Success] Form data successfully stored in our database for content #' + resolvedId + '. Record ID:', (resData.id || resData.submission_id));
+
+          // Check client webhook response
+          if (resData.webhook_success === false || (resData.webhook_status && resData.webhook_status >= 400)) {
+            console.error('❌ [Client Database / Webhook Error] Failed to store in client DB:', resData.webhook_error || resData.webhook_data);
+          } else {
+            console.log('✅ [Client Database / Webhook Success] Lead data successfully forwarded to client database via Webhook URL! Status:', resData.webhook_status, resData.webhook_data);
+          }
+
+          // Show prominent Thank You message in alert box
+          if (alertBox) {
+            alertBox.className = 'alert alert-success';
+            alertBox.classList.remove('d-none');
+            alertBox.style.display = 'block';
+            alertBox.innerHTML = '<strong>✓ Thank you for submitting!</strong> Your request has been confirmed.';
+          }
+          if (submitBtn) {
+            submitBtn.innerText = '✓ Submitted Successfully!';
+          }
+
+          // Smoothly switch to the dedicated Thank You Screen (NO AUTO-DOWNLOAD, NO REDIRECT)
+          setTimeout(function() {
+            if (formWrap) {
+              formWrap.style.display = 'none';
+              formWrap.classList.add('is-hidden');
+            }
+            if (successWrap) {
+              successWrap.style.display = 'block';
+              successWrap.classList.remove('d-none');
+              successWrap.classList.add('is-visible');
+              successWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 250);
+
+        } catch (err) {
+          console.error('❌ [Form Submission Error] Failed to submit form:', err);
+          if (alertBox) {
+            alertBox.className = 'alert alert-danger';
+            alertBox.classList.remove('d-none');
+            alertBox.style.display = 'block';
+            alertBox.innerText = 'Submission error: ' + (err.message || 'Please check your connection and try again.');
+          }
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerText = origText;
+          }
+        }
+        return false;
+      };
+
+      if (form) {
+        form.addEventListener('submit', window.handleSoftwareAdviceSubmit);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import StandaloneBuilderPage from './StandaloneBuilderPage';
 import { useTracking } from '../context/TrackingContext';
 import useEngagementTracking from '../hooks/useEngagementTracking';
+import { trackingApi, generateSessionUuid, getDeviceInfo } from '../lib/trackingUtils';
 
 const StandaloneLandingPage = () => {
   const { slug } = useParams();
@@ -119,7 +120,7 @@ const StandaloneLandingPage = () => {
         console.log('Initializing tracking session on landing page...');
         try {
           const { trackingApi, generateSessionUuid, getDeviceInfo } = require('../lib/trackingUtils');
-
+// Tracking utilities imported at top
           const sessionData = {
             consent_uuid: consent.uuid,
             landing_page: window.location.href,
