@@ -34,9 +34,12 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
       setSubscribedEmail(trimmed);
       setEmail('');
     } catch (err) {
-      const msg = err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Failed to subscribe. Please try again.';
-      if (err.response?.status === 400 && msg.toLowerCase().includes('already subscribed')) {
-        message.info(msg);
+      const isAlreadySub = err.response?.status === 409 || err.response?.status === 400 || err.response?.data?.alreadySubscribed || (err.response?.data?.message && err.response.data.message.toLowerCase().includes('already subscribed'));
+      const msg = isAlreadySub
+        ? (err.response?.data?.message || 'This email has been already subscribed')
+        : (err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Failed to subscribe. Please try again.');
+      alert(msg);
+      if (isAlreadySub) {
         setSubscribed(true);
         setSubscribedEmail(trimmed);
       } else {

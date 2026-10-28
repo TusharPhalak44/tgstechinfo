@@ -459,8 +459,11 @@ const ArticleDetail = () => {
       const msg = isAlreadySub
         ? (error.response?.data?.message || 'This email has been already subscribed')
         : (error.response?.data?.message || 'Failed to submit');
-      if (isAlreadySub) alert(msg);
-      messageApi.error(msg);
+      if (isAlreadySub) {
+        alert(msg);
+      } else {
+        messageApi.error(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -531,8 +534,11 @@ const ArticleDetail = () => {
       const msg = isAlreadySub
         ? (error.response?.data?.message || 'This email has been already subscribed')
         : (error.response?.data?.message || 'Failed to subscribe');
-      if (isAlreadySub) alert(msg);
-      messageApi.error(msg);
+      if (isAlreadySub) {
+        alert(msg);
+      } else {
+        messageApi.error(msg);
+      }
     } finally {
       setSubscribing(false);
     }
@@ -554,8 +560,11 @@ const ArticleDetail = () => {
       const msg = isAlreadySub
         ? (error.response?.data?.message || 'This email has been already subscribed')
         : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
-      if (isAlreadySub) alert(msg);
-      messageApi.error(msg);
+      if (isAlreadySub) {
+        alert(msg);
+      } else {
+        messageApi.error(msg);
+      }
     } finally {
       setNewsletterSubscribing(false);
     }

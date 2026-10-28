@@ -41,8 +41,9 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
         : 'Failed to subscribe. Please try again.';
       if (isAlreadySub) {
         alert(msg);
+      } else {
+        message.error(msg);
       }
-      message.error(msg);
     } finally {
       setLoading(false);
     }

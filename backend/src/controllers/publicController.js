@@ -454,8 +454,52 @@ exports.submitLandingPage = async (req, res) => {
         const normalizedSubmittedEmail = String(submittedEmail || '').toLowerCase().trim();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+        // ── Exemption check: Whitepaper, Webinar, and Event forms allow unlimited submissions ──────
+        const exemptKeywords = [
+            'whitepaper', 'white-paper', 'white_paper',
+            'webinar',
+            'event', 'events',
+            'guide', 'comparison guide', 'comparison-guide',
+            'ebook', 'e-book',
+            'asset', 'download'
+        ];
+
+        const typeCandidates = [
+            content?.content_type,
+            content?.content_type_name,
+            content?.category_slug,
+            content?.category_name,
+            content?.title,
+            req.body?.content_type,
+            req.body?.asset_type,
+            req.body?.form_type,
+            req.body?.lead_type,
+            req.body?.type,
+            req.body?.category,
+            req.body?.landing_slug,
+            extraData?.content_type,
+            extraData?.asset_type,
+            extraData?.form_type,
+            extraData?.lead_type,
+            extraData?.type,
+            extraData?.category,
+            extraData?.asset,
+            fileLandingSlug
+        ];
+
+        const isExemptFromDuplicateCheck = typeCandidates.some(candidate => {
+            if (!candidate || typeof candidate !== 'string') return false;
+            const lower = candidate.toLowerCase();
+            return exemptKeywords.some(kw => lower.includes(kw));
+        });
+
+        if (isExemptFromDuplicateCheck) {
+            console.log(`[submitLandingPage] Exempt content type detected (whitepaper/webinar/event). Multiple submissions allowed for email: '${normalizedSubmittedEmail}'`);
+        }
+
         // ── Check if this email has already subscribed / submitted FIRST ───────────────
-        if (normalizedSubmittedEmail) {
+        // Only enforce duplicate restriction for non-exempt forms (Contact, Newsletter, Registration, general subscriptions)
+        if (normalizedSubmittedEmail && !isExemptFromDuplicateCheck) {
             if (!emailRegex.test(normalizedSubmittedEmail)) {
                 return res.status(400).json({ message: 'Invalid email address format' });
             }
@@ -739,20 +783,31 @@ exports.submitLandingPage = async (req, res) => {
 
             // Software Advice / Gartner partner-conversion specific requirements
             if (targetWebhookUrl.includes('softwareadvice.com') || targetWebhookUrl.includes('partner-conversion')) {
-                const fn = (webhookPayload.first_name || webhookPayload.firstName || webhookPayload.name || '').trim();
-                const ln = (webhookPayload.last_name || webhookPayload.lastName || '').trim();
+                // Remove internal nested objects and non-client metadata to keep payload clean for CRM ingest
+                delete webhookPayload.extra_fields;
+                delete webhookPayload.content_id;
+                delete webhookPayload.session_uuid;
+                delete webhookPayload.consent_uuid;
+                delete webhookPayload.webhook_url;
+                delete webhookPayload.page_url;
+                delete webhookPayload.redirect_url;
 
-                if (!webhookPayload.f_name || String(webhookPayload.f_name).trim() === '') {
-                    webhookPayload.f_name = fn;
-                }
-                if (!webhookPayload.l_name || String(webhookPayload.l_name).trim() === '') {
-                    webhookPayload.l_name = ln;
-                }
+                const fn = (webhookPayload.first_name || webhookPayload.firstName || webhookPayload.f_name || webhookPayload.name || '').trim();
+                const ln = (webhookPayload.last_name || webhookPayload.lastName || webhookPayload.l_name || '').trim();
+
+                webhookPayload.f_name = fn;
+                webhookPayload.l_name = ln;
+                if (!webhookPayload.first_name) webhookPayload.first_name = fn;
+                if (!webhookPayload.last_name) webhookPayload.last_name = ln;
+
                 if (!webhookPayload.type || String(webhookPayload.type).trim() === '') {
                     webhookPayload.type = webhookPayload.lead_type || 'download';
                 }
                 if (!webhookPayload.utm_source || String(webhookPayload.utm_source).trim() === '') {
                     webhookPayload.utm_source = webhookPayload.partner_source || 'tgst';
+                }
+                if (!webhookPayload.partner_source || String(webhookPayload.partner_source).trim() === '') {
+                    webhookPayload.partner_source = 'tgst';
                 }
                 if (!webhookPayload.market_id || String(webhookPayload.market_id).trim() === '') {
                     webhookPayload.market_id = '13';
@@ -763,11 +818,26 @@ exports.submitLandingPage = async (req, res) => {
                 if (!webhookPayload.segment_id || String(webhookPayload.segment_id).trim() === '') {
                     webhookPayload.segment_id = '441';
                 }
+                if (!webhookPayload.asset || String(webhookPayload.asset).trim() === '') {
+                    webhookPayload.asset = 'hr-comparison-guide-adp-workforce-now-vs-paylocity-vs-paycor-2025';
+                }
                 if (!webhookPayload.campaign || String(webhookPayload.campaign).trim() === '') {
                     webhookPayload.campaign = 'HR';
                 }
                 if (!webhookPayload.lead_source || String(webhookPayload.lead_source).trim() === '') {
                     webhookPayload.lead_source = 'Software Advice';
+                }
+                if (webhookPayload.optin === undefined || webhookPayload.optin === null || webhookPayload.optin === '') {
+                    webhookPayload.optin = 1;
+                }
+                if (webhookPayload.gdpr_consent === undefined || webhookPayload.gdpr_consent === null || webhookPayload.gdpr_consent === '') {
+                    webhookPayload.gdpr_consent = 1;
+                }
+                if (!webhookPayload.api_key) {
+                    webhookPayload.api_key = '944ab8222f7331f9a8efe3d0736837dc5bf6210f';
+                }
+                if (!webhookPayload.partner_api_key) {
+                    webhookPayload.partner_api_key = '944ab8222f7331f9a8efe3d0736837dc5bf6210f';
                 }
             }
 
@@ -1014,7 +1084,11 @@ exports.subscribeContent = async (req, res) => {
         const fullName = nameField ? (extraData[nameField.name] || 'there') : 'there';
         const contentTitle = content?.title || 'the requested content';
 
-        const existing = emailValue ? await LandingPage.findByEmailAndContent(emailValue, Number(content_id)) : null;
+        const isContentExempt = ['whitepaper', 'webinar', 'event', 'guide', 'ebook'].some(kw => 
+            (content?.content_type || content?.content_type_name || content?.category_slug || '').toLowerCase().includes(kw)
+        );
+
+        const existing = (!isContentExempt && emailValue) ? await LandingPage.findByEmailAndContent(emailValue, Number(content_id)) : null;
         if (existing) {
             return res.status(409).json({
                 success: false,
@@ -1128,57 +1202,56 @@ exports.subscribeNewsletter = async (req, res) => {
             [normalizedEmail, unsubscribeToken]
         );
 
-        // Send confirmation email (simplified version without template dependency)
+        // Send confirmation email (with database template and robust fallback)
         try {
-            const { sendEmail } = require('../config/email');
-            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
-            const frontendUrl = rawFrontend.split(',')[0].trim();
+            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com';
+            const frontendUrl = rawFrontend.split(',')[0].trim().replace(/\/$/, '');
+            const subscriberName = normalizedEmail.split('@')[0];
 
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                        .header { background: #0AAEEF; color: white; padding: 20px; text-align: center; }
-                        .content { padding: 30px; background: #f5f5f5; }
-                        .footer { padding: 20px; text-align: center; background: #e0e0e0; }
-                        .button { display: inline-block; padding: 12px 24px; background: #0AAEEF; color: white; text-decoration: none; border-radius: 5px; margin: 10px 0; }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h2>Newsletter Subscription Confirmed</h2>
-                        </div>
-                        <div class="content">
-                            <h3>Hi ${email.split('@')[0]},</h3>
-                            <p>Thank you for subscribing to our newsletter! You'll now receive the latest technology insights and updates.</p>
-                            <p>We'll keep you informed about:</p>
-                            <ul>
-                                <li>Latest technology trends</li>
-                                <li>Industry insights</li>
-                                <li>New content and resources</li>
-                                <li>Expert opinions and analysis</li>
-                            </ul>
-                            <p>Visit our website: <a href="${frontendUrl}">${frontendUrl}</a></p>
-                            <p style="margin-top: 20px; font-size: 12px; color: #666;">
-                                To unsubscribe from our newsletter, click <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}">here</a>
-                            </p>
-                        </div>
-                        <div class="footer">
-                            <p>© 2024 TGS Tech Info. All rights reserved.</p>
-                        </div>
+            let emailResult = null;
+            try {
+                emailResult = await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
+                    name: subscriberName,
+                    first_name: subscriberName,
+                    site_url: frontendUrl,
+                    unsubscribe_url: `${frontendUrl}/unsubscribe?token=${unsubscribeToken}`
+                });
+            } catch (tplErr) {
+                console.warn('[subscribeNewsletter] sendTemplatedEmail failed, trying direct fallback:', tplErr.message);
+            }
+
+            // Fallback to direct sendEmail if template missing, inactive, or skipped
+            if (!emailResult || !emailResult.success) {
+                const fallbackHtml = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; line-height: 1.6;">
+                        <h2 style="color: #0f2044; margin-top: 0;">Welcome to TGS Tech Info Newsletter!</h2>
+                        <p>Hi ${escapeHtml(subscriberName)},</p>
+                        <p>Thank you for subscribing to our newsletter! You'll now receive the latest technology insights, industry trends, and analysis directly in your inbox.</p>
+                        <p>We'll keep you informed about:</p>
+                        <ul>
+                            <li>Latest technology trends</li>
+                            <li>Industry insights and case studies</li>
+                            <li>New content and exclusive resources</li>
+                            <li>Expert opinions and market analysis</li>
+                        </ul>
+                        <p>Visit our website: <a href="${frontendUrl}" style="color: #2563eb;">${frontendUrl}</a></p>
+                        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;" />
+                        <p style="font-size: 12px; color: #64748b;">
+                            To unsubscribe from our newsletter, click <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}" style="color: #2563eb;">here</a>.
+                        </p>
+                        <p style="font-size: 12px; color: #64748b;">© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
                     </div>
-                </body>
-                </html>
-            `;
+                `;
+                emailResult = await sendEmail(normalizedEmail, 'Welcome to TGS Tech Info Newsletter!', fallbackHtml);
+            }
 
-            await sendEmail(email, 'Newsletter Subscription Confirmed', htmlContent);
+            if (emailResult?.success) {
+                console.log(`[subscribeNewsletter] Confirmation email successfully sent to ${normalizedEmail}`);
+            } else {
+                console.warn(`[subscribeNewsletter] Confirmation email skipped/failed:`, emailResult?.error || emailResult?.reason);
+            }
         } catch (emailError) {
-            console.warn('Newsletter confirmation email failed:', emailError.message);
-            // Don't fail the subscription if email fails
+            console.warn('[subscribeNewsletter] Newsletter confirmation email failed:', emailError.message);
         }
 
         res.json({ message: 'Subscribed to newsletter successfully' });
@@ -1634,6 +1707,20 @@ exports.submitContact = async (req, res) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ message: 'Invalid email address.' });
+        }
+
+        // Check if this email has already submitted contact form
+        const [existingContact] = await pool.query(
+            'SELECT id FROM contact_submissions WHERE LOWER(email) = ? LIMIT 1',
+            [email.toLowerCase().trim()]
+        );
+        if (existingContact && existingContact.length > 0) {
+            console.log(`[submitContact] Email '${email}' has already submitted contact form. Blocking duplicate.`);
+            return res.status(409).json({
+                success: false,
+                alreadySubscribed: true,
+                message: 'This email has been already subscribed'
+            });
         }
 
         const record = await ContactSubmission.create({

@@ -1241,7 +1241,11 @@ const CategoryList = () => {
                     alert('Successfully subscribed!');
                     e.target.email.value = '';
                   } catch (error) {
-                    alert('Failed to subscribe. Please try again.');
+                    const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
+                    const msg = isAlreadySub
+                      ? (error.response?.data?.message || 'This email has been already subscribed')
+                      : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
+                    alert(msg);
                   }
                 }} style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8 }}>
                   <input

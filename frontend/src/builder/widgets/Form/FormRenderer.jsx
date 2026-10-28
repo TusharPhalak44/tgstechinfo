@@ -119,8 +119,9 @@ export default function FormRenderer({ node, contentWebhookUrl }) {
         : (err.response?.data?.message || 'Submission failed. Please try again.');
       if (isAlreadySub) {
         alert(errorMsg);
+      } else {
+        antMessage.error(errorMsg);
       }
-      antMessage.error(errorMsg);
     } finally {
       setSubmitting(false);
     }

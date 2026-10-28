@@ -71,10 +71,13 @@ const Footer = ({ simplified = false }) => {
       message.success('Successfully subscribed to newsletter!');
       setNewsletterEmail('');
     } catch (error) {
-      if (error.response?.status === 400) {
-        message.error(error.response.data.message || 'Email already subscribed');
-      } else {
-        message.error('Failed to subscribe. Please try again.');
+      const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
+      const msg = isAlreadySub
+        ? (error.response?.data?.message || 'This email has been already subscribed')
+        : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
+      alert(msg);
+      if (!isAlreadySub) {
+        message.error(msg);
       }
     } finally {
       setNewsletterLoading(false);
