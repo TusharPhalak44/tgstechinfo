@@ -333,21 +333,22 @@ const getWebsiteLogoUrl = async () => {
 };
 
 /**
- * Build logo HTML for email (uses CID inline embedding for 100% email client reliability)
+ * Build logo HTML for email using verified static HTTPS asset
  * @param {string} [customUrl] - Optional website URL
  * @returns {string} - HTML string for logo
  */
 const buildLogoHtml = (customUrl = null) => {
     const publicUrl = customUrl || getPublicUrl();
+    const logoUrl = `${publicUrl}/logo.jpg`;
     const altText = 'TGS Tech Info';
 
-    return `<div style="text-align:center;margin:0 auto 18px auto;">
+    return `<div style="text-align:center;margin:0 auto 16px auto;">
     <a href="${escapeHtml(publicUrl)}" target="_blank" style="text-decoration:none;display:inline-block;">
-        <img src="cid:${LOGO_CID}" 
+        <img src="${logoUrl}" 
              alt="${altText}" 
-             title="${altText}"
-             width="160"
-             style="max-width:160px;height:auto;display:block;margin:0 auto;border:none;outline:none;text-decoration:none;" 
+             title="${altText}" 
+             width="170" 
+             style="max-width:170px;height:auto;display:block;margin:0 auto;border-radius:6px;border:none;outline:none;text-decoration:none;" 
              border="0" />
     </a>
 </div>`;
@@ -400,48 +401,37 @@ const sendEmail = async (to, subject, html, options = {}) => {
     let finalHtml = html;
     let finalAttachments = options.attachments ? [...options.attachments] : [];
 
-    // Automatically ensure company logo is embedded as a CID inline image for ALL emails
+    // Automatically ensure company logo is rendered using the verified static asset (https://tgstechinfo.com/logo.jpg)
     const shouldIncludeLogo = options.includeLogo !== false;
     if (shouldIncludeLogo && typeof finalHtml === 'string') {
-        const logoData = await getWebsiteLogoData();
-        if (logoData && logoData.buffer) {
-            const logoHtml = buildLogoHtml(publicUrl);
+        const logoUrl = `${publicUrl}/logo.jpg`;
+        const logoHtml = buildLogoHtml(publicUrl);
 
-            // Replace logo placeholders
-            finalHtml = finalHtml
-                .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
-                .replace(/\{\{website_logo_img\}\}/gi, `<img src="cid:${LOGO_CID}" alt="TGS Tech Info" width="160" style="max-width:160px;height:auto;display:block;margin:0 auto;border:none;outline:none;" border="0" />`)
-                .replace(/\{\{website_logo\}\}/gi, `cid:${LOGO_CID}`)
-                .replace(/\{\{logo\}\}/gi, `cid:${LOGO_CID}`);
+        // Replace logo placeholders
+        finalHtml = finalHtml
+            .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
+            .replace(/\{\{website_logo_img\}\}/gi, `<img src="${logoUrl}" alt="TGS Tech Info" width="170" style="max-width:170px;height:auto;display:block;margin:0 auto;border-radius:6px;border:none;outline:none;" border="0" />`)
+            .replace(/\{\{website_logo\}\}/gi, logoUrl)
+            .replace(/\{\{logo\}\}/gi, logoUrl);
 
-            // Replace any external or relative logo.png URLs with the embedded CID
-            finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/uploads\/branding\/logo\.png/gi, `cid:${LOGO_CID}`);
-            finalHtml = finalHtml.replace(/\/uploads\/branding\/logo\.png/gi, `cid:${LOGO_CID}`);
+        // Normalize any old broken logo paths (like /uploads/branding/logo.png or cid:tgs_company_logo) to verified static URL
+        finalHtml = finalHtml.replace(/cid:tgs_company_logo/gi, logoUrl);
+        finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/uploads\/branding\/logo\.png/gi, logoUrl);
+        finalHtml = finalHtml.replace(/\/uploads\/branding\/logo\.png/gi, logoUrl);
 
-            // Check if finalHtml now uses the logo CID
-            const usesLogoCid = finalHtml.includes(`cid:${LOGO_CID}`);
+        // Check if finalHtml now uses the logo URL
+        const usesLogoUrl = finalHtml.includes(logoUrl);
 
-            // If template didn't have a logo tag, inject the logo at the top
-            if (!usesLogoCid) {
-                if (finalHtml.includes('class="header"') || finalHtml.includes("class='header'")) {
-                    finalHtml = finalHtml.replace(/(<div[^>]*class=["']header["'][^>]*>)/i, `$1\n${logoHtml}`);
-                } else if (finalHtml.includes('class="container"') || finalHtml.includes("class='container'")) {
-                    finalHtml = finalHtml.replace(/(<div[^>]*class=["']container["'][^>]*>)/i, `$1\n${logoHtml}`);
-                } else if (finalHtml.includes('<body')) {
-                    finalHtml = finalHtml.replace(/(<body[^>]*>)/i, `$1\n${logoHtml}`);
-                } else {
-                    finalHtml = `${logoHtml}${finalHtml}`;
-                }
-            }
-
-            // Ensure the logo attachment is added as an inline CID image
-            if (!finalAttachments.some(a => a.cid === LOGO_CID)) {
-                finalAttachments.push({
-                    filename: 'tgs-logo.png',
-                    content: logoData.buffer,
-                    cid: LOGO_CID,
-                    contentDisposition: 'inline'
-                });
+        // If template didn't have a logo tag, inject the logo at the top
+        if (!usesLogoUrl) {
+            if (finalHtml.includes('class="header"') || finalHtml.includes("class='header'")) {
+                finalHtml = finalHtml.replace(/(<div[^>]*class=["']header["'][^>]*>)/i, `$1\n${logoHtml}`);
+            } else if (finalHtml.includes('class="container"') || finalHtml.includes("class='container'")) {
+                finalHtml = finalHtml.replace(/(<div[^>]*class=["']container["'][^>]*>)/i, `$1\n${logoHtml}`);
+            } else if (finalHtml.includes('<body')) {
+                finalHtml = finalHtml.replace(/(<body[^>]*>)/i, `$1\n${logoHtml}`);
+            } else {
+                finalHtml = `${logoHtml}${finalHtml}`;
             }
         }
     }
@@ -839,15 +829,16 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         if (template.include_logo) {
             console.log('[sendTemplatedEmail] Logo is enabled for template:', template.template_type);
             const logoHtml = buildLogoHtml(publicUrl);
+            const logoUrl = `${publicUrl}/logo.jpg`;
 
             renderedHtml = renderedHtml
                 .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
-                .replace(/\{\{website_logo_img\}\}/gi, `<img src="cid:${LOGO_CID}" alt="TGS Tech Info" width="160" style="max-width:160px;height:auto;display:block;margin:0 auto;border:none;outline:none;" border="0" />`)
-                .replace(/\{\{website_logo\}\}/gi, `cid:${LOGO_CID}`)
-                .replace(/\{\{logo\}\}/gi, `cid:${LOGO_CID}`);
+                .replace(/\{\{website_logo_img\}\}/gi, `<img src="${logoUrl}" alt="TGS Tech Info" width="170" style="max-width:170px;height:auto;display:block;margin:0 auto;border-radius:6px;border:none;outline:none;" border="0" />`)
+                .replace(/\{\{website_logo\}\}/gi, logoUrl)
+                .replace(/\{\{logo\}\}/gi, logoUrl);
 
             const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
-            if (!hasLogoPlaceholder && !renderedHtml.includes(`cid:${LOGO_CID}`)) {
+            if (!hasLogoPlaceholder && !renderedHtml.includes('/logo.jpg')) {
                 renderedHtml = `${logoHtml}${renderedHtml}`;
                 console.log('[sendTemplatedEmail] Logo prepended (no placeholder found)');
             }

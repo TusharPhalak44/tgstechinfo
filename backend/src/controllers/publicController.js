@@ -1810,7 +1810,7 @@ exports.submitContact = async (req, res) => {
 
         const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com';
         const frontendUrl = rawFrontend.split(',')[0].trim().replace(/\/$/, '');
-        const logoUrl = `${frontendUrl}/uploads/branding/logo.png`;
+        const logoUrl = `${frontendUrl}/logo.jpg`;
 
         // Send confirmation email to user (transactional)
         try {
@@ -1824,7 +1824,9 @@ exports.submitContact = async (req, res) => {
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
     <div style="max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
         <div style="background: linear-gradient(135deg, #0B1F4D 0%, #1a237e 100%); padding: 28px 24px; text-align: center;">
-            <img src="${logoUrl}" alt="TGS Tech Info" style="max-width: 160px; height: auto; margin-bottom: 12px;" />
+            <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img src="${logoUrl}" alt="TGS Tech Info" width="170" style="max-width: 170px; height: auto; margin: 0 auto 12px auto; display: block; border-radius: 6px; border: none; outline: none;" border="0" />
+            </a>
             <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">Thank You for Contacting Us</h1>
         </div>
         <div style="padding: 32px 28px;">
@@ -1865,7 +1867,9 @@ exports.submitContact = async (req, res) => {
 <body style="font-family: Arial, sans-serif; background: #f8fafc; padding: 20px; color: #1e293b;">
     <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0;">
         <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
-            <img src="cid:tgs_company_logo" alt="TGS Tech Info" width="150" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" border="0" />
+            <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img src="${logoUrl}" alt="TGS Tech Info" width="150" style="max-width: 150px; height: auto; display: block; margin: 0 auto; border-radius: 6px;" border="0" />
+            </a>
         </div>
         <h2 style="color: #0f2044; margin-top: 0;">New Contact Form Submission</h2>
         <p><strong>From:</strong> ${safeFullName} (&lt;${safeEmail}&gt;)</p>
