@@ -1296,7 +1296,7 @@ exports.subscribeNewsletter = async (req, res) => {
 
             // Fallback to direct sendEmail if template missing, inactive, or skipped
             if (!emailResult || !emailResult.success) {
-                const logoUrl = `${frontendUrl}/uploads/branding/logo.png`;
+                const logoUrl = `${frontendUrl}/logo.jpg`;
                 const fallbackHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1307,7 +1307,9 @@ exports.subscribeNewsletter = async (req, res) => {
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
     <div style="max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
         <div style="background: linear-gradient(135deg, #0B1F4D 0%, #1a237e 100%); padding: 28px 24px; text-align: center;">
-            <img src="${logoUrl}" alt="TGS Tech Info" style="max-width: 160px; height: auto; margin-bottom: 12px;" />
+            <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+                <img src="${logoUrl}" alt="TGS Tech Info" width="170" style="max-width: 170px; height: auto; margin: 0 auto 12px auto; display: block; border-radius: 6px; border: none; outline: none;" border="0" />
+            </a>
             <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">Welcome to Our Newsletter</h1>
         </div>
         <div style="padding: 32px 28px;">

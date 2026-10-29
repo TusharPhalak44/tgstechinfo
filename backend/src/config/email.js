@@ -352,7 +352,7 @@ const getWebsiteLogoUrl = async () => {
  */
 const buildLogoHtml = (customUrl = null) => {
     const publicUrl = customUrl || getPublicUrl();
-    const logoUrl = `${publicUrl}/logo.png`;
+    const logoUrl = `${publicUrl}/logo.jpg`;
     const altText = 'TGS Tech Info';
 
     return `<div style="text-align:center;margin:0 auto 16px auto;">
@@ -417,10 +417,10 @@ const sendEmail = async (to, subject, html, options = {}) => {
     let finalHtml = html;
     let finalAttachments = options.attachments ? [...options.attachments] : [];
 
-    // Automatically ensure company logo is rendered using the verified static asset (https://tgstechinfo.com/logo.png)
+    // Automatically ensure company logo is rendered using the verified static asset (https://tgstechinfo.com/logo.jpg)
     const shouldIncludeLogo = options.includeLogo !== false;
     if (shouldIncludeLogo && typeof finalHtml === 'string') {
-        const logoUrl = `${publicUrl}/logo.png`;
+        const logoUrl = `${publicUrl}/logo.jpg`;
         const logoHtml = buildLogoHtml(publicUrl);
 
         // Replace logo placeholders
@@ -430,11 +430,12 @@ const sendEmail = async (to, subject, html, options = {}) => {
             .replace(/\{\{website_logo\}\}/gi, logoUrl)
             .replace(/\{\{logo\}\}/gi, logoUrl);
 
-        // Normalize any old broken logo paths (like /uploads/branding/logo.png or cid:tgs_company_logo) to verified static URL
+        // Normalize any old broken logo paths (like /uploads/branding/logo.png or cid:tgs_company_logo or logo.png) to verified logo.jpg
         finalHtml = finalHtml.replace(/cid:tgs_company_logo/gi, logoUrl);
         finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/uploads\/branding\/logo\.png/gi, logoUrl);
         finalHtml = finalHtml.replace(/\/uploads\/branding\/logo\.png/gi, logoUrl);
-        finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/logo\.jpg/gi, logoUrl);
+        finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/logo\.png/gi, logoUrl);
+        finalHtml = finalHtml.replace(/\/logo\.png/gi, logoUrl);
 
         // Check if finalHtml now uses the logo URL
         const usesLogoUrl = finalHtml.includes(logoUrl);
@@ -867,7 +868,7 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
 
         // Ensure company logo is ALWAYS rendered in all email templates using verified static asset
         const logoHtml = buildLogoHtml(publicUrl);
-        const logoUrl = `${publicUrl}/logo.png`;
+        const logoUrl = `${publicUrl}/logo.jpg`;
 
         renderedHtml = renderedHtml
             .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
@@ -875,14 +876,15 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             .replace(/\{\{website_logo\}\}/gi, logoUrl)
             .replace(/\{\{logo\}\}/gi, logoUrl);
 
-        // Also normalize any old /uploads/branding/logo.png or cid: paths
+        // Also normalize any old paths to verified logo.jpg
         renderedHtml = renderedHtml.replace(/cid:tgs_company_logo/gi, logoUrl);
         renderedHtml = renderedHtml.replace(/https?:\/\/[^\s"']+\/uploads\/branding\/logo\.png/gi, logoUrl);
         renderedHtml = renderedHtml.replace(/\/uploads\/branding\/logo\.png/gi, logoUrl);
-        renderedHtml = renderedHtml.replace(/https?:\/\/[^\s"']+\/logo\.jpg/gi, logoUrl);
+        renderedHtml = renderedHtml.replace(/https?:\/\/[^\s"']+\/logo\.png/gi, logoUrl);
+        renderedHtml = renderedHtml.replace(/\/logo\.png/gi, logoUrl);
 
         const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
-        if (!hasLogoPlaceholder && !renderedHtml.includes('/logo.png')) {
+        if (!hasLogoPlaceholder && !renderedHtml.includes('/logo.jpg')) {
             if (renderedHtml.includes('class="header"') || renderedHtml.includes("class='header'")) {
                 renderedHtml = renderedHtml.replace(/(<div[^>]*class=["']header["'][^>]*>)/i, `$1\n${logoHtml}`);
             } else if (renderedHtml.includes('class="container"') || renderedHtml.includes("class='container'")) {
