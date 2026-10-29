@@ -1136,8 +1136,20 @@ exports.subscribeContent = async (req, res) => {
     }
 };
 
+// Auto-ensure newsletter table has name & unsubscribe_reason columns
+let isNewsletterSchemaChecked = false;
+const ensureNewsletterSchema = async () => {
+    if (isNewsletterSchemaChecked) return;
+    try {
+        await pool.query('ALTER TABLE `newsletter_subscribers` ADD COLUMN `name` VARCHAR(255) NULL AFTER `email`').catch(() => {});
+        await pool.query('ALTER TABLE `newsletter_subscribers` ADD COLUMN `unsubscribe_reason` TEXT NULL AFTER `unsubscribed_at`').catch(() => {});
+        isNewsletterSchemaChecked = true;
+    } catch (_) {}
+};
+
 exports.subscribeNewsletter = async (req, res) => {
     try {
+        await ensureNewsletterSchema();
         const { email, name } = req.body;
         if (!email || typeof email !== 'string' || !email.includes('@')) {
             return res.status(400).json({ message: 'Valid email is required' });
@@ -1192,11 +1204,22 @@ exports.subscribeNewsletter = async (req, res) => {
                 });
             }
 
-            // Inactive subscriber -> re-subscribe
-            await pool.query(
-                'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_reason = NULL, name = COALESCE(?, name), unsubscribe_token = ? WHERE id = ?',
-                [greetingName !== 'there' ? greetingName : null, unsubscribeToken, subscriber.id]
-            );
+            // Inactive subscriber -> re-subscribe (with fallback if name/unsubscribe_reason not in DB)
+            try {
+                await pool.query(
+                    'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_reason = NULL, name = COALESCE(?, name), unsubscribe_token = ? WHERE id = ?',
+                    [greetingName !== 'there' ? greetingName : null, unsubscribeToken, subscriber.id]
+                );
+            } catch (updateErr) {
+                if (updateErr.code === 'ER_BAD_FIELD_ERROR' || updateErr.errno === 1054) {
+                    await pool.query(
+                        'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_token = ? WHERE id = ?',
+                        [unsubscribeToken, subscriber.id]
+                    );
+                } else {
+                    throw updateErr;
+                }
+            }
 
             try {
                 await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
@@ -1236,13 +1259,24 @@ exports.subscribeNewsletter = async (req, res) => {
             });
         }
 
-        // New subscriber
+        // New subscriber (with fallback if name column does not exist in DB yet)
         const unsubscribeToken = crypto.randomBytes(32).toString('hex');
 
-        await pool.query(
-            'INSERT INTO newsletter_subscribers (email, name, unsubscribe_token) VALUES (?, ?, ?)',
-            [normalizedEmail, greetingName !== 'there' ? greetingName : null, unsubscribeToken]
-        );
+        try {
+            await pool.query(
+                'INSERT INTO newsletter_subscribers (email, name, unsubscribe_token) VALUES (?, ?, ?)',
+                [normalizedEmail, greetingName !== 'there' ? greetingName : null, unsubscribeToken]
+            );
+        } catch (insertErr) {
+            if (insertErr.code === 'ER_BAD_FIELD_ERROR' || insertErr.errno === 1054) {
+                await pool.query(
+                    'INSERT INTO newsletter_subscribers (email, unsubscribe_token) VALUES (?, ?)',
+                    [normalizedEmail, unsubscribeToken]
+                );
+            } else {
+                throw insertErr;
+            }
+        }
 
         const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
@@ -1381,11 +1415,22 @@ exports.unsubscribeNewsletter = async (req, res) => {
         // Clean reason feedback
         const cleanReason = (typeof reason === 'string' && reason.trim()) ? reason.trim().slice(0, 1000) : null;
 
-        // Mark as unsubscribed and save reason
-        await pool.query(
-            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW(), unsubscribe_reason = ? WHERE id = ?',
-            [cleanReason, subscriber.id]
-        );
+        // Mark as unsubscribed and save reason (with fallback if column missing)
+        try {
+            await pool.query(
+                'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW(), unsubscribe_reason = ? WHERE id = ?',
+                [cleanReason, subscriber.id]
+            );
+        } catch (dbErr) {
+            if (dbErr.code === 'ER_BAD_FIELD_ERROR' || dbErr.errno === 1054) {
+                await pool.query(
+                    'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW() WHERE id = ?',
+                    [subscriber.id]
+                );
+            } else {
+                throw dbErr;
+            }
+        }
 
         res.json({
             message: 'Successfully unsubscribed from newsletter',
