@@ -64,7 +64,26 @@ const isRateLimited = (to, maxPerHour = 10) => {
  * @returns {object} - Nodemailer transporter or SendGrid transport
  */
 const getEmailTransporter = () => {
-    // Try SendGrid first if API key is configured
+    // 1. Try Brevo (Sendinblue) first if configured
+    const brevoKey = process.env.BREVO_API_KEY || process.env.BREVO_SMTP_KEY;
+    if (brevoKey && !brevoKey.includes('placeholder')) {
+        const brevoUser = (process.env.BREVO_USER || process.env.EMAIL_USER || 'info@tgstechinfo.com').trim();
+        console.log('[Email] Using Brevo SMTP Relay (smtp-relay.brevo.com:587) for', brevoUser);
+        return nodemailer.createTransport({
+            host: 'smtp-relay.brevo.com',
+            port: 587,
+            secure: false,
+            auth: {
+                user: brevoUser,
+                pass: brevoKey.trim()
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000
+        });
+    }
+
+    // 2. Try SendGrid if API key is configured
     if (process.env.SENDGRID_API_KEY && !process.env.SENDGRID_API_KEY.includes('placeholder')) {
         console.log('[Email] Using SendGrid as email service');
         return nodemailer.createTransport({
@@ -73,8 +92,11 @@ const getEmailTransporter = () => {
             secure: false,
             auth: {
                 user: 'apikey',
-                pass: process.env.SENDGRID_API_KEY
-            }
+                pass: process.env.SENDGRID_API_KEY.trim()
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000
         });
     }
 
@@ -111,6 +133,9 @@ const getEmailTransporter = () => {
         secure: isSecure,
         auth: { user, pass },
         tls: { rejectUnauthorized: false },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         debug: process.env.NODE_ENV === 'development',
         logger: process.env.NODE_ENV === 'development'
     });
@@ -160,58 +185,56 @@ const getBackendUrl = () => {
 };
 
 /**
- * Convert a logo path/data to a public HTTPS URL or inline base64 data
+ * Convert a logo path/data to a public HTTPS URL (avoiding heavy base64 data URIs in emails)
  * @param {string} logoValue - Logo path or base64 data from database
- * @returns {object|null} - Object with {type: 'url'|'base64', value: string} or null
+ * @returns {object|null} - Object with {type: 'url', value: string} or null
  */
 const convertLogoToPublicUrl = (logoValue) => {
     if (!logoValue || typeof logoValue !== 'string') {
         return null;
     }
 
-    // If it's a base64 data URI, validate and return it as base64 type
-    if (logoValue.startsWith('data:')) {
-        if (logoValue.startsWith('data:image/') && logoValue.includes('base64,')) {
-            return { type: 'base64', value: logoValue };
-        }
-        console.warn('Invalid base64 logo format:', logoValue.substring(0, 50) + '...');
-        return null;
-    }
-
-    // Check if relative path image exists on local disk -> convert to inline Base64 Data URI for emails (NOT as attachment)
-    const relativePath = logoValue.startsWith('/') ? logoValue : '/' + logoValue;
-    const localDiskPath = path.join(__dirname, '../../', relativePath);
-    if (fs.existsSync(localDiskPath)) {
-        try {
-            const ext = path.extname(localDiskPath).replace('.', '').toLowerCase() || 'png';
-            const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-            const imageBuffer = fs.readFileSync(localDiskPath);
-            const base64Data = `data:${mimeType};base64,${imageBuffer.toString('base64')}`;
-            console.log('[convertLogoToPublicUrl] Embedded local logo file inline as Base64 Data URI:', relativePath);
-            return { type: 'base64', value: base64Data };
-        } catch (readErr) {
-            console.warn('[convertLogoToPublicUrl] Could not read local logo file:', readErr.message);
-        }
-    }
+    const publicUrl = getPublicUrl();
 
     // If it's already a full HTTP/HTTPS URL, return it
     if (logoValue.startsWith('http://') || logoValue.startsWith('https://')) {
         return { type: 'url', value: logoValue };
     }
 
-    // Fallback to backend public URL
-    const backendUrl = getBackendUrl();
-    const fullUrl = `${backendUrl}${relativePath}`;
-    console.log('[convertLogoToPublicUrl] Fallback logo URL:', fullUrl);
-    return { type: 'url', value: fullUrl };
+    // If it's a base64 data URI, persist it to disk as a static image so email clients load it via HTTPS
+    if (logoValue.startsWith('data:')) {
+        try {
+            const matches = logoValue.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+                const brandingDir = path.join(__dirname, '../../uploads/branding');
+                if (!fs.existsSync(brandingDir)) {
+                    fs.mkdirSync(brandingDir, { recursive: true });
+                }
+                const logoFilePath = path.join(brandingDir, 'logo.png');
+                if (!fs.existsSync(logoFilePath)) {
+                    fs.writeFileSync(logoFilePath, Buffer.from(matches[2], 'base64'));
+                    console.log('[convertLogoToPublicUrl] Saved base64 logo to disk for email:', logoFilePath);
+                }
+                return { type: 'url', value: `${publicUrl}/uploads/branding/logo.png` };
+            }
+        } catch (e) {
+            console.warn('[convertLogoToPublicUrl] Could not persist base64 logo:', e.message);
+        }
+        return { type: 'url', value: `${publicUrl}/uploads/branding/logo.png` };
+    }
+
+    // Relative path (e.g. /uploads/branding/logo.png)
+    const relativePath = logoValue.startsWith('/') ? logoValue : '/' + logoValue;
+    return { type: 'url', value: `${publicUrl}${relativePath}` };
 };
 
 /**
- * Get website logo from settings and convert to public URL or base64
- * @returns {Promise<object|null>} - Object with {type: 'url'|'base64', value: string} or null
+ * Get website logo from settings and convert to public URL
+ * @returns {Promise<object|null>} - Object with {type: 'url', value: string} or null
  */
 const getWebsiteLogoUrl = async () => {
     try {
+        const publicUrl = getPublicUrl();
         const [settingsRows] = await pool.query(
             'SELECT website_main_logo, website_logo, cms_logo1 FROM site_settings LIMIT 1'
         );
@@ -225,7 +248,7 @@ const getWebsiteLogoUrl = async () => {
         // Fallback check for default branding logo file on disk
         const defaultLogoPath = path.join(__dirname, '../../uploads/branding/logo.png');
         if (fs.existsSync(defaultLogoPath)) {
-            return convertLogoToPublicUrl('/uploads/branding/logo.png');
+            return { type: 'url', value: `${publicUrl}/uploads/branding/logo.png` };
         }
         return null;
     } catch (error) {
@@ -236,18 +259,17 @@ const getWebsiteLogoUrl = async () => {
 
 /**
  * Build logo HTML for email (centered with styling and fallback)
- * @param {object} logoData - Object with {type: 'url'|'base64', value: string}
+ * @param {object} logoData - Object with {type: 'url', value: string}
  * @returns {string} - HTML string for logo
  */
 const buildLogoHtml = (logoData) => {
     if (!logoData || !logoData.value) return '';
 
     const logoSrc = logoData.value;
-    const altText = 'TGS Tech Info Logo';
+    const altText = 'TGS Tech Info';
 
-    // For both base64 and URL, use consistent styling with fallbacks
-    return `<div style="text-align:center;margin-bottom:20px;padding:10px;background-color:#ffffff;">
-    <img src="${logoSrc}" 
+    return `<div style="text-align:center;margin-bottom:20px;padding:12px;background-color:#ffffff;border-radius:6px;">
+    <img src="${escapeHtml(logoSrc)}" 
          alt="${altText}" 
          title="${altText}"
          style="max-width:180px;height:auto;display:block;margin:0 auto;border:none;"
@@ -257,8 +279,8 @@ const buildLogoHtml = (logoData) => {
 };
 
 const sendEmail = async (to, subject, html, options = {}) => {
-    // Check rate limit
-    if (isRateLimited(to, 10)) {
+    // Check rate limit (allow up to 20 per hour for testing/admin)
+    if (isRateLimited(to, 20)) {
         console.warn(`[sendEmail] Rate limit exceeded for ${to}`);
         return {
             success: false,
@@ -287,8 +309,10 @@ const sendEmail = async (to, subject, html, options = {}) => {
     const pass = rawPass ? rawPass.replace(/^['"](.*)['"]$/g, '$1') : rawPass;
 
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
-        if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY.includes('placeholder')) {
-            console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD or SMTP_USER/SMTP_PASS or SENDGRID_API_KEY.');
+        const hasBrevo = process.env.BREVO_API_KEY && !process.env.BREVO_API_KEY.includes('placeholder');
+        const hasSendgrid = process.env.SENDGRID_API_KEY && !process.env.SENDGRID_API_KEY.includes('placeholder');
+        if (!hasBrevo && !hasSendgrid) {
+            console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD, BREVO_API_KEY, or SENDGRID_API_KEY.');
             return { success: false, skipped: true, reason: 'credentials_not_configured', from: fromAddress };
         }
     }
@@ -297,9 +321,9 @@ const sendEmail = async (to, subject, html, options = {}) => {
     const publicUrl = getPublicUrl();
     const unsubscribeUrl = `${publicUrl}/unsubscribe?email=${encodeURIComponent(to || '')}`;
 
-    // Auto-append compliant unsubscribe footer if email HTML does not already contain an unsubscribe link
+    // Auto-append compliant unsubscribe footer ONLY for marketing/newsletter (not transactional)
     let finalHtml = html;
-    if (typeof finalHtml === 'string' && !/unsubscribe/i.test(finalHtml)) {
+    if (!options.isTransactional && typeof finalHtml === 'string' && !/unsubscribe/i.test(finalHtml)) {
         const unsubscribeFooter = `
             <div style="margin-top: 35px; padding-top: 18px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; font-family: Arial, sans-serif;">
                 <p style="margin: 0 0 6px 0;">You received this email because you subscribed to or requested content from <strong>${escapeHtml(organization)}</strong>.</p>
@@ -328,6 +352,15 @@ const sendEmail = async (to, subject, html, options = {}) => {
             .trim()
         : '');
 
+    // Setup headers (only attach List-Unsubscribe for bulk/newsletter, not for transactional contact form)
+    const mailHeaders = {
+        'X-Priority': '3'
+    };
+    if (!options.isTransactional) {
+        mailHeaders['List-Unsubscribe'] = `<${unsubscribeUrl}>, <mailto:${replyTo}?subject=Unsubscribe>`;
+        mailHeaders['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
+    }
+
     const mailOptions = {
         from: `"${organization}" <${fromAddress}>`,
         to,
@@ -335,11 +368,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
         text: textFallback,
         html: finalHtml,
         replyTo: replyTo,
-        headers: {
-            'X-Priority': '3',
-            'List-Unsubscribe': `<${unsubscribeUrl}>, <mailto:${replyTo}?subject=Unsubscribe>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
-        }
+        headers: mailHeaders
     };
 
     // Add custom attachments if provided
@@ -729,7 +758,8 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         }
 
         // Send email
-        const result = await sendEmail(to, renderedSubject, renderedHtml);
+        const isTransactional = ['registration', 'password_reset', 'content_submitted', 'content_approved', 'content_rejected'].includes(templateType);
+        const result = await sendEmail(to, renderedSubject, renderedHtml, { isTransactional });
         return result;
     } catch (error) {
         console.error('Error sending templated email:', error);

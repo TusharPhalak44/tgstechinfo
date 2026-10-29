@@ -1222,26 +1222,48 @@ exports.subscribeNewsletter = async (req, res) => {
 
             // Fallback to direct sendEmail if template missing, inactive, or skipped
             if (!emailResult || !emailResult.success) {
-                const fallbackHtml = `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; line-height: 1.6;">
-                        <h2 style="color: #0f2044; margin-top: 0;">Welcome to TGS Tech Info Newsletter!</h2>
-                        <p>Hi ${escapeHtml(subscriberName)},</p>
-                        <p>Thank you for subscribing to our newsletter! You'll now receive the latest technology insights, industry trends, and analysis directly in your inbox.</p>
-                        <p>We'll keep you informed about:</p>
-                        <ul>
-                            <li>Latest technology trends</li>
-                            <li>Industry insights and case studies</li>
-                            <li>New content and exclusive resources</li>
-                            <li>Expert opinions and market analysis</li>
-                        </ul>
-                        <p>Visit our website: <a href="${frontendUrl}" style="color: #2563eb;">${frontendUrl}</a></p>
-                        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;" />
-                        <p style="font-size: 12px; color: #64748b;">
-                            To unsubscribe from our newsletter, click <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}" style="color: #2563eb;">here</a>.
-                        </p>
-                        <p style="font-size: 12px; color: #64748b;">© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
-                    </div>
-                `;
+                const logoUrl = `${frontendUrl}/uploads/branding/logo.png`;
+                const fallbackHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to TGS Tech Info Newsletter</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+    <div style="max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+        <div style="background: linear-gradient(135deg, #0B1F4D 0%, #1a237e 100%); padding: 28px 24px; text-align: center;">
+            <img src="${logoUrl}" alt="TGS Tech Info" style="max-width: 160px; height: auto; margin-bottom: 12px;" />
+            <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">Welcome to Our Newsletter</h1>
+        </div>
+        <div style="padding: 32px 28px;">
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi <strong>${escapeHtml(subscriberName)}</strong>,</p>
+            <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+                Thank you for subscribing to our newsletter! You will now receive the latest technology insights, industry trends, and in-depth analysis directly in your inbox.
+            </p>
+            <div style="background-color: #f1f5f9; border-left: 4px solid #F7941D; padding: 16px 20px; border-radius: 6px; margin: 24px 0;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;"><strong>What you can look forward to:</strong></p>
+                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #1e293b; line-height: 1.8;">
+                    <li>Latest technology trends and market shifts</li>
+                    <li>Exclusive industry whitepapers and case studies</li>
+                    <li>Early access to expert guides and software comparisons</li>
+                    <li>Thought leadership from leading tech professionals</li>
+                </ul>
+            </div>
+            <div style="text-align: center; margin: 28px 0;">
+                <a href="${frontendUrl}" style="display: inline-block; padding: 12px 28px; background-color: #F7941D; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">Explore Our Website</a>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                You are receiving this email because you subscribed on tgstechinfo.com.<br />
+                To unsubscribe at any time, <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}" style="color: #0284c7; text-decoration: underline;">click here</a>.
+            </p>
+        </div>
+        <div style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+            © ${new Date().getFullYear()} TGS Tech Info. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>`;
                 emailResult = await sendEmail(normalizedEmail, 'Welcome to TGS Tech Info Newsletter!', fallbackHtml);
             }
 
@@ -1743,45 +1765,81 @@ exports.submitContact = async (req, res) => {
         const safeSubject = escapeHtml(subject);
         const safeMessage = escapeHtml(message).replace(/\n/g, '<br>');
 
-        // Send confirmation email to user
+        const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com';
+        const frontendUrl = rawFrontend.split(',')[0].trim().replace(/\/$/, '');
+        const logoUrl = `${frontendUrl}/uploads/branding/logo.png`;
+
+        // Send confirmation email to user (transactional)
         try {
-            const emailHtml = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #0f2044;">Thank you for contacting TGS Tech Info</h2>
-                    <p>Dear ${safeFullName},</p>
-                    <p>We have received your message and will get back to you within 24-48 hours.</p>
-                    <p><strong>Subject:</strong> ${safeSubject}</p>
-                    <p><strong>Category:</strong> ${safeCategory}</p>
-                    <p>If you have any urgent questions, please email us directly at <a href="mailto:info@tgstechinfo.com">info@tgstechinfo.com</a></p>
-                    <p>— TGS Tech Info Team</p>
-                </div>
-            `;
-            await sendEmail(email, 'Contact Form Submission Received — TGS Tech Info', emailHtml);
+            const emailHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inquiry Received — TGS Tech Info</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
+    <div style="max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
+        <div style="background: linear-gradient(135deg, #0B1F4D 0%, #1a237e 100%); padding: 28px 24px; text-align: center;">
+            <img src="${logoUrl}" alt="TGS Tech Info" style="max-width: 160px; height: auto; margin-bottom: 12px;" />
+            <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">Thank You for Contacting Us</h1>
+        </div>
+        <div style="padding: 32px 28px;">
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Dear <strong>${safeFullName}</strong>,</p>
+            <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+                We have received your message and our team is already reviewing your inquiry. You can expect a response from one of our specialists within <strong>24 to 48 business hours</strong>.
+            </p>
+            <div style="background-color: #f1f5f9; border-left: 4px solid #F7941D; padding: 16px 20px; border-radius: 6px; margin: 24px 0;">
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;"><strong>Submission Details:</strong></p>
+                <p style="margin: 4px 0; font-size: 14px;"><strong>Subject:</strong> ${safeSubject}</p>
+                <p style="margin: 4px 0; font-size: 14px;"><strong>Category:</strong> ${safeCategory}</p>
+                <p style="margin: 4px 0; font-size: 14px;"><strong>Company:</strong> ${safeCompany}</p>
+            </div>
+            <p style="font-size: 13px; color: #64748b; line-height: 1.6;">
+                If your inquiry is urgent, please reply directly to this email or reach us at <a href="mailto:info@tgstechinfo.com" style="color: #0284c7; text-decoration: underline;">info@tgstechinfo.com</a>.
+            </p>
+            <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #0f172a;">Editorial & Support Team</p>
+                <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">TGS Tech Info — <a href="${frontendUrl}" style="color: #0284c7; text-decoration: none;">tgstechinfo.com</a></p>
+            </div>
+        </div>
+        <div style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
+            © ${new Date().getFullYear()} TGS Tech Info. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>`;
+            await sendEmail(email, `Inquiry Received: ${subject} — TGS Tech Info`, emailHtml, { isTransactional: true });
         } catch (e) {
-            console.warn('Contact confirmation email failed:', e.message);
+            console.warn('[submitContact] Contact confirmation email failed:', e.message);
         }
 
-        // Send notification email to admin(s)
+        // Send notification email to admin(s) (transactional)
         try {
-            const adminEmailHtml = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                    <h2 style="color: #0f2044;">New Contact Form Submission</h2>
-                    <p><strong>From:</strong> ${safeFullName} (${safeEmail})</p>
-                    <p><strong>Company:</strong> ${safeCompany}</p>
-                    <p><strong>Category:</strong> ${safeCategory}</p>
-                    <p><strong>Subject:</strong> ${safeSubject}</p>
-                    <p><strong>Message:</strong></p>
-                    <p style="background: #f5f5f5; padding: 15px; border-radius: 5px;">${safeMessage}</p>
-                    <p>— TGS Tech Info System</p>
-                </div>
-            `;
+            const adminEmailHtml = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>New Contact Form Submission</title></head>
+<body style="font-family: Arial, sans-serif; background: #f8fafc; padding: 20px; color: #1e293b;">
+    <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <h2 style="color: #0f2044; margin-top: 0;">New Contact Form Submission</h2>
+        <p><strong>From:</strong> ${safeFullName} (&lt;${safeEmail}&gt;)</p>
+        <p><strong>Company:</strong> ${safeCompany}</p>
+        <p><strong>Category:</strong> ${safeCategory}</p>
+        <p><strong>Subject:</strong> ${safeSubject}</p>
+        <p><strong>Message:</strong></p>
+        <div style="background: #f1f5f9; padding: 16px; border-radius: 6px; border-left: 4px solid #0284c7; font-size: 14px; line-height: 1.6;">${safeMessage}</div>
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e2e8f0;" />
+        <p style="font-size: 12px; color: #64748b; margin: 0;">Sent automatically from TGS Tech Info Publishing Platform.</p>
+    </div>
+</body>
+</html>`;
             const adminEmailsConfig = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'info@tgstechinfo.com';
             const adminRecipients = adminEmailsConfig.split(',').map(e => e.trim()).filter(Boolean);
             for (const adminTo of adminRecipients) {
-                await sendEmail(adminTo, `New Contact: ${subject}`, adminEmailHtml);
+                await sendEmail(adminTo, `[Inquiry Alert] ${safeFullName}: ${subject}`, adminEmailHtml, { isTransactional: true });
             }
         } catch (e) {
-            console.warn('Admin notification email failed:', e.message);
+            console.warn('[submitContact] Admin notification email failed:', e.message);
         }
 
         res.json({
