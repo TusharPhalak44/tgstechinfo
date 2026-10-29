@@ -222,6 +222,47 @@ const getBackendUrl = () => {
     return 'http://localhost:5000';
 };
 
+// Constant for inline embedded logo across all emails
+const LOGO_CID = 'tgs_company_logo';
+
+/**
+ * Get website logo as a Buffer and MIME type from database (or disk)
+ * @returns {Promise<{buffer: Buffer, contentType: string}|null>}
+ */
+const getWebsiteLogoData = async () => {
+    try {
+        // 1. Check site_settings database for dynamic base64 logo
+        const [rows] = await pool.query(
+            'SELECT website_main_logo, website_navbar_logo, website_logo FROM site_settings LIMIT 1'
+        );
+        if (rows && rows[0]) {
+            const rawLogo = rows[0].website_main_logo || rows[0].website_navbar_logo || rows[0].website_logo;
+            if (rawLogo && typeof rawLogo === 'string' && rawLogo.startsWith('data:')) {
+                const match = rawLogo.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                if (match && match.length === 3) {
+                    const buf = Buffer.from(match[2], 'base64');
+                    // Ensure saved to disk too for static hosting compatibility
+                    try {
+                        const brandingDir = path.join(__dirname, '../../uploads/branding');
+                        if (!fs.existsSync(brandingDir)) fs.mkdirSync(brandingDir, { recursive: true });
+                        fs.writeFileSync(path.join(brandingDir, 'logo.png'), buf);
+                    } catch (_) {}
+                    return { buffer: buf, contentType: match[1] || 'image/png' };
+                }
+            }
+        }
+        // 2. Fallback check for default branding logo file on disk
+        const diskPath = path.join(__dirname, '../../uploads/branding/logo.png');
+        if (fs.existsSync(diskPath)) {
+            const buf = fs.readFileSync(diskPath);
+            return { buffer: buf, contentType: 'image/png' };
+        }
+    } catch (err) {
+        console.warn('[getWebsiteLogoData] Error loading logo data:', err.message);
+    }
+    return null;
+};
+
 /**
  * Convert a logo path/data to a public HTTPS URL (avoiding heavy base64 data URIs in emails)
  * @param {string} logoValue - Logo path or base64 data from database
@@ -239,7 +280,7 @@ const convertLogoToPublicUrl = (logoValue) => {
         return { type: 'url', value: logoValue };
     }
 
-    // If it's a base64 data URI, persist it to disk as a static image so email clients load it via HTTPS
+    // If it's a base64 data URI, persist it to disk as a static image
     if (logoValue.startsWith('data:')) {
         try {
             const matches = logoValue.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
@@ -249,10 +290,7 @@ const convertLogoToPublicUrl = (logoValue) => {
                     fs.mkdirSync(brandingDir, { recursive: true });
                 }
                 const logoFilePath = path.join(brandingDir, 'logo.png');
-                if (!fs.existsSync(logoFilePath)) {
-                    fs.writeFileSync(logoFilePath, Buffer.from(matches[2], 'base64'));
-                    console.log('[convertLogoToPublicUrl] Saved base64 logo to disk for email:', logoFilePath);
-                }
+                fs.writeFileSync(logoFilePath, Buffer.from(matches[2], 'base64'));
                 return { type: 'url', value: `${publicUrl}/uploads/branding/logo.png` };
             }
         } catch (e) {
@@ -283,7 +321,6 @@ const getWebsiteLogoUrl = async () => {
                 if (converted) return converted;
             }
         }
-        // Fallback check for default branding logo file on disk
         const defaultLogoPath = path.join(__dirname, '../../uploads/branding/logo.png');
         if (fs.existsSync(defaultLogoPath)) {
             return { type: 'url', value: `${publicUrl}/uploads/branding/logo.png` };
@@ -296,23 +333,23 @@ const getWebsiteLogoUrl = async () => {
 };
 
 /**
- * Build logo HTML for email (centered with styling and fallback)
- * @param {object} logoData - Object with {type: 'url', value: string}
+ * Build logo HTML for email (uses CID inline embedding for 100% email client reliability)
+ * @param {string} [customUrl] - Optional website URL
  * @returns {string} - HTML string for logo
  */
-const buildLogoHtml = (logoData) => {
-    if (!logoData || !logoData.value) return '';
-
-    const logoSrc = logoData.value;
+const buildLogoHtml = (customUrl = null) => {
+    const publicUrl = customUrl || getPublicUrl();
     const altText = 'TGS Tech Info';
 
-    return `<div style="text-align:center;margin-bottom:20px;padding:12px;background-color:#ffffff;border-radius:6px;">
-    <img src="${escapeHtml(logoSrc)}" 
-         alt="${altText}" 
-         title="${altText}"
-         style="max-width:180px;height:auto;display:block;margin:0 auto;border:none;"
-         width="180"
-         border="0" />
+    return `<div style="text-align:center;margin:0 auto 18px auto;">
+    <a href="${escapeHtml(publicUrl)}" target="_blank" style="text-decoration:none;display:inline-block;">
+        <img src="cid:${LOGO_CID}" 
+             alt="${altText}" 
+             title="${altText}"
+             width="160"
+             style="max-width:160px;height:auto;display:block;margin:0 auto;border:none;outline:none;text-decoration:none;" 
+             border="0" />
+    </a>
 </div>`;
 };
 
@@ -361,6 +398,54 @@ const sendEmail = async (to, subject, html, options = {}) => {
 
     // Auto-append compliant unsubscribe footer ONLY for marketing/newsletter (not transactional)
     let finalHtml = html;
+    let finalAttachments = options.attachments ? [...options.attachments] : [];
+
+    // Automatically ensure company logo is embedded as a CID inline image for ALL emails
+    const shouldIncludeLogo = options.includeLogo !== false;
+    if (shouldIncludeLogo && typeof finalHtml === 'string') {
+        const logoData = await getWebsiteLogoData();
+        if (logoData && logoData.buffer) {
+            const logoHtml = buildLogoHtml(publicUrl);
+
+            // Replace logo placeholders
+            finalHtml = finalHtml
+                .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
+                .replace(/\{\{website_logo_img\}\}/gi, `<img src="cid:${LOGO_CID}" alt="TGS Tech Info" width="160" style="max-width:160px;height:auto;display:block;margin:0 auto;border:none;outline:none;" border="0" />`)
+                .replace(/\{\{website_logo\}\}/gi, `cid:${LOGO_CID}`)
+                .replace(/\{\{logo\}\}/gi, `cid:${LOGO_CID}`);
+
+            // Replace any external or relative logo.png URLs with the embedded CID
+            finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/uploads\/branding\/logo\.png/gi, `cid:${LOGO_CID}`);
+            finalHtml = finalHtml.replace(/\/uploads\/branding\/logo\.png/gi, `cid:${LOGO_CID}`);
+
+            // Check if finalHtml now uses the logo CID
+            const usesLogoCid = finalHtml.includes(`cid:${LOGO_CID}`);
+
+            // If template didn't have a logo tag, inject the logo at the top
+            if (!usesLogoCid) {
+                if (finalHtml.includes('class="header"') || finalHtml.includes("class='header'")) {
+                    finalHtml = finalHtml.replace(/(<div[^>]*class=["']header["'][^>]*>)/i, `$1\n${logoHtml}`);
+                } else if (finalHtml.includes('class="container"') || finalHtml.includes("class='container'")) {
+                    finalHtml = finalHtml.replace(/(<div[^>]*class=["']container["'][^>]*>)/i, `$1\n${logoHtml}`);
+                } else if (finalHtml.includes('<body')) {
+                    finalHtml = finalHtml.replace(/(<body[^>]*>)/i, `$1\n${logoHtml}`);
+                } else {
+                    finalHtml = `${logoHtml}${finalHtml}`;
+                }
+            }
+
+            // Ensure the logo attachment is added as an inline CID image
+            if (!finalAttachments.some(a => a.cid === LOGO_CID)) {
+                finalAttachments.push({
+                    filename: 'tgs-logo.png',
+                    content: logoData.buffer,
+                    cid: LOGO_CID,
+                    contentDisposition: 'inline'
+                });
+            }
+        }
+    }
+
     if (!options.isTransactional && typeof finalHtml === 'string' && !/unsubscribe/i.test(finalHtml)) {
         const unsubscribeFooter = `
             <div style="margin-top: 35px; padding-top: 18px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #64748b; text-align: center; font-family: Arial, sans-serif;">
@@ -409,9 +494,9 @@ const sendEmail = async (to, subject, html, options = {}) => {
         headers: mailHeaders
     };
 
-    // Add custom attachments if provided
-    if (options.attachments && options.attachments.length > 0) {
-        mailOptions.attachments = options.attachments;
+    // Add attachments (including inline logo)
+    if (finalAttachments.length > 0) {
+        mailOptions.attachments = finalAttachments;
     }
 
     try {
@@ -753,37 +838,18 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         // Handle company logo if include_logo is enabled
         if (template.include_logo) {
             console.log('[sendTemplatedEmail] Logo is enabled for template:', template.template_type);
-            const logoData = await getWebsiteLogoUrl();
-            console.log('[sendTemplatedEmail] Logo data fetched:', logoData ? 'Found' : 'Not found');
+            const logoHtml = buildLogoHtml(publicUrl);
 
-            if (logoData && logoData.value) {
-                const logoHtml = buildLogoHtml(logoData);
-                const logoValue = logoData.value;
-                console.log('[sendTemplatedEmail] Logo type:', logoData.type, 'Logo value length:', logoValue.length);
+            renderedHtml = renderedHtml
+                .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
+                .replace(/\{\{website_logo_img\}\}/gi, `<img src="cid:${LOGO_CID}" alt="TGS Tech Info" width="160" style="max-width:160px;height:auto;display:block;margin:0 auto;border:none;outline:none;" border="0" />`)
+                .replace(/\{\{website_logo\}\}/gi, `cid:${LOGO_CID}`)
+                .replace(/\{\{logo\}\}/gi, `cid:${LOGO_CID}`);
 
-                // Replace logo placeholders with improved HTML
-                renderedHtml = renderedHtml
-                    .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
-                    .replace(/\{\{website_logo_img\}\}/gi, `<img src="${logoValue}" alt="TGS Tech Info Logo" style="max-width:180px;height:auto;display:block;margin:0 auto;border:none;" width="180" border="0" />`)
-                    .replace(/\{\{website_logo\}\}/gi, logoValue)
-                    .replace(/\{\{logo\}\}/gi, logoValue);
-
-                console.log('[sendTemplatedEmail] Logo placeholders replaced successfully');
-
-                // If no placeholder exists, prepend logo to content
-                const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
-                if (!hasLogoPlaceholder) {
-                    renderedHtml = `${logoHtml}${renderedHtml}`;
-                    console.log('[sendTemplatedEmail] Logo prepended (no placeholder found)');
-                }
-            } else {
-                console.warn('[sendTemplatedEmail] Company logo is enabled but no valid logo found in database');
-                // Remove any logo placeholders to avoid broken images
-                renderedHtml = renderedHtml
-                    .replace(/\{\{website_logo_html\}\}/gi, '')
-                    .replace(/\{\{website_logo_img\}\}/gi, '')
-                    .replace(/\{\{website_logo\}\}/gi, '')
-                    .replace(/\{\{logo\}\}/gi, '');
+            const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
+            if (!hasLogoPlaceholder && !renderedHtml.includes(`cid:${LOGO_CID}`)) {
+                renderedHtml = `${logoHtml}${renderedHtml}`;
+                console.log('[sendTemplatedEmail] Logo prepended (no placeholder found)');
             }
         } else {
             console.log('[sendTemplatedEmail] Logo is disabled for template:', template.template_type);
@@ -806,9 +872,11 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
 };
 
 module.exports = {
+    LOGO_CID,
     sendEmail,
     sendTemplatedEmail,
     extractNameFromEmail,
+    getWebsiteLogoData,
     accessGrantEmailTemplate,
     subscriptionEmailTemplate,
     renderCaseStudyEmail,

@@ -1864,6 +1864,9 @@ exports.submitContact = async (req, res) => {
 <head><meta charset="UTF-8"><title>New Contact Form Submission</title></head>
 <body style="font-family: Arial, sans-serif; background: #f8fafc; padding: 20px; color: #1e293b;">
     <div style="max-width: 600px; margin: 0 auto; background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
+            <img src="cid:tgs_company_logo" alt="TGS Tech Info" width="150" style="max-width: 150px; height: auto; display: block; margin: 0 auto;" border="0" />
+        </div>
         <h2 style="color: #0f2044; margin-top: 0;">New Contact Form Submission</h2>
         <p><strong>From:</strong> ${safeFullName} (&lt;${safeEmail}&gt;)</p>
         <p><strong>Company:</strong> ${safeCompany}</p>
