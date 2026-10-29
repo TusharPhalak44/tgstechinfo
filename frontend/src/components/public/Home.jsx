@@ -19,7 +19,6 @@ import { formatViewsToM } from '../../utils/numberHelper';
 
 // Newsletter Subscribe Form Component
 const NewsletterSubscribeForm = ({ darkMode = false }) => {
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,9 +31,8 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
 
     setLoading(true);
     try {
-      await axios.post('/api/public/newsletter', { name: name.trim(), email: email.trim() });
+      await axios.post('/api/public/newsletter', { email: email.trim() });
       message.success('Successfully subscribed to newsletter!');
-      setName('');
       setEmail('');
     } catch (error) {
       const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
@@ -55,30 +53,11 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
     <form onSubmit={handleSubmit} className="newsletter-form" style={{
       display: 'flex',
       gap: 10,
-      maxWidth: 560,
+      maxWidth: 440,
       margin: '0 auto',
       flexWrap: 'wrap',
       justifyContent: 'center'
     }}>
-      <input
-        type="text"
-        placeholder="Your Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        disabled={loading}
-        className="newsletter-input"
-        style={{
-          flex: '1 1 150px',
-          minWidth: 140,
-          padding: '12px 18px',
-          borderRadius: 10,
-          border: 'none',
-          fontSize: 14,
-          outline: 'none',
-          background: darkMode ? 'rgba(255,255,255,.95)' : 'var(--color-surface)',
-          color: darkMode ? '#333' : 'var(--color-heading)'
-        }}
-      />
       <input
         type="email"
         placeholder="Enter your email address"
@@ -88,8 +67,8 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
         required
         className="newsletter-input"
         style={{
-          flex: '2 1 200px',
-          minWidth: 180,
+          flex: 1,
+          minWidth: 200,
           padding: '12px 18px',
           borderRadius: 10,
           border: 'none',

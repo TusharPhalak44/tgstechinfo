@@ -1231,19 +1231,19 @@ const CategoryList = () => {
 
                 <form onSubmit={async (e) => {
                   e.preventDefault();
-                  const email = e.target.email.value;
-                  if (!email || !email.includes('@')) {
+                  const emailVal = (e.target.email.value || '').trim();
+                  if (!emailVal || !emailVal.includes('@')) {
                     alert('Please enter a valid email address');
                     return;
                   }
                   try {
-                    await axios.post('/api/public/newsletter', { email });
-                    alert('Successfully subscribed!');
+                    const res = await axios.post('/api/public/newsletter', { email: emailVal });
+                    alert(res.data?.message || 'Successfully subscribed! Please check your email inbox.');
                     e.target.email.value = '';
                   } catch (error) {
                     const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
                     const msg = isAlreadySub
-                      ? (error.response?.data?.message || 'This email has been already subscribed')
+                      ? (error.response?.data?.message || 'This email is already subscribed to our newsletter.')
                       : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
                     alert(msg);
                   }

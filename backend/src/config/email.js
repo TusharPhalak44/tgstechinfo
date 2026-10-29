@@ -22,12 +22,50 @@ const escapeHtml = (unsafe) => {
 const emailRateLimiter = new Map();
 
 /**
+ * Intelligently extract clean human name from an email address
+ * Examples:
+ * - manisha6698sb@gmail.com -> "Manisha"
+ * - tushar.phalak44@gmail.com -> "Tushar Phalak"
+ * - tejas.pawar@tgstechinfo.com -> "Tejas Pawar"
+ * - john_doe@company.com -> "John Doe"
+ * - info@domain.com -> "there"
+ */
+function extractNameFromEmail(email) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) return 'there';
+    const localPart = email.split('@')[0].trim().toLowerCase();
+
+    // Generic system email prefixes to ignore
+    const generic = ['info', 'admin', 'contact', 'support', 'sales', 'office', 'help', 'billing', 'team', 'service', 'hello', 'mail', 'test', 'no-reply', 'noreply'];
+    if (generic.includes(localPart)) return 'there';
+
+    // Replace separators (dots, underscores, hyphens, plus) with space
+    let cleaned = localPart.replace(/[._\-+]+/g, ' ');
+
+    // Extract alphabetical blocks, stripping digits and trailing tags
+    const words = cleaned.split(/\s+/).map(w => {
+        let stripped = w.replace(/^[0-9]+|[0-9]+$/g, '');
+        // If word had embedded numbers like manisha6698sb, extract leading alphabetical block
+        const match = stripped.match(/^([a-zA-Z]{2,})[0-9]*/);
+        if (match && match[1]) {
+            stripped = match[1];
+        }
+        return stripped;
+    }).filter(w => w.length >= 2 && !/^[0-9]+$/.test(w));
+
+    if (words.length === 0) return 'there';
+
+    // Capitalize each word (up to 2 words)
+    const formatted = words.slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    return formatted || 'there';
+}
+
+/**
  * Check if an email address has exceeded rate limit
  * @param {string} to - Recipient email
- * @param {number} maxPerHour - Max emails per hour (default: 10)
+ * @param {number} maxPerHour - Max emails per hour (default: 100)
  * @returns {boolean} - True if rate limit exceeded
  */
-const isRateLimited = (to, maxPerHour = 10) => {
+const isRateLimited = (to, maxPerHour = 100) => {
     if (!to) return false;
     const normalizedTo = String(to).trim().toLowerCase();
     const now = Date.now();
@@ -279,8 +317,8 @@ const buildLogoHtml = (logoData) => {
 };
 
 const sendEmail = async (to, subject, html, options = {}) => {
-    // Check rate limit (allow up to 20 per hour for testing/admin)
-    if (isRateLimited(to, 20)) {
+    // Check rate limit (allow up to 100 per hour for testing/admin)
+    if (isRateLimited(to, 100)) {
         console.warn(`[sendEmail] Rate limit exceeded for ${to}`);
         return {
             success: false,
@@ -664,8 +702,8 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         }
 
         const publicUrl = getPublicUrl();
-        const derivedName = variables.name || [variables.first_name, variables.last_name].filter(Boolean).join(' ') || variables.first_name || (to ? to.split('@')[0] : 'there');
-        const derivedFirstName = variables.first_name || (variables.name ? variables.name.split(' ')[0] : '') || (to ? to.split('@')[0] : 'there');
+        const derivedName = variables.name || [variables.first_name, variables.last_name].filter(Boolean).join(' ') || variables.first_name || extractNameFromEmail(to);
+        const derivedFirstName = variables.first_name || (variables.name ? variables.name.split(' ')[0] : '') || extractNameFromEmail(to).split(' ')[0];
         const derivedLastName = variables.last_name || (variables.name && variables.name.split(' ').length > 1 ? variables.name.split(' ').slice(1).join(' ') : '');
         const derivedTitle = variables.title || variables.content_title || 'Content';
 
@@ -770,6 +808,7 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
 module.exports = {
     sendEmail,
     sendTemplatedEmail,
+    extractNameFromEmail,
     accessGrantEmailTemplate,
     subscriptionEmailTemplate,
     renderCaseStudyEmail,

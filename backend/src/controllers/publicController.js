@@ -6,7 +6,7 @@ const DataRequest = require('../models/DataRequest');
 const ContactSubmission = require('../models/ContactSubmission');
 const Download = require('../models/Download');
 const { pool } = require('../config/database');
-const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail, escapeHtml } = require('../config/email');
+const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail, escapeHtml, extractNameFromEmail } = require('../config/email');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
 const fs = require('fs');
@@ -1143,58 +1143,70 @@ exports.subscribeNewsletter = async (req, res) => {
             return res.status(400).json({ message: 'Valid email is required' });
         }
         const normalizedEmail = email.trim().toLowerCase();
-        const cleanName = (typeof name === 'string' && name.trim()) ? name.trim().replace(/\s+/g, ' ') : '';
 
-        // Determine polite human-friendly greeting:
-        // If user entered a name (e.g. "Manisha" or "Manisha Sharma"), capitalize and use it.
-        // If not provided, use "there" (renders "Hi there,") - NEVER raw email usernames like "Hi manisha6698sb,"!
-        let greetingName = 'there';
-        if (cleanName) {
-            greetingName = cleanName.split(' ')
-                .filter(Boolean)
-                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-                .join(' ');
-        }
-
-        // Check if already subscribed
-        const [existing] = await pool.query(
-            'SELECT * FROM newsletter_subscribers WHERE email = ?',
-            [normalizedEmail]
-        );
+        // Intelligently extract clean human name directly from the email address:
+        // E.g. manisha6698sb@gmail.com -> "Manisha"
+        // E.g. tushar.phalak44@gmail.com -> "Tushar Phalak"
+        // E.g. tejas.pawar@tgstechinfo.com -> "Tejas Pawar"
+        const extractedName = extractNameFromEmail(normalizedEmail);
+        const greetingName = (typeof name === 'string' && name.trim()) 
+            ? name.trim() 
+            : (extractedName || 'there');
 
         const crypto = require('crypto');
         const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com';
         const frontendUrl = rawFrontend.split(',')[0].trim().replace(/\/$/, '');
 
+        // Check if already subscribed in newsletter_subscribers
+        const [existing] = await pool.query(
+            'SELECT * FROM newsletter_subscribers WHERE email = ?',
+            [normalizedEmail]
+        );
+
         if (existing.length > 0) {
             const subscriber = existing[0];
+            const unsubscribeToken = subscriber.unsubscribe_token || crypto.randomBytes(32).toString('hex');
+            const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
+
             if (subscriber.is_active) {
-                return res.status(409).json({
-                    success: false,
-                    alreadySubscribed: true,
-                    message: 'This email has been already subscribed'
+                // Already active: update name if not present and re-send confirmation so testing from any page always arrives
+                if (!subscriber.name && greetingName !== 'there') {
+                    await pool.query('UPDATE newsletter_subscribers SET name = ? WHERE id = ?', [greetingName, subscriber.id]).catch(() => {});
+                }
+
+                try {
+                    await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
+                        name: greetingName,
+                        first_name: greetingName,
+                        site_url: frontendUrl,
+                        unsubscribe_url: unsubscribeUrl
+                    });
+                } catch (emailError) {
+                    console.warn('[subscribeNewsletter] Already active re-send email failed:', emailError.message);
+                }
+
+                return res.json({ 
+                    success: true, 
+                    message: 'You are subscribed to our newsletter! We have sent a confirmation to your email.',
+                    alreadySubscribed: true 
                 });
             }
 
             // Inactive subscriber -> re-subscribe
-            const unsubscribeToken = crypto.randomBytes(32).toString('hex');
             await pool.query(
                 'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_reason = NULL, name = COALESCE(?, name), unsubscribe_token = ? WHERE id = ?',
-                [cleanName || null, unsubscribeToken, subscriber.id]
+                [greetingName !== 'there' ? greetingName : null, unsubscribeToken, subscriber.id]
             );
-
-            const effectiveName = greetingName !== 'there' ? greetingName : (subscriber.name || 'there');
-            const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
             try {
                 await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
-                    name: effectiveName,
-                    first_name: effectiveName,
+                    name: greetingName,
+                    first_name: greetingName,
                     site_url: frontendUrl,
                     unsubscribe_url: unsubscribeUrl
                 });
             } catch (emailError) {
-                console.warn('Newsletter re-subscription confirmation email failed:', emailError.message);
+                console.warn('[subscribeNewsletter] Newsletter re-subscription confirmation email failed:', emailError.message);
             }
 
             return res.json({ message: 'Subscribed to newsletter successfully' });
@@ -1203,10 +1215,24 @@ exports.subscribeNewsletter = async (req, res) => {
         // Also check if previously submitted on landing page
         const lpExisting = await LandingPage.findByEmail(normalizedEmail);
         if (lpExisting) {
-            return res.status(409).json({
-                success: false,
+            const unsubscribeToken = crypto.randomBytes(32).toString('hex');
+            const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
+
+            try {
+                await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
+                    name: greetingName,
+                    first_name: greetingName,
+                    site_url: frontendUrl,
+                    unsubscribe_url: unsubscribeUrl
+                });
+            } catch (emailError) {
+                console.warn('[subscribeNewsletter] Landing page lead confirmation email failed:', emailError.message);
+            }
+
+            return res.json({
+                success: true,
                 alreadySubscribed: true,
-                message: 'This email has been already subscribed'
+                message: 'You are subscribed to our newsletter! We have sent a confirmation to your email.'
             });
         }
 
@@ -1215,7 +1241,7 @@ exports.subscribeNewsletter = async (req, res) => {
 
         await pool.query(
             'INSERT INTO newsletter_subscribers (email, name, unsubscribe_token) VALUES (?, ?, ?)',
-            [normalizedEmail, cleanName || null, unsubscribeToken]
+            [normalizedEmail, greetingName !== 'there' ? greetingName : null, unsubscribeToken]
         );
 
         const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
@@ -1751,7 +1777,8 @@ exports.submitContact = async (req, res) => {
             return res.status(400).json({ message: 'full_name, email, subject, and message are required.' });
         }
 
-        if (!consent_given) {
+        const hasConsent = Boolean(consent_given || req.body.consent);
+        if (!hasConsent) {
             return res.status(400).json({ message: 'You must agree to the Privacy Policy to submit.' });
         }
 
@@ -1761,20 +1788,6 @@ exports.submitContact = async (req, res) => {
             return res.status(400).json({ message: 'Invalid email address.' });
         }
 
-        // Check if this email has already submitted contact form
-        const [existingContact] = await pool.query(
-            'SELECT id FROM contact_submissions WHERE LOWER(email) = ? LIMIT 1',
-            [email.toLowerCase().trim()]
-        );
-        if (existingContact && existingContact.length > 0) {
-            console.log(`[submitContact] Email '${email}' has already submitted contact form. Blocking duplicate.`);
-            return res.status(409).json({
-                success: false,
-                alreadySubscribed: true,
-                message: 'This email has been already subscribed'
-            });
-        }
-
         const record = await ContactSubmission.create({
             full_name,
             email,
@@ -1782,9 +1795,9 @@ exports.submitContact = async (req, res) => {
             inquiry_category,
             subject,
             message,
-            consent_given,
-            ip_address: req.ip,
-            user_agent: req.headers['user-agent']
+            consent_given: hasConsent,
+            ip_address: req.ip || req.connection?.remoteAddress || null,
+            user_agent: req.headers ? req.headers['user-agent'] : null
         });
 
         // Escape inputs for safe HTML email rendering

@@ -55,7 +55,6 @@ const Footer = ({ simplified = false }) => {
   const { footerLogo, logoSizes } = useSiteSettings();
   const year = new Date().getFullYear();
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
-  const [newsletterName, setNewsletterName] = useState('');
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
 
@@ -68,9 +67,8 @@ const Footer = ({ simplified = false }) => {
 
     setNewsletterLoading(true);
     try {
-      await axios.post('/api/public/newsletter', { name: newsletterName.trim(), email: newsletterEmail.trim() });
+      await axios.post('/api/public/newsletter', { email: newsletterEmail.trim() });
       message.success('Successfully subscribed to newsletter!');
-      setNewsletterName('');
       setNewsletterEmail('');
     } catch (error) {
       const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
@@ -256,43 +254,30 @@ const Footer = ({ simplified = false }) => {
             <div style={{ background: darkMode ? 'rgba(30, 41, 59, 0.5)' : 'var(--color-primary-light)', border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', borderRadius: 12, padding: '16px' }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Newsletter</div>
               <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 10 }}>Weekly tech digest, free.</div>
-              <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <form onSubmit={handleNewsletterSubmit} style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)' }}>
                 <input
-                  type="text"
-                  placeholder="Your Name (optional)"
-                  value={newsletterName}
-                  onChange={(e) => setNewsletterName(e.target.value)}
+                  type="email"
+                  placeholder="your@email.com"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
                   disabled={newsletterLoading}
+                  required
                   style={{
-                    padding: '8px 12px', borderRadius: 6, border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)', fontSize: 12,
+                    flex: 1, padding: '9px 12px', border: 'none', fontSize: 12,
                     outline: 'none', background: darkMode ? '#0f172a' : 'var(--color-surface)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)'
                   }}
                 />
-                <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: darkMode ? '1px solid #334155' : '1px solid var(--color-border)' }}>
-                  <input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={newsletterEmail}
-                    onChange={(e) => setNewsletterEmail(e.target.value)}
-                    disabled={newsletterLoading}
-                    required
-                    style={{
-                      flex: 1, padding: '9px 12px', border: 'none', fontSize: 12,
-                      outline: 'none', background: darkMode ? '#0f172a' : 'var(--color-surface)', color: darkMode ? '#f1f5f9' : 'var(--color-heading)'
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={newsletterLoading}
-                    style={{
-                      padding: '9px 14px', background: darkMode ? '#F7941D' : 'var(--color-accent)',
-                      border: 'none', color: '#fff', fontSize: 14, cursor: newsletterLoading ? 'not-allowed' : 'pointer',
-                      opacity: newsletterLoading ? 0.7 : 1
-                    }}
-                  >
-                    {newsletterLoading ? '...' : <SendOutlined />}
-                  </button>
-                </div>
+                <button
+                  type="submit"
+                  disabled={newsletterLoading}
+                  style={{
+                    padding: '9px 14px', background: darkMode ? '#F7941D' : 'var(--color-accent)',
+                    border: 'none', color: '#fff', fontSize: 14, cursor: newsletterLoading ? 'not-allowed' : 'pointer',
+                    opacity: newsletterLoading ? 0.7 : 1
+                  }}
+                >
+                  {newsletterLoading ? '...' : <SendOutlined />}
+                </button>
               </form>
             </div>
           </div>
