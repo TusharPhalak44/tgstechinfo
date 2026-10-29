@@ -1182,7 +1182,7 @@ exports.subscribeNewsletter = async (req, res) => {
 
             if (subscriber.is_active) {
                 // Already active: update name if not present and re-send confirmation so testing from any page always arrives
-                if (!subscriber.name && greetingName !== 'there') {
+                if (greetingName && greetingName !== 'there') {
                     await pool.query('UPDATE newsletter_subscribers SET name = ? WHERE id = ?', [greetingName, subscriber.id]).catch(() => {});
                 }
 
@@ -2258,5 +2258,29 @@ exports.registerWebinar = async (req, res) => {
     } catch (error) {
         console.error('[registerWebinar] Error:', error);
         res.status(500).json({ message: 'Server error registering for webinar.' });
+    }
+};
+
+
+exports.getEmailStatus = async (req, res) => {
+    try {
+        const user = process.env.EMAIL_USER || process.env.SMTP_USER || '';
+        const host = process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.hostinger.com';
+        const port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
+        const { testTo } = req.query;
+        const statusInfo = {
+            configured: Boolean(user && (process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD)),
+            smtp_user: user ? (user.substring(0, 3) + '***@' + (user.split('@')[1] || '')) : 'Not configured',
+            smtp_host: host,
+            smtp_port: port,
+            time: new Date().toISOString()
+        };
+        if (testTo && typeof testTo === 'string' && testTo.includes('@')) {
+            const result = await sendEmail(testTo.trim().toLowerCase(), '[Live Test] TGS Tech Info Email System', '<p>This is a live server diagnostic test.</p>', { isTransactional: true });
+            return res.json({ ...statusInfo, test_result: result });
+        }
+        return res.json(statusInfo);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
     }
 };

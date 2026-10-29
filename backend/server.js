@@ -13,6 +13,20 @@ const path = require('path');
 
 
 
+const fsModule = require('fs');
+const envPaths = [
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '.env'),
+    path.resolve(process.cwd(), 'backend/.env'),
+    path.resolve(process.cwd(), '.env'),
+    '/var/www/tgspublish/backend/.env',
+    '/var/www/tgspublish/.env'
+];
+envPaths.forEach(p => {
+    try {
+        if (fsModule.existsSync(p)) dotenv.config({ path: p, override: false });
+    } catch (_) {}
+});
 dotenv.config({ override: false });
 
 

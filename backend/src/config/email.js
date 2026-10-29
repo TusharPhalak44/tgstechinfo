@@ -5,6 +5,24 @@ const path = require('path');
 const { pool } = require('./database');
 const { formatDateForEmail } = require('../utils/dateHelper');
 
+// Robust multi-path env loader so EMAIL_* vars are ALWAYS loaded regardless of where process was launched
+const candidateEnvFiles = [
+    path.resolve(__dirname, '../../.env'),
+    path.resolve(__dirname, '../.env'),
+    path.resolve(__dirname, '.env'),
+    path.resolve(process.cwd(), 'backend/.env'),
+    path.resolve(process.cwd(), '.env'),
+    '/var/www/tgspublish/backend/.env',
+    '/var/www/tgspublish/.env'
+];
+
+candidateEnvFiles.forEach(envPath => {
+    try {
+        if (fs.existsSync(envPath)) {
+            dotenv.config({ path: envPath, override: false });
+        }
+    } catch (_) {}
+});
 dotenv.config();
 
 // HTML Entity Escaper for email security
@@ -186,20 +204,15 @@ const getEmailTransporter = () => {
  */
 const getPublicUrl = () => {
     // Check for explicitly set public URL
-    if (process.env.FRONTEND_URL) {
-        // Handle multiple URLs (comma-separated) by taking the first one
-        const firstUrl = process.env.FRONTEND_URL.split(',')[0].trim();
-        return firstUrl.replace(/\/$/, ''); // Remove trailing slash
+    const raw = process.env.SITE_URL || process.env.FRONTEND_URL || process.env.API_URL || 'https://tgstechinfo.com';
+    const firstUrl = raw.split(',')[0].trim();
+    if (firstUrl.startsWith('http://localhost') || firstUrl.startsWith('http://127.0.0.1')) {
+        if (process.env.NODE_ENV === 'production') {
+            return 'https://tgstechinfo.com';
+        }
     }
-
-    // Fallback to API_URL if set
-    if (process.env.API_URL) {
-        const firstUrl = process.env.API_URL.split(',')[0].trim();
-        return firstUrl.replace(/\/$/, '');
-    }
-
-    // Default fallback (development)
-    return 'http://localhost:5173';
+    const cleanUrl = firstUrl.replace(/\/$/, '');
+    return cleanUrl || 'https://tgstechinfo.com';
 };
 
 /**
@@ -339,7 +352,7 @@ const getWebsiteLogoUrl = async () => {
  */
 const buildLogoHtml = (customUrl = null) => {
     const publicUrl = customUrl || getPublicUrl();
-    const logoUrl = `${publicUrl}/logo.jpg`;
+    const logoUrl = `${publicUrl}/logo.png`;
     const altText = 'TGS Tech Info';
 
     return `<div style="text-align:center;margin:0 auto 16px auto;">
@@ -379,19 +392,22 @@ const sendEmail = async (to, subject, html, options = {}) => {
     const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
     const organization = process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
 
-    // Validate email configuration
-    const user = process.env.EMAIL_USER || process.env.SMTP_USER;
-    const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD;
-    const pass = rawPass ? rawPass.replace(/^['"](.*)['"]$/g, '$1') : rawPass;
+    const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+    const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '';
+    const pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
+    const host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
+    const port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
 
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
         const hasBrevo = process.env.BREVO_API_KEY && !process.env.BREVO_API_KEY.includes('placeholder');
         const hasSendgrid = process.env.SENDGRID_API_KEY && !process.env.SENDGRID_API_KEY.includes('placeholder');
         if (!hasBrevo && !hasSendgrid) {
-            console.warn('Email skipped: no email service configured. Configure EMAIL_USER/EMAIL_PASSWORD, BREVO_API_KEY, or SENDGRID_API_KEY.');
+            console.warn(`[sendEmail] Email skipped: no email credentials configured. user="${user}" host="${host}"`);
             return { success: false, skipped: true, reason: 'credentials_not_configured', from: fromAddress };
         }
     }
+
+    console.log(`[sendEmail] Dispatching to "${to}" | Subject: "${subject}" | Host: ${host}:${port} | User: ${user}`);
 
     const transporter = getEmailTransporter();
     const publicUrl = getPublicUrl();
@@ -401,10 +417,10 @@ const sendEmail = async (to, subject, html, options = {}) => {
     let finalHtml = html;
     let finalAttachments = options.attachments ? [...options.attachments] : [];
 
-    // Automatically ensure company logo is rendered using the verified static asset (https://tgstechinfo.com/logo.jpg)
+    // Automatically ensure company logo is rendered using the verified static asset (https://tgstechinfo.com/logo.png)
     const shouldIncludeLogo = options.includeLogo !== false;
     if (shouldIncludeLogo && typeof finalHtml === 'string') {
-        const logoUrl = `${publicUrl}/logo.jpg`;
+        const logoUrl = `${publicUrl}/logo.png`;
         const logoHtml = buildLogoHtml(publicUrl);
 
         // Replace logo placeholders
@@ -418,6 +434,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
         finalHtml = finalHtml.replace(/cid:tgs_company_logo/gi, logoUrl);
         finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/uploads\/branding\/logo\.png/gi, logoUrl);
         finalHtml = finalHtml.replace(/\/uploads\/branding\/logo\.png/gi, logoUrl);
+        finalHtml = finalHtml.replace(/https?:\/\/[^\s"']+\/logo\.jpg/gi, logoUrl);
 
         // Check if finalHtml now uses the logo URL
         const usesLogoUrl = finalHtml.includes(logoUrl);
@@ -494,7 +511,30 @@ const sendEmail = async (to, subject, html, options = {}) => {
         console.log(`[sendEmail] Email successfully sent to ${to}. MessageId: ${info.messageId || info.id}`);
         return { ...info, success: true };
     } catch (sendErr) {
-        console.error(`[sendEmail] Email Send Error for recipient ${to}:`, sendErr.message);
+        console.error(`[sendEmail] Primary send error for ${to} via ${host}:${port}:`, sendErr.message);
+
+        // Automatic fallback: if port 465 failed on Hostinger/custom SMTP, try port 587 with STARTTLS
+        if (port === 465 && !host.includes('brevo') && !host.includes('sendgrid')) {
+            try {
+                console.log(`[sendEmail] Attempting retry via fallback port 587 (STARTTLS) for ${to}...`);
+                const fallbackTransporter = nodemailer.createTransport({
+                    host,
+                    port: 587,
+                    secure: false,
+                    requireTLS: true,
+                    auth: { user, pass },
+                    tls: { rejectUnauthorized: false },
+                    connectionTimeout: 10000,
+                    greetingTimeout: 10000,
+                    socketTimeout: 15000
+                });
+                const fallbackInfo = await fallbackTransporter.sendMail(mailOptions);
+                console.log(`[sendEmail] Fallback email successfully sent to ${to}. MessageId: ${fallbackInfo.messageId || fallbackInfo.id}`);
+                return { ...fallbackInfo, success: true };
+            } catch (fallbackErr) {
+                console.error(`[sendEmail] Fallback port 587 also failed for ${to}:`, fallbackErr.message);
+            }
+        }
 
         // Check for Hostinger suspension
         if (sendErr.message && sendErr.message.includes('suspended')) {
@@ -825,31 +865,32 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             renderedHtml = renderedHtml.replace(regex, val);
         });
 
-        // Handle company logo if include_logo is enabled
-        if (template.include_logo) {
-            console.log('[sendTemplatedEmail] Logo is enabled for template:', template.template_type);
-            const logoHtml = buildLogoHtml(publicUrl);
-            const logoUrl = `${publicUrl}/logo.jpg`;
+        // Ensure company logo is ALWAYS rendered in all email templates using verified static asset
+        const logoHtml = buildLogoHtml(publicUrl);
+        const logoUrl = `${publicUrl}/logo.png`;
 
-            renderedHtml = renderedHtml
-                .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
-                .replace(/\{\{website_logo_img\}\}/gi, `<img src="${logoUrl}" alt="TGS Tech Info" width="170" style="max-width:170px;height:auto;display:block;margin:0 auto;border-radius:6px;border:none;outline:none;" border="0" />`)
-                .replace(/\{\{website_logo\}\}/gi, logoUrl)
-                .replace(/\{\{logo\}\}/gi, logoUrl);
+        renderedHtml = renderedHtml
+            .replace(/\{\{website_logo_html\}\}/gi, logoHtml)
+            .replace(/\{\{website_logo_img\}\}/gi, `<img src="${logoUrl}" alt="TGS Tech Info" width="170" style="max-width:170px;height:auto;display:block;margin:0 auto;border-radius:6px;border:none;outline:none;" border="0" />`)
+            .replace(/\{\{website_logo\}\}/gi, logoUrl)
+            .replace(/\{\{logo\}\}/gi, logoUrl);
 
-            const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
-            if (!hasLogoPlaceholder && !renderedHtml.includes('/logo.jpg')) {
+        // Also normalize any old /uploads/branding/logo.png or cid: paths
+        renderedHtml = renderedHtml.replace(/cid:tgs_company_logo/gi, logoUrl);
+        renderedHtml = renderedHtml.replace(/https?:\/\/[^\s"']+\/uploads\/branding\/logo\.png/gi, logoUrl);
+        renderedHtml = renderedHtml.replace(/\/uploads\/branding\/logo\.png/gi, logoUrl);
+        renderedHtml = renderedHtml.replace(/https?:\/\/[^\s"']+\/logo\.jpg/gi, logoUrl);
+
+        const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
+        if (!hasLogoPlaceholder && !renderedHtml.includes('/logo.png')) {
+            if (renderedHtml.includes('class="header"') || renderedHtml.includes("class='header'")) {
+                renderedHtml = renderedHtml.replace(/(<div[^>]*class=["']header["'][^>]*>)/i, `$1\n${logoHtml}`);
+            } else if (renderedHtml.includes('class="container"') || renderedHtml.includes("class='container'")) {
+                renderedHtml = renderedHtml.replace(/(<div[^>]*class=["']container["'][^>]*>)/i, `$1\n${logoHtml}`);
+            } else {
                 renderedHtml = `${logoHtml}${renderedHtml}`;
-                console.log('[sendTemplatedEmail] Logo prepended (no placeholder found)');
             }
-        } else {
-            console.log('[sendTemplatedEmail] Logo is disabled for template:', template.template_type);
-            // Remove any logo placeholders if logo is not enabled
-            renderedHtml = renderedHtml
-                .replace(/\{\{website_logo_html\}\}/gi, '')
-                .replace(/\{\{website_logo_img\}\}/gi, '')
-                .replace(/\{\{website_logo\}\}/gi, '')
-                .replace(/\{\{logo\}\}/gi, '');
+            console.log('[sendTemplatedEmail] Logo prepended to header');
         }
 
         // Send email
