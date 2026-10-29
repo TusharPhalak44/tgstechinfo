@@ -1138,11 +1138,23 @@ exports.subscribeContent = async (req, res) => {
 
 exports.subscribeNewsletter = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, name } = req.body;
         if (!email || typeof email !== 'string' || !email.includes('@')) {
             return res.status(400).json({ message: 'Valid email is required' });
         }
         const normalizedEmail = email.trim().toLowerCase();
+        const cleanName = (typeof name === 'string' && name.trim()) ? name.trim().replace(/\s+/g, ' ') : '';
+
+        // Determine polite human-friendly greeting:
+        // If user entered a name (e.g. "Manisha" or "Manisha Sharma"), capitalize and use it.
+        // If not provided, use "there" (renders "Hi there,") - NEVER raw email usernames like "Hi manisha6698sb,"!
+        let greetingName = 'there';
+        if (cleanName) {
+            greetingName = cleanName.split(' ')
+                .filter(Boolean)
+                .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+                .join(' ');
+        }
 
         // Check if already subscribed
         const [existing] = await pool.query(
@@ -1151,8 +1163,8 @@ exports.subscribeNewsletter = async (req, res) => {
         );
 
         const crypto = require('crypto');
-        const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
-        const frontendUrl = rawFrontend.split(',')[0].trim();
+        const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com';
+        const frontendUrl = rawFrontend.split(',')[0].trim().replace(/\/$/, '');
 
         if (existing.length > 0) {
             const subscriber = existing[0];
@@ -1167,15 +1179,19 @@ exports.subscribeNewsletter = async (req, res) => {
             // Inactive subscriber -> re-subscribe
             const unsubscribeToken = crypto.randomBytes(32).toString('hex');
             await pool.query(
-                'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_token = ? WHERE id = ?',
-                [unsubscribeToken, subscriber.id]
+                'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_reason = NULL, name = COALESCE(?, name), unsubscribe_token = ? WHERE id = ?',
+                [cleanName || null, unsubscribeToken, subscriber.id]
             );
+
+            const effectiveName = greetingName !== 'there' ? greetingName : (subscriber.name || 'there');
+            const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
             try {
                 await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
-                    name: normalizedEmail.split('@')[0],
+                    name: effectiveName,
+                    first_name: effectiveName,
                     site_url: frontendUrl,
-                    unsubscribe_url: `${frontendUrl}/unsubscribe?token=${unsubscribeToken}`
+                    unsubscribe_url: unsubscribeUrl
                 });
             } catch (emailError) {
                 console.warn('Newsletter re-subscription confirmation email failed:', emailError.message);
@@ -1198,23 +1214,21 @@ exports.subscribeNewsletter = async (req, res) => {
         const unsubscribeToken = crypto.randomBytes(32).toString('hex');
 
         await pool.query(
-            'INSERT INTO newsletter_subscribers (email, unsubscribe_token) VALUES (?, ?)',
-            [normalizedEmail, unsubscribeToken]
+            'INSERT INTO newsletter_subscribers (email, name, unsubscribe_token) VALUES (?, ?, ?)',
+            [normalizedEmail, cleanName || null, unsubscribeToken]
         );
+
+        const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
 
         // Send confirmation email (with database template and robust fallback)
         try {
-            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com';
-            const frontendUrl = rawFrontend.split(',')[0].trim().replace(/\/$/, '');
-            const subscriberName = normalizedEmail.split('@')[0];
-
             let emailResult = null;
             try {
                 emailResult = await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
-                    name: subscriberName,
-                    first_name: subscriberName,
+                    name: greetingName,
+                    first_name: greetingName,
                     site_url: frontendUrl,
-                    unsubscribe_url: `${frontendUrl}/unsubscribe?token=${unsubscribeToken}`
+                    unsubscribe_url: unsubscribeUrl
                 });
             } catch (tplErr) {
                 console.warn('[subscribeNewsletter] sendTemplatedEmail failed, trying direct fallback:', tplErr.message);
@@ -1237,7 +1251,7 @@ exports.subscribeNewsletter = async (req, res) => {
             <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">Welcome to Our Newsletter</h1>
         </div>
         <div style="padding: 32px 28px;">
-            <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi <strong>${escapeHtml(subscriberName)}</strong>,</p>
+            <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi <strong>${escapeHtml(greetingName)}</strong>,</p>
             <p style="font-size: 14px; line-height: 1.6; color: #475569;">
                 Thank you for subscribing to our newsletter! You will now receive the latest technology insights, industry trends, and in-depth analysis directly in your inbox.
             </p>
@@ -1255,7 +1269,7 @@ exports.subscribeNewsletter = async (req, res) => {
             </div>
             <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
                 You are receiving this email because you subscribed on tgstechinfo.com.<br />
-                To unsubscribe at any time, <a href="${frontendUrl}/unsubscribe?token=${unsubscribeToken}" style="color: #0284c7; text-decoration: underline;">click here</a>.
+                To unsubscribe at any time, <a href="${unsubscribeUrl}" style="color: #0284c7; text-decoration: underline;">click here</a>.
             </p>
         </div>
         <div style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
@@ -1287,6 +1301,8 @@ exports.unsubscribeNewsletter = async (req, res) => {
     try {
         const token = req.query.token || req.body?.token;
         const email = req.query.email || req.body?.email;
+        const reason = req.body?.reason || req.query?.reason || null;
+        const isVerifyOnly = req.query.verify === '1' || req.query.checkOnly === '1';
 
         if (!token && !email) {
             return res.status(400).json({ message: 'Unsubscribe token or email address is required' });
@@ -1317,6 +1333,16 @@ exports.unsubscribeNewsletter = async (req, res) => {
             return res.status(404).json({ message: 'No active newsletter subscription found for this link or email address' });
         }
 
+        // Token verification / read-only check (does not alter subscription)
+        if (isVerifyOnly) {
+            return res.json({
+                valid: true,
+                email: subscriber.email,
+                name: subscriber.name || '',
+                is_active: subscriber.is_active
+            });
+        }
+
         // Idempotent UX: if already inactive, return a graceful success response
         if (!subscriber.is_active) {
             return res.json({
@@ -1326,15 +1352,19 @@ exports.unsubscribeNewsletter = async (req, res) => {
             });
         }
 
-        // Mark as unsubscribed
+        // Clean reason feedback
+        const cleanReason = (typeof reason === 'string' && reason.trim()) ? reason.trim().slice(0, 1000) : null;
+
+        // Mark as unsubscribed and save reason
         await pool.query(
-            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW() WHERE id = ?',
-            [subscriber.id]
+            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW(), unsubscribe_reason = ? WHERE id = ?',
+            [cleanReason, subscriber.id]
         );
 
         res.json({
             message: 'Successfully unsubscribed from newsletter',
-            email: subscriber.email
+            email: subscriber.email,
+            reason: cleanReason
         });
     } catch (error) {
         console.error('Newsletter unsubscribe error:', error);

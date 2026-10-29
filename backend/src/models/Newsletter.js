@@ -2,23 +2,25 @@ const { pool } = require('../config/database');
 const crypto = require('crypto');
 
 class Newsletter {
-    static async subscribe(email, token = null) {
+    static async subscribe(email, token = null, name = null) {
         const normalizedEmail = email.trim().toLowerCase();
         const unsubscribeToken = token || crypto.randomBytes(32).toString('hex');
+        const cleanName = (typeof name === 'string' && name.trim()) ? name.trim() : null;
         await pool.query(
-            `INSERT INTO newsletter_subscribers (email, unsubscribe_token, is_active)
-             VALUES (?, ?, 1)
-             ON DUPLICATE KEY UPDATE is_active = 1, unsubscribed_at = NULL, unsubscribe_token = VALUES(unsubscribe_token)`,
-            [normalizedEmail, unsubscribeToken]
+            `INSERT INTO newsletter_subscribers (email, name, unsubscribe_token, is_active)
+             VALUES (?, ?, ?, 1)
+             ON DUPLICATE KEY UPDATE is_active = 1, unsubscribed_at = NULL, unsubscribe_reason = NULL, name = COALESCE(VALUES(name), name), unsubscribe_token = VALUES(unsubscribe_token)`,
+            [normalizedEmail, cleanName, unsubscribeToken]
         );
         return await this.findByEmail(normalizedEmail);
     }
 
-    static async unsubscribe(email) {
+    static async unsubscribe(email, reason = null) {
         const normalizedEmail = email.trim().toLowerCase();
+        const cleanReason = (typeof reason === 'string' && reason.trim()) ? reason.trim().slice(0, 1000) : null;
         const [result] = await pool.query(
-            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW() WHERE email = ?',
-            [normalizedEmail]
+            'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW(), unsubscribe_reason = ? WHERE email = ?',
+            [cleanReason, normalizedEmail]
         );
         if (result.affectedRows === 0) {
             return null;
@@ -27,7 +29,7 @@ class Newsletter {
     }
 
     static async findAll(active = null) {
-        let query = 'SELECT id, email, is_active, created_at, unsubscribe_token, unsubscribed_at FROM newsletter_subscribers';
+        let query = 'SELECT id, email, name, is_active, created_at, unsubscribe_token, unsubscribed_at, unsubscribe_reason FROM newsletter_subscribers';
         const values = [];
         
         if (active !== null && active !== undefined) {

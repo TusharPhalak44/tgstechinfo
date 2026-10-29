@@ -1107,10 +1107,17 @@ const AdminSubmissions = () => {
 
         const newsletterColumns = [
           {
+            title: 'Subscriber Name',
+            dataIndex: 'name',
+            key: 'name',
+            width: 170,
+            render: (v) => <span style={{ fontWeight: 600, color: '#0f172a' }}>{v || '—'}</span>
+          },
+          {
             title: 'Subscriber Email',
             dataIndex: 'email',
             key: 'email',
-            width: 300,
+            width: 250,
             render: (v) => (
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
@@ -1133,7 +1140,7 @@ const AdminSubmissions = () => {
             title: 'Status',
             dataIndex: 'is_active',
             key: 'is_active',
-            width: 160,
+            width: 140,
             render: (v) => v ? (
               <Tag color="green" style={{ borderRadius: 6, fontWeight: 700, padding: '3px 10px', fontSize: 12 }}>
                 <CheckCircleOutlined style={{ marginRight: 4 }} /> Active
@@ -1148,16 +1155,27 @@ const AdminSubmissions = () => {
             title: 'Subscribed Date',
             dataIndex: 'created_at',
             key: 'created_at',
-            width: 200,
+            width: 170,
             render: (v) => <span style={{ fontSize: 13, color: '#334155' }}>{formatDateForDisplay(v, 'YYYY-MM-DD HH:mm')}</span>
           },
           {
             title: 'Unsubscribed Date',
             dataIndex: 'unsubscribed_at',
             key: 'unsubscribed_at',
-            width: 200,
+            width: 170,
             render: (v) => v ? (
               <span style={{ fontSize: 13, color: '#ef4444' }}>{formatDateForDisplay(v, 'YYYY-MM-DD HH:mm')}</span>
+            ) : <span style={{ color: '#cbd5e1' }}>—</span>
+          },
+          {
+            title: 'Unsubscribe Reason',
+            dataIndex: 'unsubscribe_reason',
+            key: 'unsubscribe_reason',
+            width: 260,
+            render: (v) => v ? (
+              <span style={{ fontSize: 12, color: '#475569', fontStyle: 'italic', wordBreak: 'break-word', display: 'block', maxWidth: 260 }}>
+                {v}
+              </span>
             ) : <span style={{ color: '#cbd5e1' }}>—</span>
           },
           {

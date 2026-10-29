@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Form, Input, Button, Typography, message, Space } from 'antd';
-import { MailOutlined, SendOutlined } from '@ant-design/icons';
+import { MailOutlined, SendOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 const { Title, Text } = Typography;
@@ -12,7 +12,10 @@ const Newsletter = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await axios.post('/api/public/newsletter', values);
+      await axios.post('/api/public/newsletter', {
+        name: values.name ? values.name.trim() : undefined,
+        email: values.email ? values.email.trim() : ''
+      });
       message.success('Successfully subscribed to newsletter!');
       form.resetFields();
     } catch (error) {
@@ -45,6 +48,16 @@ const Newsletter = () => {
           layout="vertical"
           onFinish={onFinish}
         >
+          <Form.Item
+            name="name"
+          >
+            <Input 
+              size="large" 
+              prefix={<UserOutlined />} 
+              placeholder="Your full name (optional)" 
+            />
+          </Form.Item>
+
           <Form.Item
             name="email"
             rules={[

@@ -40,7 +40,7 @@ async function syncPublishingPlatform() {
         console.log('✅ Added notifications.title');
     }
 
-    // 3. newsletter_subscribers: unsubscribe_token, unsubscribed_at
+    // 3. newsletter_subscribers: unsubscribe_token, unsubscribed_at, name, unsubscribe_reason
     const [newsCols] = await conn.query('SHOW COLUMNS FROM newsletter_subscribers');
     const newsColNames = newsCols.map(c => c.Field);
     if (!newsColNames.includes('unsubscribe_token')) {
@@ -50,6 +50,14 @@ async function syncPublishingPlatform() {
     if (!newsColNames.includes('unsubscribed_at')) {
         await conn.query('ALTER TABLE newsletter_subscribers ADD COLUMN unsubscribed_at TIMESTAMP NULL');
         console.log('✅ Added newsletter_subscribers.unsubscribed_at');
+    }
+    if (!newsColNames.includes('name')) {
+        await conn.query('ALTER TABLE newsletter_subscribers ADD COLUMN name VARCHAR(255) NULL AFTER email');
+        console.log('✅ Added newsletter_subscribers.name');
+    }
+    if (!newsColNames.includes('unsubscribe_reason')) {
+        await conn.query('ALTER TABLE newsletter_subscribers ADD COLUMN unsubscribe_reason TEXT NULL AFTER unsubscribed_at');
+        console.log('✅ Added newsletter_subscribers.unsubscribe_reason');
     }
 
     // 4. site_settings: website_main_logo, website_navbar_logo, website_footer_logo, logo_sizes

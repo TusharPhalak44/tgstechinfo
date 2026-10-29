@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Input, Button, message, Typography } from 'antd';
-import { MailOutlined, SendOutlined, CheckCircleFilled, SafetyCertificateOutlined } from '@ant-design/icons';
+import { MailOutlined, SendOutlined, CheckCircleFilled, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
 
 const { Text } = Typography;
 
 const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -24,7 +25,7 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
 
     setLoading(true);
     try {
-      const res = await axios.post('/api/public/newsletter', { email: trimmed });
+      const res = await axios.post('/api/public/newsletter', { name: name.trim(), email: trimmed });
       if (res.data?.alreadySubscribed) {
         message.info(res.data?.message || 'This email address is already subscribed to our newsletter.');
       } else {
@@ -32,6 +33,7 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
       }
       setSubscribed(true);
       setSubscribedEmail(trimmed);
+      setName('');
       setEmail('');
     } catch (err) {
       const isAlreadySub = err.response?.status === 409 || err.response?.status === 400 || err.response?.data?.alreadySubscribed || (err.response?.data?.message && err.response.data.message.toLowerCase().includes('already subscribed'));
@@ -201,12 +203,30 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your Name (optional)"
+              prefix={<UserOutlined style={{ color: darkMode ? '#38bdf8' : '#0284c7' }} />}
+              disabled={loading}
+              style={{
+                width: '100%',
+                height: 42,
+                borderRadius: 10,
+                fontSize: 13.5,
+                border: darkMode ? '1px solid #475569' : '1px solid #cbd5e1',
+                background: darkMode ? '#0f172a' : '#ffffff',
+                color: darkMode ? '#f8fafc' : '#0f172a'
+              }}
+            />
+            <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address..."
               prefix={<MailOutlined style={{ color: darkMode ? '#38bdf8' : '#0284c7' }} />}
               disabled={loading}
+              required
               style={{
                 width: '100%',
                 height: 42,
