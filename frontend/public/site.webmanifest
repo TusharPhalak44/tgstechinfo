@@ -1,0 +1,26 @@
+{
+  "name": "TGS Tech Info",
+  "short_name": "TGS Tech Info",
+  "description": "Enterprise Technology Publishing & Insights",
+  "icons": [
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0B1F4D",
+  "background_color": "#ffffff"
+}

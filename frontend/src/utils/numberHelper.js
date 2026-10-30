@@ -1,77 +1,45 @@
 /**
  * Number & View Count formatting utilities.
+ * 
+ * Rules:
+ * - 0 to 999: Exact integer number (e.g. 0, 5, 250, 999)
+ * - 1,000 to 999,999: Thousands in "K" (e.g. 1K, 1.5K, 12.5K, 50K, 261.1K, 971.6K)
+ * - 1,000,000+: Millions in "M" (e.g. 1M, 1.2M, 1.9M, 2M, 75.4M)
  */
 
-/**
- * Formats content view counts into "M" (Millions) format.
- * Examples:
- *   75,400,000 -> "75.4M"
- *   2,000,000  -> "2M"
- *   1,945,431  -> "1.9M"
- *   1,225,645  -> "1.2M"
- *   971,557    -> "1M"
- *   475,487    -> "0.5M"
- *   261,106    -> "0.3M"
- *   50,000     -> "0.1M"
- *   0          -> "0M"
- */
 export function formatViewsToM(num) {
-  if (num === null || num === undefined) return '0M';
+  if (num === null || num === undefined) return '0';
   const n = typeof num === 'string' ? parseFloat(num.replace(/,/g, '')) || 0 : Number(num) || 0;
-  if (n <= 0) return '0M';
+  if (isNaN(n) || n <= 0) return '0';
 
-  const m = n / 1000000;
-  if (m >= 1000) {
-    return `${m.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}M`;
-  }
-  if (m >= 1) {
+  // 1,000,000+ -> Display in M (Millions)
+  if (n >= 1000000) {
+    const m = n / 1000000;
+    if (m >= 1000) {
+      return `${m.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}M`;
+    }
     return `${m.toFixed(1).replace(/\.0$/, '')}M`;
   }
-  // Under 1 Million (e.g. 971,557 -> 1M, 475,487 -> 0.5M, 261,106 -> 0.3M)
-  const fixed = m.toFixed(1);
-  if (fixed === '0.0') {
-    const fixed2 = m.toFixed(2);
-    return `${fixed2 === '0.00' ? '0.01' : fixed2.replace(/\.00$/, '')}M`;
+
+  // 1,000 to 999,999 -> Display in K (Thousands)
+  if (n >= 1000) {
+    const k = n / 1000;
+    if (k >= 999.95) return '999.9K';
+    return `${k.toFixed(1).replace(/\.0$/, '')}K`;
   }
-  return `${fixed.replace(/\.0$/, '')}M`;
+
+  // 0 to 999 -> Exact integer number
+  return `${Math.round(n)}`;
 }
 
-/**
- * Formats content view counts into "k" (Thousands) format.
- * Examples:
- *   1,945,431 -> "1,945.4k"
- *   1,225,645 -> "1,225.6k"
- *   2,000,000 -> "2,000k"
- *   971,557   -> "971.6k"
- *   475,487   -> "475.5k"
- *   261,106   -> "261.1k"
- *   50,000    -> "50k"
- *   1,200     -> "1.2k"
- *   500       -> "0.5k"
- *   0         -> "0k"
- */
 export function formatViewsToK(num) {
-  if (num === null || num === undefined) return '0k';
-  const n = typeof num === 'string' ? parseFloat(num.replace(/,/g, '')) || 0 : Number(num) || 0;
-  if (n <= 0) return '0k';
-
-  const k = n / 1000;
-  if (k >= 1) {
-    const formatted = k >= 1000
-      ? k.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 })
-      : k.toFixed(1).replace(/\.0$/, '');
-    return `${formatted}k`;
-  }
-  // Under 1 thousand (e.g. 500 -> 0.5k, 50 -> 0.1k)
-  const fixed = k.toFixed(1);
-  if (fixed === '0.0') {
-    const fixed2 = k.toFixed(2);
-    return fixed2 === '0.00' ? '0.01k' : `${fixed2}k`;
-  }
-  return `${fixed}k`;
+  return formatViewsToM(num);
 }
+
+export const formatViewCount = formatViewsToM;
 
 export default {
   formatViewsToM,
-  formatViewsToK
+  formatViewsToK,
+  formatViewCount
 };

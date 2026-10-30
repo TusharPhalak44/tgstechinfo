@@ -237,18 +237,6 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
               {loading ? 'Subscribing...' : 'Subscribe Free'}
             </Button>
           </form>
-
-          {/* Privacy Note */}
-          <div
-            style={{
-              marginTop: 10,
-              textAlign: 'center',
-              fontSize: 11,
-              color: darkMode ? '#64748b' : '#94a3b8'
-            }}
-          >
-            🔒 100% free • No spam • 1-click unsubscribe
-          </div>
         </div>
       )}
     </div>

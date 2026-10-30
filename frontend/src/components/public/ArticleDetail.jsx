@@ -25,6 +25,7 @@ import { formatContentPublishDate, formatDateForLongDisplay, formatDateForDispla
 import ArticleNewsletterBanner from './ArticleNewsletterBanner';
 import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import ContentShareModal from './ContentShareModal';
+import { getAuthorSlug } from '../../utils/authorHelper';
 
 const { Title, Text } = Typography;
 
@@ -692,10 +693,31 @@ const ArticleDetail = () => {
                 gap: 12
               }}>
                 <Space size="middle" wrap>
-                  <Space>
-                    <Avatar icon={<UserOutlined />} size="small" />
-                    <Text strong style={{ color: darkMode ? '#f1f5f9' : '#000' }}>{`${content.first_name || ''} ${content.last_name || ''}`}</Text>
-                  </Space>
+                  <div
+                    onClick={() => navigate(`/author/${getAuthorSlug(content)}`)}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '3px 10px',
+                      borderRadius: 16,
+                      background: darkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = darkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.18)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = darkMode ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)';
+                    }}
+                    title="View Author Profile & Articles"
+                  >
+                    <Avatar icon={<UserOutlined />} size="small" style={{ background: '#3b82f6' }} />
+                    <Text strong style={{ color: darkMode ? '#60a5fa' : '#2563eb', fontSize: 13, textDecoration: 'underline' }}>
+                      {`${content.first_name || ''} ${content.last_name || ''}`.trim() || 'Editorial Team'}
+                    </Text>
+                  </div>
                   <Space>
                     <CalendarOutlined style={{ color: darkMode ? '#94a3b8' : '#666' }} />
                     <Text style={{ color: darkMode ? '#cbd5e1' : '#000' }}>{content.scheduled_publish_date ? moment(content.scheduled_publish_date).format('MMMM D, YYYY') : (content.published_date ? moment(content.published_date).format('MMMM D, YYYY') : (content.created_at ? moment(content.created_at).format('MMMM D, YYYY') : '—'))}</Text>
@@ -1523,6 +1545,64 @@ const ArticleDetail = () => {
                   )}
                 </>
               )}
+              {/* ── About the Author Card ── */}
+              <div style={{
+                margin: '36px 0 24px 0',
+                padding: '24px',
+                borderRadius: 16,
+                background: darkMode ? '#1e293b' : '#ffffff',
+                border: `1px solid ${darkMode ? '#334155' : '#e2e8f0'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 16,
+                boxShadow: darkMode ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.04)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <Avatar
+                    size={56}
+                    icon={<UserOutlined />}
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: 20,
+                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+                      flexShrink: 0
+                    }}
+                  >
+                    {((content.first_name || 'E').charAt(0) + (content.last_name || 'T').charAt(0)).toUpperCase()}
+                  </Avatar>
+                  <div>
+                    <div style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#64748b', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
+                      Article Author & Contributor
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: darkMode ? '#f8fafc' : '#0f172a', marginTop: 2 }}>
+                      {`${content.first_name || ''} ${content.last_name || ''}`.trim() || 'Editorial Team'}
+                    </div>
+                    <div style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', marginTop: 2 }}>
+                      Enterprise technology researcher & thought leadership author
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  type="primary"
+                  onClick={() => navigate(`/author/${getAuthorSlug(content)}`)}
+                  style={{
+                    borderRadius: 10,
+                    fontWeight: 700,
+                    height: 40,
+                    padding: '0 20px',
+                    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                    border: 'none',
+                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                  }}
+                >
+                  View All Articles by This Author →
+                </Button>
+              </div>
             </div>
 
           </Col>

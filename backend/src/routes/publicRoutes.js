@@ -56,6 +56,10 @@ router.get('/dynamic-form-submissions/:content_id', authenticate, publicControll
 // Webinar Registration
 router.post('/content/:id/register-webinar', strictLimiter, publicController.registerWebinar);
 
+// Authors Directory & Author Profile
+router.get('/authors', publicController.getAuthors);
+router.get('/authors/:id', publicController.getAuthorById);
+
 router.get('/email-status', publicController.getEmailStatus);
 
 module.exports = router;

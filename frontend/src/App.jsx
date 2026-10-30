@@ -68,6 +68,8 @@ const Newsletter = lazyWithRetry(() => import('./components/public/Newsletter'))
 const SitemapXml = lazyWithRetry(() => import('./pages/SitemapXml'));
 const EventsPage = lazyWithRetry(() => import('./pages/EventsPage'));
 const EventDetailPage = lazyWithRetry(() => import('./pages/EventDetailPage'));
+const AuthorsPage = lazyWithRetry(() => import('./pages/AuthorsPage'));
+const AuthorProfilePage = lazyWithRetry(() => import('./pages/AuthorProfilePage'));
 
 // Lazy-loaded dashboard & admin routes
 const Dashboard = lazyWithRetry(() => import('./components/user/Dashboard'));
@@ -463,6 +465,14 @@ function AppContent() {
                 <Route path="/webinar/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
 
                 <Route path="/event/:category/:slug" element={<EventDetailPage />} />
+
+                {/* Authors Hub & Profile Routes */}
+                <Route path="/authors" element={<AuthorsPage />} />
+                <Route path="/authors/users" element={<AuthorsPage defaultType="user" />} />
+                <Route path="/authors/admin" element={<AuthorsPage defaultType="admin" />} />
+                <Route path="/author/:id" element={<AuthorProfilePage />} />
+                <Route path="/author/:id/:slug" element={<AuthorProfilePage />} />
+                <Route path="/authors/:id" element={<AuthorProfilePage />} />
                 <Route path="/event/:slug" element={<EventDetailPage />} />
 
                 <Route path="/ebook/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />

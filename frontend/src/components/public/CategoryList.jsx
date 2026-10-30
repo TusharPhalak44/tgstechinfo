@@ -9,6 +9,7 @@ import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatWebinarDate } from '../../utils/dateHelper';
 import { formatViewsToM } from '../../utils/numberHelper';
+import { getAuthorSlug } from '../../utils/authorHelper';
 
 // Detect HTML builder or file-based landing page content
 const isHtmlBuilderContent = (item) => {
@@ -600,14 +601,33 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 12 : 16, fontSize: isMobile ? 11 : 12, color: darkMode ? '#94a3b8' : '#94a3b8', flexWrap: 'wrap' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/author/${getAuthorSlug(item)}`);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              cursor: 'pointer',
+              color: darkMode ? '#93c5fd' : '#2563eb',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+            title="View Author Profile"
+          >
             <UserOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
             {item.first_name || 'TGS'} {item.last_name || 'Editorial'}
           </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <CalendarOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
-            {formatContentPublishDate(item)}
-          </span>
+          {((!isLive && !isEvent) || !item.webinar_date) && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <CalendarOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
+              {formatContentPublishDate(item)}
+            </span>
+          )}
           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <EyeOutlined style={{ fontSize: isMobile ? 10 : 11 }} />
             {formatViewsToM(item.view_count)}

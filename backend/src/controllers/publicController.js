@@ -2286,3 +2286,178 @@ exports.getEmailStatus = async (req, res) => {
         return res.status(500).json({ error: err.message });
     }
 };
+
+/**
+ * Get all authors (guest/users or admins) with total published content stats
+ */
+exports.getAuthors = async (req, res) => {
+    try {
+        const { type, search } = req.query; // 'user' | 'admin' | null
+        let whereClause = "WHERE c.status = 'published' AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)";
+        const params = [];
+
+        if (type === 'admin') {
+            whereClause += " AND u.role = 'admin'";
+        } else if (type === 'user') {
+            whereClause += " AND (u.role != 'admin' OR u.role IS NULL)";
+        }
+
+        if (search) {
+            whereClause += " AND (CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) LIKE ? OR u.job_title LIKE ? OR u.company_name LIKE ?)";
+            const s = `%${search.trim()}%`;
+            params.push(s, s, s);
+        }
+
+        const query = `
+            SELECT 
+                u.id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.role,
+                u.job_title,
+                u.company_name,
+                u.country,
+                u.avatar,
+                COUNT(c.id) AS total_articles,
+                COALESCE(SUM(c.view_count), 0) AS total_views,
+                MAX(c.published_date) AS latest_published_at
+            FROM users u
+            JOIN contents c ON c.user_id = u.id
+            ${whereClause}
+            GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.job_title, u.company_name, u.country, u.avatar
+            ORDER BY total_articles DESC, total_views DESC
+        `;
+
+        const [authors] = await pool.query(query, params);
+
+        // If type is 'admin' and no authors returned via JOIN, ensure admin user is returned
+        if (type === 'admin' && authors.length === 0) {
+            const [adminUsers] = await pool.query(`
+                SELECT id, first_name, last_name, email, role, job_title, company_name, country, avatar,
+                       0 AS total_articles, 0 AS total_views, NULL AS latest_published_at
+                FROM users WHERE role = 'admin' LIMIT 1
+            `);
+            return res.json({ authors: adminUsers, total: adminUsers.length });
+        }
+
+        res.json({ authors, total: authors.length });
+    } catch (error) {
+        console.error('getAuthors error:', error);
+        res.status(500).json({ message: 'Server error fetching authors' });
+    }
+};
+
+/**
+ * Get single author profile and all their published content
+ */
+exports.getAuthorById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const rawParam = String(id || '').trim();
+        let authorId = null;
+
+        // 1. If numeric ID
+        if (/^\d+$/.test(rawParam)) {
+            authorId = parseInt(rawParam, 10);
+        } else if (['admin', 'admin-user', 'editorial', 'editorial-team'].includes(rawParam.toLowerCase())) {
+            // 2. Admin alias
+            const [adminRows] = await pool.query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1");
+            authorId = adminRows.length > 0 ? adminRows[0].id : 1;
+        } else {
+            // 3. Author Name Slug (e.g. 'abigail-taylor' or 'admin-user')
+            const cleanSlug = rawParam.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            const [matched] = await pool.query(`
+                SELECT id FROM users
+                WHERE LOWER(REPLACE(TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))), ' ', '-')) = ?
+                   OR LOWER(REPLACE(CONCAT(TRIM(first_name), '-', TRIM(last_name)), ' ', '-')) = ?
+                   OR LOWER(TRIM(first_name)) = ?
+                   OR (LOWER(?) IN ('admin', 'admin-user', 'editorial', 'editorial-team') AND role = 'admin')
+                ORDER BY (role = 'admin') DESC, id ASC
+                LIMIT 1
+            `, [cleanSlug, cleanSlug, cleanSlug, cleanSlug]);
+
+            if (matched.length > 0) {
+                authorId = matched[0].id;
+            }
+        }
+
+        if (!authorId) {
+            return res.status(404).json({ message: 'Author not found' });
+        }
+
+        // Get author details
+        const [userRows] = await pool.query(`
+            SELECT 
+                u.id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                u.role,
+                u.job_title,
+                u.company_name,
+                u.country,
+                u.avatar,
+                u.created_at,
+                COUNT(c.id) AS total_articles,
+                COALESCE(SUM(c.view_count), 0) AS total_views
+            FROM users u
+            LEFT JOIN contents c ON c.user_id = u.id AND c.status = 'published'
+            WHERE u.id = ?
+            GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.job_title, u.company_name, u.country, u.avatar, u.created_at
+        `, [authorId]);
+
+        if (!userRows || userRows.length === 0) {
+            return res.status(404).json({ message: 'Author not found' });
+        }
+
+        const author = userRows[0];
+
+        // Get author's published contents
+        const [contents] = await pool.query(`
+            SELECT 
+                c.id,
+                c.title,
+                c.slug,
+                c.short_description,
+                c.banner_image,
+                c.reading_time,
+                c.view_count,
+                c.published_date,
+                c.created_at,
+                c.content_type_id,
+                ct.name AS content_type_name,
+                ct.slug AS content_type,
+                c.category_id,
+                cat.name AS category_name,
+                cat.slug AS category_slug,
+                c.builder_layout
+            FROM contents c
+            LEFT JOIN content_types ct ON c.content_type_id = ct.id
+            LEFT JOIN categories cat ON c.category_id = cat.id
+            WHERE c.user_id = ? AND c.status = 'published' AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
+            ORDER BY c.published_date DESC, c.created_at DESC
+        `, [authorId]);
+
+        const categoryMap = {};
+        const typeMap = {};
+        contents.forEach(c => {
+            if (c.category_name) {
+                categoryMap[c.category_name] = (categoryMap[c.category_name] || 0) + 1;
+            }
+            if (c.content_type_name) {
+                typeMap[c.content_type_name] = (typeMap[c.content_type_name] || 0) + 1;
+            }
+        });
+
+        res.json({
+            author,
+            contents,
+            categories: Object.entries(categoryMap).map(([name, count]) => ({ name, count })),
+            contentTypes: Object.entries(typeMap).map(([name, count]) => ({ name, count }))
+        });
+    } catch (error) {
+        console.error('getAuthorById error:', error);
+        res.status(500).json({ message: 'Server error fetching author details' });
+    }
+};
