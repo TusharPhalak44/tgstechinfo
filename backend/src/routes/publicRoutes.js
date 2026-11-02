@@ -42,6 +42,8 @@ router.post('/case-study-gate', strictLimiter, publicController.submitCaseStudyG
 // Newsletter
 router.get('/newsletter/unsubscribe', publicController.unsubscribeNewsletter);
 router.post('/newsletter/unsubscribe', publicController.unsubscribeNewsletter);
+router.get('/newsletter/preferences', publicController.getNewsletterPreferences);
+router.post('/newsletter/preferences', publicController.updateNewsletterPreferences);
 
 // Data requests (DSAR + Do Not Sell)
 router.post('/data-request/dsar', passwordResetLimiter, publicController.submitDataRequest);

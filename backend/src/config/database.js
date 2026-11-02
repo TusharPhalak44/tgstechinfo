@@ -1,7 +1,9 @@
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
-
 const path = require('path');
+
+// Enforce Asia/Kolkata (IST) timezone globally for Node.js runtime
+process.env.TZ = process.env.TZ || 'Asia/Kolkata';
 
 // Do NOT override env vars already set by Docker
 dotenv.config({ path: path.resolve(__dirname, '../../.env'), override: false });
@@ -19,11 +21,25 @@ const pool = mysql.createPool({
     dateStrings: true
 });
 
+// Enforce Indian Standard Time (+05:30) on EVERY connection in the pool
+pool.on('connection', (connection) => {
+    connection.query("SET time_zone = '+05:30'", (err) => {
+        if (err) {
+            console.warn('⚠️ Could not set time_zone = +05:30 on pool connection:', err.message);
+        }
+    });
+});
+
 const testConnection = async (retries = 15, delay = 3000) => {
     for (let i = 0; i < retries; i++) {
         try {
             const conn = await pool.getConnection();
             await conn.query("SET time_zone = '+05:30'");
+            try {
+                await conn.query("SET GLOBAL time_zone = '+05:30'");
+            } catch (_) {
+                // If lacks SUPER / SYSTEM_VARIABLES_ADMIN privilege, session level is already guaranteed
+            }
             console.log(`✅ Connected to MySQL database [${process.env.DB_NAME || 'publishing_platform'}] successfully (Timezone: +05:30 IST)`);
             conn.release();
             return true;

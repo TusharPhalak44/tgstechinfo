@@ -96,6 +96,15 @@ const AdminSubmissions = () => {
   const [loadingNewsletter, setLoadingNewsletter] = useState(false);
   const [newsletterSearch, setNewsletterSearch] = useState('');
   const [newsletterStatusFilter, setNewsletterStatusFilter] = useState('all');
+  const [selectedSubscriber, setSelectedSubscriber] = useState(null);
+  const [subscriberDetailData, setSubscriberDetailData] = useState(null);
+  const [loadingSubscriberDetail, setLoadingSubscriberDetail] = useState(false);
+
+  // Case Study Submissions state
+  const [caseStudySubmissions, setCaseStudySubmissions] = useState([]);
+  const [loadingCaseStudies, setLoadingCaseStudies] = useState(false);
+  const [caseStudySearch, setCaseStudySearch] = useState('');
+  const [selectedCaseStudyLead, setSelectedCaseStudyLead] = useState(null);
 
   // Table details view state
   const [selectedTable, setSelectedTable] = useState(null);
@@ -109,6 +118,7 @@ const AdminSubmissions = () => {
     fetchWebinarRegistrations();
     fetchContactSubmissions();
     fetchNewsletterSubscribers();
+    fetchCaseStudySubmissions();
   }, []);
 
   const fetchTables = async () => {
@@ -174,6 +184,36 @@ const AdminSubmissions = () => {
     }
   };
 
+  const fetchCaseStudySubmissions = async () => {
+    setLoadingCaseStudies(true);
+    try {
+      const res = await axios.get('/api/admin/case-study-submissions');
+      if (res.data?.success) {
+        setCaseStudySubmissions(res.data.submissions || []);
+      }
+    } catch (err) {
+      console.error('Error loading case study submissions:', err);
+    } finally {
+      setLoadingCaseStudies(false);
+    }
+  };
+
+  const handleDeleteCaseStudySubmission = async (id) => {
+    try {
+      const res = await axios.delete(`/api/admin/case-study-submissions/${id}`);
+      if (res.data?.success) {
+        message.success('Case study lead deleted');
+        setCaseStudySubmissions(prev => prev.filter(c => c.id !== id));
+        if (selectedCaseStudyLead && selectedCaseStudyLead.id === id) {
+          setSelectedCaseStudyLead(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete case study lead:', err);
+      message.error('Failed to delete lead');
+    }
+  };
+
   const handleUpdateContactStatus = async (id, newStatus) => {
     try {
       const res = await axios.put(`/api/admin/contact-submissions/${id}/status`, { status: newStatus });
@@ -225,6 +265,21 @@ const AdminSubmissions = () => {
     } catch (err) {
       console.error('Error subscribing member:', err);
       message.error('Failed to activate subscription');
+    }
+  };
+
+  const openSubscriberDetails = async (subscriberId) => {
+    setSelectedSubscriber(subscriberId);
+    setLoadingSubscriberDetail(true);
+    setSubscriberDetailData(null);
+    try {
+      const res = await axios.get(`/api/admin/newsletter/${subscriberId}/details`);
+      setSubscriberDetailData(res.data);
+    } catch (err) {
+      console.error('Error loading subscriber details:', err);
+      message.error('Failed to load subscriber details');
+    } finally {
+      setLoadingSubscriberDetail(false);
     }
   };
 
@@ -467,6 +522,15 @@ const AdminSubmissions = () => {
                   </div>
                 ),
                 value: 'newsletter'
+              },
+              {
+                label: (
+                  <div style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                    <FileTextOutlined style={{ color: '#0ea5e9' }} />
+                    Case Study Leads ({caseStudySubmissions.length})
+                  </div>
+                ),
+                value: 'case_studies'
               }
             ]}
           />
@@ -1137,6 +1201,54 @@ const AdminSubmissions = () => {
             )
           },
           {
+            title: 'Source',
+            dataIndex: 'last_active_source',
+            key: 'last_active_source',
+            width: 140,
+            render: (v) => {
+              const colorMap = {
+                homepage: 'blue',
+                footer: 'cyan',
+                content_detail: 'purple',
+                technology_page: 'geekblue',
+                industry_page: 'green',
+                articles: 'orange',
+                whitepapers: 'magenta',
+                case_studies: 'gold'
+              };
+              return (
+                <Tag color={colorMap[v] || 'default'} style={{ borderRadius: 6, textTransform: 'capitalize' }}>
+                  {v ? v.replace(/_/g, ' ') : 'General'}
+                </Tag>
+              );
+            }
+          },
+          {
+            title: 'Topic Interests',
+            dataIndex: 'active_interests',
+            key: 'active_interests',
+            width: 220,
+            render: (v) => {
+              if (!v) return <Tag color="default">General / All</Tag>;
+              const list = v.split(',').map(s => s.trim()).filter(Boolean);
+              return (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 220 }}>
+                  {list.slice(0, 3).map((item, idx) => {
+                    const [type, val] = item.split(':');
+                    return (
+                      <Tag key={idx} color={type === 'industry' ? 'green' : (type === 'technology' ? 'blue' : 'orange')} style={{ fontSize: 11, borderRadius: 4, margin: 0 }}>
+                        {val || type}
+                      </Tag>
+                    );
+                  })}
+                  {list.length > 3 && (
+                    <Tag style={{ fontSize: 11, borderRadius: 4, margin: 0 }}>+{list.length - 3} more</Tag>
+                  )}
+                </div>
+              );
+            }
+          },
+          {
             title: 'Status',
             dataIndex: 'is_active',
             key: 'is_active',
@@ -1181,32 +1293,44 @@ const AdminSubmissions = () => {
           {
             title: 'Action',
             key: 'action',
-            width: 150,
-            render: (_, r) => r.is_active ? (
-              <Popconfirm
-                title="Unsubscribe Member"
-                description={`Are you sure you want to unsubscribe ${r.email}?`}
-                onConfirm={() => handleUnsubscribeNewsletter(r.email)}
-                okText="Unsubscribe"
-                cancelText="Cancel"
-                okButtonProps={{ danger: true }}
-              >
-                <Button type="link" danger size="small" style={{ fontWeight: 600, padding: 0 }}>
-                  Unsubscribe
+            width: 180,
+            render: (_, r) => (
+              <Space size="middle">
+                <Button
+                  size="small"
+                  icon={<EyeOutlined />}
+                  onClick={() => openSubscriberDetails(r.id)}
+                  style={{ borderRadius: 6, fontSize: 12 }}
+                >
+                  Details
                 </Button>
-              </Popconfirm>
-            ) : (
-              <Popconfirm
-                title="Re-activate Subscription"
-                description={`Re-subscribe ${r.email} to newsletter list?`}
-                onConfirm={() => handleSubscribeNewsletter(r.email)}
-                okText="Subscribe"
-                cancelText="Cancel"
-              >
-                <Button type="link" size="small" style={{ color: '#10b981', fontWeight: 700, padding: 0 }}>
-                  Subscribe
-                </Button>
-              </Popconfirm>
+                {r.is_active ? (
+                  <Popconfirm
+                    title="Unsubscribe Member"
+                    description={`Are you sure you want to unsubscribe ${r.email}?`}
+                    onConfirm={() => handleUnsubscribeNewsletter(r.email)}
+                    okText="Unsubscribe"
+                    cancelText="Cancel"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button type="link" danger size="small" style={{ fontWeight: 600, padding: 0 }}>
+                      Unsubscribe
+                    </Button>
+                  </Popconfirm>
+                ) : (
+                  <Popconfirm
+                    title="Re-activate Subscription"
+                    description={`Re-subscribe ${r.email} to newsletter list?`}
+                    onConfirm={() => handleSubscribeNewsletter(r.email)}
+                    okText="Subscribe"
+                    cancelText="Cancel"
+                  >
+                    <Button type="link" size="small" style={{ color: '#10b981', fontWeight: 700, padding: 0 }}>
+                      Subscribe
+                    </Button>
+                  </Popconfirm>
+                )}
+              </Space>
             )
           }
         ];
@@ -1305,6 +1429,246 @@ const AdminSubmissions = () => {
         );
       })()}
 
+      {/* VIEW 5: CASE STUDY SUBMISSIONS TAB VIEW */}
+      {!selectedTable && activeTab === 'case_studies' && (() => {
+        const filteredCaseStudies = caseStudySubmissions.filter(item => {
+          if (!caseStudySearch) return true;
+          const q = caseStudySearch.toLowerCase();
+          return (
+            (item.name && item.name.toLowerCase().includes(q)) ||
+            (item.email && item.email.toLowerCase().includes(q)) ||
+            (item.contact && item.contact.toLowerCase().includes(q)) ||
+            (item.case_study_title && item.case_study_title.toLowerCase().includes(q)) ||
+            (item.case_study_slug && item.case_study_slug.toLowerCase().includes(q))
+          );
+        });
+
+        const uniqueCaseStudies = new Set(caseStudySubmissions.map(c => c.content_id).filter(Boolean)).size;
+        const todayLeadsCount = caseStudySubmissions.filter(c => moment(c.created_at).isSame(moment(), 'day')).length;
+        const thisMonthLeadsCount = caseStudySubmissions.filter(c => moment(c.created_at).isSame(moment(), 'month')).length;
+
+        const caseStudyColumns = [
+          {
+            title: 'Lead Name & Email',
+            key: 'lead',
+            width: 250,
+            render: (_, r) => (
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <UserOutlined style={{ color: '#0ea5e9' }} />
+                  {r.name || 'Anonymous Lead'}
+                </div>
+                <div style={{ marginTop: 2 }}>
+                  <a href={`mailto:${r.email}`} style={{ color: '#0284c7', fontSize: 12 }}>
+                    <MailOutlined style={{ marginRight: 4 }} />
+                    {r.email}
+                  </a>
+                </div>
+              </div>
+            )
+          },
+          {
+            title: 'Phone / Contact',
+            dataIndex: 'contact',
+            key: 'contact',
+            width: 170,
+            render: (v) => v ? (
+              <span style={{ fontSize: 13, color: '#334155' }}>
+                <PhoneOutlined style={{ marginRight: 6, color: '#10b981' }} />
+                <a href={`tel:${v}`} style={{ color: '#334155' }}>{v}</a>
+              </span>
+            ) : <span style={{ color: '#cbd5e1' }}>—</span>
+          },
+          {
+            title: 'Case Study Asset',
+            key: 'asset',
+            width: 300,
+            render: (_, r) => (
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 13, color: '#1e293b' }}>
+                  {r.case_study_slug ? (
+                    <a
+                      href={`/case-study/${r.case_study_slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#4f46e5', textDecoration: 'none' }}
+                    >
+                      {r.case_study_title || `Case Study #${r.content_id}`}
+                    </a>
+                  ) : (
+                    r.case_study_title || `Case Study #${r.content_id}`
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
+                  <Tag color="cyan" style={{ fontSize: 11, borderRadius: 4 }}>ID: #{r.content_id}</Tag>
+                  {r.case_study_pdf && (
+                    <a
+                      href={r.case_study_pdf.startsWith('http') ? r.case_study_pdf : `/api/public/download-case-study/${r.case_study_slug || r.content_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ fontSize: 11, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 4 }}
+                    >
+                      <FileTextOutlined /> PDF Attached
+                    </a>
+                  )}
+                </div>
+              </div>
+            )
+          },
+          {
+            title: 'Submission Date',
+            dataIndex: 'created_at',
+            key: 'created_at',
+            width: 180,
+            render: (v) => (
+              <span style={{ fontSize: 13, color: '#475569' }}>
+                <ClockCircleOutlined style={{ marginRight: 6, color: '#94a3b8' }} />
+                {formatDateForDisplay(v, DATE_FORMATS.DATE_TIME)}
+              </span>
+            )
+          },
+          {
+            title: 'IP & Device',
+            key: 'ip_agent',
+            width: 180,
+            render: (_, r) => (
+              <div style={{ fontSize: 12, color: '#64748b' }}>
+                <div><GlobalOutlined style={{ marginRight: 4 }} />{r.ip_address || '—'}</div>
+                {r.user_agent && (
+                  <Tooltip title={r.user_agent}>
+                    <div style={{
+                      maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap', fontSize: 11, color: '#94a3b8', cursor: 'pointer'
+                    }}>
+                      {r.user_agent}
+                    </div>
+                  </Tooltip>
+                )}
+              </div>
+            )
+          },
+          {
+            title: 'Actions',
+            key: 'actions',
+            width: 120,
+            render: (_, r) => (
+              <Space>
+                <Tooltip title="View Lead Details">
+                  <Button
+                    size="small"
+                    icon={<EyeOutlined />}
+                    onClick={() => setSelectedCaseStudyLead(r)}
+                    style={{ borderRadius: 6 }}
+                  />
+                </Tooltip>
+                <Popconfirm
+                  title="Delete Lead"
+                  description="Are you sure you want to permanently delete this case study lead?"
+                  onConfirm={() => handleDeleteCaseStudySubmission(r.id)}
+                  okText="Delete"
+                  cancelText="Cancel"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Tooltip title="Delete Lead">
+                    <Button
+                      size="small"
+                      danger
+                      icon={<DeleteOutlined />}
+                      style={{ borderRadius: 6 }}
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              </Space>
+            )
+          }
+        ];
+
+        return (
+          <>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FileTextOutlined style={{ color: '#0ea5e9' }} />
+                  Case Study Gated Submissions & Leads
+                </h1>
+                <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
+                  All gated form submissions and download inquiries captured from Case Studies (database table: <code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>case_study_submissions</code>)
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button
+                  icon={<FileExcelOutlined />}
+                  type="primary"
+                  onClick={() => exportToExcel([
+                    { field: 'id', title: 'Lead ID' },
+                    { field: 'name', title: 'Lead Name' },
+                    { field: 'email', title: 'Work Email' },
+                    { field: 'contact', title: 'Phone / Contact' },
+                    { field: 'case_study_title', title: 'Case Study Title' },
+                    { field: 'content_id', title: 'Case Study ID' },
+                    { field: 'ip_address', title: 'IP Address' },
+                    { field: 'user_agent', title: 'Browser User Agent' },
+                    { field: 'created_at', title: 'Submission Date' }
+                  ], filteredCaseStudies, 'case_study_leads')}
+                  style={{ background: '#0ea5e9', borderColor: '#0ea5e9', borderRadius: 8 }}
+                >
+                  Export Leads to Excel
+                </Button>
+                <Button icon={<ReloadOutlined />} onClick={fetchCaseStudySubmissions} loading={loadingCaseStudies} style={{ borderRadius: 8 }}>
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            {/* Stat Cards */}
+            <div style={{ display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+              <StatCard icon={<FileTextOutlined />} label="Total Case Study Leads" value={caseStudySubmissions.length} color="#0ea5e9" />
+              <StatCard icon={<TableOutlined />} label="Gated Case Studies" value={uniqueCaseStudies} color="#8b5cf6" />
+              <StatCard icon={<ClockCircleOutlined />} label="Leads Today" value={todayLeadsCount} color="#10b981" />
+              <StatCard icon={<CalendarOutlined />} label="Leads This Month" value={thisMonthLeadsCount} color="#f59e0b" />
+            </div>
+
+            {/* Search Bar */}
+            <div style={{
+              background: '#fff', borderRadius: 12, padding: '16px 20px',
+              border: '1px solid #e2e8f0', marginBottom: 16,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+            }}>
+              <Input
+                placeholder="Search by lead name, work email, phone number, or case study..."
+                prefix={<SearchOutlined style={{ color: '#94a3b8' }} />}
+                value={caseStudySearch}
+                onChange={e => setCaseStudySearch(e.target.value)}
+                allowClear
+                style={{ width: 380, borderRadius: 8 }}
+              />
+              <div style={{ fontSize: 13, color: '#64748b' }}>
+                Showing <strong style={{ color: '#0f172a' }}>{filteredCaseStudies.length}</strong> of <strong style={{ color: '#0f172a' }}>{caseStudySubmissions.length}</strong> leads
+              </div>
+            </div>
+
+            {/* Table */}
+            <div style={{
+              background: '#fff', borderRadius: 12,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+              overflow: 'hidden'
+            }}>
+              <Table
+                dataSource={filteredCaseStudies}
+                columns={caseStudyColumns}
+                rowKey="id"
+                loading={loadingCaseStudies}
+                pagination={{ pageSize: 15, showSizeChanger: true }}
+                scroll={{ x: 1000 }}
+              />
+            </div>
+          </>
+        );
+      })()}
+
       {/* DETAIL MODAL FOR CONTACT ENQUIRY */}
       <Modal
         title={
@@ -1386,6 +1750,240 @@ const AdminSubmissions = () => {
                 }}>
                   {selectedContact.message}
                 </div>
+              </Descriptions.Item>
+            </Descriptions>
+          </div>
+        )}
+      </Modal>
+
+      {/* DETAIL MODAL FOR NEWSLETTER SUBSCRIBER */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 17, fontWeight: 700 }}>
+            <MailOutlined style={{ color: '#10b981' }} />
+            <span>Newsletter Subscriber Profile</span>
+          </div>
+        }
+        open={!!selectedSubscriber}
+        onCancel={() => { setSelectedSubscriber(null); setSubscriberDetailData(null); }}
+        footer={[
+          <Button key="close" onClick={() => { setSelectedSubscriber(null); setSubscriberDetailData(null); }} style={{ borderRadius: 8 }}>
+            Close
+          </Button>,
+          subscriberDetailData?.subscriber?.email && (
+            <Button
+              key="email"
+              type="primary"
+              icon={<SendOutlined />}
+              href={`mailto:${subscriberDetailData.subscriber.email}`}
+              style={{ borderRadius: 8, background: '#10b981', borderColor: '#10b981' }}
+            >
+              Compose Email
+            </Button>
+          )
+        ]}
+        width={780}
+      >
+        {loadingSubscriberDetail ? (
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <ReloadOutlined spin style={{ fontSize: 28, color: '#10b981' }} />
+            <div style={{ marginTop: 12, color: '#64748b' }}>Loading subscriber data...</div>
+          </div>
+        ) : subscriberDetailData?.subscriber ? (
+          <div style={{ marginTop: 16 }}>
+            {/* Account Details */}
+            <Descriptions bordered column={2} size="small" style={{ marginBottom: 20 }}>
+              <Descriptions.Item label="Email">
+                <strong>{subscriberDetailData.subscriber.email}</strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="Name">
+                {subscriberDetailData.subscriber.name || '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Status">
+                {subscriberDetailData.subscriber.is_active ? (
+                  <Tag color="green">Active</Tag>
+                ) : (
+                  <Tag color="red">Unsubscribed</Tag>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Last Source">
+                <Tag color="blue" style={{ textTransform: 'capitalize' }}>
+                  {subscriberDetailData.subscriber.last_active_source || 'general'}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Subscribed At">
+                {formatDateForDisplay(subscriberDetailData.subscriber.created_at, DATE_FORMATS.DATE_TIME)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Unsubscribed At">
+                {subscriberDetailData.subscriber.unsubscribed_at ? formatDateForDisplay(subscriberDetailData.subscriber.unsubscribed_at, DATE_FORMATS.DATE_TIME) : '—'}
+              </Descriptions.Item>
+              {subscriberDetailData.subscriber.unsubscribe_reason && (
+                <Descriptions.Item label="Unsubscribe Reason" span={2}>
+                  <span style={{ color: '#ef4444', fontStyle: 'italic' }}>
+                    {subscriberDetailData.subscriber.unsubscribe_reason}
+                  </span>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            {/* Notification Preferences */}
+            <div style={{ marginBottom: 20 }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                Delivery Preferences
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <Tag color={subscriberDetailData.subscriber.preferences_instant_alerts ? 'blue' : 'default'}>
+                  Instant Alerts: {subscriberDetailData.subscriber.preferences_instant_alerts ? 'ON' : 'OFF'}
+                </Tag>
+                <Tag color={subscriberDetailData.subscriber.preferences_weekly_digest ? 'green' : 'default'}>
+                  Weekly Digest: {subscriberDetailData.subscriber.preferences_weekly_digest ? 'ON' : 'OFF'}
+                </Tag>
+                <Tag color={subscriberDetailData.subscriber.preferences_general_alerts ? 'cyan' : 'default'}>
+                  General Alerts: {subscriberDetailData.subscriber.preferences_general_alerts ? 'ON' : 'OFF'}
+                </Tag>
+                <Tag color={subscriberDetailData.subscriber.preferences_technology_alerts ? 'geekblue' : 'default'}>
+                  Tech Alerts: {subscriberDetailData.subscriber.preferences_technology_alerts ? 'ON' : 'OFF'}
+                </Tag>
+                <Tag color={subscriberDetailData.subscriber.preferences_industry_alerts ? 'gold' : 'default'}>
+                  Industry Alerts: {subscriberDetailData.subscriber.preferences_industry_alerts ? 'ON' : 'OFF'}
+                </Tag>
+              </div>
+            </div>
+
+            {/* Registered Topics & Interests */}
+            <div style={{ marginBottom: 20 }}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                Registered Topics & Interests ({subscriberDetailData.interests?.length || 0})
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {subscriberDetailData.interests && subscriberDetailData.interests.length > 0 ? (
+                  subscriberDetailData.interests.map((it, idx) => (
+                    <Tag
+                      key={idx}
+                      color={it.interest_type === 'industry' ? 'green' : (it.interest_type === 'technology' ? 'blue' : 'orange')}
+                      style={{ borderRadius: 4, padding: '3px 8px' }}
+                    >
+                      {it.interest_type.toUpperCase()}: <strong>{it.interest_value}</strong>
+                    </Tag>
+                  ))
+                ) : (
+                  <span style={{ fontSize: 13, color: '#94a3b8' }}>General / All content (No specific filters)</span>
+                )}
+              </div>
+            </div>
+
+            {/* Touchpoint Activity History */}
+            {subscriberDetailData.activities && subscriberDetailData.activities.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                  Subscription Touchpoint History
+                </h4>
+                <Table
+                  size="small"
+                  pagination={false}
+                  dataSource={subscriberDetailData.activities}
+                  rowKey="id"
+                  columns={[
+                    { title: 'Source', dataIndex: 'subscription_source', key: 'src', render: s => <Tag color="blue">{s}</Tag> },
+                    { title: 'Page Title / Content', dataIndex: 'source_page_title', key: 'title', render: t => t || '—' },
+                    { title: 'Interest', dataIndex: 'interest_value', key: 'val', render: (v, r) => `${r.interest_type}:${v}` },
+                    { title: 'Date', dataIndex: 'created_at', key: 'dt', render: d => formatDateForDisplay(d, 'YYYY-MM-DD HH:mm') }
+                  ]}
+                />
+              </div>
+            )}
+
+            {/* Notification Sent History */}
+            {subscriberDetailData.notifications && subscriberDetailData.notifications.length > 0 && (
+              <div>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                  Publications Dispatched to this Subscriber
+                </h4>
+                <Table
+                  size="small"
+                  pagination={false}
+                  dataSource={subscriberDetailData.notifications}
+                  rowKey="id"
+                  columns={[
+                    { title: 'Content Title', dataIndex: 'content_title', key: 'title', render: t => t || 'Publication' },
+                    { title: 'Notification Type', dataIndex: 'notification_type', key: 'type', render: nt => <Tag color="geekblue">{nt}</Tag> },
+                    { title: 'Sent At', dataIndex: 'sent_at', key: 'sent', render: d => formatDateForDisplay(d, 'YYYY-MM-DD HH:mm') }
+                  ]}
+                />
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
+
+      {/* DETAIL MODAL FOR CASE STUDY LEAD */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 17, fontWeight: 700 }}>
+            <FileTextOutlined style={{ color: '#0ea5e9' }} />
+            <span>Case Study Lead Details #{selectedCaseStudyLead?.id}</span>
+          </div>
+        }
+        open={!!selectedCaseStudyLead}
+        onCancel={() => setSelectedCaseStudyLead(null)}
+        footer={[
+          <Button key="close" onClick={() => setSelectedCaseStudyLead(null)} style={{ borderRadius: 8 }}>
+            Close
+          </Button>,
+          <Button
+            key="email"
+            type="primary"
+            icon={<SendOutlined />}
+            href={`mailto:${selectedCaseStudyLead?.email}?subject=Thank you for downloading: ${encodeURIComponent(selectedCaseStudyLead?.case_study_title || 'our Case Study')}`}
+            style={{ borderRadius: 8, background: '#0ea5e9', borderColor: '#0ea5e9' }}
+          >
+            Email Lead
+          </Button>
+        ]}
+        width={680}
+      >
+        {selectedCaseStudyLead && (
+          <div style={{ marginTop: 16 }}>
+            <Descriptions bordered column={2} size="small">
+              <Descriptions.Item label="Full Name">
+                <strong>{selectedCaseStudyLead.name || 'Anonymous'}</strong>
+              </Descriptions.Item>
+              <Descriptions.Item label="Work Email">
+                <a href={`mailto:${selectedCaseStudyLead.email}`}>{selectedCaseStudyLead.email}</a>
+              </Descriptions.Item>
+              <Descriptions.Item label="Phone / Contact">
+                {selectedCaseStudyLead.contact ? (
+                  <a href={`tel:${selectedCaseStudyLead.contact}`}>{selectedCaseStudyLead.contact}</a>
+                ) : '—'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Submission Date">
+                {formatDateForDisplay(selectedCaseStudyLead.created_at, DATE_FORMATS.DATE_TIME)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Case Study Title" span={2}>
+                <strong>{selectedCaseStudyLead.case_study_title || `Case Study #${selectedCaseStudyLead.content_id}`}</strong>
+                {selectedCaseStudyLead.case_study_slug && (
+                  <div style={{ marginTop: 4 }}>
+                    <a
+                      href={`/case-study/${selectedCaseStudyLead.case_study_slug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#4f46e5', fontSize: 12 }}
+                    >
+                      View Case Study on Website →
+                    </a>
+                  </div>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="IP Address">
+                <code>{selectedCaseStudyLead.ip_address || '—'}</code>
+              </Descriptions.Item>
+              <Descriptions.Item label="Device / Platform">
+                <Tag color="blue">Gated Form Lead</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="User Agent" span={2}>
+                <span style={{ fontSize: 12, color: '#64748b', wordBreak: 'break-all' }}>
+                  {selectedCaseStudyLead.user_agent || '—'}
+                </span>
               </Descriptions.Item>
             </Descriptions>
           </div>

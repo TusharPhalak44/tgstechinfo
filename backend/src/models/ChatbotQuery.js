@@ -1,16 +1,18 @@
 const { pool } = require('../config/database');
+const { getNowInIST } = require('../utils/dateHelper');
 const { CHATBOT_QUERY_STATUSES } = require('../utils/statusHelper');
 
 class ChatbotQuery {
     static async create(queryData) {
         const { email, query } = queryData;
+        const currentIstTime = getNowInIST();
 
         const sql = `
-            INSERT INTO chatbot_queries (email, query, status)
-            VALUES (?, ?, ?)
+            INSERT INTO chatbot_queries (email, query, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
         `;
 
-        const [result] = await pool.query(sql, [email, query, CHATBOT_QUERY_STATUSES.PENDING]);
+        const [result] = await pool.query(sql, [email, query, CHATBOT_QUERY_STATUSES.PENDING, currentIstTime, currentIstTime]);
         return await this.findById(result.insertId);
     }
 
@@ -41,13 +43,14 @@ class ChatbotQuery {
     }
 
     static async updateStatus(id, status, adminResponse = null) {
+        const currentIstTime = getNowInIST();
         const sql = `
             UPDATE chatbot_queries 
-            SET status = ?, admin_response = ?, updated_at = NOW()
+            SET status = ?, admin_response = ?, updated_at = ?
             WHERE id = ?
         `;
 
-        const [result] = await pool.query(sql, [status, adminResponse, id]);
+        const [result] = await pool.query(sql, [status, adminResponse, currentIstTime, id]);
         return result.affectedRows > 0;
     }
 

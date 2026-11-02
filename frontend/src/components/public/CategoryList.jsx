@@ -1257,7 +1257,28 @@ const CategoryList = () => {
                     return;
                   }
                   try {
-                    const res = await axios.post('/api/public/newsletter', { email: emailVal });
+                    // Determine if this is a topic page (technology/industry) or general listing page
+                    const matchedCat = categoriesTree.find(c => c.slug === slug || String(c.id) === String(selectedCategory));
+                    let subSource = 'articles';
+                    let interestType = 'general';
+                    let interestValue = 'all';
+
+                    if (isCategoryPage || matchedCat) {
+                      interestType = matchedCat?.type || 'technology';
+                      interestValue = matchedCat?.slug || slug || 'all';
+                      subSource = interestType === 'industry' ? 'industry_page' : 'technology_page';
+                    } else if (slug) {
+                      subSource = slug.replace(/-/g, '_');
+                    }
+
+                    const res = await axios.post('/api/public/newsletter', {
+                      email: emailVal,
+                      source: subSource,
+                      source_page_url: typeof window !== 'undefined' ? window.location.href : null,
+                      source_page_title: typeof document !== 'undefined' ? document.title : null,
+                      interest_type: interestType,
+                      interest_value: interestValue
+                    });
                     alert(res.data?.message || 'Successfully subscribed! Please check your email inbox.');
                     e.target.email.value = '';
                   } catch (error) {

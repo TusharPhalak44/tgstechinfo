@@ -67,8 +67,15 @@ const Footer = ({ simplified = false }) => {
 
     setNewsletterLoading(true);
     try {
-      await axios.post('/api/public/newsletter', { email: newsletterEmail.trim() });
-      message.success('Successfully subscribed to newsletter!');
+      const res = await axios.post('/api/public/newsletter', {
+        email: newsletterEmail.trim(),
+        source: 'footer',
+        source_page_url: typeof window !== 'undefined' ? window.location.href : null,
+        source_page_title: typeof document !== 'undefined' ? document.title : null,
+        interest_type: 'general',
+        interest_value: 'all'
+      });
+      message.success(res.data?.message || 'Successfully subscribed to newsletter!');
       setNewsletterEmail('');
     } catch (error) {
       const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;

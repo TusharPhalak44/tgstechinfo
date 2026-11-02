@@ -264,7 +264,11 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
         // 2. Read metadata from folder (landing.json or index.html)
         const landingPagesRoot = getLandingPagesRoot();
         const resolvedFolder = resolveLandingFolder(landingPagesRoot, cleanSlug);
-        let pageDir = resolvedFolder ? resolvedFolder.fullPath : path.resolve(landingPagesRoot, cleanSlug);
+        if (!resolvedFolder || !fs.existsSync(resolvedFolder.fullPath)) {
+            // Folder does not exist on disk! Never auto-create content for a missing landing page folder
+            return null;
+        }
+        let pageDir = resolvedFolder.fullPath;
 
         let title = '';
         let webhookUrl = '';

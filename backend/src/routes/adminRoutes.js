@@ -85,6 +85,8 @@ router.get('/webinar-registrations', hasPermission('content.publish'), adminCont
 router.get('/contact-submissions', hasAnyPermission(['content.publish', 'user.read']), adminController.getContactSubmissions);
 router.put('/contact-submissions/:id/status', hasAnyPermission(['content.publish', 'user.update']), adminController.updateContactSubmissionStatus);
 router.delete('/contact-submissions/:id', hasAnyPermission(['content.publish', 'user.delete']), adminController.deleteContactSubmission);
+router.get('/case-study-submissions', hasAnyPermission(['content.publish', 'user.read']), adminController.getCaseStudySubmissions);
+router.delete('/case-study-submissions/:id', hasAnyPermission(['content.publish', 'user.delete']), adminController.deleteCaseStudySubmission);
 
 // Data requests (DSAR + Do Not Sell)
 router.get('/data-requests', hasPermission('user.read'), adminController.getDataRequests);
@@ -93,6 +95,10 @@ router.put('/data-requests/:id/status', hasPermission('user.update'), adminContr
 // Newsletter subscriber management
 const newsletterController = require('../controllers/newsletterController');
 router.get('/newsletter', hasAnyPermission(['user.read', 'content.publish']), newsletterController.getSubscribers);
+router.get('/newsletter/notification-settings', hasAnyPermission(['user.read', 'content.publish']), newsletterController.getNotificationSettings);
+router.put('/newsletter/notification-settings', hasAnyPermission(['user.update', 'content.publish']), newsletterController.updateNotificationSettings);
+router.get('/newsletter/queue-stats', hasAnyPermission(['user.read', 'content.publish']), newsletterController.getQueueStats);
+router.get('/newsletter/:id/details', hasAnyPermission(['user.read', 'content.publish']), newsletterController.getSubscriberDetails);
 router.put('/newsletter/:email/subscribe', hasAnyPermission(['user.update', 'content.publish']), newsletterController.resubscribe);
 router.delete('/newsletter/:email', hasAnyPermission(['user.delete', 'content.publish']), newsletterController.removeSubscriber);
 

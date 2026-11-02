@@ -12,8 +12,16 @@ const Newsletter = () => {
   const onFinish = async (values) => {
     setLoading(true);
     try {
-      await axios.post('/api/public/newsletter', { email: (values.email || '').trim() });
-      message.success('Successfully subscribed to newsletter!');
+      const res = await axios.post('/api/public/newsletter', {
+        email: (values.email || '').trim(),
+        name: (values.name || '').trim() || null,
+        source: 'general_form',
+        source_page_url: typeof window !== 'undefined' ? window.location.href : null,
+        source_page_title: typeof document !== 'undefined' ? document.title : null,
+        interest_type: 'general',
+        interest_value: 'all'
+      });
+      message.success(res.data?.message || 'Successfully subscribed to newsletter!');
       form.resetFields();
     } catch (error) {
       console.error('Newsletter subscription error:', error);

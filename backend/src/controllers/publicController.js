@@ -9,6 +9,7 @@ const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail, escapeHtml, extractNameFromEmail } = require('../config/email');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
+const { getNowInIST } = require('../utils/dateHelper');
 const fs = require('fs');
 const path = require('path');
 
@@ -297,9 +298,13 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
+        const isStandardEditorial = [1, 2, 3, 4, 6, 7, 8, 9, 11].includes(content.content_type_id);
         const isFileLanding = Boolean(
-            (content.builder_layout && typeof content.builder_layout === 'string' && content.builder_layout.includes('file-landing')) ||
-            (content.content && typeof content.content === 'string' && content.content.includes('File-based landing page'))
+            !isStandardEditorial &&
+            (
+                (content.builder_layout && typeof content.builder_layout === 'string' && content.builder_layout.includes('file-landing')) ||
+                (content.content && typeof content.content === 'string' && content.content.includes('File-based landing page'))
+            )
         );
         if (isFileLanding) {
             content.is_file_landing_page = true;
@@ -1150,212 +1155,75 @@ const ensureNewsletterSchema = async () => {
 exports.subscribeNewsletter = async (req, res) => {
     try {
         await ensureNewsletterSchema();
-        const { email, name } = req.body;
+        const {
+            email,
+            name,
+            source,
+            source_page_url,
+            source_page_title,
+            interest_type,
+            interest_value,
+            content_id,
+            content_type
+        } = req.body;
+
         if (!email || typeof email !== 'string' || !email.includes('@')) {
             return res.status(400).json({ message: 'Valid email is required' });
         }
-        const normalizedEmail = email.trim().toLowerCase();
 
-        // Intelligently extract clean human name directly from the email address:
-        // E.g. manisha6698sb@gmail.com -> "Manisha"
-        // E.g. tushar.phalak44@gmail.com -> "Tushar Phalak"
-        // E.g. tejas.pawar@tgstechinfo.com -> "Tejas Pawar"
-        const extractedName = extractNameFromEmail(normalizedEmail);
-        const greetingName = (typeof name === 'string' && name.trim()) 
-            ? name.trim() 
-            : (extractedName || 'there');
+        const NewsletterService = require('../services/newsletterService');
+        const result = await NewsletterService.subscribe({
+            email,
+            name,
+            source: source || 'homepage',
+            source_page_url: source_page_url || req.headers['referer'] || null,
+            source_page_title: source_page_title || null,
+            interest_type: interest_type || 'general',
+            interest_value: interest_value || 'all',
+            content_id: content_id || null,
+            content_type: content_type || null,
+            ip_address: req.ip || req.connection?.remoteAddress || null,
+            user_agent: req.headers['user-agent'] || null
+        });
 
-        const crypto = require('crypto');
-        const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'https://tgstechinfo.com';
-        const frontendUrl = rawFrontend.split(',')[0].trim().replace(/\/$/, '');
-
-        // Check if already subscribed in newsletter_subscribers
-        const [existing] = await pool.query(
-            'SELECT * FROM newsletter_subscribers WHERE email = ?',
-            [normalizedEmail]
-        );
-
-        if (existing.length > 0) {
-            const subscriber = existing[0];
-            const unsubscribeToken = subscriber.unsubscribe_token || crypto.randomBytes(32).toString('hex');
-            const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
-
-            if (subscriber.is_active) {
-                // Already active: update name if not present and re-send confirmation so testing from any page always arrives
-                if (greetingName && greetingName !== 'there') {
-                    await pool.query('UPDATE newsletter_subscribers SET name = ? WHERE id = ?', [greetingName, subscriber.id]).catch(() => {});
-                }
-
-                try {
-                    await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
-                        name: greetingName,
-                        first_name: greetingName,
-                        site_url: frontendUrl,
-                        unsubscribe_url: unsubscribeUrl
-                    });
-                } catch (emailError) {
-                    console.warn('[subscribeNewsletter] Already active re-send email failed:', emailError.message);
-                }
-
-                return res.json({ 
-                    success: true, 
-                    message: 'You are subscribed to our newsletter! We have sent a confirmation to your email.',
-                    alreadySubscribed: true 
-                });
-            }
-
-            // Inactive subscriber -> re-subscribe (with fallback if name/unsubscribe_reason not in DB)
-            try {
-                await pool.query(
-                    'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_reason = NULL, name = COALESCE(?, name), unsubscribe_token = ? WHERE id = ?',
-                    [greetingName !== 'there' ? greetingName : null, unsubscribeToken, subscriber.id]
-                );
-            } catch (updateErr) {
-                if (updateErr.code === 'ER_BAD_FIELD_ERROR' || updateErr.errno === 1054) {
-                    await pool.query(
-                        'UPDATE newsletter_subscribers SET is_active = 1, unsubscribed_at = NULL, unsubscribe_token = ? WHERE id = ?',
-                        [unsubscribeToken, subscriber.id]
-                    );
-                } else {
-                    throw updateErr;
-                }
-            }
-
-            try {
-                await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
-                    name: greetingName,
-                    first_name: greetingName,
-                    site_url: frontendUrl,
-                    unsubscribe_url: unsubscribeUrl
-                });
-            } catch (emailError) {
-                console.warn('[subscribeNewsletter] Newsletter re-subscription confirmation email failed:', emailError.message);
-            }
-
-            return res.json({ message: 'Subscribed to newsletter successfully' });
-        }
-
-        // Also check if previously submitted on landing page
-        const lpExisting = await LandingPage.findByEmail(normalizedEmail);
-        if (lpExisting) {
-            const unsubscribeToken = crypto.randomBytes(32).toString('hex');
-            const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
-
-            try {
-                await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
-                    name: greetingName,
-                    first_name: greetingName,
-                    site_url: frontendUrl,
-                    unsubscribe_url: unsubscribeUrl
-                });
-            } catch (emailError) {
-                console.warn('[subscribeNewsletter] Landing page lead confirmation email failed:', emailError.message);
-            }
-
-            return res.json({
-                success: true,
-                alreadySubscribed: true,
-                message: 'You are subscribed to our newsletter! We have sent a confirmation to your email.'
-            });
-        }
-
-        // New subscriber (with fallback if name column does not exist in DB yet)
-        const unsubscribeToken = crypto.randomBytes(32).toString('hex');
-
-        try {
-            await pool.query(
-                'INSERT INTO newsletter_subscribers (email, name, unsubscribe_token) VALUES (?, ?, ?)',
-                [normalizedEmail, greetingName !== 'there' ? greetingName : null, unsubscribeToken]
-            );
-        } catch (insertErr) {
-            if (insertErr.code === 'ER_BAD_FIELD_ERROR' || insertErr.errno === 1054) {
-                await pool.query(
-                    'INSERT INTO newsletter_subscribers (email, unsubscribe_token) VALUES (?, ?)',
-                    [normalizedEmail, unsubscribeToken]
-                );
-            } else {
-                throw insertErr;
-            }
-        }
-
-        const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${unsubscribeToken}&email=${encodeURIComponent(normalizedEmail)}`;
-
-        // Send confirmation email (with database template and robust fallback)
-        try {
-            let emailResult = null;
-            try {
-                emailResult = await sendTemplatedEmail('newsletter_subscription', normalizedEmail, {
-                    name: greetingName,
-                    first_name: greetingName,
-                    site_url: frontendUrl,
-                    unsubscribe_url: unsubscribeUrl
-                });
-            } catch (tplErr) {
-                console.warn('[subscribeNewsletter] sendTemplatedEmail failed, trying direct fallback:', tplErr.message);
-            }
-
-            // Fallback to direct sendEmail if template missing, inactive, or skipped
-            if (!emailResult || !emailResult.success) {
-                const logoUrl = `${frontendUrl}/logo.jpg`;
-                const fallbackHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to TGS Tech Info Newsletter</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
-    <div style="max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
-        <div style="background: linear-gradient(135deg, #0B1F4D 0%, #1a237e 100%); padding: 28px 24px; text-align: center;">
-            <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
-                <img src="${logoUrl}" alt="TGS Tech Info" width="170" style="max-width: 170px; height: auto; margin: 0 auto 12px auto; display: block; border-radius: 6px; border: none; outline: none;" border="0" />
-            </a>
-            <h1 style="color: #ffffff; margin: 0; font-size: 20px; font-weight: 700;">Welcome to Our Newsletter</h1>
-        </div>
-        <div style="padding: 32px 28px;">
-            <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Hi <strong>${escapeHtml(greetingName)}</strong>,</p>
-            <p style="font-size: 14px; line-height: 1.6; color: #475569;">
-                Thank you for subscribing to our newsletter! You will now receive the latest technology insights, industry trends, and in-depth analysis directly in your inbox.
-            </p>
-            <div style="background-color: #f1f5f9; border-left: 4px solid #F7941D; padding: 16px 20px; border-radius: 6px; margin: 24px 0;">
-                <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b;"><strong>What you can look forward to:</strong></p>
-                <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #1e293b; line-height: 1.8;">
-                    <li>Latest technology trends and market shifts</li>
-                    <li>Exclusive industry whitepapers and case studies</li>
-                    <li>Early access to expert guides and software comparisons</li>
-                    <li>Thought leadership from leading tech professionals</li>
-                </ul>
-            </div>
-            <div style="text-align: center; margin: 28px 0;">
-                <a href="${frontendUrl}" style="display: inline-block; padding: 12px 28px; background-color: #F7941D; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">Explore Our Website</a>
-            </div>
-            <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
-                You are receiving this email because you subscribed on tgstechinfo.com.<br />
-                To unsubscribe at any time, <a href="${unsubscribeUrl}" style="color: #0284c7; text-decoration: underline;">click here</a>.
-            </p>
-        </div>
-        <div style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
-            © ${new Date().getFullYear()} TGS Tech Info. All rights reserved.
-        </div>
-    </div>
-</body>
-</html>`;
-                emailResult = await sendEmail(normalizedEmail, 'Welcome to TGS Tech Info Newsletter!', fallbackHtml);
-            }
-
-            if (emailResult?.success) {
-                console.log(`[subscribeNewsletter] Confirmation email successfully sent to ${normalizedEmail}`);
-            } else {
-                console.warn(`[subscribeNewsletter] Confirmation email skipped/failed:`, emailResult?.error || emailResult?.reason);
-            }
-        } catch (emailError) {
-            console.warn('[subscribeNewsletter] Newsletter confirmation email failed:', emailError.message);
-        }
-
-        res.json({ message: 'Subscribed to newsletter successfully' });
+        return res.json(result);
     } catch (error) {
         console.error('Newsletter subscription error:', error);
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+};
+
+exports.getNewsletterPreferences = async (req, res) => {
+    try {
+        const token = req.query.token || req.query.email;
+        if (!token) {
+            return res.status(400).json({ message: 'Token or email is required' });
+        }
+        const NewsletterService = require('../services/newsletterService');
+        const data = await NewsletterService.getPreferences(token);
+        if (!data) {
+            return res.status(404).json({ message: 'Subscriber not found' });
+        }
+        res.json(data);
+    } catch (error) {
+        console.error('getNewsletterPreferences error:', error);
         res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.updateNewsletterPreferences = async (req, res) => {
+    try {
+        const { token, email, preferences, selectedTopics } = req.body;
+        const identifier = token || email;
+        if (!identifier) {
+            return res.status(400).json({ message: 'Token or email is required' });
+        }
+        const NewsletterService = require('../services/newsletterService');
+        const result = await NewsletterService.updatePreferences(identifier, preferences, selectedTopics);
+        res.json(result);
+    } catch (error) {
+        console.error('updateNewsletterPreferences error:', error);
+        res.status(500).json({ message: error.message || 'Server error' });
     }
 };
 
@@ -1416,18 +1284,19 @@ exports.unsubscribeNewsletter = async (req, res) => {
 
         // Clean reason feedback
         const cleanReason = (typeof reason === 'string' && reason.trim()) ? reason.trim().slice(0, 1000) : null;
+        const currentIstTime = getNowInIST();
 
         // Mark as unsubscribed and save reason (with fallback if column missing)
         try {
             await pool.query(
-                'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW(), unsubscribe_reason = ? WHERE id = ?',
-                [cleanReason, subscriber.id]
+                'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = ?, unsubscribe_reason = ? WHERE id = ?',
+                [currentIstTime, cleanReason, subscriber.id]
             );
         } catch (dbErr) {
             if (dbErr.code === 'ER_BAD_FIELD_ERROR' || dbErr.errno === 1054) {
                 await pool.query(
-                    'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = NOW() WHERE id = ?',
-                    [subscriber.id]
+                    'UPDATE newsletter_subscribers SET is_active = 0, unsubscribed_at = ? WHERE id = ?',
+                    [currentIstTime, subscriber.id]
                 );
             } else {
                 throw dbErr;
@@ -2080,12 +1949,13 @@ exports.submitCaseStudyGate = async (req, res) => {
         }
 
         const caseStudy = rows[0];
+        const currentIstTime = getNowInIST();
 
         // Store lead
         await pool.query(
             `INSERT INTO case_study_submissions
-                (content_id, name, email, contact, ip_address, user_agent)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+                (content_id, name, email, contact, ip_address, user_agent, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 caseStudy.id,
                 name.trim(),
@@ -2093,6 +1963,7 @@ exports.submitCaseStudyGate = async (req, res) => {
                 contact.trim(),
                 req.ip || null,
                 req.headers['user-agent'] || null,
+                currentIstTime
             ]
         );
 

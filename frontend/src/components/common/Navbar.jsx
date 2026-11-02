@@ -647,8 +647,18 @@ const Navbar = () => {
           }
           .nav-join-btn {
             height: 34px !important;
-            padding: 0 10px !important;
+            padding-left: 10px !important;
+            padding-right: 5px !important;
             font-size: 11.5px !important;
+            gap: 5px !important;
+          }
+          .nav-join-icon {
+            width: 22px !important;
+            height: 22px !important;
+          }
+          .nav-join-icon svg {
+            width: 12px !important;
+            height: 12px !important;
           }
           .nav-search-input {
             width: 45px !important;
@@ -694,8 +704,18 @@ const Navbar = () => {
           }
           .nav-join-btn {
             height: 36px !important;
-            padding: 0 13px !important;
+            padding-left: 12px !important;
+            padding-right: 6px !important;
             font-size: 12px !important;
+            gap: 6px !important;
+          }
+          .nav-join-icon {
+            width: 24px !important;
+            height: 24px !important;
+          }
+          .nav-join-icon svg {
+            width: 13px !important;
+            height: 13px !important;
           }
           .nav-search-input {
             width: 55px !important;
@@ -741,8 +761,18 @@ const Navbar = () => {
           }
           .nav-join-btn {
             height: 40px !important;
-            padding: 0 18px !important;
+            padding-left: 16px !important;
+            padding-right: 6px !important;
             font-size: 13px !important;
+            gap: 8px !important;
+          }
+          .nav-join-icon {
+            width: 28px !important;
+            height: 28px !important;
+          }
+          .nav-join-icon svg {
+            width: 15px !important;
+            height: 15px !important;
           }
           .nav-search-input {
             width: 65px !important;
@@ -1046,6 +1076,7 @@ const Navbar = () => {
                   onClick={() => navigate('/login')}
                   size="default"
                   className="nav-join-btn font-bold whitespace-nowrap"
+                  circleClassName="nav-join-icon"
                 >
                   Join Our Community
                 </ButtonWithIcon>

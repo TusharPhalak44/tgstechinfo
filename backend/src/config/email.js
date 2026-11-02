@@ -197,42 +197,15 @@ const getEmailTransporter = () => {
     });
 };
 
+const { getFrontendUrl, getBackendUrl } = require('../utils/urlHelper');
+
 /**
  * Get the public URL for the website
  * Uses FRONTEND_URL from environment or constructs from API_URL
  * Handles multiple URLs by taking the first one for email purposes
  */
 const getPublicUrl = () => {
-    // Check for explicitly set public URL
-    const raw = process.env.SITE_URL || process.env.FRONTEND_URL || process.env.API_URL || 'https://tgstechinfo.com';
-    const firstUrl = raw.split(',')[0].trim();
-    if (firstUrl.startsWith('http://localhost') || firstUrl.startsWith('http://127.0.0.1')) {
-        if (process.env.NODE_ENV === 'production') {
-            return 'https://tgstechinfo.com';
-        }
-    }
-    const cleanUrl = firstUrl.replace(/\/$/, '');
-    return cleanUrl || 'https://tgstechinfo.com';
-};
-
-/**
- * Get the backend URL for hosting static files (like logos)
- * This is specifically for file hosting, not frontend URLs
- */
-const getBackendUrl = () => {
-    // Check for BACKEND_URL first
-    if (process.env.BACKEND_URL) {
-        return process.env.BACKEND_URL.replace(/\/$/, '');
-    }
-
-    // Check for API_URL (often points to backend)
-    if (process.env.API_URL) {
-        const firstUrl = process.env.API_URL.split(',')[0].trim();
-        return firstUrl.replace(/\/$/, '');
-    }
-
-    // Default to localhost backend
-    return 'http://localhost:5000';
+    return getFrontendUrl();
 };
 
 // Constant for inline embedded logo across all emails
@@ -384,13 +357,13 @@ const sendEmail = async (to, subject, html, options = {}) => {
         return { success: false, skipped: true, reason: 'no_recipient' };
     }
 
-    const rawFrom = process.env.EMAIL_FROM || process.env.SMTP_FROM || 'info@tgstechinfo.com';
+    const rawFrom = options.from || process.env.EMAIL_FROM || process.env.SMTP_FROM || 'info@tgstechinfo.com';
     // Clean "Name" <email@domain.com> to extract email address for default replyTo if needed
     const fromAddress = rawFrom.includes('<') && rawFrom.includes('>')
         ? rawFrom.match(/<([^>]+)>/)?.[1] || rawFrom
         : rawFrom;
-    const replyTo = process.env.EMAIL_REPLY_TO || fromAddress;
-    const organization = process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
+    const replyTo = options.replyTo || process.env.EMAIL_REPLY_TO || fromAddress || 'info@tgstechinfo.com';
+    const organization = options.organization || process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
 
     const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
     const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '';
@@ -537,15 +510,48 @@ const sendEmail = async (to, subject, html, options = {}) => {
             }
         }
 
-        // Check for Hostinger suspension
-        if (sendErr.message && sendErr.message.includes('suspended')) {
-            console.error(`[sendEmail] CRITICAL: Email account appears suspended on Hostinger`);
-            console.error(`[sendEmail] ACTION REQUIRED: Log into Hostinger hPanel and reactivate the email account.`);
-        }
+        // Check for Hostinger rate limit (451 hostinger_out_ratelimit) or suspension / outbound blocking (554)
+        const isHostingerBlocked = sendErr.responseCode === 451 || sendErr.responseCode === 554 ||
+            (sendErr.message && (
+                sendErr.message.includes('451') ||
+                sendErr.message.includes('554') ||
+                sendErr.message.toLowerCase().includes('ratelimit') ||
+                sendErr.message.includes('disabled') ||
+                sendErr.message.includes('suspended')
+            ));
 
-        // Check for SMTP outbound blocking
-        if (sendErr.responseCode === 554 || (sendErr.message && sendErr.message.includes('554'))) {
-            console.warn(`[sendEmail] CRITICAL: Outbound sending is disabled on SMTP host`);
+        if (isHostingerBlocked) {
+            console.warn(`[sendEmail] Hostinger SMTP rate-limited or suspended (${sendErr.responseCode || 'blocked'}). Engaging automated fallback SMTP for ${to}...`);
+
+            const fallbackEnabled = process.env.FALLBACK_SMTP_ENABLED !== 'false';
+            const fallbackUser = (process.env.FALLBACK_SMTP_USER || 'tgs.admin001@gmail.com').trim();
+            const rawFallbackPass = process.env.FALLBACK_SMTP_PASS || 'cxyc dttr kinr xist';
+            const fallbackPass = rawFallbackPass.replace(/^['"](.*)['"]$/g, '$1').trim();
+
+            if (fallbackEnabled && fallbackUser && fallbackPass) {
+                try {
+                    const fallbackTransporter = nodemailer.createTransport({
+                        service: 'gmail',
+                        auth: {
+                            user: fallbackUser,
+                            pass: fallbackPass
+                        },
+                        connectionTimeout: 15000
+                    });
+
+                    const backupMailOptions = {
+                        ...mailOptions,
+                        from: `"${organization}" <${fallbackUser}>`,
+                        replyTo: replyTo || 'info@tgstechinfo.com'
+                    };
+
+                    const backupInfo = await fallbackTransporter.sendMail(backupMailOptions);
+                    console.log(`[sendEmail] SUCCESS: Email successfully delivered to ${to} via fallback SMTP (${fallbackUser})! MessageId: ${backupInfo.messageId || backupInfo.id}`);
+                    return { ...backupInfo, success: true, viaFallback: true };
+                } catch (fallbackErr) {
+                    console.error(`[sendEmail] Secondary fallback SMTP also failed for ${to}:`, fallbackErr.message);
+                }
+            }
         }
 
         if (process.env.NODE_ENV === 'development') {
@@ -594,7 +600,7 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
                     <p>You now have access to: <strong>${safeTitle}</strong></p>
                     <p>For urgent placements and queries, please feel free to contact:</p>
                     <p><strong>Contact person:</strong> Mark Jason</p>
-                    <p><strong>Email ID:</strong> tgs.admin001@gmail.com</p>
+                    <p><strong>Email ID:</strong> info@tgstechinfo.com</p>
                     <br>
                     <p>Regards,</p>
                     <p><strong>TGS Tech Info Team</strong></p>
@@ -848,9 +854,9 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             reviewed_date: formatDateForEmail(new Date()),
             feedback: '',
             email: to || '',
-            support_email: 'tgs.admin001@gmail.com',
-            admin_email: 'tgs.admin001@gmail.com',
-            contact_email: 'tgs.admin001@gmail.com',
+            support_email: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM || 'info@tgstechinfo.com',
+            admin_email: process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'info@tgstechinfo.com',
+            contact_email: process.env.CONTACT_EMAIL || process.env.EMAIL_FROM || 'info@tgstechinfo.com',
             ...variables
         };
 

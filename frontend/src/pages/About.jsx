@@ -512,36 +512,54 @@ export const About = () => {
         >
           {/* LEFT Column: Mission Visual Card */}
           <div
-            className="lg:col-span-5 rounded-3xl border shadow-md overflow-hidden relative min-h-[380px] flex flex-col justify-end p-6 group"
-            style={{ borderColor: 'var(--color-border)' }}
+            className="lg:col-span-5 rounded-3xl border shadow-md overflow-hidden relative min-h-[440px] flex flex-col justify-between p-4 sm:p-5 group"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)'
+            }}
           >
+            {/* Background Image: Clean, Bright, Sharp without heavy blur/dark film */}
             <img
-              src="/about_mission_img.jpg"
+              src="/about_organization_pillars.jpg"
               alt="Global Operations Center"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
             />
+
+            {/* Subtle natural vignette */}
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 pointer-events-none"
               style={{
-                background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(15, 23, 42, 0.85) 100%)'
+                background: 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.35) 100%)'
               }}
             />
 
-            <div className="absolute top-4 left-4 z-10">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-black/50 backdrop-blur-md text-emerald-300 border border-white/20 shadow-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            {/* Top Left: Live Status Badge with Pulsing Indicator */}
+            <div className="relative z-10 self-start">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-slate-950/75 backdrop-blur-md text-emerald-300 border border-white/20 shadow-lg">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
                 Global Operations Center
               </span>
             </div>
 
-            <div className="relative z-10 text-white">
-              <div className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">
+            {/* Bottom Content Card: Sleek Floating Glassmorphic Capsule for 100% Crisp Text Clarity */}
+            <div className="relative z-10 p-4 sm:p-5 rounded-2xl bg-slate-950/85 backdrop-blur-md border border-white/15 shadow-2xl">
+              <div className="text-[11px] sm:text-xs font-extrabold text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 Global Media Footprint
               </div>
-              <h3 className="text-xl font-bold mb-2">
+              <h3
+                className="text-lg sm:text-xl font-extrabold mb-1.5 leading-snug tracking-tight text-white"
+                style={{ color: '#FFFFFF', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
+              >
                 Connecting 100,000+ IT Decision-Makers
               </h3>
-              <p className="text-xs text-slate-200 leading-relaxed">
+              <p
+                className="text-xs sm:text-[13px] leading-relaxed font-medium"
+                style={{ color: '#F1F5F9', textShadow: '0 1px 2px rgba(0,0,0,0.4)' }}
+              >
                 Our global editorial desk curates and distributes high-impact research, whitepapers, and tech opinion pieces across 50+ specialized verticals.
               </p>
             </div>

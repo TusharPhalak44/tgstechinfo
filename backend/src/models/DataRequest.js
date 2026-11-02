@@ -1,4 +1,5 @@
 const { pool } = require('../config/database');
+const { getNowInIST } = require('../utils/dateHelper');
 
 class DataRequest {
     static async create(data) {
@@ -8,16 +9,19 @@ class DataRequest {
             dsar_type, dns_type, details, ip_address, user_agent
         } = data;
 
+        const currentIstTime = getNowInIST();
+
         const [result] = await pool.query(
             `INSERT INTO data_requests
              (request_type, first_name, last_name, email, alt_email, phone,
-              company, job_title, country, state, dsar_type, dns_type, details, ip_address, user_agent)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              company, job_title, country, state, dsar_type, dns_type, details, ip_address, user_agent, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 request_type, first_name, last_name, email, alt_email || null, phone || null,
                 company || null, job_title || null, country || null, state || null,
                 dsar_type || null, dns_type || null, details || null,
-                ip_address || null, user_agent || null
+                ip_address || null, user_agent || null,
+                currentIstTime, currentIstTime
             ]
         );
         const [rows] = await pool.query('SELECT * FROM data_requests WHERE id = ?', [result.insertId]);

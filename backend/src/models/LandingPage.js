@@ -1,11 +1,13 @@
 const { pool } = require('../config/database');
+const { getNowInIST } = require('../utils/dateHelper');
 
 class LandingPage {
     static async create(data) {
         const { content_id, extra_fields } = data;
+        const currentIstTime = getNowInIST();
         const [result] = await pool.query(
-            `INSERT INTO landing_page_submissions (content_id, extra_fields) VALUES (?, ?)`,
-            [content_id, JSON.stringify(extra_fields || {})]
+            `INSERT INTO landing_page_submissions (content_id, extra_fields, created_at) VALUES (?, ?, ?)`,
+            [content_id, JSON.stringify(extra_fields || {}), currentIstTime]
         );
         const [rows] = await pool.query('SELECT * FROM landing_page_submissions WHERE id = ?', [result.insertId]);
         return rows[0];

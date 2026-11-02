@@ -233,42 +233,47 @@ const ArticleDetail = () => {
         }
 
         // If this content item is an Event, redirect immediately to the dedicated Event Detail Page
-        const isEventContent = c.content_type_id === 5 || 
-                               (typeof c.content_type === 'string' && c.content_type.toLowerCase() === 'event') ||
-                               (typeof c.content_type_name === 'string' && c.content_type_name.toLowerCase() === 'event');
+        const isEventContent = c.content_type_id === 5 ||
+          (typeof c.content_type === 'string' && c.content_type.toLowerCase() === 'event') ||
+          (typeof c.content_type_name === 'string' && c.content_type_name.toLowerCase() === 'event');
         if (isEventContent) {
           navigate(`/events/${encodeURIComponent(c.slug)}`, { replace: true });
           return;
         }
 
-        try {
-          const layout = typeof c.builder_layout === 'string'
-            ? JSON.parse(c.builder_layout)
-            : c.builder_layout;
+        const rawType = (c.content_type_name || c.content_type || '').toLowerCase().trim();
+        const isStandardEditorial = ['article', 'blog', 'news', 'interview', 'webinar', 'ebook', 'whitepaper', 'case-study', 'case study', 'report'].includes(rawType) || [1, 2, 3, 4, 6, 7, 8, 9, 11].includes(c.content_type_id);
 
-          // File-based landing pages uploaded to backend/landing-pages/
-          const isFileLanding = Boolean(
-            c.is_file_landing_page ||
-            (Array.isArray(layout) && (layout.includes('file-landing') || layout[0] === 'file-landing')) ||
-            (typeof c.content === 'string' && c.content.includes('File-based landing page')) ||
-            (c.url && (c.url.startsWith('/lp/') || c.url.includes('/lp/')))
-          );
-          if (isFileLanding) {
-            window.location.href = `/lp/${encodeURIComponent(c.slug)}`;
-            return;
-          }
+        if (!isStandardEditorial) {
+          try {
+            const layout = typeof c.builder_layout === 'string'
+              ? JSON.parse(c.builder_layout)
+              : c.builder_layout;
 
-          const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
-          // Visual Builder pages have builder_page_data set
-          const isVisualBuilder = !!c.builder_page_data;
-          if (isHtmlBuilder || isVisualBuilder) {
-            // Redirect to the standalone page renderer (no navbar/footer)
-            // encodeURIComponent handles slugs that may contain spaces or special chars
-            navigate(`/content/${encodeURIComponent(c.slug)}`, { replace: true });
-            return;
+            // File-based landing pages uploaded to backend/landing-pages/
+            const isFileLanding = Boolean(
+              c.is_file_landing_page ||
+              (Array.isArray(layout) && (layout.includes('file-landing') || layout[0] === 'file-landing')) ||
+              (typeof c.content === 'string' && c.content.includes('File-based landing page')) ||
+              (c.url && (c.url.startsWith('/lp/') || c.url.includes('/lp/')))
+            );
+            if (isFileLanding) {
+              window.location.href = `/lp/${encodeURIComponent(c.slug)}`;
+              return;
+            }
+
+            const isHtmlBuilder = Array.isArray(layout) && layout[0] === 'html';
+            // Visual Builder pages have builder_page_data set
+            const isVisualBuilder = !!c.builder_page_data;
+            if (isHtmlBuilder || isVisualBuilder) {
+              // Redirect to the standalone page renderer (no navbar/footer)
+              // encodeURIComponent handles slugs that may contain spaces or special chars
+              navigate(`/content/${encodeURIComponent(c.slug)}`, { replace: true });
+              return;
+            }
+          } catch (e) {
+            console.log('[ArticleDetail] layout parse error:', e.message);
           }
-        } catch (e) {
-          console.log('[ArticleDetail] layout parse error:', e.message);
         }
 
         setContent(c);
@@ -553,8 +558,18 @@ const ArticleDetail = () => {
     }
     setNewsletterSubscribing(true);
     try {
-      await axios.post('/api/public/newsletter', { email: newsletterEmail });
-      messageApi.success('Successfully subscribed to newsletter!');
+      const title = content?.title || (typeof document !== 'undefined' ? document.title : null);
+      const res = await axios.post('/api/public/newsletter', {
+        email: newsletterEmail.trim(),
+        source: 'content_detail',
+        source_page_url: typeof window !== 'undefined' ? window.location.href : null,
+        source_page_title: title,
+        content_id: content?.id || null,
+        content_type: content?.content_type_name || content?.content_type || 'article',
+        interest_type: content?.category_type || (content?.category_name ? 'technology' : 'general'),
+        interest_value: content?.category_slug || content?.category_name || 'all'
+      });
+      messageApi.success(res.data?.message || 'Successfully subscribed to newsletter!');
       setNewsletterEmail('');
     } catch (error) {
       const isAlreadySub = error.response?.status === 409 || error.response?.data?.alreadySubscribed;
@@ -602,11 +617,11 @@ const ArticleDetail = () => {
   const contentTypeName = (content?.content_type_name || content?.content_type || '').toLowerCase().trim();
   const isEbook = contentTypeName.includes('ebook') || content?.content_type_id === 7;
   const isEvent = content?.content_type_id === 5 ||
-                  contentTypeName === 'event' ||
-                  contentTypeName.includes('event') ||
-                  Boolean(content?.event) ||
-                  Boolean(content?.registration_url) ||
-                  Boolean(content?.source_url);
+    contentTypeName === 'event' ||
+    contentTypeName.includes('event') ||
+    Boolean(content?.event) ||
+    Boolean(content?.registration_url) ||
+    Boolean(content?.source_url);
   const requiresLanding = !isEvent && (LANDING_TYPES.some(t => contentTypeName.includes(t)) || isEbook);
 
   const eventSourceUrl = content?.source_url || content?.event?.source_url;
@@ -619,11 +634,11 @@ const ArticleDetail = () => {
   const effectiveCustomFields = (customFields && customFields.length > 0)
     ? customFields
     : [
-        { name: 'first_name', label: 'First Name', type: 'text', placeholder: 'Enter your first name', required: true },
-        { name: 'last_name', label: 'Last Name', type: 'text', placeholder: 'Enter your last name', required: true },
-        { name: 'email', label: 'Business Email', type: 'email', placeholder: 'name@company.com', required: true },
-        { name: 'contact', label: 'Phone / Contact', type: 'text', placeholder: '+1 (555) 000-0000', required: false }
-      ];
+      { name: 'first_name', label: 'First Name', type: 'text', placeholder: 'Enter your first name', required: true },
+      { name: 'last_name', label: 'Last Name', type: 'text', placeholder: 'Enter your last name', required: true },
+      { name: 'email', label: 'Business Email', type: 'email', placeholder: 'name@company.com', required: true },
+      { name: 'contact', label: 'Phone / Contact', type: 'text', placeholder: '+1 (555) 000-0000', required: false }
+    ];
 
   return (
     <>
@@ -1612,7 +1627,7 @@ const ArticleDetail = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               {/* Newsletter Subscription Widget at Top of Right Sidebar */}
-              <ArticleNewsletterBanner darkMode={darkMode} contentTitle={content?.title} />
+              <ArticleNewsletterBanner darkMode={darkMode} content={content} contentTitle={content?.title} />
 
               {/* Event Registration & Source Link Widget */}
               {isEvent && (

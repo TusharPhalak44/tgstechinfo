@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const { Text } = Typography;
 
-const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
+const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '', content = null }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -24,7 +24,17 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '' }) => {
 
     setLoading(true);
     try {
-      const res = await axios.post('/api/public/newsletter', { email: trimmed });
+      const title = content?.title || contentTitle || (typeof document !== 'undefined' ? document.title : null);
+      const res = await axios.post('/api/public/newsletter', {
+        email: trimmed,
+        source: 'content_detail',
+        source_page_url: typeof window !== 'undefined' ? window.location.href : null,
+        source_page_title: title,
+        content_id: content?.id || null,
+        content_type: content?.content_type_name || content?.content_type || 'article',
+        interest_type: content?.category_type || (content?.category_name ? 'technology' : 'general'),
+        interest_value: content?.category_slug || content?.category_name || 'all'
+      });
       if (res.data?.alreadySubscribed) {
         message.info(res.data?.message || 'This email address is already subscribed to our newsletter.');
       } else {

@@ -61,6 +61,7 @@ const SharedAudienceView = lazyWithRetry(() => import('./pages/SharedAudienceVie
 const StandaloneLandingPage = lazyWithRetry(() => import('./pages/StandaloneLandingPage'));
 const CaseStudyPage = lazyWithRetry(() => import('./pages/CaseStudyPage'));
 const Unsubscribe = lazyWithRetry(() => import('./components/public/Unsubscribe'));
+const SubscriberPreferences = lazyWithRetry(() => import('./pages/SubscriberPreferences'));
 const ArticleDetail = lazyWithRetry(() => import('./components/public/ArticleDetail'));
 const CategoryList = lazyWithRetry(() => import('./components/public/CategoryList'));
 const SearchResults = lazyWithRetry(() => import('./components/public/SearchResults'));
@@ -509,6 +510,7 @@ function AppContent() {
                 <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
 
                 <Route path="/unsubscribe" element={<Unsubscribe />} />
+                <Route path="/subscriber-preferences" element={<SubscriberPreferences />} />
 
                 <Route path="/contact" element={<ContactUs />} />
                 <Route path="/contact-us" element={<Navigate to="/contact" replace />} />

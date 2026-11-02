@@ -319,6 +319,18 @@ exports.createContent = async (req, res) => {
             await updateTagUsage(contentData.tags);
         }
 
+        // Automated Subscriber Notification Trigger upon Direct Publication
+        if (content && content.status === 'published') {
+            try {
+                const ContentNotificationService = require('../services/contentNotificationService');
+                ContentNotificationService.notifySubscribersOnPublication(content.id).catch(err => {
+                    console.error('[createContent] Publication notification error:', err.message);
+                });
+            } catch (notifErr) {
+                console.error('[createContent] Could not trigger notification service:', notifErr.message);
+            }
+        }
+
         // Log to audit logs
         await logAudit(req, 'create', 'content', content.id, `Created content: ${content.title}`, 'success');
 
@@ -698,6 +710,18 @@ exports.updateContent = async (req, res) => {
                 }
             } catch (eventUpdateErr) {
                 console.warn('[updateContent] Event table sync notice:', eventUpdateErr.message);
+            }
+        }
+
+        // Automated Subscriber Notification Trigger upon Publication Transition
+        if (updatedContent && updatedContent.status === 'published' && content.status !== 'published') {
+            try {
+                const ContentNotificationService = require('../services/contentNotificationService');
+                ContentNotificationService.notifySubscribersOnPublication(id).catch(err => {
+                    console.error('[updateContent] Publication notification error:', err.message);
+                });
+            } catch (notifErr) {
+                console.error('[updateContent] Could not trigger notification service:', notifErr.message);
             }
         }
 

@@ -29,6 +29,9 @@ envPaths.forEach(p => {
 });
 dotenv.config({ override: false });
 
+// Enforce Asia/Kolkata (IST) timezone globally
+process.env.TZ = process.env.TZ || 'Asia/Kolkata';
+
 
 
 const app = express();
@@ -398,16 +401,33 @@ app.listen(PORT, () => {
     const runScheduledPublisher = async () => {
         try {
             const { pool } = require('./src/config/database');
-            const [result] = await pool.query(`
-                UPDATE contents 
-                SET status = 'published', 
-                    published_date = COALESCE(published_date, scheduled_publish_date, CURRENT_TIMESTAMP)
+            const [dueItems] = await pool.query(`
+                SELECT id FROM contents 
                 WHERE (status = 'scheduled' OR status = 'approved')
                   AND scheduled_publish_date IS NOT NULL 
                   AND scheduled_publish_date <= CURRENT_TIMESTAMP
             `);
-            if (result.affectedRows > 0) {
-                console.log(`[Scheduled Publisher] Automatically published ${result.affectedRows} scheduled content item(s).`);
+            if (dueItems.length > 0) {
+                const ids = dueItems.map(i => i.id);
+                await pool.query(`
+                    UPDATE contents 
+                    SET status = 'published', 
+                        published_date = COALESCE(published_date, scheduled_publish_date, CURRENT_TIMESTAMP)
+                    WHERE id IN (?)
+                `, [ids]);
+                console.log(`[Scheduled Publisher] Automatically published ${ids.length} scheduled content item(s).`);
+
+                // Automated Subscriber Notification Trigger
+                try {
+                    const ContentNotificationService = require('./src/services/contentNotificationService');
+                    for (const item of dueItems) {
+                        ContentNotificationService.notifySubscribersOnPublication(item.id).catch(err => {
+                            console.error(`[Scheduled Publisher] Notification error for content ${item.id}:`, err.message);
+                        });
+                    }
+                } catch (notifErr) {
+                    console.error('[Scheduled Publisher] ContentNotificationService error:', notifErr.message);
+                }
             }
         } catch (err) {
             console.error('[Scheduled Publisher] Error checking scheduled content:', err.message);
@@ -417,6 +437,14 @@ app.listen(PORT, () => {
     runScheduledPublisher();
     const scheduledPublisherInterval = setInterval(runScheduledPublisher, 60 * 1000);
     if (scheduledPublisherInterval.unref) scheduledPublisherInterval.unref();
+
+    // Auto-start newsletter email queue worker (processes background publication emails)
+    try {
+        const { startQueueWorker } = require('./src/services/emailQueueWorker');
+        startQueueWorker(30000);
+    } catch (e) {
+        console.warn('[Startup] Newsletter email queue worker notice:', e.message);
+    }
 
     // Auto-sync file-based landing pages from backend/landing-pages directory
     try {

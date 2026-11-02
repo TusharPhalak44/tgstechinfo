@@ -12,9 +12,9 @@ import {
   FileText, 
   MessageSquare,
   Sparkles,
-  ShieldCheck
+  ShieldCheck,
+  X
 } from 'lucide-react';
-import { useTheme } from '../../context/ThemeContext';
 
 const categoryOptions = [
   { id: 'editorial', label: 'Editorial / Pitch', desc: 'Articles, Press Releases, News' },
@@ -26,7 +26,6 @@ const categoryOptions = [
 ];
 
 export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryChange }) => {
-  const { darkMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
@@ -39,6 +38,17 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [modalPopup, setModalPopup] = useState(null);
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && modalPopup) {
+        setModalPopup(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalPopup]);
 
   // Sync category if passed from parent (e.g. via PublishingDesks click)
   useEffect(() => {
@@ -68,16 +78,14 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
     if (!agreed) {
       const errMsg = 'You must agree to the Privacy Policy before submitting your message.';
       setError(errMsg);
-      alert(errMsg);
-      setModalPopup({ type: 'error', message: errMsg });
+      setModalPopup({ type: 'error', title: 'Submission Notice', message: errMsg });
       return;
     }
 
     if (!formData.full_name.trim() || !formData.email.trim() || !formData.subject.trim() || !formData.message.trim()) {
       const errMsg = 'Please fill in all required fields marked with (*).';
       setError(errMsg);
-      alert(errMsg);
-      setModalPopup({ type: 'error', message: errMsg });
+      setModalPopup({ type: 'error', title: 'Submission Notice', message: errMsg });
       return;
     }
 
@@ -90,8 +98,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
 
       const successMsg = response.data?.message || 'Contact form submitted successfully. We will get back to you soon.';
       setSuccess(successMsg);
-      alert(successMsg);
-      setModalPopup({ type: 'success', message: successMsg });
+      setModalPopup({ type: 'success', title: 'Message Sent!', message: successMsg });
 
       setFormData({
         full_name: '',
@@ -105,8 +112,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
     } catch (err) {
       const errMsg = err.response?.data?.message || 'Failed to send message. Please check your details and try again.';
       setError(errMsg);
-      alert(errMsg);
-      setModalPopup({ type: 'error', message: errMsg });
+      setModalPopup({ type: 'error', title: 'Submission Notice', message: errMsg });
     } finally {
       setLoading(false);
     }
@@ -419,11 +425,16 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
       {/* Visual Popup Modal */}
       <AnimatePresence>
         {modalPopup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            style={{ zIndex: 9999 }}
+            onClick={() => setModalPopup(null)}
+          >
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
               className="max-w-md w-full p-6 sm:p-8 rounded-2xl shadow-2xl text-center relative border"
               style={{
                 backgroundColor: 'var(--color-surface, #ffffff)',
@@ -431,6 +442,16 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
                 color: 'var(--color-heading, #0f172a)'
               }}
             >
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setModalPopup(null)}
+                className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                aria-label="Close dialog"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
               <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center shadow-md">
                 {modalPopup.type === 'success' ? (
                   <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 flex items-center justify-center">
@@ -444,7 +465,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
               </div>
 
               <h3 className="text-xl font-bold mb-2">
-                {modalPopup.type === 'success' ? 'Message Sent!' : 'Submission Notice'}
+                {modalPopup.title || (modalPopup.type === 'success' ? 'Message Sent!' : 'Submission Notice')}
               </h3>
 
               <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-muted, #64748b)' }}>
@@ -454,7 +475,7 @@ export const ContactForm = ({ agreed, setAgreed, selectedCategory, onCategoryCha
               <button
                 type="button"
                 onClick={() => setModalPopup(null)}
-                className="w-full py-3 px-6 rounded-xl font-bold text-sm text-white shadow-md transition-all bg-amber-500 hover:bg-amber-600"
+                className="w-full py-3 px-6 rounded-xl font-bold text-sm text-white shadow-md transition-all bg-amber-500 hover:bg-amber-600 active:scale-[0.99]"
               >
                 OK
               </button>

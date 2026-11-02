@@ -1,4 +1,5 @@
 const { pool } = require('../config/database');
+const { getNowInIST } = require('../utils/dateHelper');
 
 class ContactSubmission {
     static async create(data) {
@@ -14,10 +15,12 @@ class ContactSubmission {
             user_agent
         } = data;
 
+        const currentIstTime = getNowInIST();
+
         const query = `
             INSERT INTO contact_submissions 
-            (full_name, email, company, inquiry_category, subject, message, consent_given, ip_address, user_agent)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (full_name, email, company, inquiry_category, subject, message, consent_given, ip_address, user_agent, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const [result] = await pool.query(query, [
@@ -29,10 +32,12 @@ class ContactSubmission {
             message,
             consent_given,
             ip_address || null,
-            user_agent || null
+            user_agent || null,
+            currentIstTime,
+            currentIstTime
         ]);
 
-        return { id: result.insertId, ...data };
+        return { id: result.insertId, ...data, created_at: currentIstTime, updated_at: currentIstTime };
     }
 
     static async findAll(filters = {}) {

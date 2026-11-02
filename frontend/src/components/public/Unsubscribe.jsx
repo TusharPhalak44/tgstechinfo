@@ -348,6 +348,39 @@ const Unsubscribe = () => {
             )}
 
             <form onSubmit={handleFormSubmit}>
+              {/* Option to manage preferences instead */}
+              <div style={{
+                background: darkMode ? 'rgba(10, 174, 239, 0.1)' : '#EFF6FF',
+                border: darkMode ? '1px solid #0284c7' : '1px solid #BFDBFE',
+                borderRadius: 10,
+                padding: '12px 16px',
+                marginBottom: 20,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 10
+              }}>
+                <div style={{ fontSize: 13, color: darkMode ? '#BAE6FD' : '#1E40AF' }}>
+                  <span>Want to change topics or receive fewer emails instead of unsubscribing?</span>
+                </div>
+                <Link
+                  to={`/subscriber-preferences?token=${encodeURIComponent(tokenParam)}&email=${encodeURIComponent(email || emailParam)}`}
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    color: '#0284C7',
+                    textDecoration: 'none',
+                    background: darkMode ? '#1E293B' : '#FFFFFF',
+                    border: '1px solid #0284C7',
+                    borderRadius: 6,
+                    padding: '6px 12px'
+                  }}
+                >
+                  Manage Preferences →
+                </Link>
+              </div>
+
               {/* Target Email Display or Input */}
               {email ? (
                 <div style={{
