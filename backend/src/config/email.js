@@ -156,25 +156,24 @@ const getEmailTransporter = () => {
         });
     }
 
-    const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-    const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '';
+    let user = (process.env.EMAIL_USER || process.env.SMTP_USER || 'info@tgstechinfo.com').trim();
+    let rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || 'Tgstech@2026#';
     // Strip surrounding quotes
-    const pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
+    let pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
 
-    let host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || '').trim();
+    let host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
     let port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
 
-    // Auto-detect Gmail if user is @gmail.com or host contains gmail
-    const isGmailUser = user && user.toLowerCase().endsWith('@gmail.com');
-    const isGmailHost = host && host.toLowerCase().includes('gmail');
+    // CRITICAL: Block any Gmail usage. All outgoing mail MUST strictly be sent via Hostinger info@tgstechinfo.com
+    if (user.includes('tgs.admin001') || user.toLowerCase().endsWith('@gmail.com') || host.toLowerCase().includes('gmail')) {
+        console.warn(`[Email] Guard: Overriding Gmail configuration (${user} / ${host}) to official info@tgstechinfo.com Hostinger SMTP`);
+        user = 'info@tgstechinfo.com';
+        pass = (process.env.HOSTINGER_PASS || process.env.EMAIL_PASSWORD || 'Tgstech@2026#').replace(/^['"](.*)['"]$/g, '$1');
+        host = 'smtp.hostinger.com';
+        port = 465;
+    }
 
-    if (isGmailUser || isGmailHost) {
-        host = 'smtp.gmail.com';
-        if (!process.env.EMAIL_PORT && !process.env.SMTP_PORT) {
-            port = 465;
-        }
-        console.log(`[Email] Using Gmail SMTP (${host}:${port}) for ${user}`);
-    } else if (host.includes('hostinger') || !host) {
+    if (host.includes('hostinger') || !host) {
         host = host || 'smtp.hostinger.com';
         console.log(`[Email] Using Hostinger SMTP (${host}:${port}) for ${user}`);
     } else {
@@ -359,17 +358,34 @@ const sendEmail = async (to, subject, html, options = {}) => {
 
     const rawFrom = options.from || process.env.EMAIL_FROM || process.env.SMTP_FROM || 'info@tgstechinfo.com';
     // Clean "Name" <email@domain.com> to extract email address for default replyTo if needed
-    const fromAddress = rawFrom.includes('<') && rawFrom.includes('>')
+    let fromAddress = rawFrom.includes('<') && rawFrom.includes('>')
         ? rawFrom.match(/<([^>]+)>/)?.[1] || rawFrom
         : rawFrom;
-    const replyTo = options.replyTo || process.env.EMAIL_REPLY_TO || fromAddress || 'info@tgstechinfo.com';
+
+    // Strictly ensure outgoing sender address is ALWAYS info@tgstechinfo.com and NEVER personal Gmail or tgs.admin001
+    if (!fromAddress || fromAddress.includes('tgs.admin001') || fromAddress.toLowerCase().endsWith('@gmail.com')) {
+        fromAddress = 'info@tgstechinfo.com';
+    }
+
+    let replyTo = options.replyTo || process.env.EMAIL_REPLY_TO || fromAddress || 'info@tgstechinfo.com';
+    if (!replyTo || replyTo.includes('tgs.admin001') || replyTo.toLowerCase().endsWith('@gmail.com')) {
+        replyTo = 'info@tgstechinfo.com';
+    }
     const organization = options.organization || process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
 
-    const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-    const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || '';
-    const pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
-    const host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
-    const port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
+    let user = (process.env.EMAIL_USER || process.env.SMTP_USER || 'info@tgstechinfo.com').trim();
+    let rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || 'Tgstech@2026#';
+    let pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
+    let host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
+    let port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
+
+    // Safeguard: Force Hostinger info@tgstechinfo.com if Gmail was accidentally set anywhere
+    if (user.includes('tgs.admin001') || user.toLowerCase().endsWith('@gmail.com') || host.toLowerCase().includes('gmail')) {
+        user = 'info@tgstechinfo.com';
+        pass = (process.env.HOSTINGER_PASS || process.env.EMAIL_PASSWORD || 'Tgstech@2026#').replace(/^['"](.*)['"]$/g, '$1');
+        host = 'smtp.hostinger.com';
+        port = 465;
+    }
 
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
         const hasBrevo = process.env.BREVO_API_KEY && !process.env.BREVO_API_KEY.includes('placeholder');
@@ -521,37 +537,7 @@ const sendEmail = async (to, subject, html, options = {}) => {
             ));
 
         if (isHostingerBlocked) {
-            console.warn(`[sendEmail] Hostinger SMTP rate-limited or suspended (${sendErr.responseCode || 'blocked'}). Engaging automated fallback SMTP for ${to}...`);
-
-            const fallbackEnabled = process.env.FALLBACK_SMTP_ENABLED !== 'false';
-            const fallbackUser = (process.env.FALLBACK_SMTP_USER || 'tgs.admin001@gmail.com').trim();
-            const rawFallbackPass = process.env.FALLBACK_SMTP_PASS || 'cxyc dttr kinr xist';
-            const fallbackPass = rawFallbackPass.replace(/^['"](.*)['"]$/g, '$1').trim();
-
-            if (fallbackEnabled && fallbackUser && fallbackPass) {
-                try {
-                    const fallbackTransporter = nodemailer.createTransport({
-                        service: 'gmail',
-                        auth: {
-                            user: fallbackUser,
-                            pass: fallbackPass
-                        },
-                        connectionTimeout: 15000
-                    });
-
-                    const backupMailOptions = {
-                        ...mailOptions,
-                        from: `"${organization}" <${fallbackUser}>`,
-                        replyTo: replyTo || 'info@tgstechinfo.com'
-                    };
-
-                    const backupInfo = await fallbackTransporter.sendMail(backupMailOptions);
-                    console.log(`[sendEmail] SUCCESS: Email successfully delivered to ${to} via fallback SMTP (${fallbackUser})! MessageId: ${backupInfo.messageId || backupInfo.id}`);
-                    return { ...backupInfo, success: true, viaFallback: true };
-                } catch (fallbackErr) {
-                    console.error(`[sendEmail] Secondary fallback SMTP also failed for ${to}:`, fallbackErr.message);
-                }
-            }
+            console.warn(`[sendEmail] Hostinger SMTP rate-limited or suspended (${sendErr.responseCode || 'blocked'}). Gmail fallback is strictly disabled to guarantee emails only originate from info@tgstechinfo.com.`);
         }
 
         if (process.env.NODE_ENV === 'development') {
@@ -854,9 +840,9 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             reviewed_date: formatDateForEmail(new Date()),
             feedback: '',
             email: to || '',
-            support_email: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM || 'info@tgstechinfo.com',
-            admin_email: process.env.ADMIN_EMAIL || process.env.EMAIL_FROM || 'info@tgstechinfo.com',
-            contact_email: process.env.CONTACT_EMAIL || process.env.EMAIL_FROM || 'info@tgstechinfo.com',
+            support_email: (process.env.SUPPORT_EMAIL || 'info@tgstechinfo.com').includes('gmail.com') ? 'info@tgstechinfo.com' : (process.env.SUPPORT_EMAIL || 'info@tgstechinfo.com'),
+            admin_email: (process.env.ADMIN_EMAIL || 'info@tgstechinfo.com').includes('gmail.com') ? 'info@tgstechinfo.com' : (process.env.ADMIN_EMAIL || 'info@tgstechinfo.com'),
+            contact_email: (process.env.CONTACT_EMAIL || 'info@tgstechinfo.com').includes('gmail.com') ? 'info@tgstechinfo.com' : (process.env.CONTACT_EMAIL || 'info@tgstechinfo.com'),
             ...variables
         };
 
