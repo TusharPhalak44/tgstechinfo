@@ -4,12 +4,14 @@ import axios from 'axios';
 import moment from 'moment';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
+import { useFeedbackModal } from '../context/FeedbackModalContext';
 import { formatDateForLongDisplay } from '../utils/dateHelper';
 
 const CaseStudyPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { darkMode } = useTheme();
+  const { showSuccess, showError } = useFeedbackModal();
   const [caseStudy, setCaseStudy] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,6 +29,7 @@ const CaseStudyPage = () => {
       if (localStorage.getItem(`cs_gated_${slug}`) === 'true') {
         setGateVisible(false);
         setGateSubmitted(true);
+
       }
     } catch (e) {
       console.error(e);
@@ -63,13 +66,17 @@ const CaseStudyPage = () => {
       });
       try {
         localStorage.setItem(`cs_gated_${slug}`, 'true');
+        showSuccess('Access Granted! 📄', 'Thank you for your submission! You now have full access to view and download this Case Study.');
       } catch (e) {
         console.error(e);
       }
       setGateVisible(false);
       setGateSubmitted(true);
+
     } catch (err) {
-      setFormErrors({ submit: err.response?.data?.message || 'Submission failed. Please try again.' });
+      const errMsg = err.response?.data?.message || 'Submission failed. Please try again.';
+      setFormErrors({ submit: errMsg });
+      showError('Submission Notice', errMsg);
     } finally {
       setSubmitting(false);
     }

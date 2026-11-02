@@ -10,6 +10,7 @@ import { CookiePreferencesModal } from './CookieBanner';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
 import { useSiteSettings } from '../../context/SiteSettingsContext';
+import { useFeedbackModal } from '../../context/FeedbackModalContext';
 
 const FooterLink = ({ to, children }) => (
   <Link to={to} style={{
@@ -57,11 +58,12 @@ const Footer = ({ simplified = false }) => {
   const [showCookiePreferences, setShowCookiePreferences] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const { showSuccess, showInfo, showError } = useFeedbackModal();
 
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
     if (!newsletterEmail || !newsletterEmail.includes('@')) {
-      message.error('Please enter a valid email address');
+      showError('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
@@ -75,16 +77,23 @@ const Footer = ({ simplified = false }) => {
         interest_type: 'general',
         interest_value: 'all'
       });
-      message.success(res.data?.message || 'Successfully subscribed to newsletter!');
+      showSuccess(
+        'Subscribed Successfully! 🎉',
+        res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
+      );
       setNewsletterEmail('');
     } catch (error) {
       const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
-      const msg = isAlreadySub
-        ? (error.response?.data?.message || 'This email has been already subscribed')
-        : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
-      alert(msg);
-      if (!isAlreadySub) {
-        message.error(msg);
+      if (isAlreadySub) {
+        showInfo(
+          'Already Subscribed 📬',
+          error.response?.data?.message || 'This email address is already subscribed to our newsletter.'
+        );
+      } else {
+        showError(
+          'Subscription Notice',
+          error.response?.data?.message || 'Failed to complete subscription. Please try again.'
+        );
       }
     } finally {
       setNewsletterLoading(false);

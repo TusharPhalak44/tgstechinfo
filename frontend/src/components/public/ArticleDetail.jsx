@@ -18,6 +18,7 @@ import moment from 'moment';
 import '../../prose-content.css';
 import ContentRenderer from '../common/ContentRenderer';
 import { useTheme } from '../../context/ThemeContext';
+import { useFeedbackModal } from '../../context/FeedbackModalContext';
 import { useTracking } from '../../context/TrackingContext';
 import useEngagementTracking from '../../hooks/useEngagementTracking';
 import WebinarCountdown from '../common/WebinarCountdown';
@@ -144,6 +145,7 @@ const ArticleDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { darkMode } = useTheme();
+  const { showSuccess, showInfo, showError } = useFeedbackModal();
   const { isTrackingEnabled, sessionUuid, trackEngagement } = useTracking();
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -450,7 +452,7 @@ const ArticleDetail = () => {
         form.resetFields();
       } catch (e) { /* ignore */ }
 
-      messageApi.success(res.data?.message || 'Access granted successfully!');
+      showSuccess('Access Granted! 📄', res.data?.message || 'Access granted successfully! The full content is now unlocked.');
 
       if (res.data?.redirect_url) {
         const target = res.data.redirect_url.trim();
@@ -466,9 +468,9 @@ const ArticleDetail = () => {
         ? (error.response?.data?.message || 'This email has been already subscribed')
         : (error.response?.data?.message || 'Failed to submit');
       if (isAlreadySub) {
-        alert(msg);
+        showInfo('Access Notice ℹ️', msg);
       } else {
-        messageApi.error(msg);
+        showError('Submission Notice', msg);
       }
     } finally {
       setSubmitting(false);
@@ -483,12 +485,12 @@ const ArticleDetail = () => {
       if (res.data?.success) {
         setWebinarRegistered(true);
         localStorage.setItem(`webinar_registered_${content.id}`, 'true');
-        messageApi.success('Registration successful! Access granted to Live Webinar.');
+        showSuccess('Registration Confirmed! 🎟️', 'Registration successful! Access granted to Live Webinar.');
       } else {
-        messageApi.error(res.data?.message || 'Registration failed');
+        showError('Registration Notice', res.data?.message || 'Registration failed');
       }
     } catch (err) {
-      messageApi.error(err.response?.data?.message || 'Failed to register for webinar');
+      showError('Registration Notice', err.response?.data?.message || 'Failed to register for webinar');
     } finally {
       setWebinarRegistering(false);
     }
@@ -569,7 +571,10 @@ const ArticleDetail = () => {
         interest_type: content?.category_type || (content?.category_name ? 'technology' : 'general'),
         interest_value: content?.category_slug || content?.category_name || 'all'
       });
-      messageApi.success(res.data?.message || 'Successfully subscribed to newsletter!');
+      showSuccess(
+        'Subscribed Successfully! 🎉',
+        res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
+      );
       setNewsletterEmail('');
     } catch (error) {
       const isAlreadySub = error.response?.status === 409 || error.response?.data?.alreadySubscribed;
@@ -577,9 +582,9 @@ const ArticleDetail = () => {
         ? (error.response?.data?.message || 'This email has been already subscribed')
         : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
       if (isAlreadySub) {
-        alert(msg);
+        showInfo('Already Subscribed 📬', msg);
       } else {
-        messageApi.error(msg);
+        showError('Subscription Notice', msg);
       }
     } finally {
       setNewsletterSubscribing(false);

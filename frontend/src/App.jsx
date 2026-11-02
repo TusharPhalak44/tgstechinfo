@@ -11,6 +11,7 @@ import { TrackingProvider } from './context/TrackingContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 
 import { AuthProvider } from './context/AuthContext';
+import { FeedbackModalProvider } from './context/FeedbackModalContext';
 
 import Navbar from './components/common/Navbar';
 
@@ -806,7 +807,9 @@ function App() {
 
           <SiteSettingsProvider>
 
-            <CookieProvider>
+            <FeedbackModalProvider>
+
+              <CookieProvider>
 
               <TrackingProvider>
 
@@ -825,6 +828,8 @@ function App() {
               </TrackingProvider>
 
             </CookieProvider>
+
+          </FeedbackModalProvider>
 
           </SiteSettingsProvider>
 

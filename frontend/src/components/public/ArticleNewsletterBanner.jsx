@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Input, Button, message, Typography } from 'antd';
+import { Input, Button, Typography } from 'antd';
 import { MailOutlined, SendOutlined, CheckCircleFilled, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { useFeedbackModal } from '../../context/FeedbackModalContext';
 
 const { Text } = Typography;
 
@@ -10,6 +11,7 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '', content 
   const [loading, setLoading] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [subscribedEmail, setSubscribedEmail] = useState('');
+  const { showSuccess, showInfo, showError } = useFeedbackModal();
 
   const handleSubmit = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -18,7 +20,7 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '', content 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     if (!trimmed || !emailRegex.test(trimmed)) {
-      message.error('Please enter a valid email address');
+      showError('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
@@ -36,9 +38,12 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '', content 
         interest_value: content?.category_slug || content?.category_name || 'all'
       });
       if (res.data?.alreadySubscribed) {
-        message.info(res.data?.message || 'This email address is already subscribed to our newsletter.');
+        showInfo('Already Subscribed 📬', res.data?.message || 'This email address is already subscribed to our newsletter.');
       } else {
-        message.success(res.data?.message || 'Successfully subscribed to newsletter!');
+        showSuccess(
+          'Subscribed Successfully! 🎉',
+          res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
+        );
       }
       setSubscribed(true);
       setSubscribedEmail(trimmed);
@@ -48,12 +53,12 @@ const ArticleNewsletterBanner = ({ darkMode = false, contentTitle = '', content 
       const msg = isAlreadySub
         ? (err.response?.data?.message || 'This email has been already subscribed')
         : (err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Failed to subscribe. Please try again.');
-      alert(msg);
       if (isAlreadySub) {
+        showInfo('Already Subscribed 📬', msg);
         setSubscribed(true);
         setSubscribedEmail(trimmed);
       } else {
-        message.error(msg);
+        showError('Subscription Notice', msg);
       }
     } finally {
       setLoading(false);

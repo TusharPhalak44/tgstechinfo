@@ -4,10 +4,10 @@
 
 -- Add columns to contents table for case study-specific fields
 ALTER TABLE contents
-ADD COLUMN IF NOT EXISTS email_subject VARCHAR(500) NULL AFTER pdf_file,
-ADD COLUMN IF NOT EXISTS email_template LONGTEXT NULL AFTER email_subject,
-ADD COLUMN IF NOT EXISTS case_study_headline VARCHAR(500) NULL AFTER email_template,
-ADD COLUMN IF NOT EXISTS case_study_summary VARCHAR(1000) NULL AFTER case_study_headline;
+ADD COLUMN email_subject VARCHAR(500) NULL,
+ADD COLUMN email_template LONGTEXT NULL,
+ADD COLUMN case_study_headline VARCHAR(500) NULL,
+ADD COLUMN case_study_summary VARCHAR(1000) NULL;
 
 -- Store case study lead submissions (name, email, contact)
 CREATE TABLE IF NOT EXISTS case_study_submissions (

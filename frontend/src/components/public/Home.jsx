@@ -16,16 +16,18 @@ import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import { formatContentPublishDate, sortContentByDate } from '../../utils/dateHelper';
 import { formatViewsToM } from '../../utils/numberHelper';
+import { useFeedbackModal } from '../../context/FeedbackModalContext';
 
 // Newsletter Subscribe Form Component
 const NewsletterSubscribeForm = ({ darkMode = false }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const { showSuccess, showInfo, showError } = useFeedbackModal();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !email.includes('@')) {
-      message.error('Please enter a valid email address');
+      showError('Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
@@ -39,17 +41,23 @@ const NewsletterSubscribeForm = ({ darkMode = false }) => {
         interest_type: 'general',
         interest_value: 'all'
       });
-      message.success(res.data?.message || 'Successfully subscribed to newsletter!');
+      showSuccess(
+        'Subscribed Successfully! 🎉',
+        res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
+      );
       setEmail('');
     } catch (error) {
       const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
-      const msg = isAlreadySub
-        ? (error.response?.data?.message || 'This email has been already subscribed')
-        : 'Failed to subscribe. Please try again.';
       if (isAlreadySub) {
-        alert(msg);
+        showInfo(
+          'Already Subscribed 📬',
+          error.response?.data?.message || 'This email address is already subscribed to our newsletter.'
+        );
       } else {
-        message.error(msg);
+        showError(
+          'Subscription Notice',
+          error.response?.data?.message || 'Failed to complete subscription. Please try again.'
+        );
       }
     } finally {
       setLoading(false);

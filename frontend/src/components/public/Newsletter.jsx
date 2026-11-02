@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, Button, Typography, message, Space } from 'antd';
+import { Card, Form, Input, Button, Typography, Space } from 'antd';
 import { MailOutlined, SendOutlined, UserOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { useFeedbackModal } from '../../context/FeedbackModalContext';
 
 const { Title, Text } = Typography;
 
 const Newsletter = () => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
+  const { showSuccess, showInfo, showError } = useFeedbackModal();
 
   const onFinish = async (values) => {
     setLoading(true);
@@ -21,17 +23,24 @@ const Newsletter = () => {
         interest_type: 'general',
         interest_value: 'all'
       });
-      message.success(res.data?.message || 'Successfully subscribed to newsletter!');
+      showSuccess(
+        'Subscribed Successfully! 🎉',
+        res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
+      );
       form.resetFields();
     } catch (error) {
       console.error('Newsletter subscription error:', error);
       const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
-      const msg = isAlreadySub
-        ? (error.response?.data?.message || 'This email has been already subscribed')
-        : (error.response?.data?.message || 'Failed to subscribe');
-      alert(msg);
-      if (!isAlreadySub) {
-        message.error(msg);
+      if (isAlreadySub) {
+        showInfo(
+          'Already Subscribed 📬',
+          error.response?.data?.message || 'This email address is already subscribed to our newsletter updates.'
+        );
+      } else {
+        showError(
+          'Subscription Notice',
+          error.response?.data?.message || 'Failed to complete subscription. Please verify your email and try again.'
+        );
       }
     } finally {
       setLoading(false);

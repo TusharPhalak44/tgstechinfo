@@ -5,6 +5,7 @@ import { CalendarOutlined, EyeOutlined, UserOutlined, SearchOutlined, CompassOut
 import axios from 'axios';
 import moment from 'moment';
 import { useTheme } from '../../context/ThemeContext';
+import { useFeedbackModal } from '../../context/FeedbackModalContext';
 import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import WebinarCountdown from '../common/WebinarCountdown';
 import { formatContentPublishDate, formatWebinarDate } from '../../utils/dateHelper';
@@ -745,6 +746,7 @@ const CategoryList = () => {
   const slug = paramSlug || pathSlug;
   const navigate = useNavigate();
   const { darkMode } = useTheme();
+  const { showSuccess, showInfo, showError } = useFeedbackModal();
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   const [contents, setContents] = useState([]);
@@ -1279,14 +1281,24 @@ const CategoryList = () => {
                       interest_type: interestType,
                       interest_value: interestValue
                     });
-                    alert(res.data?.message || 'Successfully subscribed! Please check your email inbox.');
+                    showSuccess(
+                      'Subscribed Successfully! 🎉',
+                      res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
+                    );
                     e.target.email.value = '';
                   } catch (error) {
                     const isAlreadySub = error.response?.status === 409 || error.response?.status === 400 || error.response?.data?.alreadySubscribed;
-                    const msg = isAlreadySub
-                      ? (error.response?.data?.message || 'This email is already subscribed to our newsletter.')
-                      : (error.response?.data?.message || 'Failed to subscribe. Please try again.');
-                    alert(msg);
+                    if (isAlreadySub) {
+                      showInfo(
+                        'Already Subscribed 📬',
+                        error.response?.data?.message || 'This email address is already subscribed to our newsletter.'
+                      );
+                    } else {
+                      showError(
+                        'Subscription Notice',
+                        error.response?.data?.message || 'Failed to complete subscription. Please try again.'
+                      );
+                    }
                   }
                 }} style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 8 }}>
                   <input

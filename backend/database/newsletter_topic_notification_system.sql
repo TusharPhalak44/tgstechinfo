@@ -5,12 +5,12 @@
 
 -- 1. Enhance newsletter_subscribers with preference flags (backward-compatible)
 ALTER TABLE `newsletter_subscribers`
-  ADD COLUMN IF NOT EXISTS `preferences_instant_alerts` TINYINT(1) NOT NULL DEFAULT 1 AFTER `is_active`,
-  ADD COLUMN IF NOT EXISTS `preferences_weekly_digest` TINYINT(1) NOT NULL DEFAULT 1 AFTER `preferences_instant_alerts`,
-  ADD COLUMN IF NOT EXISTS `preferences_general_alerts` TINYINT(1) NOT NULL DEFAULT 1 AFTER `preferences_weekly_digest`,
-  ADD COLUMN IF NOT EXISTS `preferences_technology_alerts` TINYINT(1) NOT NULL DEFAULT 1 AFTER `preferences_general_alerts`,
-  ADD COLUMN IF NOT EXISTS `preferences_industry_alerts` TINYINT(1) NOT NULL DEFAULT 1 AFTER `preferences_technology_alerts`,
-  ADD COLUMN IF NOT EXISTS `last_active_source` VARCHAR(100) NULL DEFAULT 'general' AFTER `preferences_industry_alerts`;
+  ADD COLUMN `preferences_instant_alerts` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN `preferences_weekly_digest` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN `preferences_general_alerts` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN `preferences_technology_alerts` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN `preferences_industry_alerts` TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN `last_active_source` VARCHAR(100) NULL DEFAULT 'general';
 
 -- 2. Subscriber Topic & Taxonomy Interests
 CREATE TABLE IF NOT EXISTS `newsletter_subscription_interests` (
