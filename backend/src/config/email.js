@@ -156,11 +156,9 @@ const getEmailTransporter = () => {
         });
     }
 
-    let user = (process.env.EMAIL_USER || process.env.SMTP_USER || 'info@tgstechinfo.com').trim();
-    let rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || 'Tgstech@2026#';
-    // Strip surrounding quotes
-    let pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
+    const HOSTINGER_VERIFIED_PASS = 'Tgstech@2026#';
 
+    let user = (process.env.EMAIL_USER || process.env.SMTP_USER || 'info@tgstechinfo.com').trim();
     let host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
     let port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
 
@@ -168,9 +166,15 @@ const getEmailTransporter = () => {
     if (user.includes('tgs.admin001') || user.toLowerCase().endsWith('@gmail.com') || host.toLowerCase().includes('gmail')) {
         console.warn(`[Email] Guard: Overriding Gmail configuration (${user} / ${host}) to official info@tgstechinfo.com Hostinger SMTP`);
         user = 'info@tgstechinfo.com';
-        pass = (process.env.HOSTINGER_PASS || process.env.EMAIL_PASSWORD || 'Tgstech@2026#').replace(/^['"](.*)['"]$/g, '$1');
         host = 'smtp.hostinger.com';
         port = 465;
+    }
+
+    // Always ensure the exact verified password is used for Hostinger info@tgstechinfo.com
+    let pass = HOSTINGER_VERIFIED_PASS;
+    if (user !== 'info@tgstechinfo.com') {
+        const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || HOSTINGER_VERIFIED_PASS;
+        pass = rawPass.replace(/^['"](.*)['"]$/g, '$1').trim();
     }
 
     if (host.includes('hostinger') || !host) {
@@ -373,18 +377,23 @@ const sendEmail = async (to, subject, html, options = {}) => {
     }
     const organization = options.organization || process.env.EMAIL_ORGANIZATION || 'TGS Tech Info';
 
+    const HOSTINGER_VERIFIED_PASS = 'Tgstech@2026#';
+
     let user = (process.env.EMAIL_USER || process.env.SMTP_USER || 'info@tgstechinfo.com').trim();
-    let rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || 'Tgstech@2026#';
-    let pass = rawPass.replace(/^['"](.*)['"]$/g, '$1');
     let host = (process.env.EMAIL_HOST || process.env.SMTP_HOST || 'smtp.hostinger.com').trim();
     let port = Number(process.env.EMAIL_PORT || process.env.SMTP_PORT || 465);
 
     // Safeguard: Force Hostinger info@tgstechinfo.com if Gmail was accidentally set anywhere
     if (user.includes('tgs.admin001') || user.toLowerCase().endsWith('@gmail.com') || host.toLowerCase().includes('gmail')) {
         user = 'info@tgstechinfo.com';
-        pass = (process.env.HOSTINGER_PASS || process.env.EMAIL_PASSWORD || 'Tgstech@2026#').replace(/^['"](.*)['"]$/g, '$1');
         host = 'smtp.hostinger.com';
         port = 465;
+    }
+
+    let pass = HOSTINGER_VERIFIED_PASS;
+    if (user !== 'info@tgstechinfo.com') {
+        const rawPass = process.env.EMAIL_PASSWORD || process.env.SMTP_PASS || process.env.SMTP_PASSWORD || HOSTINGER_VERIFIED_PASS;
+        pass = rawPass.replace(/^['"](.*)['"]$/g, '$1').trim();
     }
 
     if (!user || !pass || user.includes('placeholder') || pass.includes('placeholder')) {
