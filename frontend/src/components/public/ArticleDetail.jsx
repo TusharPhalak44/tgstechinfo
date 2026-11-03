@@ -740,7 +740,7 @@ const ArticleDetail = () => {
                     }}
                     title="View Author Profile & Articles"
                   >
-                    <Avatar icon={<UserOutlined />} size="small" style={{ background: '#3b82f6' }} />
+                    <Avatar icon={<UserOutlined />} src={content.author_avatar || content.avatar || null} size="small" style={{ background: '#3b82f6' }} />
                     <Text strong style={{ color: darkMode ? '#60a5fa' : '#2563eb', fontSize: 13, textDecoration: 'underline' }}>
                       {`${content.first_name || ''} ${content.last_name || ''}`.trim() || 'Editorial Team'}
                     </Text>
@@ -1586,30 +1586,49 @@ const ArticleDetail = () => {
                 gap: 16,
                 boxShadow: darkMode ? '0 4px 16px rgba(0,0,0,0.3)' : '0 4px 16px rgba(0,0,0,0.04)'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <Avatar
-                    size={56}
-                    icon={<UserOutlined />}
-                    style={{
-                      background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                      color: '#ffffff',
-                      fontWeight: 800,
-                      fontSize: 20,
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
-                      flexShrink: 0
-                    }}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 260 }}>
+                  <div
+                    onClick={() => navigate(`/author/${getAuthorSlug(content)}`)}
+                    style={{ cursor: 'pointer', flexShrink: 0 }}
+                    title="View Author Profile"
                   >
-                    {((content.first_name || 'E').charAt(0) + (content.last_name || 'T').charAt(0)).toUpperCase()}
-                  </Avatar>
-                  <div>
+                    <Avatar
+                      size={64}
+                      src={content.author_avatar || content.avatar || null}
+                      icon={<UserOutlined />}
+                      style={{
+                        background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                        color: '#ffffff',
+                        fontWeight: 800,
+                        fontSize: 22,
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)',
+                        border: '2px solid #3b82f6'
+                      }}
+                    >
+                      {((content.first_name || 'E').charAt(0) + (content.last_name || 'T').charAt(0)).toUpperCase()}
+                    </Avatar>
+                  </div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 11, color: darkMode ? '#94a3b8' : '#64748b', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
                       Article Author & Contributor
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: darkMode ? '#f8fafc' : '#0f172a', marginTop: 2 }}>
+                    <div
+                      onClick={() => navigate(`/author/${getAuthorSlug(content)}`)}
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 900,
+                        color: darkMode ? '#f8fafc' : '#0f172a',
+                        marginTop: 2,
+                        cursor: 'pointer',
+                        display: 'inline-block'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = '#3b82f6'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = darkMode ? '#f8fafc' : '#0f172a'; }}
+                    >
                       {`${content.first_name || ''} ${content.last_name || ''}`.trim() || 'Editorial Team'}
                     </div>
-                    <div style={{ fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b', marginTop: 2 }}>
-                      Enterprise technology researcher & thought leadership author
+                    <div style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#475569', marginTop: 4, lineHeight: 1.6, maxWidth: 620 }}>
+                      {content.author_bio || content.bio || [content.author_job_title, content.author_company_name].filter(Boolean).join(' at ') || 'Enterprise technology researcher & thought leadership author'}
                     </div>
                   </div>
                 </div>

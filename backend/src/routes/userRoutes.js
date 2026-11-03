@@ -21,7 +21,12 @@ router.post('/avatar', upload.single('avatar'), async (req, res) => {
         const Media = require('../models/Media');
         const fs = require('fs');
         
-        const avatarUrl = `/uploads/${req.file.filename}`;
+        const path = require('path');
+        const ext = path.extname(req.file.originalname || '') || '.jpg';
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const filename = req.file.filename || (uniqueSuffix + ext);
+        req.file.filename = filename;
+        const avatarUrl = `/uploads/${filename}`;
 
         // Read binary file data from memory buffer and store in media_files database table
         const fileData = req.file.buffer || (req.file.path && fs.existsSync(req.file.path) ? fs.readFileSync(req.file.path) : null);

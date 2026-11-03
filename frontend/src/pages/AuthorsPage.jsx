@@ -423,6 +423,21 @@ const AuthorsPage = ({ defaultType }) => {
                             <span>{author.country}</span>
                           </div>
                         )}
+
+                        {author.bio && (
+                          <div style={{
+                            fontSize: 12.5,
+                            color: darkMode ? '#cbd5e1' : '#64748b',
+                            lineHeight: 1.5,
+                            marginTop: 8,
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden'
+                          }}>
+                            {author.bio}
+                          </div>
+                        )}
                       </div>
 
                       {/* Stats Metric Strip */}

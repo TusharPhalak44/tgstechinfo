@@ -3,12 +3,25 @@ const Role = require('./Role');
 
 class User {
     static async create(userData) {
-        const { first_name, last_name, email, job_title, company_name, country, password_hash, role = 'user' } = userData;
-        const query = `
-            INSERT INTO users (first_name, last_name, email, job_title, company_name, country, password_hash, role)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        const [result] = await pool.query(query, [first_name, last_name, email, job_title, company_name, country, password_hash, role]);
+        const { first_name, last_name, email, job_title, company_name, country, phone, password_hash, role = 'user' } = userData;
+        let result;
+        try {
+            const query = `
+                INSERT INTO users (first_name, last_name, email, job_title, company_name, country, phone, password_hash, role)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `;
+            [result] = await pool.query(query, [first_name, last_name, email, job_title, company_name, country, phone || null, password_hash, role]);
+        } catch (err) {
+            if (err.message && err.message.includes("Unknown column 'phone'")) {
+                const query = `
+                    INSERT INTO users (first_name, last_name, email, job_title, company_name, country, password_hash, role)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+                [result] = await pool.query(query, [first_name, last_name, email, job_title, company_name, country, password_hash, role]);
+            } else {
+                throw err;
+            }
+        }
         
         // Assign default role based on role string
         const user = await User.findById(result.insertId);
@@ -30,7 +43,7 @@ class User {
 
     static async findById(id) {
         const [rows] = await pool.query(
-            'SELECT id, first_name, last_name, email, job_title, company_name, country, role, is_active, created_at FROM users WHERE id = ?',
+            'SELECT id, first_name, last_name, email, job_title, company_name, country, phone, role, is_active, avatar, bio, created_at FROM users WHERE id = ?',
             [id]
         );
         return rows[0];
@@ -42,7 +55,7 @@ class User {
     }
 
     static async update(id, userData) {
-        const { first_name, last_name, email, job_title, company_name, country, role, password_hash, is_active, avatar } = userData;
+        const { first_name, last_name, email, job_title, company_name, country, phone, role, password_hash, is_active, avatar, bio } = userData;
         
         // Build dynamic update query with only provided fields
         const updates = [];
@@ -72,6 +85,10 @@ class User {
             updates.push('country = ?');
             values.push(country);
         }
+        if (phone !== undefined) {
+            updates.push('phone = ?');
+            values.push(phone);
+        }
         if (role !== undefined) {
             updates.push('role = ?');
             values.push(role);
@@ -92,6 +109,10 @@ class User {
         if (avatar !== undefined) {
             updates.push('avatar = ?');
             values.push(avatar);
+        }
+        if (bio !== undefined) {
+            updates.push('bio = ?');
+            values.push(bio);
         }
         
         if (updates.length === 0) {

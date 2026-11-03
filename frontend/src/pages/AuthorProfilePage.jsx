@@ -324,6 +324,22 @@ const AuthorProfilePage = () => {
                   <span>{author.country}</span>
                 </div>
               )}
+
+              {author.bio && (
+                <div style={{
+                  marginTop: 12,
+                  fontSize: isMobile ? 13 : 14.5,
+                  lineHeight: 1.6,
+                  color: darkMode ? '#cbd5e1' : '#334155',
+                  background: darkMode ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.85)',
+                  padding: '12px 16px',
+                  borderRadius: 12,
+                  border: `1px solid ${borderCard}`,
+                  maxWidth: 720
+                }}>
+                  {author.bio}
+                </div>
+              )}
             </div>
 
             {/* Author Metric Badges */}

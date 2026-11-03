@@ -63,6 +63,17 @@ const testConnection = async (retries = 15, delay = 3000) => {
                     WHERE template_type IN ('contact_form', 'contact', 'inquiry') 
                        OR subject LIKE '%Inquiry Received%'
                 `);
+
+                // Ensure users table has avatar, bio, and phone columns for user & author profiles
+                try {
+                    await conn.query('ALTER TABLE users ADD COLUMN avatar VARCHAR(500) DEFAULT NULL');
+                } catch (_) {}
+                try {
+                    await conn.query('ALTER TABLE users ADD COLUMN bio TEXT DEFAULT NULL');
+                } catch (_) {}
+                try {
+                    await conn.query('ALTER TABLE users ADD COLUMN phone VARCHAR(50) DEFAULT NULL');
+                } catch (_) {}
             } catch (_) {}
             conn.release();
             return true;

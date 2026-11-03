@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useSiteSettings } from '../context/SiteSettingsContext';
 import {
   User, Mail, Lock, Phone, ArrowRight,
-  Eye, EyeOff, AlertCircle, Loader2,
+  Eye, EyeOff, AlertCircle, Loader2, ChevronDown,
 } from 'lucide-react';
 import SaaSLeadJourneyAnimation from '../components/auth/SaaSLeadJourneyAnimation';
 
@@ -156,6 +156,47 @@ const styles = `
     box-shadow:0 0 0 3px rgba(11,31,77,0.08);
   }
   .rp-input--e { border-color:#DC2626!important; }
+  /* Country code select */
+  .rp-select-wrap {
+    position: relative;
+    width: 130px;
+    flex-shrink: 0;
+  }
+  .rp-select {
+    width: 100%;
+    height: 38px;
+    padding: 0 24px 0 10px;
+    border-radius: 9px;
+    font-size: .80rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    outline: none;
+    box-sizing: border-box;
+    transition: all .22s cubic-bezier(.22,1,.36,1);
+    background: #F8FAFC;
+    border: 1.5px solid #E2E8F0;
+    color: #0F172A;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .rp-select:focus {
+    border-color: #0B1F4D;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(11,31,77,0.08);
+  }
+  .rp-select-arrow {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    color: #94A3B8;
+    pointer-events: none;
+    z-index: 2;
+  }
+
   .rp-eye {
     position:absolute; right:10px; top:50%; transform:translateY(-50%);
     background:none; border:none; cursor:pointer;
@@ -238,6 +279,65 @@ const styles = `
   @keyframes spin { to { transform:rotate(360deg); } }
 `;
 
+export const COUNTRY_CODES = [
+  { code: 'US', name: 'United States', dial: '+1', flag: '🇺🇸' },
+  { code: 'IN', name: 'India', dial: '+91', flag: '🇮🇳' },
+  { code: 'GB', name: 'United Kingdom', dial: '+44', flag: '🇬🇧' },
+  { code: 'CA', name: 'Canada', dial: '+1', flag: '🇨🇦' },
+  { code: 'AU', name: 'Australia', dial: '+61', flag: '🇦🇺' },
+  { code: 'DE', name: 'Germany', dial: '+49', flag: '🇩🇪' },
+  { code: 'FR', name: 'France', dial: '+33', flag: '🇫🇷' },
+  { code: 'AE', name: 'United Arab Emirates', dial: '+971', flag: '🇦🇪' },
+  { code: 'SG', name: 'Singapore', dial: '+65', flag: '🇸🇬' },
+  { code: 'SA', name: 'Saudi Arabia', dial: '+966', flag: '🇸🇦' },
+  { code: 'QA', name: 'Qatar', dial: '+974', flag: '🇶🇦' },
+  { code: 'KW', name: 'Kuwait', dial: '+965', flag: '🇰🇼' },
+  { code: 'OM', name: 'Oman', dial: '+968', flag: '🇴🇲' },
+  { code: 'BH', name: 'Bahrain', dial: '+973', flag: '🇧🇭' },
+  { code: 'JP', name: 'Japan', dial: '+81', flag: '🇯🇵' },
+  { code: 'NL', name: 'Netherlands', dial: '+31', flag: '🇳🇱' },
+  { code: 'CH', name: 'Switzerland', dial: '+41', flag: '🇨🇭' },
+  { code: 'SE', name: 'Sweden', dial: '+46', flag: '🇸🇪' },
+  { code: 'NZ', name: 'New Zealand', dial: '+64', flag: '🇳🇿' },
+  { code: 'IE', name: 'Ireland', dial: '+353', flag: '🇮🇪' },
+  { code: 'ES', name: 'Spain', dial: '+34', flag: '🇪🇸' },
+  { code: 'IT', name: 'Italy', dial: '+39', flag: '🇮🇹' },
+  { code: 'BR', name: 'Brazil', dial: '+55', flag: '🇧🇷' },
+  { code: 'MX', name: 'Mexico', dial: '+52', flag: '🇲🇽' },
+  { code: 'ZA', name: 'South Africa', dial: '+27', flag: '🇿🇦' },
+  { code: 'MY', name: 'Malaysia', dial: '+60', flag: '🇲🇾' },
+  { code: 'ID', name: 'Indonesia', dial: '+62', flag: '🇮🇩' },
+  { code: 'PH', name: 'Philippines', dial: '+63', flag: '🇵🇭' },
+  { code: 'TH', name: 'Thailand', dial: '+66', flag: '🇹🇭' },
+  { code: 'VN', name: 'Vietnam', dial: '+84', flag: '🇻🇳' },
+  { code: 'KR', name: 'South Korea', dial: '+82', flag: '🇰🇷' },
+  { code: 'HK', name: 'Hong Kong', dial: '+852', flag: '🇭🇰' },
+  { code: 'IL', name: 'Israel', dial: '+972', flag: '🇮🇱' },
+  { code: 'TR', name: 'Turkey', dial: '+90', flag: '🇹🇷' },
+  { code: 'PL', name: 'Poland', dial: '+48', flag: '🇵🇱' },
+  { code: 'AT', name: 'Austria', dial: '+43', flag: '🇦🇹' },
+  { code: 'BE', name: 'Belgium', dial: '+32', flag: '🇧🇪' },
+  { code: 'DK', name: 'Denmark', dial: '+45', flag: '🇩🇰' },
+  { code: 'FI', name: 'Finland', dial: '+358', flag: '🇫🇮' },
+  { code: 'NO', name: 'Norway', dial: '+47', flag: '🇳🇴' },
+  { code: 'PT', name: 'Portugal', dial: '+351', flag: '🇵🇹' },
+  { code: 'GR', name: 'Greece', dial: '+30', flag: '🇬🇷' },
+  { code: 'CZ', name: 'Czech Republic', dial: '+420', flag: '🇨🇿' },
+  { code: 'RO', name: 'Romania', dial: '+40', flag: '🇷🇴' },
+  { code: 'HU', name: 'Hungary', dial: '+36', flag: '🇭🇺' },
+  { code: 'EG', name: 'Egypt', dial: '+20', flag: '🇪🇬' },
+  { code: 'NG', name: 'Nigeria', dial: '+234', flag: '🇳🇬' },
+  { code: 'KE', name: 'Kenya', dial: '+254', flag: '🇰🇪' },
+  { code: 'BD', name: 'Bangladesh', dial: '+880', flag: '🇧🇩' },
+  { code: 'PK', name: 'Pakistan', dial: '+92', flag: '🇵🇰' },
+  { code: 'LK', name: 'Sri Lanka', dial: '+94', flag: '🇱🇰' },
+  { code: 'NP', name: 'Nepal', dial: '+977', flag: '🇳🇵' },
+  { code: 'AR', name: 'Argentina', dial: '+54', flag: '🇦🇷' },
+  { code: 'CL', name: 'Chile', dial: '+56', flag: '🇨🇱' },
+  { code: 'CO', name: 'Colombia', dial: '+57', flag: '🇨🇴' },
+  { code: 'PE', name: 'Peru', dial: '+51', flag: '🇵🇪' }
+];
+
 const Register = () => {
   const { cmsLogo, mainLogo } = useSiteSettings();
   const logoSrc               = cmsLogo || mainLogo;
@@ -245,6 +345,7 @@ const Register = () => {
   const [showPw, setShowPw]   = useState(false);
   const [showCPw, setShowCPw] = useState(false);
   const [agree, setAgree]     = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRY_CODES[0]);
   const [fd, setFd]           = useState({ firstName:'', lastName:'', email:'', jobTitle:'', companyName:'', phone:'', password:'', confirmPassword:'' });
   const [errors, setErrors]   = useState({});
   const { register }          = useAuth();
@@ -289,10 +390,18 @@ const Register = () => {
     if (!validate()) return;
     setLoading(true);
     try {
+      const rawPhone = (fd.phone || '').trim();
+      const formattedPhone = rawPhone ? `${selectedCountry.dial} ${rawPhone}` : null;
       const result = await register({
-        first_name: fd.firstName.trim(), last_name: fd.lastName.trim(),
-        email: fd.email.trim(), job_title: fd.jobTitle.trim(), company_name: fd.companyName.trim(),
-        password: fd.password, role: 'user',
+        first_name: fd.firstName.trim(),
+        last_name: fd.lastName.trim(),
+        email: fd.email.trim(),
+        job_title: fd.jobTitle.trim(),
+        company_name: fd.companyName.trim(),
+        country: selectedCountry.name,
+        phone: formattedPhone,
+        password: fd.password,
+        role: 'user',
       });
       if (result.success) navigate('/');
     } catch (err) { console.error(err); }
@@ -408,16 +517,47 @@ const Register = () => {
                 {errors.companyName && <div className="rp-ferr"><AlertCircle size={10}/>{errors.companyName}</div>}
               </div>
 
-              {/* Phone */}
+              {/* Phone with Country Code Dropdown */}
               <div className="rp-f">
                 <label htmlFor="rg-ph" className="rp-lbl">
-                  Phone <span style={{ fontWeight:400, color:'rgba(255,255,255,.2)', fontSize:'.62rem' }}>(optional)</span>
+                  Phone Number <span style={{ fontWeight:400, color:'#94A3B8', fontSize:'.62rem' }}>(optional)</span>
                 </label>
-                <div className="rp-iw">
-                  <Phone className="rp-ii" />
-                  <input id="rg-ph" name="phone" type="tel" placeholder="+1 234 567 8900"
-                    value={fd.phone} onChange={hc}
-                    className="rp-input" autoComplete="tel" />
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  {/* Country Selector Dropdown */}
+                  <div className="rp-select-wrap">
+                    <select
+                      id="rg-cc"
+                      value={selectedCountry.code}
+                      onChange={(e) => {
+                        const found = COUNTRY_CODES.find(c => c.code === e.target.value);
+                        if (found) setSelectedCountry(found);
+                      }}
+                      className="rp-select"
+                      title="Select Country Dial Code"
+                    >
+                      {COUNTRY_CODES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.flag} {c.dial} ({c.code})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="rp-select-arrow" />
+                  </div>
+
+                  {/* Phone Input */}
+                  <div className="rp-iw" style={{ flex: 1 }}>
+                    <Phone className="rp-ii" />
+                    <input
+                      id="rg-ph"
+                      name="phone"
+                      type="tel"
+                      placeholder="e.g. 98765 43210"
+                      value={fd.phone}
+                      onChange={hc}
+                      className="rp-input"
+                      autoComplete="tel-national"
+                    />
+                  </div>
                 </div>
               </div>
 

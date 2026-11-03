@@ -11,6 +11,7 @@ import {
   LockOutlined,
   SafetyOutlined,
   CameraOutlined,
+  UploadOutlined,
   EditOutlined,
   KeyOutlined,
   ClockCircleOutlined,
@@ -175,13 +176,14 @@ const UserProfile = () => {
   const handleProfileUpdate = async (values) => {
     setLoading(true);
     try {
-      await axios.put('/api/auth/profile', values);
-      message.success('Profile updated successfully');
+      const response = await axios.put('/api/auth/profile', { ...values, avatar: avatarUrl });
+      message.success(response.data?.message || 'Profile updated successfully');
       setEditMode(false);
       fetchUserProfile();
       if (fetchUser) fetchUser();
     } catch (error) {
-      message.error('Failed to update profile');
+      const errMsg = error.response?.data?.message || 'Failed to update profile';
+      message.error(errMsg);
     } finally {
       setLoading(false);
     }
@@ -243,7 +245,9 @@ const UserProfile = () => {
         const newUrl = info.file.response?.url || '';
         setAvatarUrl(newUrl);
         if (fetchUser) fetchUser();
-        message.success('Avatar uploaded successfully');
+        message.success('Profile photo updated successfully');
+      } else if (info.file.status === 'error') {
+        message.error(info.file.response?.message || 'Failed to upload photo. Please try again.');
       }
     },
   };
@@ -339,35 +343,55 @@ const UserProfile = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
               
               {/* Glowing Avatar Overlay */}
-              <div className="prof-avatar-ring">
-                <Upload {...uploadProps}>
-                  <div style={{ position: 'relative', cursor: 'pointer' }}>
-                    <Avatar
-                      size={110}
-                      src={avatarUrl || null}
-                      icon={<UserOutlined />}
-                      style={{ background: '#1E293B', color: '#8B5CF6', border: '3px solid #0F172A' }}
-                    />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: 4,
-                        right: 4,
-                        background: '#8B5CF6',
-                        borderRadius: '50%',
-                        width: 32,
-                        height: 32,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#FFF',
-                        boxShadow: '0 4px 10px rgba(0,0,0,0.4)',
-                        border: '2px solid #0F172A',
-                      }}
-                    >
-                      <CameraOutlined style={{ fontSize: 14 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className="prof-avatar-ring">
+                  <Upload {...uploadProps}>
+                    <div style={{ position: 'relative', cursor: 'pointer' }} title="Click to upload profile photo">
+                      <Avatar
+                        size={110}
+                        src={avatarUrl || null}
+                        icon={<UserOutlined />}
+                        style={{ background: '#1E293B', color: '#8B5CF6', border: '3px solid #0F172A' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 4,
+                          right: 4,
+                          background: '#8B5CF6',
+                          borderRadius: '50%',
+                          width: 32,
+                          height: 32,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#FFF',
+                          boxShadow: '0 4px 10px rgba(0,0,0,0.4)',
+                          border: '2px solid #0F172A',
+                        }}
+                      >
+                        <CameraOutlined style={{ fontSize: 14 }} />
+                      </div>
                     </div>
-                  </div>
+                  </Upload>
+                </div>
+                <Upload {...uploadProps}>
+                  <Button
+                    size="small"
+                    icon={<UploadOutlined />}
+                    style={{
+                      marginTop: 8,
+                      borderRadius: 8,
+                      background: 'rgba(139, 92, 246, 0.25)',
+                      border: '1px solid rgba(139, 92, 246, 0.5)',
+                      color: '#F8FAFC',
+                      fontWeight: 700,
+                      fontSize: '0.75rem',
+                      height: 28
+                    }}
+                  >
+                    Upload Photo
+                  </Button>
                 </Upload>
               </div>
 
@@ -392,6 +416,11 @@ const UserProfile = () => {
                 <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#94A3B8', fontWeight: 600 }}>
                   <MailOutlined style={{ marginRight: 6, color: '#8B5CF6' }} /> {user?.email}
                 </p>
+                {user?.bio && (
+                  <p style={{ margin: '8px 0 0', fontSize: '0.82rem', color: '#CBD5E1', maxWidth: 650, lineHeight: 1.5, opacity: 0.9 }}>
+                    {user.bio}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -480,8 +509,16 @@ const UserProfile = () => {
                         </Col>
                       </Row>
 
-                      <Form.Item name="email" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Email Address (Primary User Key)</span>}>
-                        <Input prefix={<MailOutlined style={{ color: '#8B5CF6' }} />} disabled style={{ borderRadius: 10, height: 42 }} />
+                      <Form.Item
+                        name="email"
+                        label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Email Address (Account & Login ID)</span>}
+                        rules={[
+                          { required: true, message: 'Please enter your email address' },
+                          { type: 'email', message: 'Please enter a valid email address' }
+                        ]}
+                        tooltip="You will use this email address to log in to your account."
+                      >
+                        <Input prefix={<MailOutlined style={{ color: '#8B5CF6' }} />} placeholder="name@example.com" style={{ borderRadius: 10, height: 42 }} />
                       </Form.Item>
 
                       <Row gutter={16}>
@@ -503,6 +540,18 @@ const UserProfile = () => {
 
                       <Form.Item name="phone" label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Contact Phone Number</span>}>
                         <Input prefix={<PhoneOutlined style={{ color: '#8B5CF6' }} />} placeholder="+1 (555) 000-0000" style={{ borderRadius: 10, height: 42 }} />
+                      </Form.Item>
+
+                      <Form.Item
+                        name="bio"
+                        label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>Author Bio & Professional Summary</span>}
+                        extra={<span style={{ fontSize: '0.74rem', color: '#8B5CF6' }}>This bio and your profile picture will be displayed at the bottom of your published articles and on your dedicated Author Profile page.</span>}
+                      >
+                        <Input.TextArea
+                          rows={4}
+                          placeholder="Tell readers about your professional experience, expertise, research domains, or background..."
+                          style={{ borderRadius: 10, fontSize: '0.85rem', lineHeight: 1.6 }}
+                        />
                       </Form.Item>
 
                       {editMode && (

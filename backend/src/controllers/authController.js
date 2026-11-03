@@ -16,7 +16,7 @@ exports.register = async (req, res) => {
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const { first_name, last_name, email, job_title, company_name, country, password } = req.body;
+        const { first_name, last_name, email, job_title, company_name, country, phone, password } = req.body;
 
         const existingUser = await User.findByEmail(email);
         if (existingUser) {
@@ -33,6 +33,7 @@ exports.register = async (req, res) => {
             job_title,
             company_name,
             country,
+            phone: phone ? String(phone).trim() : null,
             password_hash,
             role: 'user'
         });
@@ -334,8 +335,40 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { first_name, last_name, email, job_title, company_name, country, avatar } = req.body;
-        const user = await User.update(req.user.id, { first_name, last_name, email, job_title, company_name, country, avatar });
+        const { first_name, last_name, email, job_title, company_name, country, phone, avatar, bio } = req.body;
+
+        let cleanEmail = email !== undefined ? String(email).trim().toLowerCase() : undefined;
+        if (cleanEmail) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(cleanEmail)) {
+                return res.status(400).json({ message: 'Please provide a valid email address.' });
+            }
+
+            const existingUser = await User.findByEmail(cleanEmail);
+            if (existingUser && Number(existingUser.id) !== Number(req.user.id)) {
+                return res.status(400).json({ message: 'This email address is already in use by another account.' });
+            }
+        }
+
+        const user = await User.update(req.user.id, {
+            first_name,
+            last_name,
+            email: cleanEmail,
+            job_title,
+            company_name,
+            country,
+            phone: phone !== undefined ? String(phone).trim() : undefined,
+            avatar,
+            bio
+        });
+
+        // If email was changed, update token cookie and log audit
+        if (cleanEmail && req.user?.email && cleanEmail !== req.user.email.toLowerCase()) {
+            const accessToken = generateToken(user);
+            setAuthCookies(res, { accessToken });
+            await logAudit(req, 'update_email', 'user', user.id, `User updated email from ${req.user.email} to ${cleanEmail}`, 'success');
+        }
+
         res.json({ message: 'Profile updated successfully', user });
     } catch (error) {
         console.error('Update profile error:', error);
