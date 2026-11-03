@@ -593,8 +593,8 @@ const subscriptionEmailTemplate = (name, contentTitle) => {
                     <p>Thank you for reaching out! We've received your details, and our team is reviewing them.</p>
                     <p>We'll be in touch shortly to explore result-driven growth strategies tailored to your business goals.</p>
                     <p>You now have access to: <strong>${safeTitle}</strong></p>
-                    <p>For urgent placements and queries, please feel free to contact:</p>
-                    <p><strong>Contact person:</strong> Mark Jason</p>
+                    <p>For urgent queries, please feel free to reach out:</p>
+                    <p><strong>Contact:</strong> Editorial & Insights Team</p>
                     <p><strong>Email ID:</strong> info@tgstechinfo.com</p>
                     <br>
                     <p>Regards,</p>
@@ -669,8 +669,8 @@ const accessGrantEmailTemplate = (name, contentTitle, downloadUrl = null, isEboo
                 </div>
                 <div class="footer">
                     <p style="margin: 0;">© ${new Date().getFullYear()} TGS Tech Info. All rights reserved.</p>
-                    <p style="margin-top: 8px; font-size: 11px; color: #94a3b8;">
-                        Don't want to receive these emails? <a href="${getPublicUrl()}/unsubscribe" style="color: #0AAEEF; text-decoration: underline;">Unsubscribe</a>
+                    <p style="margin-top: 6px; font-size: 11px; color: #94a3b8;">
+                        This email was sent to deliver the content requested on <a href="${getPublicUrl()}" style="color: #0AAEEF; text-decoration: none;">tgstechinfo.com</a>.
                     </p>
                 </div>
             </div>
@@ -813,7 +813,7 @@ const renderCaseStudyEmail = (customTemplate, vars = {}) => {
  * @param {string} to - Recipient email
  * @param {object} variables - Variables to replace in template
  */
-const sendTemplatedEmail = async (templateType, to, variables = {}) => {
+const sendTemplatedEmail = async (templateType, to, variables = {}, options = {}) => {
     try {
         const EmailTemplate = require('../models/EmailTemplate');
         const template = await EmailTemplate.findByType(templateType);
@@ -907,6 +907,11 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         renderedHtml = renderedHtml.replace(/https?:\/\/[^\s"']+\/logo\.png/gi, logoUrl);
         renderedHtml = renderedHtml.replace(/\/logo\.png/gi, logoUrl);
 
+        // Clean legacy placeholder contacts from database templates
+        renderedHtml = renderedHtml
+            .replace(/max\.brown@tgstechinfo\.com/gi, 'info@tgstechinfo.com')
+            .replace(/Mark Jason/gi, 'TGS Editorial Team');
+
         const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
         if (!hasLogoPlaceholder && !renderedHtml.includes('/logo.jpg')) {
             if (renderedHtml.includes('class="header"') || renderedHtml.includes("class='header'")) {
@@ -920,8 +925,26 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         }
 
         // Send email
-        const isTransactional = ['registration', 'password_reset', 'content_submitted', 'content_approved', 'content_rejected'].includes(templateType);
-        const result = await sendEmail(to, renderedSubject, renderedHtml, { isTransactional });
+        const transactionalTypes = [
+            'registration',
+            'password_reset',
+            'content_submitted',
+            'content_approved',
+            'content_rejected',
+            'case_study_download',
+            'case_study_access',
+            'download',
+            'content_access',
+            'ebook_download',
+            'webinar_registration',
+            'event_registration',
+            'contact_form',
+            'inquiry'
+        ];
+        const isTransactional = options.isTransactional !== undefined
+            ? Boolean(options.isTransactional)
+            : transactionalTypes.includes(templateType);
+        const result = await sendEmail(to, renderedSubject, renderedHtml, { ...options, isTransactional });
         return result;
     } catch (error) {
         console.error('Error sending templated email:', error);

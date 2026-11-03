@@ -41,6 +41,14 @@ const testConnection = async (retries = 15, delay = 3000) => {
                 // If lacks SUPER / SYSTEM_VARIABLES_ADMIN privilege, session level is already guaranteed
             }
             console.log(`✅ Connected to MySQL database [${process.env.DB_NAME || 'publishing_platform'}] successfully (Timezone: +05:30 IST)`);
+            // Auto-clean legacy placeholder contacts in email_templates table
+            try {
+                await conn.query(`
+                    UPDATE email_templates 
+                    SET html_body = REPLACE(REPLACE(html_body, 'max.brown@tgstechinfo.com', 'info@tgstechinfo.com'), 'Mark Jason', 'TGS Tech Info Team') 
+                    WHERE html_body LIKE '%max.brown%' OR html_body LIKE '%Mark Jason%'
+                `);
+            } catch (_) {}
             conn.release();
             return true;
         } catch (err) {

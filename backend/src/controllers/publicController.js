@@ -941,7 +941,7 @@ exports.submitLandingPage = async (req, res) => {
         if (emailValue) {
             try {
                 const emailHtml = accessGrantEmailTemplate(fullName, contentTitle, downloadUrl, isEbook);
-                const emailResult = await sendEmail(emailValue, emailSubject, emailHtml);
+                const emailResult = await sendEmail(emailValue, emailSubject, emailHtml, { isTransactional: true });
                 if (!emailResult?.success) {
                     console.error('[submitLandingPage] Email delivery failed:', emailResult?.error || emailResult?.reason);
                 } else {
@@ -2005,7 +2005,7 @@ exports.submitCaseStudyGate = async (req, res) => {
         // Send email using database template or fallback
         try {
             // First try to use the database template for case_study_download
-            const templateResult = await sendTemplatedEmail('case_study_download', email.trim().toLowerCase(), templateVariables);
+            const templateResult = await sendTemplatedEmail('case_study_download', email.trim().toLowerCase(), templateVariables, { isTransactional: true });
 
             // If database template is not found or skipped, fall back to custom template or default
             if (templateResult?.skipped) {
@@ -2018,7 +2018,8 @@ exports.submitCaseStudyGate = async (req, res) => {
                 const fallbackResult = await sendEmail(
                     email.trim().toLowerCase(),
                     emailSubject,
-                    emailHtml
+                    emailHtml,
+                    { isTransactional: true }
                 );
                 if (fallbackResult?.skipped) console.warn('Case study email skipped:', fallbackResult.reason);
             }

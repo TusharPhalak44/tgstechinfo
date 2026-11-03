@@ -430,8 +430,8 @@ async function insertDefaultTemplates() {
             
             <div class="contact-box">
                 <p style="margin: 5px 0;"><strong>For urgent inquiries:</strong></p>
-                <p style="margin: 5px 0;"><strong>Contact:</strong> Mark Jason</p>
-                <p style="margin: 5px 0;"><strong>Email:</strong> max.brown@tgstechinfo.com</p>
+                <p style="margin: 5px 0;"><strong>Contact:</strong> TGS Tech Info Team</p>
+                <p style="margin: 5px 0;"><strong>Email:</strong> info@tgstechinfo.com</p>
             </div>
             
             <div style="text-align: center;">
