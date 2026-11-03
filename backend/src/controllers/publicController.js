@@ -299,6 +299,16 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
+        // If live webinar or live event has concluded (scheduled date/time passed), hide from public website
+        const isLiveWebinarOrEvent = (
+            content.content_type === 'webinar' || content.content_type === 'event' ||
+            content.content_type_slug === 'webinar' || content.content_type_slug === 'event' ||
+            content.content_type_id === 5 || content.content_type_id === 6
+        ) && (content.webinar_type === 'live' || !content.webinar_type);
+        if (isLiveWebinarOrEvent && content.webinar_date && new Date(content.webinar_date) < new Date()) {
+            return res.status(404).json({ message: 'This live session has concluded and is no longer available.' });
+        }
+
         const isStandardEditorial = [1, 2, 3, 4, 6, 7, 8, 9, 11].includes(content.content_type_id);
         const isFileLanding = Boolean(
             !isStandardEditorial &&
@@ -1463,6 +1473,7 @@ exports.getContentTypesWithCount = async (req, res) => {
              LEFT JOIN contents c ON c.content_type_id = ct.id 
                   AND (c.status = 'published' OR c.status IS NULL)
                   AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+                   AND NOT ((ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6)) AND (c.webinar_type = 'live' OR c.webinar_type IS NULL) AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)
                   ${categoryFilter}
              GROUP BY ct.id, ct.name, ct.slug
              ORDER BY ct.id ASC`,
@@ -1509,7 +1520,7 @@ exports.getCategoriesWithCount = async (req, res) => {
         const countQuery = `
             SELECT cat.id, COUNT(c.id) as count
             FROM categories cat
-            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published' AND c.is_visible_on_site = 1${contentTypeFilter}
+            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published' AND c.is_visible_on_site = 1 AND NOT ((c.content_type_id IN (5, 6)) AND (c.webinar_type = 'live' OR c.webinar_type IS NULL) AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)${contentTypeFilter}
             GROUP BY cat.id
         `;
         const [counts] = await pool.query(countQuery, values);
@@ -1740,7 +1751,7 @@ exports.submitContact = async (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inquiry Received — TGS Tech Info</title>
+    <title>We’ve Received Your Inquiry - TGS Tech Info</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b;">
     <div style="max-width: 600px; margin: 30px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0;">
@@ -1766,7 +1777,7 @@ exports.submitContact = async (req, res) => {
             </p>
             <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                 <p style="margin: 0; font-size: 14px; font-weight: 600; color: #0f172a;">Editorial & Support Team</p>
-                <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">TGS Tech Info — <a href="${frontendUrl}" style="color: #0284c7; text-decoration: none;">tgstechinfo.com</a></p>
+                <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b;">TGS Tech Info - <a href="${frontendUrl}" style="color: #0284c7; text-decoration: none;">tgstechinfo.com</a></p>
             </div>
         </div>
         <div style="background-color: #f8fafc; padding: 16px 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 12px; color: #94a3b8;">
@@ -1775,7 +1786,7 @@ exports.submitContact = async (req, res) => {
     </div>
 </body>
 </html>`;
-            await sendEmail(email, `Inquiry Received: ${subject} — TGS Tech Info`, emailHtml, { isTransactional: true });
+            await sendEmail(email, 'We’ve Received Your Inquiry - TGS Tech Info', emailHtml, { isTransactional: true });
         } catch (e) {
             console.warn('[submitContact] Contact confirmation email failed:', e.message);
         }
@@ -2051,6 +2062,9 @@ exports.registerWebinar = async (req, res) => {
         const webinar = await Content.findById(id);
         if (!webinar) {
             return res.status(404).json({ message: 'Webinar not found' });
+        }
+        if (webinar.webinar_date && (webinar.webinar_type === 'live' || !webinar.webinar_type) && new Date(webinar.webinar_date) < new Date()) {
+            return res.status(400).json({ message: 'Registration closed. This live webinar session has already concluded.' });
         }
 
         const { getNowInIST } = require('../utils/dateHelper');

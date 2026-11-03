@@ -492,7 +492,14 @@ class Content {
             LEFT JOIN users u ON c.user_id = u.id
             LEFT JOIN content_types ct ON c.content_type_id = ct.id
             LEFT JOIN categories cat ON c.category_id = cat.id
-            WHERE c.slug = ? AND c.status = 'published' AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
+            WHERE c.slug = ? AND c.status = 'published' 
+              AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
+              AND NOT (
+                  (ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6))
+                  AND (c.webinar_type = 'live' OR c.webinar_type IS NULL)
+                  AND c.webinar_date IS NOT NULL
+                  AND c.webinar_date < CURRENT_TIMESTAMP
+              )
         `;
         const [rows] = await pool.query(query, [slug]);
         return rows[0];
@@ -530,6 +537,13 @@ class Content {
             values.push(filters.status);
             if (filters.status === 'published') {
                 baseWhere += ' AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)';
+                // Automatically hide concluded live webinars and live events once scheduled date/time has passed
+                baseWhere += ` AND NOT (
+                    (ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6))
+                    AND (c.webinar_type = 'live' OR c.webinar_type IS NULL)
+                    AND c.webinar_date IS NOT NULL
+                    AND c.webinar_date < CURRENT_TIMESTAMP
+                )`;
             }
         }
         if (filters.user_id) { baseWhere += ' AND c.user_id = ?'; values.push(filters.user_id); }
@@ -829,6 +843,12 @@ class Content {
             WHERE c.category_id = ? AND c.id != ? AND c.status = 'published' 
               AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
               AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
+              AND NOT (
+                  (ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6))
+                  AND (c.webinar_type = 'live' OR c.webinar_type IS NULL)
+                  AND c.webinar_date IS NOT NULL
+                  AND c.webinar_date < CURRENT_TIMESTAMP
+              )
             ORDER BY c.published_date DESC
             LIMIT ?
         `;

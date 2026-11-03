@@ -67,7 +67,7 @@ async function insertDefaultTemplates() {
             <div style="text-align: center;">
                 <a href="{{login_url}}" class="cta-button">Login to Your Account</a>
             </div>
-            <p>If you have any questions, feel free to reach out to our support team.</p>
+            <p>If you have any questions, feel free to reach out to our support team at <a href="mailto:info@tgstechinfo.com" style="color: #F7941D; font-weight: bold; text-decoration: none;">info@tgstechinfo.com</a>.</p>
             <p>Regards,<br><strong>TGS Tech Info Team</strong></p>
         </div>
         <div class="footer">

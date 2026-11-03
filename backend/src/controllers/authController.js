@@ -88,7 +88,8 @@ exports.register = async (req, res) => {
                 country: user.country,
                 name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
                 email: user.email,
-                login_url: `${frontendUrl}/login`
+                login_url: `${frontendUrl}/login`,
+                support_email: 'info@tgstechinfo.com'
             });
             if (emailResult?.skipped) {
                 console.warn('[authController.register] Registration email was skipped:', emailResult.reason || emailResult.error);

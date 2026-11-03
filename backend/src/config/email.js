@@ -912,6 +912,12 @@ const sendTemplatedEmail = async (templateType, to, variables = {}, options = {}
             .replace(/max\.brown@tgstechinfo\.com/gi, 'info@tgstechinfo.com')
             .replace(/Mark Jason/gi, 'TGS Editorial Team');
 
+        // Ensure support email is always clearly attached when reaching out to support team is mentioned
+        renderedHtml = renderedHtml.replace(
+            /(feel free to reach out to our support team)(?!\s*at|\s*<a)/gi,
+            '$1 at <a href="mailto:info@tgstechinfo.com" style="color: #F7941D; font-weight: bold; text-decoration: none;">info@tgstechinfo.com</a>'
+        );
+
         const hasLogoPlaceholder = /\{\{(website_logo_html|website_logo_img|website_logo|logo)\}\}/i.test(template.html_body);
         if (!hasLogoPlaceholder && !renderedHtml.includes('/logo.jpg')) {
             if (renderedHtml.includes('class="header"') || renderedHtml.includes("class='header'")) {

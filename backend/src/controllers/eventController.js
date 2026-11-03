@@ -81,13 +81,16 @@ exports.getPublicEvents = async (req, res) => {
             params.push(mode);
         }
 
-        // Timeline filter (upcoming vs past)
+        // Concluded events are not shown anywhere on public site
         if (timeline === 'past') {
-            query += ` AND e.start_date < NOW()`;
-        } else {
-            // Default upcoming
-            query += ` AND e.start_date >= NOW()`;
+            return res.json({
+                success: true,
+                events: [],
+                pagination: { total: 0, page: 1, limit: limitNum, totalPages: 1 }
+            });
         }
+        // Only show upcoming/live active events
+        query += ` AND COALESCE(e.end_date, e.start_date) >= NOW()`;
 
         // Ordering: upcoming events soonest first, past events most recent first
         if (timeline === 'past') {
@@ -165,8 +168,14 @@ exports.getPublicEventBySlug = async (req, res) => {
         // Increment view count
         pool.query('UPDATE events SET view_count = view_count + 1 WHERE id = ?', [event.id]).catch(() => {});
 
+        // Concluded events must not be accessible publicly
+        const eventEnd = event.end_date ? new Date(event.end_date) : new Date(event.start_date);
+        if (eventEnd < new Date()) {
+            return res.status(404).json({ success: false, message: 'This event has concluded and is no longer available.' });
+        }
+
         const isFull = event.max_capacity > 0 && event.registered_count >= event.max_capacity;
-        const isPast = new Date(event.start_date) < new Date();
+        const isPast = false;
 
         const safeEvent = { ...event };
         // SECURITY: Never expose private virtual join urls in public detail before registration
@@ -233,6 +242,11 @@ exports.registerForEvent = async (req, res) => {
         const event = eventRows[0];
         if (event.status !== 'published') {
             return res.status(400).json({ success: false, message: 'This event is currently not open for registration.' });
+        }
+
+        const eventEnd = event.end_date ? new Date(event.end_date) : new Date(event.start_date);
+        if (eventEnd < new Date()) {
+            return res.status(400).json({ success: false, message: 'Registration closed. This event has already concluded.' });
         }
 
         // Check if event uses external registration

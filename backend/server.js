@@ -461,6 +461,14 @@ app.listen(PORT, () => {
     } catch (e) {
         console.warn('[Startup] Event reminder cron notice:', e.message);
     }
+
+    // Auto-expiration runner for concluded live webinars & events
+    try {
+        const { startExpirationCron } = require('./src/services/liveEventExpirationService');
+        startExpirationCron(10);
+    } catch (e) {
+        console.warn('[Startup] Live event expiration cron notice:', e.message);
+    }
 });
 
 

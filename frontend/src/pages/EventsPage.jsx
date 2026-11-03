@@ -78,12 +78,17 @@ export default function EventsPage() {
         search: searchTerm,
         type: selectedType,
         mode: selectedMode,
-        timeline,
+        timeline: 'upcoming',
         page,
         limit: 9
       });
       if (res && res.success) {
-        setEvents(res.events || []);
+        // Enforce client-side check so concluded events never show on website
+        const activeEvents = (res.events || []).filter(evt => {
+          const end = evt.end_date || evt.start_date;
+          return !end || dayjs(end).isAfter(dayjs());
+        });
+        setEvents(activeEvents);
         setTotal(res.pagination?.total || 0);
       }
     } catch (err) {
@@ -343,47 +348,22 @@ export default function EventsPage() {
           justifyContent: 'space-between',
           gap: 16
         }}>
-          {/* Upcoming vs Past Tabs */}
+          {/* Live & Upcoming Events Badge */}
           <div style={{
             display: 'inline-flex',
-            background: darkMode ? '#1E293B' : '#F1F5F9',
-            padding: 4,
-            borderRadius: 10
+            alignItems: 'center',
+            gap: 8,
+            background: darkMode ? '#0B1F4D' : '#F1F5F9',
+            border: darkMode ? '1px solid #1E3A8A' : '1px solid #E2E8F0',
+            padding: '8px 18px',
+            borderRadius: 10,
+            fontWeight: 700,
+            fontSize: 14,
+            color: darkMode ? '#38BDF8' : '#0B1F4D',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
           }}>
-            <button
-              onClick={() => { setTimeline('upcoming'); setPage(1); }}
-              style={{
-                border: 'none',
-                background: timeline === 'upcoming' ? (darkMode ? '#0B1F4D' : '#FFFFFF') : 'transparent',
-                color: timeline === 'upcoming' ? (darkMode ? '#38BDF8' : '#0B1F4D') : (darkMode ? '#94A3B8' : '#64748B'),
-                padding: '8px 18px',
-                borderRadius: 8,
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: timeline === 'upcoming' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'
-              }}
-            >
-              🚀 Upcoming Events
-            </button>
-            <button
-              onClick={() => { setTimeline('past'); setPage(1); }}
-              style={{
-                border: 'none',
-                background: timeline === 'past' ? (darkMode ? '#0B1F4D' : '#FFFFFF') : 'transparent',
-                color: timeline === 'past' ? (darkMode ? '#38BDF8' : '#0B1F4D') : (darkMode ? '#94A3B8' : '#64748B'),
-                padding: '8px 18px',
-                borderRadius: 8,
-                fontWeight: 700,
-                fontSize: 14,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: timeline === 'past' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'
-              }}
-            >
-              📼 Past Sessions & Recordings
-            </button>
+            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
+            🚀 Live &amp; Upcoming Events
           </div>
 
           {/* Format & Mode Selects + Quick Add Button */}

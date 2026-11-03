@@ -873,8 +873,19 @@ const CategoryList = () => {
     }
   };
 
-  // Filter contents by inline search term
-  const safeContents = Array.isArray(contents) ? contents : [];
+  // Filter contents by inline search term and omit concluded live sessions
+  const rawContents = Array.isArray(contents) ? contents : [];
+  const safeContents = rawContents.filter(item => {
+    const isLiveWebinarOrEvent = (
+      item.content_type === 'webinar' || item.content_type === 'event' ||
+      item.content_type_slug === 'webinar' || item.content_type_slug === 'event' ||
+      item.content_type_id === 5 || item.content_type_id === 6
+    ) && (item.webinar_type === 'live' || !item.webinar_type);
+    if (isLiveWebinarOrEvent && item.webinar_date && new Date(item.webinar_date) < new Date()) {
+      return false;
+    }
+    return true;
+  });
   const filteredContents = safeContents.filter(item => {
     if (!searchTerm) return true;
     const q = searchTerm.toLowerCase();

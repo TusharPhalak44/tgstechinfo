@@ -48,6 +48,21 @@ const testConnection = async (retries = 15, delay = 3000) => {
                     SET html_body = REPLACE(REPLACE(html_body, 'max.brown@tgstechinfo.com', 'info@tgstechinfo.com'), 'Mark Jason', 'TGS Tech Info Team') 
                     WHERE html_body LIKE '%max.brown%' OR html_body LIKE '%Mark Jason%'
                 `);
+                await conn.query(`
+                    UPDATE email_templates 
+                    SET html_body = REPLACE(
+                        html_body, 
+                        'feel free to reach out to our support team.</p>', 
+                        'feel free to reach out to our support team at <a href="mailto:info@tgstechinfo.com" style="color: #F7941D; font-weight: bold; text-decoration: none;">info@tgstechinfo.com</a>.</p>'
+                    ) 
+                    WHERE html_body LIKE '%reach out to our support team.%' AND html_body NOT LIKE '%info@tgstechinfo.com%'
+                `);
+                await conn.query(`
+                    UPDATE email_templates 
+                    SET subject = 'We’ve Received Your Inquiry - TGS Tech Info' 
+                    WHERE template_type IN ('contact_form', 'contact', 'inquiry') 
+                       OR subject LIKE '%Inquiry Received%'
+                `);
             } catch (_) {}
             conn.release();
             return true;
