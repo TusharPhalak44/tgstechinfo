@@ -335,7 +335,7 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
     try {
-        const { first_name, last_name, email, job_title, company_name, country, phone, avatar, bio } = req.body;
+        const { first_name, last_name, email, job_title, company_name, country, phone, avatar, bio, linkedin_url, twitter_url, website_url, github_url } = req.body;
 
         let cleanEmail = email !== undefined ? String(email).trim().toLowerCase() : undefined;
         if (cleanEmail) {
@@ -359,7 +359,11 @@ exports.updateProfile = async (req, res) => {
             country,
             phone: phone !== undefined ? String(phone).trim() : undefined,
             avatar,
-            bio
+            bio,
+            linkedin_url: linkedin_url !== undefined ? String(linkedin_url).trim() : undefined,
+            twitter_url: twitter_url !== undefined ? String(twitter_url).trim() : undefined,
+            website_url: website_url !== undefined ? String(website_url).trim() : undefined,
+            github_url: github_url !== undefined ? String(github_url).trim() : undefined
         });
 
         // If email was changed, update token cookie and log audit

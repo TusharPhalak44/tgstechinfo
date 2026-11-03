@@ -2222,13 +2222,17 @@ exports.getAuthors = async (req, res) => {
                 u.country,
                 u.avatar,
                 u.bio,
+                u.linkedin_url,
+                u.twitter_url,
+                u.website_url,
+                u.github_url,
                 COUNT(c.id) AS total_articles,
                 COALESCE(SUM(c.view_count), 0) AS total_views,
                 MAX(c.published_date) AS latest_published_at
             FROM users u
             JOIN contents c ON c.user_id = u.id
             ${whereClause}
-            GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.job_title, u.company_name, u.country, u.avatar, u.bio
+            GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.job_title, u.company_name, u.country, u.avatar, u.bio, u.linkedin_url, u.twitter_url, u.website_url, u.github_url
             ORDER BY total_articles DESC, total_views DESC
         `;
 
@@ -2237,7 +2241,7 @@ exports.getAuthors = async (req, res) => {
         // If type is 'admin' and no authors returned via JOIN, ensure admin user is returned
         if (type === 'admin' && authors.length === 0) {
             const [adminUsers] = await pool.query(`
-                SELECT id, first_name, last_name, email, role, job_title, company_name, country, avatar, bio,
+                SELECT id, first_name, last_name, email, role, job_title, company_name, country, avatar, bio, linkedin_url, twitter_url, website_url, github_url,
                        0 AS total_articles, 0 AS total_views, NULL AS latest_published_at
                 FROM users WHERE role = 'admin' LIMIT 1
             `);
@@ -2302,13 +2306,17 @@ exports.getAuthorById = async (req, res) => {
                 u.country,
                 u.avatar,
                 u.bio,
+                u.linkedin_url,
+                u.twitter_url,
+                u.website_url,
+                u.github_url,
                 u.created_at,
                 COUNT(c.id) AS total_articles,
                 COALESCE(SUM(c.view_count), 0) AS total_views
             FROM users u
             LEFT JOIN contents c ON c.user_id = u.id AND c.status = 'published'
             WHERE u.id = ?
-            GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.job_title, u.company_name, u.country, u.avatar, u.bio, u.created_at
+            GROUP BY u.id, u.first_name, u.last_name, u.email, u.role, u.job_title, u.company_name, u.country, u.avatar, u.bio, u.linkedin_url, u.twitter_url, u.website_url, u.github_url, u.created_at
         `, [authorId]);
 
         if (!userRows || userRows.length === 0) {

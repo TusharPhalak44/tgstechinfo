@@ -43,7 +43,7 @@ class User {
 
     static async findById(id) {
         const [rows] = await pool.query(
-            'SELECT id, first_name, last_name, email, job_title, company_name, country, phone, role, is_active, avatar, bio, created_at FROM users WHERE id = ?',
+            'SELECT id, first_name, last_name, email, job_title, company_name, country, phone, role, is_active, avatar, bio, linkedin_url, twitter_url, website_url, github_url, created_at FROM users WHERE id = ?',
             [id]
         );
         return rows[0];
@@ -55,7 +55,7 @@ class User {
     }
 
     static async update(id, userData) {
-        const { first_name, last_name, email, job_title, company_name, country, phone, role, password_hash, is_active, avatar, bio } = userData;
+        const { first_name, last_name, email, job_title, company_name, country, phone, role, password_hash, is_active, avatar, bio, linkedin_url, twitter_url, website_url, github_url } = userData;
         
         // Build dynamic update query with only provided fields
         const updates = [];
@@ -113,6 +113,22 @@ class User {
         if (bio !== undefined) {
             updates.push('bio = ?');
             values.push(bio);
+        }
+        if (linkedin_url !== undefined) {
+            updates.push('linkedin_url = ?');
+            values.push(linkedin_url);
+        }
+        if (twitter_url !== undefined) {
+            updates.push('twitter_url = ?');
+            values.push(twitter_url);
+        }
+        if (website_url !== undefined) {
+            updates.push('website_url = ?');
+            values.push(website_url);
+        }
+        if (github_url !== undefined) {
+            updates.push('github_url = ?');
+            values.push(github_url);
         }
         
         if (updates.length === 0) {

@@ -467,7 +467,7 @@ class Content {
             SELECT c.*, 
                    c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
-                   u.avatar as author_avatar, u.bio as author_bio,
+                   u.avatar as author_avatar, u.bio as author_bio, u.linkedin_url as author_linkedin, u.twitter_url as author_twitter, u.website_url as author_website, u.github_url as author_github,
                    u.job_title as author_job_title, u.company_name as author_company_name, u.role as author_role,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -487,7 +487,7 @@ class Content {
             SELECT c.*, 
                    c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
-                   u.avatar as author_avatar, u.bio as author_bio,
+                   u.avatar as author_avatar, u.bio as author_bio, u.linkedin_url as author_linkedin, u.twitter_url as author_twitter, u.website_url as author_website, u.github_url as author_github,
                    u.job_title as author_job_title, u.company_name as author_company_name, u.role as author_role,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -519,7 +519,7 @@ class Content {
             SELECT c.*, 
                    c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
-                   u.avatar as author_avatar, u.bio as author_bio,
+                   u.avatar as author_avatar, u.bio as author_bio, u.linkedin_url as author_linkedin, u.twitter_url as author_twitter, u.website_url as author_website, u.github_url as author_github,
                    u.job_title as author_job_title, u.company_name as author_company_name, u.role as author_role,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -590,7 +590,7 @@ class Content {
             SELECT c.*, 
                    c.is_visible_on_site AS is_visible,
                    u.first_name, u.last_name, u.email as author_email,
-                   u.avatar as author_avatar, u.bio as author_bio,
+                   u.avatar as author_avatar, u.bio as author_bio, u.linkedin_url as author_linkedin, u.twitter_url as author_twitter, u.website_url as author_website, u.github_url as author_github,
                    u.job_title as author_job_title, u.company_name as author_company_name, u.role as author_role,
                    ct.name as content_type_name,
                    ct.slug as content_type,
@@ -842,7 +842,7 @@ class Content {
 
     static async getRelatedArticles(contentId, categoryId, limit = 3) {
         const query = `
-            SELECT c.*, u.first_name, u.last_name, u.avatar as author_avatar, u.bio as author_bio, ct.slug as content_type,
+            SELECT c.*, u.first_name, u.last_name, u.avatar as author_avatar, u.bio as author_bio, u.linkedin_url as author_linkedin, u.twitter_url as author_twitter, u.website_url as author_website, u.github_url as author_github, ct.slug as content_type,
                    cat.name as category_name, cat.slug as category_slug
             FROM contents c
             LEFT JOIN users u ON c.user_id = u.id

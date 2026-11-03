@@ -25,7 +25,11 @@ import {
   BankOutlined,
   GlobalOutlined,
   FireOutlined,
-  SettingOutlined
+  SettingOutlined,
+  LinkedinFilled,
+  TwitterOutlined,
+  GithubFilled,
+  LinkOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import SessionManagement from '../admin/SessionManagement';
@@ -421,6 +425,56 @@ const UserProfile = () => {
                     {user.bio}
                   </p>
                 )}
+
+                {/* Social media pills in header */}
+                {(user?.linkedin_url || user?.twitter_url) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                    {user?.linkedin_url && (
+                      <a
+                        href={user.linkedin_url.startsWith('http') ? user.linkedin_url : 'https://' + user.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '3px 10px',
+                          borderRadius: 14,
+                          background: 'rgba(10, 102, 194, 0.25)',
+                          border: '1px solid rgba(10, 102, 194, 0.5)',
+                          color: '#60A5FA',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <LinkedinFilled /> LinkedIn
+                      </a>
+                    )}
+                    {user?.twitter_url && (
+                      <a
+                        href={user.twitter_url.startsWith('http') ? user.twitter_url : 'https://' + user.twitter_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '3px 10px',
+                          borderRadius: 14,
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          color: '#F8FAFC',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <TwitterOutlined /> X (Twitter)
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -553,6 +607,35 @@ const UserProfile = () => {
                           style={{ borderRadius: 10, fontSize: '0.85rem', lineHeight: 1.6 }}
                         />
                       </Form.Item>
+
+                      <Divider orientation="left" style={{ margin: '24px 0 16px 0', borderColor: D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#8B5CF6', letterSpacing: '0.02em' }}>
+                          <LinkOutlined style={{ marginRight: 6 }} /> Author Social Profiles & Public Links
+                        </span>
+                      </Divider>
+
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item
+                            name="linkedin_url"
+                            label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>LinkedIn Profile URL</span>}
+                            tooltip="Your LinkedIn profile will be shown to readers on your author page and article bylines."
+                          >
+                            <Input prefix={<LinkedinFilled style={{ color: '#0A66C2' }} />} placeholder="https://www.linkedin.com/in/username" style={{ borderRadius: 10, height: 42 }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item
+                            name="twitter_url"
+                            label={<span style={{ fontWeight: 700, fontSize: '0.82rem' }}>X (Twitter) Profile URL</span>}
+                            tooltip="Your X/Twitter profile link for reader engagement."
+                          >
+                            <Input prefix={<TwitterOutlined style={{ color: D ? '#F8FAFC' : '#0F172A' }} />} placeholder="https://x.com/username" style={{ borderRadius: 10, height: 42 }} />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+
 
                       {editMode && (
                         <Button

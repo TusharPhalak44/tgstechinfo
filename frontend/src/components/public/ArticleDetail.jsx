@@ -1630,6 +1630,67 @@ const ArticleDetail = () => {
                     <div style={{ fontSize: 13, color: darkMode ? '#cbd5e1' : '#475569', marginTop: 4, lineHeight: 1.6, maxWidth: 620 }}>
                       {content.author_bio || content.bio || [content.author_job_title, content.author_company_name].filter(Boolean).join(' at ') || 'Enterprise technology researcher & thought leadership author'}
                     </div>
+
+                    {/* Author Social Media Links */}
+                    {(content.author_linkedin || content.author_twitter) && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                        {content.author_linkedin && (
+                          <Tooltip title="Connect on LinkedIn">
+                            <a
+                              href={content.author_linkedin.startsWith('http') ? content.author_linkedin : `https://${content.author_linkedin}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                background: '#0A66C2',
+                                color: '#fff',
+                                fontSize: 14,
+                                boxShadow: '0 2px 6px rgba(10, 102, 194, 0.3)',
+                                transition: 'transform 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                            >
+                              <LinkedinFilled />
+                            </a>
+                          </Tooltip>
+                        )}
+                        {content.author_twitter && (
+                          <Tooltip title="Follow on X (Twitter)">
+                            <a
+                              href={content.author_twitter.startsWith('http') ? content.author_twitter : `https://${content.author_twitter}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                width: 28,
+                                height: 28,
+                                borderRadius: '50%',
+                                background: darkMode ? '#0f172a' : '#000',
+                                border: darkMode ? '1px solid #334155' : 'none',
+                                color: '#fff',
+                                fontSize: 13,
+                                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.3)',
+                                transition: 'transform 0.2s ease'
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                            >
+                              <TwitterOutlined />
+                            </a>
+                          </Tooltip>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Row, Col, Typography, Tag, Avatar, Skeleton, Empty, Button, Input, Breadcrumb } from 'antd';
+import { Row, Col, Typography, Tag, Avatar, Skeleton, Empty, Button, Input, Breadcrumb, Tooltip } from 'antd';
 import {
   UserOutlined,
   FileTextOutlined,
@@ -13,7 +13,9 @@ import {
   CheckCircleFilled,
   BankOutlined,
   GlobalOutlined,
-  PlayCircleOutlined
+  PlayCircleOutlined,
+  LinkedinFilled,
+  TwitterOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -58,6 +60,22 @@ const getBannerSrc = (banner) => {
 
 const INITIAL_VISIBLE = 10;
 const SEE_MORE_STEP = 5;
+
+const formatSocialUrl = (url, platform) => {
+  if (!url || typeof url !== 'string') return null;
+  let clean = url.trim();
+  if (!clean) return null;
+  if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+    if (platform === 'linkedin' && !clean.includes('linkedin.com')) {
+      clean = `https://www.linkedin.com/in/${clean.replace(/^@/, '')}`;
+    } else if (platform === 'twitter' && !clean.includes('twitter.com') && !clean.includes('x.com')) {
+      clean = `https://x.com/${clean.replace(/^@/, '')}`;
+    } else {
+      clean = `https://${clean}`;
+    }
+  }
+  return clean;
+};
 
 const AuthorProfilePage = () => {
   const { id } = useParams();
@@ -185,6 +203,9 @@ const AuthorProfilePage = () => {
   const avatarGradient = getGradientForName(fullName);
   const initials = getInitials(author.first_name, author.last_name);
   const isAdmin = author.role === 'admin';
+  const linkedinUrl = formatSocialUrl(author.linkedin_url || author.linkedin, 'linkedin') || (isAdmin ? 'https://www.linkedin.com/company/tgstechinfo' : null);
+  const twitterUrl = formatSocialUrl(author.twitter_url || author.twitter, 'twitter') || (isAdmin ? 'https://x.com/tgstechinfo' : null);
+  const hasSocials = Boolean(linkedinUrl || twitterUrl);
 
   return (
     <div style={{
@@ -338,6 +359,76 @@ const AuthorProfilePage = () => {
                   maxWidth: 720
                 }}>
                   {author.bio}
+                </div>
+              )}
+
+              {/* Author Social Media Links */}
+              {hasSocials && (
+                <div style={{
+                  marginTop: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  flexWrap: 'wrap'
+                }}>
+                  {linkedinUrl && (
+                    <Tooltip title={`Connect with ${fullName} on LinkedIn`}>
+                      <a
+                        href={linkedinUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          padding: '6px 14px',
+                          borderRadius: 20,
+                          background: '#0A66C2',
+                          color: '#ffffff',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                          boxShadow: '0 2px 8px rgba(10, 102, 194, 0.3)',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(10, 102, 194, 0.45)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(10, 102, 194, 0.3)'; }}
+                      >
+                        <LinkedinFilled style={{ fontSize: 15 }} />
+                        <span>LinkedIn</span>
+                      </a>
+                    </Tooltip>
+                  )}
+
+                  {twitterUrl && (
+                    <Tooltip title={`Follow ${fullName} on X (Twitter)`}>
+                      <a
+                        href={twitterUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 7,
+                          padding: '6px 14px',
+                          borderRadius: 20,
+                          background: darkMode ? '#0f172a' : '#000000',
+                          color: '#ffffff',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                          border: darkMode ? '1px solid #334155' : '1px solid #000000',
+                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.45)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)'; }}
+                      >
+                        <TwitterOutlined style={{ fontSize: 14 }} />
+                        <span>X (Twitter)</span>
+                      </a>
+                    </Tooltip>
+                  )}
                 </div>
               )}
             </div>

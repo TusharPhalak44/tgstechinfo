@@ -64,7 +64,7 @@ const testConnection = async (retries = 15, delay = 3000) => {
                        OR subject LIKE '%Inquiry Received%'
                 `);
 
-                // Ensure users table has avatar, bio, and phone columns for user & author profiles
+                // Ensure users table has avatar, bio, phone, and social media columns for user & author profiles
                 try {
                     await conn.query('ALTER TABLE users ADD COLUMN avatar VARCHAR(500) DEFAULT NULL');
                 } catch (_) {}
@@ -73,6 +73,18 @@ const testConnection = async (retries = 15, delay = 3000) => {
                 } catch (_) {}
                 try {
                     await conn.query('ALTER TABLE users ADD COLUMN phone VARCHAR(50) DEFAULT NULL');
+                } catch (_) {}
+                try {
+                    await conn.query('ALTER TABLE users ADD COLUMN linkedin_url VARCHAR(500) DEFAULT NULL');
+                } catch (_) {}
+                try {
+                    await conn.query('ALTER TABLE users ADD COLUMN twitter_url VARCHAR(500) DEFAULT NULL');
+                } catch (_) {}
+                try {
+                    await conn.query('ALTER TABLE users ADD COLUMN website_url VARCHAR(500) DEFAULT NULL');
+                } catch (_) {}
+                try {
+                    await conn.query('ALTER TABLE users ADD COLUMN github_url VARCHAR(500) DEFAULT NULL');
                 } catch (_) {}
             } catch (_) {}
             conn.release();
