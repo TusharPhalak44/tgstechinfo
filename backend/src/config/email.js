@@ -791,15 +791,20 @@ const chatbotQueryResponseTemplate = (query, adminResponse) => {
  * Falls back to the standard access-grant template when no custom template exists.
  */
 const renderCaseStudyEmail = (customTemplate, vars = {}) => {
+    const downloadUrl = vars.download_url || vars.downloadUrl || vars.pdf_url || vars.pdf_file || null;
     if (!customTemplate || !customTemplate.trim()) {
-        return accessGrantEmailTemplate(vars.name || 'there', vars.title || 'the case study');
+        return accessGrantEmailTemplate(vars.name || 'there', vars.title || 'the case study', downloadUrl, false);
     }
     return customTemplate
         .replace(/\{\{name\}\}/gi, vars.name || 'there')
         .replace(/\{\{title\}\}/gi, vars.title || '')
         .replace(/\{\{email\}\}/gi, vars.email || '')
         .replace(/\{\{contact\}\}/gi, vars.contact || '')
-        .replace(/\{\{slug\}\}/gi, vars.slug || '');
+        .replace(/\{\{slug\}\}/gi, vars.slug || '')
+        .replace(/\{\{download_url\}\}/gi, downloadUrl || '')
+        .replace(/\{\{downloadUrl\}\}/gi, downloadUrl || '')
+        .replace(/\{\{pdf_url\}\}/gi, downloadUrl || '')
+        .replace(/\{\{pdf_file\}\}/gi, downloadUrl || '');
 };
 
 /**
@@ -823,6 +828,7 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
         const derivedFirstName = variables.first_name || (variables.name ? variables.name.split(' ')[0] : '') || extractNameFromEmail(to).split(' ')[0];
         const derivedLastName = variables.last_name || (variables.name && variables.name.split(' ').length > 1 ? variables.name.split(' ').slice(1).join(' ') : '');
         const derivedTitle = variables.title || variables.content_title || 'Content';
+        const derivedDownloadUrl = variables.download_url || variables.downloadUrl || variables.pdf_url || variables.pdf_file || publicUrl;
 
         // Add default variables with complete aliases and fallback URLs
         const defaultVars = {
@@ -832,7 +838,10 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             login_url: `${publicUrl}/login`,
             dashboard_url: `${publicUrl}/user-dashboard`,
             unsubscribe_url: `${publicUrl}/unsubscribe?email=${encodeURIComponent(to || '')}`,
-            download_url: publicUrl,
+            download_url: derivedDownloadUrl,
+            downloadUrl: derivedDownloadUrl,
+            pdf_url: derivedDownloadUrl,
+            pdf_file: derivedDownloadUrl,
             reset_url: `${publicUrl}/reset-password`,
             name: derivedName,
             first_name: derivedFirstName,
@@ -866,6 +875,20 @@ const sendTemplatedEmail = async (templateType, to, variables = {}) => {
             renderedSubject = renderedSubject.replace(regex, val);
             renderedHtml = renderedHtml.replace(regex, val);
         });
+
+        // Ensure download links pointing to direct files (e.g. .pdf) trigger browser download / open in new window
+        if (derivedDownloadUrl && /\.(pdf|zip|docx?|xlsx?)$/i.test(derivedDownloadUrl.split('?')[0])) {
+            const escapedUrl = derivedDownloadUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            renderedHtml = renderedHtml.replace(
+                new RegExp(`<a\\s+([^>]*?)href=["']${escapedUrl}["']([^>]*?)>`, 'gi'),
+                (match, before, after) => {
+                    let attrs = `${before} ${after}`.trim();
+                    if (!/target=/i.test(attrs)) attrs += ' rel="noopener noreferrer" target="_blank"';
+                    if (!/download/i.test(attrs)) attrs += ' download';
+                    return `<a href="${derivedDownloadUrl}" ${attrs}>`;
+                }
+            );
+        }
 
         // Ensure company logo is ALWAYS rendered in all email templates using verified static asset
         const logoHtml = buildLogoHtml(publicUrl);

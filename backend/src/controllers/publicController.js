@@ -7,6 +7,7 @@ const ContactSubmission = require('../models/ContactSubmission');
 const Download = require('../models/Download');
 const { pool } = require('../config/database');
 const { sendEmail, accessGrantEmailTemplate, subscriptionEmailTemplate, renderCaseStudyEmail, sendTemplatedEmail, escapeHtml, extractNameFromEmail } = require('../config/email');
+const { getFrontendUrl } = require('../utils/urlHelper');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
 const { getNowInIST } = require('../utils/dateHelper');
@@ -546,7 +547,7 @@ exports.submitLandingPage = async (req, res) => {
 
             if (alreadySubmitted) {
                 console.log(`[submitLandingPage] Email '${normalizedSubmittedEmail}' has already submitted/subscribed. Blocking duplicate.`);
-                
+
                 const contentType = req.headers['content-type'] || '';
                 const acceptHeader = req.headers.accept || '';
                 const isFormPost = contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data');
@@ -723,7 +724,7 @@ exports.submitLandingPage = async (req, res) => {
             if (explicitWebhook) {
                 targetWebhookUrl = explicitWebhook;
                 console.log('[submitLandingPage] Fallback 2: Extracted webhook_url from form submission:', targetWebhookUrl);
-                
+
                 // Update the content record so it's persisted for next time
                 if (normalizedContentId) {
                     pool.query('UPDATE contents SET webhook_url = ? WHERE id = ?', [targetWebhookUrl, normalizedContentId]).catch(err => console.error('[submitLandingPage] Failed to save form-submitted webhook_url:', err.message));
@@ -1089,7 +1090,7 @@ exports.subscribeContent = async (req, res) => {
         const fullName = nameField ? (extraData[nameField.name] || 'there') : 'there';
         const contentTitle = content?.title || 'the requested content';
 
-        const isContentExempt = ['whitepaper', 'webinar', 'event', 'guide', 'ebook'].some(kw => 
+        const isContentExempt = ['whitepaper', 'webinar', 'event', 'guide', 'ebook'].some(kw =>
             (content?.content_type || content?.content_type_name || content?.category_slug || '').toLowerCase().includes(kw)
         );
 
@@ -1146,10 +1147,10 @@ let isNewsletterSchemaChecked = false;
 const ensureNewsletterSchema = async () => {
     if (isNewsletterSchemaChecked) return;
     try {
-        await pool.query('ALTER TABLE `newsletter_subscribers` ADD COLUMN `name` VARCHAR(255) NULL AFTER `email`').catch(() => {});
-        await pool.query('ALTER TABLE `newsletter_subscribers` ADD COLUMN `unsubscribe_reason` TEXT NULL AFTER `unsubscribed_at`').catch(() => {});
+        await pool.query('ALTER TABLE `newsletter_subscribers` ADD COLUMN `name` VARCHAR(255) NULL AFTER `email`').catch(() => { });
+        await pool.query('ALTER TABLE `newsletter_subscribers` ADD COLUMN `unsubscribe_reason` TEXT NULL AFTER `unsubscribed_at`').catch(() => { });
         isNewsletterSchemaChecked = true;
-    } catch (_) {}
+    } catch (_) { }
 };
 
 exports.subscribeNewsletter = async (req, res) => {
@@ -1185,6 +1186,10 @@ exports.subscribeNewsletter = async (req, res) => {
             ip_address: req.ip || req.connection?.remoteAddress || null,
             user_agent: req.headers['user-agent'] || null
         });
+
+        if (result.alreadySubscribed) {
+            return res.status(409).json(result);
+        }
 
         return res.json(result);
     } catch (error) {
@@ -1967,37 +1972,48 @@ exports.submitCaseStudyGate = async (req, res) => {
             ]
         );
 
+        // Build direct download URL if pdf_file exists
+        const frontendUrl = getFrontendUrl();
+        let downloadUrl = null;
+        if (caseStudy.pdf_file && String(caseStudy.pdf_file).trim()) {
+            const rawPdf = String(caseStudy.pdf_file).trim();
+            if (rawPdf.startsWith('http://') || rawPdf.startsWith('https://')) {
+                downloadUrl = rawPdf;
+            } else {
+                const cleanPdf = rawPdf.startsWith('/uploads/')
+                    ? rawPdf
+                    : (rawPdf.startsWith('/') ? `/uploads${rawPdf}` : `/uploads/${rawPdf}`);
+                downloadUrl = `${frontendUrl}${cleanPdf}`;
+            }
+        } else {
+            downloadUrl = `${frontendUrl}/case-studies/${caseStudy.slug}`;
+        }
+
+        const templateVariables = {
+            name,
+            title: caseStudy.title,
+            email,
+            contact,
+            slug: caseStudy.slug,
+            download_url: downloadUrl,
+            downloadUrl: downloadUrl,
+            pdf_url: downloadUrl,
+            pdf_file: downloadUrl,
+            year: new Date().getFullYear()
+        };
+
         // Send email using database template or fallback
         try {
             // First try to use the database template for case_study_download
-            const templateResult = await sendTemplatedEmail('case_study_download', email.trim().toLowerCase(), {
-                name,
-                title: caseStudy.title,
-                email,
-                contact,
-                slug: caseStudy.slug,
-                year: new Date().getFullYear()
-            });
+            const templateResult = await sendTemplatedEmail('case_study_download', email.trim().toLowerCase(), templateVariables);
 
             // If database template is not found or skipped, fall back to custom template or default
             if (templateResult?.skipped) {
                 console.log('Database template not found, using fallback template');
-                const emailHtml = renderCaseStudyEmail(caseStudy.email_template, {
-                    name,
-                    title: caseStudy.title,
-                    email,
-                    contact,
-                    slug: caseStudy.slug,
-                });
+                const emailHtml = renderCaseStudyEmail(caseStudy.email_template, templateVariables);
                 // Use custom subject if provided, otherwise use fallback
                 const emailSubject = caseStudy.email_subject
-                    ? renderCaseStudyEmail(caseStudy.email_subject, {
-                        name,
-                        title: caseStudy.title,
-                        email,
-                        contact,
-                        slug: caseStudy.slug,
-                    })
+                    ? renderCaseStudyEmail(caseStudy.email_subject, templateVariables)
                     : `Your Case Study: ${caseStudy.title}`;
                 const fallbackResult = await sendEmail(
                     email.trim().toLowerCase(),

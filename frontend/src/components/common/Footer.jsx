@@ -77,6 +77,13 @@ const Footer = ({ simplified = false }) => {
         interest_type: 'general',
         interest_value: 'all'
       });
+      if (res.data?.alreadySubscribed) {
+        showInfo(
+          'Already Subscribed 📬',
+          res.data?.message || 'This email address is already subscribed to our newsletter.'
+        );
+        return;
+      }
       showSuccess(
         'Subscribed Successfully! 🎉',
         res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
@@ -244,25 +251,33 @@ const Footer = ({ simplified = false }) => {
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <PhoneOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5 }}>+91 96655-99442</span>
+                <a href="tel:+919665599442" style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, textDecoration: 'none' }}>
+                  <strong style={{ color: 'var(--color-accent)' }}>IN - </strong>+91 96655-99442
+                </a>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <PhoneOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5 }}>+1 346-487-8307</span>
+                <a href="tel:+13464878307" style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, textDecoration: 'none' }}>
+                  <strong style={{ color: 'var(--color-accent)' }}>US - </strong>+1 346-487-8307
+                </a>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>The Space Business Complex Office No 512-517, Grant Rd, Kharadi, Pune, Maharashtra 411014</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>
+                  <strong style={{ color: 'var(--color-accent)' }}>IN - </strong>The Space Business Complex Office No 512-517, Grant Rd, Kharadi, Pune, Maharashtra 411014
+                </span>
               </div>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <div style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--color-primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <EnvironmentOutlined style={{ color: 'var(--color-accent)', fontSize: 12 }} />
                 </div>
-                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>762, Fulton St, San Francisco, California 94115</span>
+                <span style={{ fontSize: 13, color: '#FFFFFF', paddingTop: 5, lineHeight: 1.5 }}>
+                  <strong style={{ color: 'var(--color-accent)' }}>US - </strong>762, Fulton St, San Francisco, California 94115
+                </span>
               </div>
             </div>
 

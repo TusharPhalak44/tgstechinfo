@@ -1281,6 +1281,13 @@ const CategoryList = () => {
                       interest_type: interestType,
                       interest_value: interestValue
                     });
+                    if (res.data?.alreadySubscribed) {
+                      showInfo(
+                        'Already Subscribed 📬',
+                        res.data?.message || 'This email address is already subscribed to our newsletter.'
+                      );
+                      return;
+                    }
                     showSuccess(
                       'Subscribed Successfully! 🎉',
                       res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'

@@ -9,9 +9,28 @@ const {
     renderContentSpecificWelcomeEmail
 } = require('./welcomeEmailTemplates');
 
+/**
+ * Format topic or category slug into clean readable title
+ * e.g. "artificial-intelligence" -> "Artificial Intelligence", "saas" -> "SaaS"
+ */
+function formatTopicName(value) {
+    if (!value || value === 'all' || value === 'general') return 'Newsletter';
+    const words = String(value).replace(/[-_]+/g, ' ').trim().split(/\s+/);
+    return words.map(w => {
+        const upper = w.toUpperCase();
+        if (['AI', 'ML', 'IT', 'IOT', 'HR', 'BFSI', 'SAAS', 'B2B', 'CRM', 'ERP', 'API', 'UI', 'UX', 'SEO', 'FINTECH'].includes(upper)) {
+            return upper;
+        }
+        return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    }).join(' ');
+}
+
 class NewsletterService {
     /**
      * Centralized Subscriber Handler for All Website Touchpoints
+     * Strict duplicate prevention:
+     * - General newsletter: once subscribed (homepage, footer, insight, resources), duplicate attempts show "already subscribed"
+     * - Technology & Industry topics: allows subscribing to DIFFERENT topics, but blocks duplicate subscriptions to the SAME topic
      */
     static async subscribe({
         email,
@@ -37,8 +56,17 @@ class NewsletterService {
             : (extractedName || 'there');
 
         const frontendUrl = getFrontendUrl();
+        const currentIstTime = getNowInIST();
 
-        // 1. Find or create subscriber in newsletter_subscribers
+        // 1. Normalize requested interest
+        const normalizedInterestType = ['general', 'technology', 'industry'].includes(interest_type)
+            ? interest_type
+            : 'general';
+        const normalizedInterestValue = (interest_value && String(interest_value).trim())
+            ? String(interest_value).trim().toLowerCase()
+            : (normalizedInterestType === 'general' ? 'all' : 'general');
+
+        // 2. Check if subscriber already exists in newsletter_subscribers
         const [existing] = await pool.query(
             'SELECT * FROM newsletter_subscribers WHERE email = ?',
             [normalizedEmail]
@@ -47,7 +75,6 @@ class NewsletterService {
         let subscriber = null;
         let isNewSubscriber = false;
         let wasReactivated = false;
-        const currentIstTime = getNowInIST();
 
         if (existing.length > 0) {
             subscriber = existing[0];
@@ -63,6 +90,7 @@ class NewsletterService {
                     [greetingName !== 'there' ? greetingName : null, token, source, subscriber.id]
                 );
                 wasReactivated = true;
+                subscriber.is_active = 1;
             } else if (greetingName && greetingName !== 'there' && !subscriber.name) {
                 await pool.query(
                     'UPDATE newsletter_subscribers SET name = ?, last_active_source = ? WHERE id = ?',
@@ -70,8 +98,94 @@ class NewsletterService {
                 );
             }
             subscriber.unsubscribe_token = token;
-        } else {
-            // Completely new subscriber
+        }
+
+        // 3. Strict Duplicate Check for Active Subscribers (when not reactivating)
+        if (subscriber && subscriber.is_active && !wasReactivated) {
+            // Case A: General Newsletter subscription attempt (from homepage, footer, insight/resource pages)
+            if (normalizedInterestType === 'general' || normalizedInterestValue === 'all') {
+                const [genInterests] = await pool.query(
+                    `SELECT id FROM newsletter_subscription_interests 
+                     WHERE subscriber_id = ? AND interest_type = 'general' AND is_active = 1`,
+                    [subscriber.id]
+                );
+
+                if (genInterests.length > 0 || subscriber.preferences_general_alerts) {
+                    // Log touchpoint activity even if already subscribed
+                    await pool.query(
+                        `INSERT INTO newsletter_subscription_activities 
+                         (subscriber_id, subscription_source, source_page_url, source_page_title, interest_type, interest_value, content_id, content_type, ip_address, user_agent, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            subscriber.id,
+                            source,
+                            source_page_url ? String(source_page_url).slice(0, 1000) : null,
+                            source_page_title ? String(source_page_title).slice(0, 500) : null,
+                            'general',
+                            'all',
+                            content_id ? parseInt(content_id, 10) : null,
+                            content_type ? String(content_type).slice(0, 50) : null,
+                            ip_address || null,
+                            user_agent || null,
+                            currentIstTime
+                        ]
+                    ).catch(() => {});
+
+                    return {
+                        success: false,
+                        alreadySubscribed: true,
+                        interest_type: 'general',
+                        interest_value: 'all',
+                        message: 'This email address is already subscribed to our newsletter.'
+                    };
+                }
+            }
+
+            // Case B: Technology or Industry Specific Subscription attempt
+            if (normalizedInterestType === 'technology' || normalizedInterestType === 'industry') {
+                const [topicInterests] = await pool.query(
+                    `SELECT id FROM newsletter_subscription_interests 
+                     WHERE subscriber_id = ? AND interest_type = ? AND interest_value = ? AND is_active = 1`,
+                    [subscriber.id, normalizedInterestType, normalizedInterestValue]
+                );
+
+                if (topicInterests.length > 0) {
+                    const formattedTopic = formatTopicName(normalizedInterestValue);
+
+                    // Log touchpoint activity
+                    await pool.query(
+                        `INSERT INTO newsletter_subscription_activities 
+                         (subscriber_id, subscription_source, source_page_url, source_page_title, interest_type, interest_value, content_id, content_type, ip_address, user_agent, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            subscriber.id,
+                            source,
+                            source_page_url ? String(source_page_url).slice(0, 1000) : null,
+                            source_page_title ? String(source_page_title).slice(0, 500) : null,
+                            normalizedInterestType,
+                            normalizedInterestValue,
+                            content_id ? parseInt(content_id, 10) : null,
+                            content_type ? String(content_type).slice(0, 50) : null,
+                            ip_address || null,
+                            user_agent || null,
+                            currentIstTime
+                        ]
+                    ).catch(() => {});
+
+                    return {
+                        success: false,
+                        alreadySubscribed: true,
+                        interest_type: normalizedInterestType,
+                        interest_value: normalizedInterestValue,
+                        topic_name: formattedTopic,
+                        message: `This email is already subscribed to ${formattedTopic} updates.`
+                    };
+                }
+            }
+        }
+
+        // 4. Create New Subscriber record if not existing
+        if (!subscriber) {
             const unsubscribeToken = crypto.randomBytes(32).toString('hex');
             const [insertResult] = await pool.query(
                 `INSERT INTO newsletter_subscribers 
@@ -95,14 +209,7 @@ class NewsletterService {
             isNewSubscriber = true;
         }
 
-        // 2. Register Topic / Category / General Interest in newsletter_subscription_interests
-        const normalizedInterestType = ['general', 'technology', 'industry'].includes(interest_type)
-            ? interest_type
-            : 'general';
-        const normalizedInterestValue = (interest_value && String(interest_value).trim())
-            ? String(interest_value).trim().toLowerCase()
-            : (normalizedInterestType === 'general' ? 'all' : 'general');
-
+        // 5. Register Topic / Category / General Interest in newsletter_subscription_interests
         await pool.query(
             `INSERT INTO newsletter_subscription_interests 
              (subscriber_id, interest_type, interest_value, is_active) 
@@ -111,8 +218,8 @@ class NewsletterService {
             [subscriber.id, normalizedInterestType, normalizedInterestValue]
         );
 
-        // If user subscribed with a general source (homepage, footer, or listing page), also ensure 'general' / 'all' interest is recorded
-        if (['homepage', 'footer', 'articles', 'news', 'interviews', 'ebooks', 'blogs', 'whitepapers', 'webinars', 'events', 'case_studies'].includes(source)) {
+        // If user subscribed from a general source, ensure 'general' / 'all' interest is recorded
+        if (normalizedInterestType === 'general' || ['homepage', 'footer', 'general_form'].includes(source)) {
             await pool.query(
                 `INSERT INTO newsletter_subscription_interests 
                  (subscriber_id, interest_type, interest_value, is_active) 
@@ -122,7 +229,7 @@ class NewsletterService {
             );
         }
 
-        // 3. Record Activity History in newsletter_subscription_activities (Preserves multi-page touchpoint history)
+        // 6. Record Activity History in newsletter_subscription_activities (Preserves multi-page touchpoint history)
         await pool.query(
             `INSERT INTO newsletter_subscription_activities 
              (subscriber_id, subscription_source, source_page_url, source_page_title, interest_type, interest_value, content_id, content_type, ip_address, user_agent, created_at)
@@ -142,7 +249,7 @@ class NewsletterService {
             ]
         );
 
-        // 4. Generate & Enqueue Appropriate Dynamic Welcome Email
+        // 7. Generate & Enqueue Appropriate Dynamic Welcome Email
         const unsubscribeUrl = `${frontendUrl}/unsubscribe?token=${subscriber.unsubscribe_token}&email=${encodeURIComponent(normalizedEmail)}`;
         const preferencesUrl = `${frontendUrl}/subscriber-preferences?token=${subscriber.unsubscribe_token}&email=${encodeURIComponent(normalizedEmail)}`;
 
@@ -165,7 +272,7 @@ class NewsletterService {
             jobType = 'welcome_content';
         } else if (normalizedInterestType === 'technology' || normalizedInterestType === 'industry') {
             // Template 2: Technology / Industry Welcome Email
-            const formattedTopic = normalizedInterestValue.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const formattedTopic = formatTopicName(normalizedInterestValue);
             welcomeSubject = `Your Weekly ${formattedTopic} Insights Start Here`;
             welcomeEmailHtml = renderTopicWelcomeEmail({
                 name: greetingName,
@@ -210,16 +317,26 @@ class NewsletterService {
             processEmailQueue().catch(err => console.warn('[NewsletterService] Queue trigger note:', err.message));
         });
 
+        const formattedTopic = formatTopicName(normalizedInterestValue);
+        let successMessage = '';
+        if (wasReactivated) {
+            successMessage = 'Welcome back! Your newsletter subscription has been reactivated.';
+        } else if (normalizedInterestType === 'technology' || normalizedInterestType === 'industry') {
+            successMessage = `Successfully subscribed to ${formattedTopic} updates! We have sent a confirmation email to your inbox.`;
+        } else {
+            successMessage = 'Thank you for subscribing to our newsletter! We have sent a welcome briefing to your email.';
+        }
+
         return {
             success: true,
+            alreadySubscribed: false,
             isNewSubscriber,
             wasReactivated,
-            alreadySubscribed: !isNewSubscriber && !wasReactivated,
-            message: wasReactivated
-                ? 'Welcome back! Your newsletter subscription has been reactivated.'
-                : (isNewSubscriber
-                    ? 'Successfully subscribed to the newsletter! We have sent a welcome briefing to your email.'
-                    : 'You are subscribed to our newsletter! We have re-sent your confirmation email.')
+            newTopicAdded: !isNewSubscriber && !wasReactivated,
+            interest_type: normalizedInterestType,
+            interest_value: normalizedInterestValue,
+            topic_name: formattedTopic,
+            message: successMessage
         };
     }
 

@@ -571,6 +571,13 @@ const ArticleDetail = () => {
         interest_type: content?.category_type || (content?.category_name ? 'technology' : 'general'),
         interest_value: content?.category_slug || content?.category_name || 'all'
       });
+      if (res.data?.alreadySubscribed) {
+        showInfo(
+          'Already Subscribed 📬',
+          res.data?.message || 'This email address is already subscribed to our newsletter.'
+        );
+        return;
+      }
       showSuccess(
         'Subscribed Successfully! 🎉',
         res.data?.message || 'Thank you for subscribing to TGS Tech Info! We have sent a confirmation email to your inbox.'
