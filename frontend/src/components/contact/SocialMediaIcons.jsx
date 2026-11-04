@@ -4,7 +4,7 @@ import { FaTwitter, FaLinkedin, FaGithub, FaFacebook } from 'react-icons/fa';
 
 const socialLinks = [
   { href: 'https://twitter.com/tgstechinfo', icon: <FaTwitter size={24} />, label: 'Twitter' },
-  { href: 'https://linkedin.com/company/tgstechinfo', icon: <FaLinkedin size={24} />, label: 'LinkedIn' },
+  { href: 'https://www.linkedin.com/company/tgs-tech-info/', icon: <FaLinkedin size={24} />, label: 'LinkedIn' },
   { href: 'https://github.com/tgstechinfo', icon: <FaGithub size={24} />, label: 'GitHub' },
   { href: 'https://facebook.com/tgstechinfo', icon: <FaFacebook size={24} />, label: 'Facebook' },
 ];

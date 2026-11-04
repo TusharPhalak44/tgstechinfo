@@ -568,7 +568,7 @@ const DashboardLayout = () => {
     if (isMobile) setMobileOpen(false);
   };
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const handleLogout = async () => { navigate('/'); await logout(); };
 
   /* ─ FORMAL THEME TOKENS ─ */
   const sidebarBg = D ? '#0A1229' : '#FFFFFF';
@@ -580,8 +580,8 @@ const DashboardLayout = () => {
   const iconBtnHover = D ? 'rgba(255, 255, 255, 0.08)' : 'rgba(11, 31, 77, 0.05)';
 
   // const logoDisplay = cmsLogo || mainLogo;
-  const logoDisplay = cmsLogo1 || settings?.cms_logo1 || navbarLogo || settings?.website_navbar_logo || mainLogo || settings?.website_main_logo || '';
-  const iconLogo = cmsLogo1 || settings?.cms_logo1 || cmsLogo2 || settings?.cms_logo2 || settings?.cms_favicon || favicon || settings?.website_favicon || '';
+  const logoDisplay = navbarLogo || cmsLogo1 || settings?.cms_logo1 || settings?.website_navbar_logo || mainLogo || settings?.website_main_logo || '/images/navbar-logo.png';
+  const iconLogo = cmsLogo2 || settings?.cms_logo2 || settings?.cms_favicon || favicon || '/images/auth-logo.png';
   const selectedKey = (location.pathname === '/admin' || location.pathname === '/dashboard' || location.pathname === '/dashboard/') ? '/dashboard' : location.pathname;
 
   /* ─ NOTIFICATION POPUP PANEL ─ */
@@ -747,35 +747,6 @@ const DashboardLayout = () => {
                 ) : (
                   <div className="admin-logo-mark">TGS</div>
                 )
-              ) : (cmsLogo1 && cmsLogo2) ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, maxWidth: 215, overflow: 'hidden' }}>
-                  <img
-                    src={cmsLogo1}
-                    alt="TGS"
-                    style={{
-                      height: logoSizes?.cms_logo1?.height ? Math.min(logoSizes.cms_logo1.height, 42) : 38,
-                      width: 'auto',
-                      maxWidth: 52,
-                      maxHeight: 42,
-                      objectFit: 'contain',
-                      flexShrink: 0,
-                      display: 'block',
-                    }}
-                  />
-                  <img
-                    src={cmsLogo2}
-                    alt="TECHINFO"
-                    style={{
-                      height: logoSizes?.cms_logo2?.height ? Math.min(logoSizes.cms_logo2.height, 36) : 32,
-                      width: 'auto',
-                      maxWidth: 145,
-                      maxHeight: 36,
-                      objectFit: 'contain',
-                      flexShrink: 1,
-                      display: 'block',
-                    }}
-                  />
-                </div>
               ) : logoDisplay ? (
                 <img
                   src={logoDisplay}
@@ -783,9 +754,15 @@ const DashboardLayout = () => {
                   style={{
                     height: logoSizes?.cms_logo1?.height || 42,
                     maxWidth: logoSizes?.cms_logo1?.width || 195,
+                    maxHeight: 44,
                     objectFit: 'contain',
                     objectPosition: 'left center',
                     display: 'block',
+                  }}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== window.location.origin + '/images/navbar-logo.png') {
+                      e.currentTarget.src = '/images/navbar-logo.png';
+                    }
                   }}
                 />
               ) : (

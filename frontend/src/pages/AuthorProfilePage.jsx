@@ -203,7 +203,7 @@ const AuthorProfilePage = () => {
   const avatarGradient = getGradientForName(fullName);
   const initials = getInitials(author.first_name, author.last_name);
   const isAdmin = author.role === 'admin';
-  const linkedinUrl = formatSocialUrl(author.linkedin_url || author.linkedin, 'linkedin') || (isAdmin ? 'https://www.linkedin.com/company/tgstechinfo' : null);
+  const linkedinUrl = formatSocialUrl(author.linkedin_url || author.linkedin, 'linkedin') || (isAdmin ? 'https://www.linkedin.com/company/tgs-tech-info/' : null);
   const twitterUrl = formatSocialUrl(author.twitter_url || author.twitter, 'twitter') || (isAdmin ? 'https://x.com/tgstechinfo' : null);
   const hasSocials = Boolean(linkedinUrl || twitterUrl);
 

@@ -134,6 +134,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    navigate('/');
     try {
       await api.post('/api/auth/logout');
     } catch (error) {

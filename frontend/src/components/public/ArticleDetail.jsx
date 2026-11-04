@@ -1632,12 +1632,12 @@ const ArticleDetail = () => {
                     </div>
 
                     {/* Author Social Media Links */}
-                    {(content.author_linkedin || content.author_twitter) && (
+                    {(content.author_linkedin || content.author_twitter || content.author_role === 'admin') && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-                        {content.author_linkedin && (
+                        {(content.author_linkedin || content.author_role === 'admin') && (
                           <Tooltip title="Connect on LinkedIn">
                             <a
-                              href={content.author_linkedin.startsWith('http') ? content.author_linkedin : `https://${content.author_linkedin}`}
+                              href={content.author_linkedin ? (content.author_linkedin.startsWith('http') ? content.author_linkedin : `https://${content.author_linkedin}`) : 'https://www.linkedin.com/company/tgs-tech-info/'}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}

@@ -193,7 +193,7 @@ const Footer = ({ simplified = false }) => {
               Your gateway to technology insights, news, and resources for IT and B2B professionals worldwide.
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
-              <SocialBtn href="https://www.linkedin.com/company/taraj-global/" icon={<LinkedinOutlined />} label="LinkedIn" color="#0077b5" />
+              <SocialBtn href="https://www.linkedin.com/company/tgs-tech-info/" icon={<LinkedinOutlined />} label="LinkedIn" color="#0077b5" />
             </div>
           </div>
 

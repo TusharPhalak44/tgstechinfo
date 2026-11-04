@@ -606,7 +606,7 @@ const Navbar = () => {
       ]
     ),
     { type: 'divider' },
-    { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', onClick: logout, danger: true },
+    { key: 'logout', icon: <LogoutOutlined />, label: 'Logout', onClick: async () => { navigate('/'); await logout(); }, danger: true },
   ];
 
   return (
@@ -822,30 +822,23 @@ const Navbar = () => {
             {/* Left: Brand Logo (FlexShrink 0 to never shrink or get overlapped) */}
             <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
               <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
-                {navbarLogo ? (
-                  <img
-                    src={navbarLogo}
-                    alt="TGS TechInfo"
-                    className="navbar-logo-img"
-                    style={{
-                      height: isMobile ? 36 : (logoSizes.navbar.height || 48),
-                      maxHeight: isMobile ? 38 : 52,
-                      maxWidth: isMobile ? 125 : 200,
-                      objectFit: 'contain',
-                      display: 'block'
-                    }}
-                  />
-                ) : (
-                  <span style={{
-                    fontSize: isMobile ? 18 : 22,
-                    fontWeight: 900,
-                    color: darkMode ? '#FFFFFF' : '#0B1F4D',
-                    letterSpacing: '-0.5px',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    TGS<span style={{ color: '#F7941D' }}>Tech</span><span style={{ color: '#0AAEEF' }}>Info</span>
-                  </span>
-                )}
+                <img
+                  src={navbarLogo || '/images/navbar-logo.png'}
+                  alt="TGS TechInfo"
+                  className="navbar-logo-img"
+                  style={{
+                    height: isMobile ? 36 : (logoSizes?.navbar?.height || 48),
+                    maxHeight: isMobile ? 38 : 52,
+                    maxWidth: isMobile ? 125 : 200,
+                    objectFit: 'contain',
+                    display: 'block'
+                  }}
+                  onError={(e) => {
+                    if (e.currentTarget.src !== window.location.origin + '/images/navbar-logo.png') {
+                      e.currentTarget.src = '/images/navbar-logo.png';
+                    }
+                  }}
+                />
               </Link>
             </div>
 
@@ -1371,8 +1364,9 @@ const Navbar = () => {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  logout();
+                onClick={async () => {
+                  navigate('/');
+                  await logout();
                   setMobileOpen(false);
                 }}
                 style={{
