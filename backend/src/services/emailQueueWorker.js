@@ -204,7 +204,7 @@ async function processEmailQueue() {
                     job.recipient_email,
                     job.subject,
                     jobHtml,
-                    { isBulk: true, attachments }
+                    { isBulk: true, attachments, job_type: job.job_type, utm_campaign: job.job_type || 'newsletter_alert' }
                 );
 
                 if (emailResult && emailResult.success) {

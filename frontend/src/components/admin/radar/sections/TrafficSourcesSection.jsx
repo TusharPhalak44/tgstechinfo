@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
+import { formatLocalDate } from '../../../../lib/utils';
 import {
   SearchOutlined,
   LinkOutlined,
@@ -160,8 +161,8 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
       if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
       if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
 
-      const s = startDate.toISOString().split('T')[0];
-      const e = endDate.toISOString().split('T')[0];
+      const s = formatLocalDate(startDate);
+      const e = formatLocalDate(endDate);
       params.append('start_date', s);
       params.append('end_date', e);
     }
@@ -197,16 +198,74 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
     if (sessionsToUse && sessionsToUse.length > 0) {
       sessionsToUse.forEach(s => {
         const ref = String(s.referrer || '').toLowerCase();
-        if (!ref || ref === 'null' || ref === 'direct' || ref.includes('localhost') || ref.includes('127.0.0.1')) {
-          direct++;
-        } else if (ref.includes('google') || ref.includes('bing') || ref.includes('duckduckgo') || ref.includes('yahoo') || ref.includes('search')) {
-          organic++;
-        } else if (ref.includes('facebook') || ref.includes('twitter') || ref.includes('x.com') || ref.includes('linkedin') || ref.includes('instagram') || ref.includes('reddit')) {
-          social++;
-        } else if (ref.includes('mail') || ref.includes('newsletter') || ref.includes('campaign')) {
+        const landing = String(s.landing_page || '').toLowerCase();
+
+        // 1. Email Campaign: UTM parameters in landing URL OR webmail referrers
+        const isEmail = 
+          landing.includes('utm_medium=email') ||
+          landing.includes('utm_source=email') ||
+          landing.includes('utm_source=newsletter') ||
+          landing.includes('utm_medium=newsletter') ||
+          landing.includes('utm_medium=campaign') ||
+          landing.includes('utm_medium=email_notification') ||
+          landing.includes('subscriber-preferences') ||
+          landing.includes('unsubscribe') ||
+          (landing.includes('utm_campaign=') && (landing.includes('email') || landing.includes('newsletter') || landing.includes('alert') || landing.includes('digest') || landing.includes('weekly'))) ||
+          ref.includes('mail.google.com') ||
+          ref.includes('mail.yahoo.com') ||
+          ref.includes('outlook.live.com') ||
+          ref.includes('outlook.office.com') ||
+          ref.includes('webmail') ||
+          ref.includes('newsletter');
+
+        // 2. Paid Search: UTM cpc/paid/ads OR ad click referrers
+        const isPaid = 
+          landing.includes('utm_medium=cpc') ||
+          landing.includes('utm_medium=paid') ||
+          landing.includes('utm_source=cpc') ||
+          landing.includes('gclid=') ||
+          landing.includes('fbclid=') ||
+          ref.includes('ads') ||
+          ref.includes('cpc');
+
+        // 3. Social Media: UTM social OR social network referrers
+        const isSocial = 
+          landing.includes('utm_medium=social') ||
+          landing.includes('utm_source=linkedin') ||
+          landing.includes('utm_source=twitter') ||
+          landing.includes('utm_source=facebook') ||
+          landing.includes('utm_source=instagram') ||
+          ref.includes('facebook') ||
+          ref.includes('twitter') ||
+          ref.includes('x.com') ||
+          ref.includes('t.co') ||
+          ref.includes('linkedin') ||
+          ref.includes('lnkd.in') ||
+          ref.includes('instagram') ||
+          ref.includes('reddit') ||
+          ref.includes('pinterest') ||
+          ref.includes('youtube');
+
+        // 4. Organic Search: Search engines
+        const isOrganic = 
+          ref.includes('google') ||
+          ref.includes('bing') ||
+          ref.includes('duckduckgo') ||
+          ref.includes('yahoo') ||
+          ref.includes('search') ||
+          ref.includes('baidu') ||
+          ref.includes('ecosia');
+
+        if (isEmail) {
           email++;
-        } else if (ref.includes('ads') || ref.includes('cpc') || ref.includes('utm_source=cpc')) {
+        } else if (isPaid) {
           paid++;
+        } else if (isSocial) {
+          social++;
+        } else if (isOrganic) {
+          organic++;
+        } else if (!ref || ref === 'null' || ref === 'direct' || ref.includes('localhost') || ref.includes('127.0.0.1')) {
+          direct++;
         } else {
           referral++;
         }
@@ -420,11 +479,13 @@ const TrafficSourcesSection = ({ darkMode, totalSessions = 0, recentSessions = [
             >
               Channel Overview
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>
               {[
-                { label: 'Referral Domains', value: computedSources.find(s => s.key === 'referral')?.value || 0, unit: 'sessions', color: '#8B5CF6' },
-                { label: 'Social Referrals', value: computedSources.find(s => s.key === 'social')?.value || 0, unit: 'sessions', color: '#F59E0B' },
                 { label: 'Direct Entrances', value: computedSources.find(s => s.key === 'direct')?.value || 0, unit: 'sessions', color: '#10B981' },
+                { label: 'Organic Search', value: computedSources.find(s => s.key === 'organic')?.value || 0, unit: 'sessions', color: '#0AAEEF' },
+                { label: 'Email Campaigns', value: computedSources.find(s => s.key === 'email')?.value || 0, unit: 'sessions', color: '#EF4444' },
+                { label: 'Social Referrals', value: computedSources.find(s => s.key === 'social')?.value || 0, unit: 'sessions', color: '#F59E0B' },
+                { label: 'Referral Domains', value: computedSources.find(s => s.key === 'referral')?.value || 0, unit: 'sessions', color: '#8B5CF6' },
               ].map(m => (
                 <div key={m.label} style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: 20, fontWeight: 800, color: m.color, fontFamily: 'monospace' }}>

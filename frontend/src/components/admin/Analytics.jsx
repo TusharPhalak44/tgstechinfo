@@ -6,6 +6,7 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import { useTheme } from '../../context/ThemeContext';
+import { formatLocalDate } from '../../lib/utils';
 import './radar/RadarStyles.css';
 
 // ── Tab nav ──────────────────────────────────────────────────────────────────
@@ -92,8 +93,8 @@ const Analytics = () => {
         if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
         if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
 
-        const s = startDate.toISOString().split('T')[0];
-        const e = endDate.toISOString().split('T')[0];
+        const s = formatLocalDate(startDate);
+        const e = formatLocalDate(endDate);
         dateParams = `?start_date=${s}&end_date=${e}`;
         separator = '&';
       }

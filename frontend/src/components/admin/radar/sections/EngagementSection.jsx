@@ -1,5 +1,6 @@
 import React, { useMemo, useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
+import { formatLocalDate } from '../../../../lib/utils';
 import {
   InteractionOutlined,
   ReadOutlined,
@@ -78,8 +79,8 @@ const EngagementSection = ({
     if (timeRange === '30d') start.setDate(start.getDate() - 30);
     if (timeRange === '90d') start.setDate(start.getDate() - 90);
     if (timeRange === 'all') start.setFullYear(2000);
-    const s = start.toISOString().split('T')[0];
-    const e = end.toISOString().split('T')[0];
+    const s = formatLocalDate(start);
+    const e = formatLocalDate(end);
     return `start_date=${s}&end_date=${e}`;
   }, [timeRange]);
 

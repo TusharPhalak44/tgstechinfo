@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { formatLocalDate } from '../../../../lib/utils';
 import {
   EyeOutlined,
   LinkOutlined,
@@ -294,8 +295,8 @@ const OverviewSection = ({
         if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
         if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
 
-        const s = startDate.toISOString().split('T')[0];
-        const e = endDate.toISOString().split('T')[0];
+        const s = formatLocalDate(startDate);
+        const e = formatLocalDate(endDate);
         dateParams = `?start_date=${s}&end_date=${e}`;
       }
 

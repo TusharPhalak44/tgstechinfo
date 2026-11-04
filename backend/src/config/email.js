@@ -343,6 +343,71 @@ const buildLogoHtml = (customUrl = null) => {
 </div>`;
 };
 
+/**
+ * Automatically appends UTM parameters to outgoing email links pointing to the website.
+ * Allows live analytics to accurately track and attribute sessions to "Email Campaign".
+ */
+function attachUtmTrackingToEmailLinks(html, options = {}) {
+    if (typeof html !== 'string') return html;
+
+    const utmSource = options.utm_source || 'email';
+    const utmMedium = options.utm_medium || (options.isTransactional ? 'email_notification' : 'newsletter');
+
+    let utmCampaign = options.utm_campaign || options.campaignName || options.campaign || options.templateType || options.job_type;
+    if (!utmCampaign && options.subject) {
+        utmCampaign = options.subject
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .substring(0, 50);
+    }
+    if (!utmCampaign) utmCampaign = 'general_email';
+
+    return html.replace(/<a\b([^>]*?)\bhref=(["'])(.*?)\2([^>]*?)>/gi, (match, beforeHref, quote, rawHref, afterHref) => {
+        const trimmed = (rawHref || '').trim();
+
+        // 1. Skip non-http/special schemes
+        if (!trimmed || /^(mailto:|tel:|#|javascript:|data:|sms:)/i.test(trimmed)) {
+            return match;
+        }
+
+        // 2. Unsubscribe & Preferences links: tag with email parameters so clicks are counted in Live Analytics
+        if (/unsubscribe|subscriber-preferences/i.test(trimmed)) {
+            if (/utm_source=/i.test(trimmed)) return match;
+            const sep = trimmed.includes('?') ? '&' : '?';
+            const actionType = /unsubscribe/i.test(trimmed) ? 'unsubscribe' : 'preferences';
+            const tagged = `${trimmed}${sep}utm_source=email&utm_medium=email_footer&utm_campaign=${encodeURIComponent(actionType)}`;
+            return `<a${beforeHref}href=${quote}${tagged}${quote}${afterHref}>`;
+        }
+
+        // 3. Skip static assets / images (.jpg, .png, .gif, .svg, .ico, .webp, .css, .js)
+        if (/\.(jpg|jpeg|png|gif|svg|ico|webp|css|js)$/i.test(trimmed.split('?')[0])) {
+            return match;
+        }
+
+        // 4. Only tag internal/website links (domain matches tgstechinfo.com, localhost, or relative path)
+        const isInternal = 
+            trimmed.startsWith('/') ||
+            trimmed.toLowerCase().includes('tgstechinfo.com') ||
+            trimmed.toLowerCase().includes('localhost');
+
+        if (!isInternal) {
+            return match;
+        }
+
+        // 5. If already has utm_source, do not double-append
+        if (/utm_source=/i.test(trimmed)) {
+            return match;
+        }
+
+        // Append UTM tags cleanly
+        const separator = trimmed.includes('?') ? '&' : '?';
+        const taggedHref = `${trimmed}${separator}utm_source=${encodeURIComponent(utmSource)}&utm_medium=${encodeURIComponent(utmMedium)}&utm_campaign=${encodeURIComponent(utmCampaign)}`;
+
+        return `<a${beforeHref}href=${quote}${taggedHref}${quote}${afterHref}>`;
+    });
+}
+
 const sendEmail = async (to, subject, html, options = {}) => {
     // Check rate limit (allow up to 100 per hour for testing/admin)
     if (isRateLimited(to, 100)) {
@@ -464,6 +529,11 @@ const sendEmail = async (to, subject, html, options = {}) => {
         } else {
             finalHtml += unsubscribeFooter;
         }
+    }
+
+    // Auto-attach UTM tracking to all internal website links so visits are counted as "Email Campaign" in Live Analytics
+    if (typeof finalHtml === 'string') {
+        finalHtml = attachUtmTrackingToEmailLinks(finalHtml, { subject, ...options });
     }
 
     // Generate plain text fallback by stripping HTML tags
@@ -974,5 +1044,6 @@ module.exports = {
     convertLogoToPublicUrl,
     getPublicUrl,
     getBackendUrl,
+    attachUtmTrackingToEmailLinks,
     escapeHtml
 };

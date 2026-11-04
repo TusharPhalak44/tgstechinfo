@@ -25,7 +25,7 @@ const BRAND = {
 function getEmailHeader(frontendUrl, logoUrl, subheader = 'Executive Tech Intelligence') {
     return `
     <div style="background: linear-gradient(135deg, ${BRAND.navy} 0%, #1a2756 100%); padding: 32px 24px; text-align: center;">
-        <a href="${frontendUrl}" target="_blank" style="text-decoration: none; display: inline-block;">
+        <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=welcome_header_logo" target="_blank" style="text-decoration: none; display: inline-block;">
             <img src="${logoUrl}" alt="TGS Tech Info" width="180" style="max-width: 180px; height: auto; margin: 0 auto 12px auto; display: block; border-radius: 6px; border: none; outline: none;" border="0" />
         </a>
         <p style="margin: 0; color: #93c5fd; font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;">
@@ -43,7 +43,7 @@ function getEmailFooter(frontendUrl, unsubscribeUrl, preferencesUrl, isContentAl
         </p>
         <p style="margin: 0 0 12px 0;">
             You are receiving this email because you subscribed to our tech intelligence dispatches on 
-            <a href="${frontendUrl}" style="color: #0284c7; text-decoration: none;">tgstechinfo.com</a>.
+            <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=welcome_footer_link" style="color: #0284c7; text-decoration: none;">tgstechinfo.com</a>.
         </p>
         <div style="margin: 14px 0 16px 0; display: inline-flex; gap: 16px; flex-wrap: wrap; justify-content: center;">
             <a href="${preferencesUrl}" style="color: ${BRAND.orange}; font-weight: 600; text-decoration: underline; margin: 0 8px;">
@@ -122,7 +122,7 @@ function renderGeneralWelcomeEmail({ name, frontendUrl, unsubscribeUrl, preferen
             </p>
 
             <div style="text-align: center; margin: 30px 0 24px 0;">
-                <a href="${frontendUrl}" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.35);">
+                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=welcome_subscriber" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.35);">
                     Explore Our Latest Publications →
                 </a>
             </div>
@@ -186,7 +186,7 @@ function renderTopicWelcomeEmail({ name, topicType, topicName, frontendUrl, unsu
             </div>
 
             <div style="text-align: center; margin: 30px 0 24px 0;">
-                <a href="${frontendUrl}" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.navy} 0%, #1e3a8a 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.25);">
+                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=topic_welcome_${encodeURIComponent(safeTopic.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.navy} 0%, #1e3a8a 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.25);">
                     Explore ${safeTopic} Hub →
                 </a>
             </div>
@@ -257,7 +257,7 @@ function renderContentSpecificWelcomeEmail({ name, contentTitle, contentType, ca
             </ul>
 
             <div style="text-align: center; margin: 28px 0;">
-                <a href="${frontendUrl}" target="_blank" style="display: inline-block; padding: 13px 32px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.3);">
+                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=content_subscriber_${encodeURIComponent(safeCategory.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}" target="_blank" style="display: inline-block; padding: 13px 32px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.3);">
                     Explore More ${safeCategory} Research →
                 </a>
             </div>
@@ -323,6 +323,8 @@ function renderContentNotificationEmail({
     if (typeSlug === 'event' || typeSlug === 'events' || content.content_type_id === 5) {
         contentUrl = `${frontendUrl}/events/${slug}`;
     }
+    const cleanCampaignSlug = (content.slug || 'content_alert').toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 45);
+    contentUrl += `?utm_source=email&utm_medium=newsletter_alert&utm_campaign=${cleanCampaignSlug}`;
 
     // Banner image with clean, neutral fallback styling (never solid dark navy background)
     let bannerHtml = '';

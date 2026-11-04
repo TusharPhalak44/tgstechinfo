@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { formatLocalDate } from '../../../../lib/utils';
 import {
   AimOutlined,
   ThunderboltOutlined,
@@ -76,8 +77,8 @@ const ConversionsSection = ({
       if (timeRange === '30d') startDate.setDate(startDate.getDate() - 30);
       if (timeRange === '90d') startDate.setDate(startDate.getDate() - 90);
 
-      const s = startDate.toISOString().split('T')[0];
-      const e = endDate.toISOString().split('T')[0];
+      const s = formatLocalDate(startDate);
+      const e = formatLocalDate(endDate);
       dateParams = `?start_date=${s}&end_date=${e}`;
     }
     // For 'all' time range, don't send date parameters - let backend use default (90 days)
