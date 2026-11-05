@@ -83,6 +83,28 @@
   overflow-x: hidden;
   position: relative;
   transition: background 0.3s ease, color 0.3s ease;
+  padding: clamp(24px, 2.5vw, 36px) clamp(20px, 3vw, 44px) 64px clamp(20px, 3vw, 44px);
+  box-sizing: border-box;
+}
+
+.audience-intel-root.aud-proposal-view {
+  padding-top: 14px;
+}
+
+@media (max-width: 768px) {
+  .audience-intel-root {
+    padding: 16px 14px 40px 14px;
+  }
+
+  .audience-intel-root.aud-proposal-view {
+    padding-top: 10px;
+  }
+}
+
+.aud-main-container {
+  max-width: 1560px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* Background grid effect */
@@ -186,7 +208,7 @@
   top: 24px;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 20px 20px 24px 20px;
 }
 
 @media (max-width: 1080px) {

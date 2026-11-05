@@ -132,18 +132,18 @@ export default function SharedAudienceView() {
   const targetLevels = (filters.job_level || []).map(getLevelName);
 
   return (
-    <div className="audience-intel-root">
-      <div style={{ maxWidth: '1520px', margin: '0 auto', padding: '28px 24px 60px 24px' }}>
+    <div className="audience-intel-root aud-proposal-view">
+      <div className="aud-main-container" style={{ maxWidth: '1520px', margin: '0 auto', paddingBottom: '48px' }}>
 
         {/* ── Top Navigation & Brand Header Bar ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, paddingBottom: 16, borderBottom: '1px solid var(--aud-card-border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--aud-card-border)', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             {/* CMS Main Website Logo */}
             {cmsLogoUrl ? (
               <img
                 src={cmsLogoUrl}
                 alt={brandName}
-                style={{ height: 80, maxWidth: 260, objectFit: 'contain', display: 'block' }}
+                style={{ height: 74, maxWidth: 260, objectFit: 'contain', display: 'block' }}
               />
             ) : (
               <span style={{ fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.12em', color: '#0AAEEF', textTransform: 'uppercase' }}>
@@ -151,7 +151,7 @@ export default function SharedAudienceView() {
               </span>
             )}
 
-            <Tag color="cyan" style={{ borderRadius: 10, fontWeight: 700, fontSize: '0.72rem', padding: '2px 10px' }}>
+            <Tag color="cyan" style={{ borderRadius: 10, fontWeight: 700, fontSize: '0.72rem', padding: '2px 10px', margin: 0 }}>
               CLIENT PROPOSAL DECK
             </Tag>
 
@@ -194,7 +194,7 @@ export default function SharedAudienceView() {
         </div>
 
         {/* ── Client Proposal Cover Banner with CMS Logo ── */}
-        <div className="aud-glass-panel" style={{ padding: '32px 38px', marginBottom: 24, position: 'relative', overflow: 'hidden' }}>
+        <div className="aud-glass-panel" style={{ padding: '24px 30px', marginBottom: 20, position: 'relative', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>

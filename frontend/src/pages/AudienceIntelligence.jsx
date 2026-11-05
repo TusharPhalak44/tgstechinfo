@@ -18,6 +18,8 @@ import {
 } from '@ant-design/icons';
 import { audienceService } from '../services/audienceService';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { useSiteSettings } from '../context/SiteSettingsContext';
 import AudienceGlobe from '../components/audience/AudienceGlobe';
 import AnimatedAudienceCounter from '../components/audience/AnimatedAudienceCounter';
 import AudienceFilterPanel from '../components/audience/AudienceFilterPanel';
@@ -28,6 +30,9 @@ import '../components/audience/AudienceStyles.css';
 
 export default function AudienceIntelligence() {
   const { darkMode, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  const { mainLogo, navbarLogo, settings: cmsSettings } = useSiteSettings() || {};
+  const isAdmin = user?.role === 'admin';
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Active View Tab: 'globe' | 'charts' | 'insights'
@@ -217,7 +222,8 @@ export default function AudienceIntelligence() {
   };
 
   // Header Title & Brand from database configuration
-  const brandName = metadata.settings?.brand_name || 'TGS TECH INFO';
+  const brandName = metadata.settings?.brand_name || cmsSettings?.siteTitle || 'TGS TECH INFO';
+  const cmsLogoUrl = mainLogo || navbarLogo || cmsSettings?.website_main_logo || cmsSettings?.website_navbar_logo || cmsSettings?.website_logo;
   const moduleTitle = metadata.settings?.module_title || 'B2B Audience Intelligence';
   const lastUpdated = metadata.settings?.last_updated_display || 'August 2026';
 
@@ -242,12 +248,41 @@ export default function AudienceIntelligence() {
 
   return (
     <div className="audience-intel-root">
-      <div className="aud-main-container" style={{ maxWidth: '1520px', margin: '0 auto' }}>
+      <div className="aud-main-container">
         
         {/* ── Top Header Navigation Bar ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, paddingBottom: 16, borderBottom: '1px solid var(--aud-card-border)', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <Link to="/audience" style={{ textDecoration: 'none' }}>
+        <div
+          className="aud-glass-panel"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 24,
+            padding: '12px 20px',
+            borderRadius: 14,
+            flexWrap: 'wrap',
+            gap: 12
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            {/* CMS Brand Logo */}
+            {cmsLogoUrl ? (
+              <Link to={isAdmin ? "/dashboard/audience" : "/"} style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+                <img
+                  src={cmsLogoUrl}
+                  alt={brandName}
+                  style={{ height: 60, maxWidth: 220, objectFit: 'contain', display: 'block' }}
+                />
+              </Link>
+            ) : (
+              <span style={{ fontSize: '0.95rem', fontWeight: 800, letterSpacing: '0.12em', color: '#0AAEEF', textTransform: 'uppercase' }}>
+                {brandName}
+              </span>
+            )}
+
+            <div style={{ height: 28, width: 1, background: 'var(--aud-card-border)', margin: '0 2px' }} />
+
+            <Link to={isAdmin ? "/dashboard/audience" : "/audience"} style={{ textDecoration: 'none' }}>
               <Button
                 icon={<ArrowLeftOutlined />}
                 style={{
@@ -262,15 +297,11 @@ export default function AudienceIntelligence() {
                   gap: 6
                 }}
               >
-                Back to Overview
+                {isAdmin ? 'Back to Admin Hub' : 'Back to Overview'}
               </Button>
             </Link>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 800, letterSpacing: '0.12em', color: '#0AAEEF', textTransform: 'uppercase' }}>
-                {brandName}
-              </span>
-              <span style={{ color: 'var(--aud-text-subtle)' }}>•</span>
               <span style={{ fontSize: '0.8125rem', color: 'var(--aud-text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <SafetyOutlined style={{ color: '#10B981' }} /> Verified Enterprise ICP Engine
               </span>
@@ -301,11 +332,14 @@ export default function AudienceIntelligence() {
         </div>
 
         {/* ── Page Title & Hero Subtitle ── */}
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 3.2vw, 2.35rem)', fontWeight: 800, color: 'var(--aud-text-title)', letterSpacing: '-0.02em' }}>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(10, 174, 239, 0.1)', border: '1px solid rgba(10, 174, 239, 0.25)', color: '#0AAEEF', fontSize: '0.75rem', fontWeight: 700, marginBottom: 10, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            <CompassOutlined /> Live ICP Intelligence Studio
+          </div>
+          <h1 style={{ margin: 0, fontSize: 'clamp(1.75rem, 3.2vw, 2.35rem)', fontWeight: 800, color: 'var(--aud-text-title)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             {moduleTitle}
           </h1>
-          <p style={{ margin: '6px 0 0 0', color: 'var(--aud-text-muted)', fontSize: '0.9375rem' }}>
+          <p style={{ margin: '8px 0 0 0', color: 'var(--aud-text-muted)', fontSize: '0.9375rem', maxWidth: 840, lineHeight: 1.6 }}>
             Interactive demographic discovery & precision ICP audience sizing for global enterprise campaigns.
           </p>
         </div>

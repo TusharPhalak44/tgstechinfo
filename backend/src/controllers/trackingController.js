@@ -247,6 +247,7 @@ exports.startSession = async (req, res) => {
         const sessionData = {
             consent_uuid: validConsentUuid,
             user_id,
+            subscriber_id: req.body.subscriber_id ? parseInt(req.body.subscriber_id, 10) : null,
             country: resolvedCountry || 'India',
             ...deviceInfo,
             screen_resolution,

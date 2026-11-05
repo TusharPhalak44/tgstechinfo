@@ -6,6 +6,7 @@ class VisitorSession {
         const {
             consent_uuid,
             user_id,
+            subscriber_id,
             country,
             browser,
             operating_system,
@@ -18,21 +19,72 @@ class VisitorSession {
             landing_page
         } = sessionData;
 
+        // Auto-resolve subscriber_id from sid, subscriber_id, email, or token in landing_page
+        let finalSubscriberId = subscriber_id ? parseInt(subscriber_id, 10) : null;
+        if (!finalSubscriberId && landing_page) {
+            const sidMatch = landing_page.match(/[?&](?:sid|subscriber_id)=([0-9]+)/i);
+            if (sidMatch) {
+                finalSubscriberId = parseInt(sidMatch[1], 10);
+            } else {
+                const emailMatch = landing_page.match(/[?&]email=([^&#]+)/i);
+                if (emailMatch) {
+                    try {
+                        const decodedEmail = decodeURIComponent(emailMatch[1]);
+                        const [subRows] = await pool.query('SELECT id FROM newsletter_subscribers WHERE email = ? LIMIT 1', [decodedEmail]);
+                        if (subRows && subRows[0]) finalSubscriberId = subRows[0].id;
+                    } catch (e) {
+                        // Ignore query error
+                    }
+                }
+                if (!finalSubscriberId) {
+                    const tokenMatch = landing_page.match(/[?&]token=([a-f0-9]{32,64})/i);
+                    if (tokenMatch) {
+                        try {
+                            const [subRows] = await pool.query('SELECT id FROM newsletter_subscribers WHERE unsubscribe_token = ? LIMIT 1', [tokenMatch[1]]);
+                            if (subRows && subRows[0]) finalSubscriberId = subRows[0].id;
+                        } catch (e) {
+                            // Ignore query error
+                        }
+                    }
+                }
+            }
+        }
+
         const session_uuid = uuidv4();
 
         const query = `
             INSERT INTO visitor_sessions (
-                session_uuid, consent_uuid, user_id, country, browser, operating_system,
+                session_uuid, consent_uuid, user_id, subscriber_id, country, browser, operating_system,
                 device_type, screen_resolution, language, timezone, ip_address, referrer, landing_page
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
         const values = [
-            session_uuid, consent_uuid || null, user_id, country, browser, operating_system,
+            session_uuid, consent_uuid || null, user_id, finalSubscriberId, country, browser, operating_system,
             device_type, screen_resolution, language, timezone, ip_address, referrer, landing_page
         ];
 
         await pool.query(query, values);
+
+        // Record in email_campaign_clicks table for audit and engagement history
+        if (finalSubscriberId || (landing_page && /utm_source=email|utm_medium=email|utm_medium=newsletter/i.test(landing_page))) {
+            try {
+                let subEmail = null;
+                if (finalSubscriberId) {
+                    const [sub] = await pool.query('SELECT email FROM newsletter_subscribers WHERE id = ?', [finalSubscriberId]);
+                    subEmail = sub[0]?.email || null;
+                }
+                const campMatch = landing_page ? landing_page.match(/[?&]utm_campaign=([^&#]+)/i) : null;
+                const campName = campMatch ? decodeURIComponent(campMatch[1]) : (landing_page.includes('subscriber-preferences') ? 'preferences' : (landing_page.includes('unsubscribe') ? 'unsubscribe' : 'general_email'));
+                await pool.query(
+                    'INSERT INTO email_campaign_clicks (subscriber_id, session_uuid, recipient_email, campaign_name, target_url, ip_address, user_agent, device_type, country) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [finalSubscriberId, session_uuid, subEmail, campName, landing_page, ip_address, browser, device_type, country]
+                );
+            } catch (err) {
+                console.warn('[VisitorSession] Click record notice:', err.message);
+            }
+        }
+
         return await VisitorSession.findByUuid(session_uuid);
     }
 
@@ -67,15 +119,10 @@ class VisitorSession {
         if (updates.length === 0) return null;
 
         values.push(session_uuid);
-        await pool.query(`UPDATE visitor_sessions SET ${updates.join(', ')} WHERE session_uuid = ?`, values);
-        return await VisitorSession.findByUuid(session_uuid);
-    }
+        const query = `UPDATE visitor_sessions SET ${updates.join(', ')} WHERE session_uuid = ?`;
 
-    static async incrementPageCount(session_uuid) {
-        console.log('Incrementing page count for session:', session_uuid);
-        const [result] = await pool.query('UPDATE visitor_sessions SET total_pages_visited = total_pages_visited + 1 WHERE session_uuid = ?', [session_uuid]);
-        console.log('Increment result:', result.affectedRows);
-        return result;
+        await pool.query(query, values);
+        return await VisitorSession.findByUuid(session_uuid);
     }
 
     static async getAnalytics(filters = {}) {

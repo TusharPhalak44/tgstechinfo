@@ -449,6 +449,7 @@ const Navbar = () => {
   const { navbarLogo, logoSizes } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
+  const isPreviewPage = location.pathname.includes('-preview') || location.pathname.includes('/preview');
 
   // Mobile strictly < 768px. All desktop & laptop views (>= 768px) share the exact full desktop navbar.
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -842,33 +843,37 @@ const Navbar = () => {
               </Link>
             </div>
 
-            {/* Center: Full Desktop Navigation Links (Flex 1 to occupy space between logo & actions without overlapping) */}
+            {/* Center: Full Desktop Navigation Links (Hidden on article preview page) */}
             {!isMobile && (
-              <nav
-                className="desktop-nav desktop-nav-container"
-                aria-label="Main Navigation"
-                itemScope
-                itemType="https://schema.org/SiteNavigationElement"
-                role="navigation"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flex: 1,
-                  minWidth: 0,
-                  margin: '0 4px',
-                  overflow: 'visible'
-                }}
-              >
-                {navItems.map(item => (
-                  <NavLink
-                    key={item.key}
-                    item={item}
-                    active={location.pathname === item.to}
-                    darkMode={darkMode}
-                  />
-                ))}
-              </nav>
+              !isPreviewPage ? (
+                <nav
+                  className="desktop-nav desktop-nav-container"
+                  aria-label="Main Navigation"
+                  itemScope
+                  itemType="https://schema.org/SiteNavigationElement"
+                  role="navigation"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flex: 1,
+                    minWidth: 0,
+                    margin: '0 4px',
+                    overflow: 'visible'
+                  }}
+                >
+                  {navItems.map(item => (
+                    <NavLink
+                      key={item.key}
+                      item={item}
+                      active={location.pathname === item.to}
+                      darkMode={darkMode}
+                    />
+                  ))}
+                </nav>
+              ) : (
+                <div style={{ flex: 1 }} />
+              )
             )}
 
             {/* Right: Action Controls (FlexShrink 0 to never get crushed or overlapped) */}
@@ -1287,7 +1292,7 @@ const Navbar = () => {
           </div>
 
           {/* Navigation Links with smooth Accordion */}
-          {navItems.map(item => (
+          {!isPreviewPage && navItems.map(item => (
             <MobileMenuItem
               key={item.key}
               item={item}

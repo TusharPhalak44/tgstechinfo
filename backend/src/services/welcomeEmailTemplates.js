@@ -64,7 +64,8 @@ function getEmailFooter(frontendUrl, unsubscribeUrl, preferencesUrl, isContentAl
  * TEMPLATE 1: General Welcome Email
  * Used for Homepage, Footer, and All 9 Content Listing Pages
  */
-function renderGeneralWelcomeEmail({ name, frontendUrl, unsubscribeUrl, preferencesUrl }) {
+function renderGeneralWelcomeEmail({ name, frontendUrl, unsubscribeUrl, preferencesUrl, subscriberId }) {
+    const sidParam = subscriberId ? `&sid=${subscriberId}` : '';
     const logoUrl = `${frontendUrl}/logo.jpg`;
     const safeName = escapeHtml(name || 'Tech Leader');
 
@@ -122,7 +123,7 @@ function renderGeneralWelcomeEmail({ name, frontendUrl, unsubscribeUrl, preferen
             </p>
 
             <div style="text-align: center; margin: 30px 0 24px 0;">
-                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=welcome_subscriber" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.35);">
+                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=welcome_subscriber${sidParam}" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.35);">
                     Explore Our Latest Publications →
                 </a>
             </div>
@@ -143,7 +144,8 @@ function renderGeneralWelcomeEmail({ name, frontendUrl, unsubscribeUrl, preferen
  * TEMPLATE 2: Technology / Industry Welcome Email
  * Used for Technology-specific and Industry-specific pages
  */
-function renderTopicWelcomeEmail({ name, topicType, topicName, frontendUrl, unsubscribeUrl, preferencesUrl }) {
+function renderTopicWelcomeEmail({ name, topicType, topicName, frontendUrl, unsubscribeUrl, preferencesUrl, subscriberId }) {
+    const sidParam = subscriberId ? `&sid=${subscriberId}` : '';
     const logoUrl = `${frontendUrl}/logo.jpg`;
     const safeName = escapeHtml(name || 'Tech Leader');
     const safeTopic = escapeHtml(topicName || 'Enterprise Technology');
@@ -186,7 +188,7 @@ function renderTopicWelcomeEmail({ name, topicType, topicName, frontendUrl, unsu
             </div>
 
             <div style="text-align: center; margin: 30px 0 24px 0;">
-                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=topic_welcome_${encodeURIComponent(safeTopic.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.navy} 0%, #1e3a8a 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.25);">
+                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=topic_welcome_${encodeURIComponent(safeTopic.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}${sidParam}" target="_blank" style="display: inline-block; padding: 14px 34px; background: linear-gradient(135deg, ${BRAND.navy} 0%, #1e3a8a 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14.5px; box-shadow: 0 4px 12px rgba(11, 31, 77, 0.25);">
                     Explore ${safeTopic} Hub →
                 </a>
             </div>
@@ -207,7 +209,8 @@ function renderTopicWelcomeEmail({ name, topicType, topicName, frontendUrl, unsu
  * TEMPLATE 3: Content-Specific Welcome Email
  * Used when visitor subscribes from an Individual Content Detail Page
  */
-function renderContentSpecificWelcomeEmail({ name, contentTitle, contentType, categoryName, frontendUrl, unsubscribeUrl, preferencesUrl }) {
+function renderContentSpecificWelcomeEmail({ name, contentTitle, contentType, categoryName, frontendUrl, unsubscribeUrl, preferencesUrl, subscriberId }) {
+    const sidParam = subscriberId ? `&sid=${subscriberId}` : '';
     const logoUrl = `${frontendUrl}/logo.jpg`;
     const safeName = escapeHtml(name || 'Tech Leader');
     const safeTitle = escapeHtml(contentTitle || 'Technology Deep-Dive');
@@ -257,7 +260,7 @@ function renderContentSpecificWelcomeEmail({ name, contentTitle, contentType, ca
             </ul>
 
             <div style="text-align: center; margin: 28px 0;">
-                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=content_subscriber_${encodeURIComponent(safeCategory.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}" target="_blank" style="display: inline-block; padding: 13px 32px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.3);">
+                <a href="${frontendUrl}?utm_source=email&utm_medium=newsletter&utm_campaign=content_subscriber_${encodeURIComponent(safeCategory.toLowerCase().replace(/[^a-z0-9]+/g, '_'))}${sidParam}" target="_blank" style="display: inline-block; padding: 13px 32px; background: linear-gradient(135deg, ${BRAND.orange} 0%, #ea580c 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(247, 148, 29, 0.3);">
                     Explore More ${safeCategory} Research →
                 </a>
             </div>

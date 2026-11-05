@@ -22,6 +22,12 @@ router.get('/top-content-engagement', adminAuth, analyticsController.getTopConte
 // Session Analytics
 router.get('/sessions', adminAuth, analyticsController.getSessionAnalytics);
 
+// Email Campaign Leads & Engaged Visitors
+router.get('/email-campaign-leads', adminAuth, analyticsController.getEmailCampaignLeads);
+
+// Email Campaign High-Volume Progression Metrics
+router.get('/email-campaign-metrics', adminAuth, analyticsController.getEmailCampaignMetrics);
+
 // Popular Pages
 router.get('/popular-pages', adminAuth, analyticsController.getPopularPages);
 

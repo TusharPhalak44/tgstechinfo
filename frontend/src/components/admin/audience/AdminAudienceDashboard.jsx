@@ -20,8 +20,12 @@ import {
   BarChartOutlined,
   SlidersOutlined,
   ArrowUpOutlined,
-  SafetyCertificateOutlined
+  SafetyCertificateOutlined,
+  CompassOutlined
 } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../../context/ThemeContext';
+import { useSiteSettings } from '../../../context/SiteSettingsContext';
 import { audienceService } from '../../../services/audienceService';
 
 const { TabPane } = Tabs;
@@ -29,6 +33,19 @@ const { TextArea } = Input;
 const { Option } = Select;
 
 export default function AdminAudienceDashboard() {
+  const { darkMode } = useTheme();
+  const { mainLogo, navbarLogo, settings: cmsSettings } = useSiteSettings() || {};
+  const navigate = useNavigate();
+  const D = darkMode;
+
+  const cmsLogoUrl = mainLogo || navbarLogo || cmsSettings?.website_main_logo || cmsSettings?.website_navbar_logo || cmsSettings?.website_logo;
+
+  const cardBg = D ? 'rgba(15, 23, 42, 0.75)' : '#FFFFFF';
+  const panelBg = D ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC';
+  const borderColor = D ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0';
+  const textPrimary = D ? '#F8FAFC' : '#0F172A';
+  const textMuted = D ? '#94A3B8' : '#64748B';
+
   const [activeTab, setActiveTab] = useState('settings');
   const [loading, setLoading] = useState(false);
 
@@ -357,20 +374,108 @@ Germany,EMEA,Manufacturing & Process Industries,201_500,Sales,VP_EXEC,3100`;
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Page Title Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#0F172A' }}>
-            Data Demographics & Audience Intelligence Management
-          </h2>
-          <p style={{ margin: '4px 0 0 0', color: '#64748B', fontSize: '0.875rem' }}>
-            Manage commercial global figures, demographic taxonomies, data combinations, and batch CSV imports.
-          </p>
+    <div style={{ width: '100%', maxWidth: '1600px', margin: '0 auto' }}>
+      {/* Page Title & Action Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24,
+          padding: '18px 24px',
+          borderRadius: 14,
+          background: cardBg,
+          border: `1px solid ${borderColor}`,
+          boxShadow: D ? '0 4px 20px rgba(0,0,0,0.25)' : '0 2px 12px rgba(11,31,77,0.04)',
+          flexWrap: 'wrap',
+          gap: 16
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          {cmsLogoUrl ? (
+            <img
+              src={cmsLogoUrl}
+              alt="Logo"
+              style={{ height: 44, maxWidth: 170, objectFit: 'contain', display: 'block' }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 12,
+                background: D ? 'rgba(10, 174, 239, 0.15)' : '#EAF2FF',
+                border: `1px solid ${D ? 'rgba(10, 174, 239, 0.35)' : '#BAE6FD'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#0AAEEF',
+                fontSize: 22,
+                flexShrink: 0
+              }}
+            >
+              <DatabaseOutlined />
+            </div>
+          )}
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: textPrimary, letterSpacing: '-0.01em' }}>
+              Audience Intelligence & Demographic Hub
+            </h2>
+            <p style={{ margin: '3px 0 0 0', color: textMuted, fontSize: '0.84rem' }}>
+              Commercial global sizing totals, regional distribution, taxonomy mapping & batch data ingestion.
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Button
+            type="primary"
+            icon={<CompassOutlined />}
+            onClick={() => navigate('/audience-intelligence')}
+            style={{
+              borderRadius: 8,
+              fontWeight: 700,
+              height: 38,
+              background: 'linear-gradient(135deg, #0AAEEF, #0284C7)',
+              borderColor: '#0AAEEF',
+              boxShadow: '0 4px 14px rgba(10, 174, 239, 0.3)'
+            }}
+          >
+            Launch Live Sizing Studio
+          </Button>
+
+          <Button
+            icon={<ReloadOutlined />}
+            loading={loading}
+            onClick={() => {
+              if (activeTab === 'settings') loadSettings();
+              else if (activeTab === 'adjuster') loadAdjustmentHistory();
+              else if (activeTab === 'taxonomies') loadTaxonomies();
+              else if (activeTab === 'statistics') loadStatistics();
+              else if (activeTab === 'quality') loadQualityReport();
+              else if (activeTab === 'import') loadImportsAndAudit();
+            }}
+            style={{
+              borderRadius: 8,
+              height: 38,
+              background: D ? 'rgba(255,255,255,0.06)' : '#F8FAFC',
+              borderColor: borderColor,
+              color: textPrimary
+            }}
+          >
+            Refresh
+          </Button>
         </div>
       </div>
 
-      <Card style={{ borderRadius: 14, boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+      <Card
+        style={{
+          borderRadius: 14,
+          background: cardBg,
+          borderColor: borderColor,
+          boxShadow: D ? '0 8px 24px rgba(0,0,0,0.3)' : '0 2px 14px rgba(11,31,77,0.06)'
+        }}
+      >
         <Tabs activeKey={activeTab} onChange={setActiveTab} size="large">
           
           {/* ── TAB 1: Global Configuration & Database Summary ── */}
@@ -381,36 +486,36 @@ Germany,EMEA,Manufacturing & Process Industries,201_500,Sales,VP_EXEC,3100`;
             <div style={{ marginBottom: 24 }}>
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} md={6}>
-                  <Card size="small" style={{ background: '#F0F9FF', borderColor: '#BAE6FD', borderRadius: 10 }}>
+                  <Card size="small" style={{ background: D ? 'rgba(2, 132, 199, 0.12)' : '#F0F9FF', borderColor: D ? 'rgba(2, 132, 199, 0.3)' : '#BAE6FD', borderRadius: 10 }}>
                     <Statistic
-                      title="Aggregated Contacts in DB"
+                      title={<span style={{ color: textMuted }}>Aggregated Contacts in DB</span>}
                       value={settingsData.database_summary?.total_contacts || 0}
                       valueStyle={{ color: '#0284C7', fontWeight: 800 }}
                     />
                   </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                  <Card size="small" style={{ background: '#FFFBEB', borderColor: '#FDE68A', borderRadius: 10 }}>
+                  <Card size="small" style={{ background: D ? 'rgba(217, 119, 6, 0.12)' : '#FFFBEB', borderColor: D ? 'rgba(217, 119, 6, 0.3)' : '#FDE68A', borderRadius: 10 }}>
                     <Statistic
-                      title="Target Companies in DB"
+                      title={<span style={{ color: textMuted }}>Target Companies in DB</span>}
                       value={settingsData.database_summary?.total_companies || 0}
                       valueStyle={{ color: '#D97706', fontWeight: 800 }}
                     />
                   </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                  <Card size="small" style={{ background: '#F0FDF4', borderColor: '#BBF7D0', borderRadius: 10 }}>
+                  <Card size="small" style={{ background: D ? 'rgba(22, 163, 74, 0.12)' : '#F0FDF4', borderColor: D ? 'rgba(22, 163, 74, 0.3)' : '#BBF7D0', borderRadius: 10 }}>
                     <Statistic
-                      title="Active Countries Covered"
+                      title={<span style={{ color: textMuted }}>Active Countries Covered</span>}
                       value={settingsData.database_summary?.active_countries || 0}
                       valueStyle={{ color: '#16A34A', fontWeight: 800 }}
                     />
                   </Card>
                 </Col>
                 <Col xs={24} sm={12} md={6}>
-                  <Card size="small" style={{ background: '#FAF5FF', borderColor: '#E9D5FF', borderRadius: 10 }}>
+                  <Card size="small" style={{ background: D ? 'rgba(147, 51, 234, 0.12)' : '#FAF5FF', borderColor: D ? 'rgba(147, 51, 234, 0.3)' : '#E9D5FF', borderRadius: 10 }}>
                     <Statistic
-                      title="Total Demographic Cells"
+                      title={<span style={{ color: textMuted }}>Total Demographic Cells</span>}
                       value={settingsData.database_summary?.total_combinations || 0}
                       valueStyle={{ color: '#9333EA', fontWeight: 800 }}
                     />
@@ -507,7 +612,7 @@ Germany,EMEA,Manufacturing & Process Industries,201_500,Sales,VP_EXEC,3100`;
                     <span style={{ fontWeight: 800, fontSize: '1.1rem' }}>Proportional Scope & Region Volume Adjuster</span>
                   </div>
                 }
-                style={{ borderRadius: 12, borderColor: '#BAE6FD', background: '#F8FAFC' }}
+                style={{ borderRadius: 12, borderColor: D ? 'rgba(10, 174, 239, 0.3)' : '#BAE6FD', background: panelBg }}
               >
                 <Alert
                   type="info"
@@ -871,17 +976,17 @@ Germany,EMEA,Manufacturing & Process Industries,201_500,Sales,VP_EXEC,3100`;
             tab={<span><AppstoreOutlined /> Statistics Matrix</span>}
             key="statistics"
           >
-            {/* 5 Column Filters Bar */}
+            {/* 6 Column Filters Bar */}
             <div style={{
-              background: '#F8FAFC',
-              border: '1px solid #E2E8F0',
+              background: panelBg,
+              border: `1px solid ${borderColor}`,
               borderRadius: 12,
               padding: '16px 20px',
               marginBottom: 20
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: '#1E293B' }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: textPrimary }}>
                     Column Filters (6 Dimensions)
                   </span>
                   {activeFilterCount > 0 && (

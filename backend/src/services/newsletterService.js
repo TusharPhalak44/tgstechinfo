@@ -267,7 +267,8 @@ class NewsletterService {
                 categoryName: normalizedInterestValue !== 'all' ? normalizedInterestValue.replace(/-/g, ' ').toUpperCase() : 'Enterprise Tech',
                 frontendUrl,
                 unsubscribeUrl,
-                preferencesUrl
+                preferencesUrl,
+                subscriberId: subscriber.id
             });
             jobType = 'welcome_content';
         } else if (normalizedInterestType === 'technology' || normalizedInterestType === 'industry') {
@@ -280,7 +281,8 @@ class NewsletterService {
                 topicName: formattedTopic,
                 frontendUrl,
                 unsubscribeUrl,
-                preferencesUrl
+                preferencesUrl,
+                subscriberId: subscriber.id
             });
             jobType = 'welcome_topic';
         } else {
@@ -290,7 +292,8 @@ class NewsletterService {
                 name: greetingName,
                 frontendUrl,
                 unsubscribeUrl,
-                preferencesUrl
+                preferencesUrl,
+                subscriberId: subscriber.id
             });
             jobType = 'welcome_general';
         }

@@ -352,6 +352,7 @@ function attachUtmTrackingToEmailLinks(html, options = {}) {
 
     const utmSource = options.utm_source || 'email';
     const utmMedium = options.utm_medium || (options.isTransactional ? 'email_notification' : 'newsletter');
+    const subscriberId = options.subscriber_id || options.subscriberId || options.sub_id || null;
 
     let utmCampaign = options.utm_campaign || options.campaignName || options.campaign || options.templateType || options.job_type;
     if (!utmCampaign && options.subject) {
@@ -376,7 +377,10 @@ function attachUtmTrackingToEmailLinks(html, options = {}) {
             if (/utm_source=/i.test(trimmed)) return match;
             const sep = trimmed.includes('?') ? '&' : '?';
             const actionType = /unsubscribe/i.test(trimmed) ? 'unsubscribe' : 'preferences';
-            const tagged = `${trimmed}${sep}utm_source=email&utm_medium=email_footer&utm_campaign=${encodeURIComponent(actionType)}`;
+            let tagged = `${trimmed}${sep}utm_source=email&utm_medium=email_footer&utm_campaign=${encodeURIComponent(actionType)}`;
+            if (subscriberId && !/(\?|&)sid=/i.test(tagged)) {
+                tagged += `&sid=${encodeURIComponent(subscriberId)}`;
+            }
             return `<a${beforeHref}href=${quote}${tagged}${quote}${afterHref}>`;
         }
 
@@ -397,12 +401,20 @@ function attachUtmTrackingToEmailLinks(html, options = {}) {
 
         // 5. If already has utm_source, do not double-append
         if (/utm_source=/i.test(trimmed)) {
+            if (subscriberId && !/(\?|&)sid=/i.test(trimmed)) {
+                const sep = trimmed.includes('?') ? '&' : '?';
+                const taggedWithSid = `${trimmed}${sep}sid=${encodeURIComponent(subscriberId)}`;
+                return `<a${beforeHref}href=${quote}${taggedWithSid}${quote}${afterHref}>`;
+            }
             return match;
         }
 
         // Append UTM tags cleanly
         const separator = trimmed.includes('?') ? '&' : '?';
-        const taggedHref = `${trimmed}${separator}utm_source=${encodeURIComponent(utmSource)}&utm_medium=${encodeURIComponent(utmMedium)}&utm_campaign=${encodeURIComponent(utmCampaign)}`;
+        let taggedHref = `${trimmed}${separator}utm_source=${encodeURIComponent(utmSource)}&utm_medium=${encodeURIComponent(utmMedium)}&utm_campaign=${encodeURIComponent(utmCampaign)}`;
+        if (subscriberId && !/(\?|&)sid=/i.test(taggedHref)) {
+            taggedHref += `&sid=${encodeURIComponent(subscriberId)}`;
+        }
 
         return `<a${beforeHref}href=${quote}${taggedHref}${quote}${afterHref}>`;
     });
