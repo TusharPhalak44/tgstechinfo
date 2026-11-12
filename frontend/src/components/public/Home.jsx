@@ -408,8 +408,12 @@ const CAT_TABS = [
   { label: 'Cloud', key: 'cloud-computing', param: 'category', color: 'var(--color-primary)' },
   { label: 'DevOps', key: 'devops', param: 'category', color: 'var(--color-primary)' },
   { label: 'Data Analytics', key: 'data-analytics', param: 'category', color: 'var(--color-primary)' },
+  { label: 'ITech', key: 'itech', param: 'category', color: 'var(--color-primary)' },
   { label: 'FinTech', key: 'fintech', param: 'category', color: 'var(--color-primary)' },
-  { label: 'Healthcare IT', key: 'healthcare', param: 'category', color: 'var(--color-primary)' },
+  { label: 'HRTech', key: 'hr-tech', param: 'category', color: 'var(--color-primary)' },
+  { label: 'MarTech', key: 'martech', param: 'category', color: 'var(--color-primary)' },
+  { label: 'HealthTech', key: 'healthtech', param: 'category', color: 'var(--color-primary)' },
+  { label: 'EdTech', key: 'edtech', param: 'category', color: 'var(--color-primary)' },
   { label: 'Interviews', key: 'interview', param: 'content_type', color: 'var(--color-primary)' },
 ];
 

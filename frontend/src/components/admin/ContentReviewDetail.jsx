@@ -7,7 +7,8 @@ import {
 import {
   EyeOutlined, EditOutlined, DeleteOutlined, SendOutlined,
   EyeInvisibleOutlined, ArrowLeftOutlined,
-  CheckOutlined, CloseOutlined, RollbackOutlined, MessageOutlined
+  CheckOutlined, CloseOutlined, RollbackOutlined, MessageOutlined,
+  ClockCircleOutlined, GlobalOutlined, CopyOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
@@ -16,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import './radar/RadarStyles.css';
 import { formatContentPublishDate, formatDateForDisplay } from '../../utils/dateHelper';
 import { formatViewsToM } from '../../utils/numberHelper';
+import { resolveContentRoute } from '../../lib/contentRoute';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -26,6 +28,7 @@ const STATUS_CONFIG = {
   changes_requested: { color: 'warning',    label: 'Changes Requested', badge: '#F59E0B', bgDark: 'rgba(245, 158, 11, 0.15)', bgLight: '#FEF3C7' },
   rejected:          { color: 'error',      label: 'Rejected',          badge: '#EF4444', bgDark: 'rgba(239, 68, 68, 0.15)', bgLight: '#FEE2E2' },
   approved:          { color: 'cyan',       label: 'Approved',          badge: '#06B6D4', bgDark: 'rgba(6, 182, 212, 0.15)', bgLight: '#CFFAFE' },
+  scheduled:         { color: 'purple',     label: 'Scheduled',         badge: '#9333EA', bgDark: 'rgba(147, 51, 234, 0.15)', bgLight: '#F3E8FF' },
 };
 
 const parseTags = (tags) => {
@@ -282,7 +285,15 @@ const ContentReviewDetail = () => {
 
   const contentImg = getContentImage(content);
   const contentVideo = getContentVideo(content);
-  const statusConfig = STATUS_CONFIG[content.status] || STATUS_CONFIG.draft;
+  const isFutureScheduled = Boolean(
+    (content.schedule_type === 'date_time' || (!content.schedule_type && content.scheduled_publish_date && moment(content.scheduled_publish_date).format('HH:mm:ss') !== '00:00:00')) &&
+    content.scheduled_publish_date &&
+    moment(content.scheduled_publish_date).isAfter(moment())
+  );
+  let statusConfig = STATUS_CONFIG[content.status] || STATUS_CONFIG.draft;
+  if ((content.status === 'approved' || content.status === 'scheduled') && isFutureScheduled) {
+    statusConfig = { color: 'purple', label: 'Approved & Scheduled', badge: '#9333EA', bgDark: 'rgba(147, 51, 234, 0.15)', bgLight: '#F3E8FF' };
+  }
 
   return (
     <>
@@ -435,6 +446,23 @@ const ContentReviewDetail = () => {
               <Space direction="vertical" style={{ width: '100%' }}>
                 {content.status === 'pending' && (
                   <>
+                    {isFutureScheduled && (
+                      <div style={{
+                        padding: '10px 12px',
+                        borderRadius: 8,
+                        background: darkMode ? 'rgba(147, 51, 234, 0.15)' : '#F3E8FF',
+                        border: darkMode ? '1px solid rgba(147, 51, 234, 0.3)' : '1px solid #D8B4FE',
+                        marginBottom: 10,
+                        fontSize: '0.78rem',
+                        color: darkMode ? '#E9D5FF' : '#581C87'
+                      }}>
+                        <ClockCircleOutlined style={{ marginRight: 6, color: '#9333EA' }} />
+                        <strong>Scheduled Publish:</strong> {moment(content.scheduled_publish_date).format('MMM D, YYYY h:mm A')}
+                        <div style={{ marginTop: 4, fontSize: '0.72rem', opacity: 0.9 }}>
+                          Approving generates live link immediately. Website listing begins at scheduled time.
+                        </div>
+                      </div>
+                    )}
                     <Button
                       type="primary"
                       icon={<CheckOutlined />}
@@ -443,7 +471,7 @@ const ContentReviewDetail = () => {
                       onClick={() => handleReviewAction('approve')}
                       style={{ borderRadius: 10, background: '#10B981', border: 'none', marginBottom: 8 }}
                     >
-                      Approve
+                      {isFutureScheduled ? 'Approve Schedule' : 'Approve'}
                     </Button>
                     <Button
                       icon={<RollbackOutlined />}
@@ -466,7 +494,52 @@ const ContentReviewDetail = () => {
                   </>
                 )}
 
-                {content.status === 'approved' && (
+                {(content.status === 'approved' || content.status === 'scheduled') && isFutureScheduled && (
+                  <>
+                    <div style={{
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: darkMode ? 'rgba(147, 51, 234, 0.15)' : '#F3E8FF',
+                      border: darkMode ? '1px solid rgba(147, 51, 234, 0.3)' : '1px solid #D8B4FE',
+                      marginBottom: 12
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9333EA', fontWeight: 700, fontSize: '0.82rem', marginBottom: 4 }}>
+                        <ClockCircleOutlined /> Approved & Scheduled
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: darkMode ? '#E9D5FF' : '#581C87', lineHeight: 1.4 }}>
+                        Will auto-publish on: <strong>{moment(content.scheduled_publish_date).format('MMM D, YYYY h:mm A')}</strong>.
+                        Manual publish button is disabled. Use Live URL buttons below to access.
+                      </div>
+                    </div>
+                    <Button
+                      type="primary"
+                      icon={<GlobalOutlined />}
+                      block
+                      onClick={() => {
+                        const route = resolveContentRoute(content);
+                        window.open(route.url, '_blank', 'noopener,noreferrer');
+                      }}
+                      style={{ borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 100%)', border: 'none', marginBottom: 8 }}
+                    >
+                      View Live URL
+                    </Button>
+                    <Button
+                      icon={<CopyOutlined />}
+                      block
+                      onClick={() => {
+                        const route = resolveContentRoute(content);
+                        const fullUrl = `${window.location.origin}${route.url}`;
+                        navigator.clipboard.writeText(fullUrl);
+                        message.success('Live URL copied to clipboard!');
+                      }}
+                      style={{ borderRadius: 10, marginBottom: 8, borderColor: '#9333EA', color: '#9333EA' }}
+                    >
+                      Copy Live URL
+                    </Button>
+                  </>
+                )}
+
+                {content.status === 'approved' && !isFutureScheduled && (
                   <Button
                     type="primary"
                     icon={<SendOutlined />}
@@ -477,6 +550,36 @@ const ContentReviewDetail = () => {
                   >
                     Publish
                   </Button>
+                )}
+
+                {content.status === 'published' && (
+                  <>
+                    <Button
+                      type="primary"
+                      icon={<GlobalOutlined />}
+                      block
+                      onClick={() => {
+                        const route = resolveContentRoute(content);
+                        window.open(route.url, '_blank', 'noopener,noreferrer');
+                      }}
+                      style={{ borderRadius: 10, background: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', border: 'none', marginBottom: 8 }}
+                    >
+                      View Live Article
+                    </Button>
+                    <Button
+                      icon={<CopyOutlined />}
+                      block
+                      onClick={() => {
+                        const route = resolveContentRoute(content);
+                        const fullUrl = `${window.location.origin}${route.url}`;
+                        navigator.clipboard.writeText(fullUrl);
+                        message.success('Live URL copied to clipboard!');
+                      }}
+                      style={{ borderRadius: 10, marginBottom: 8 }}
+                    >
+                      Copy Live URL
+                    </Button>
+                  </>
                 )}
 
                 {content.status === 'changes_requested' && (

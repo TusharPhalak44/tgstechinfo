@@ -19,12 +19,15 @@ import {
   RocketOutlined,
   LeftOutlined,
   RightOutlined,
+  GlobalOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import moment from 'moment';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { formatViewsToM } from '../../utils/numberHelper';
 import { useTheme } from '../../context/ThemeContext';
+import { resolveContentRoute } from '../../lib/contentRoute';
 
 const { Title, Text } = Typography;
 
@@ -138,6 +141,7 @@ const statusConfig = {
   draft:             { color: '#64748B', bg: 'rgba(100, 116, 139, 0.12)', text: 'Draft' },
   pending:           { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)',  text: 'Pending Review' },
   approved:          { color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)', text: 'Approved' },
+  scheduled:         { color: '#9333EA', bg: 'rgba(147, 51, 234, 0.12)', text: 'Scheduled' },
   published:         { color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)', text: 'Published' },
   rejected:          { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)',   text: 'Rejected' },
   changes_requested: { color: '#F97316', bg: 'rgba(249, 115, 22, 0.12)', text: 'Changes Requested' }
@@ -146,6 +150,7 @@ const statusConfig = {
 const STATUS_FILTERS = [
   { key: 'all',               label: 'All Status' },
   { key: 'published',         label: 'Published' },
+  { key: 'scheduled',         label: 'Scheduled' },
   { key: 'pending',           label: 'In Review' },
   { key: 'draft',             label: 'Drafts' },
   { key: 'changes_requested', label: 'Needs Revisions' },
@@ -246,8 +251,14 @@ const MyContent = () => {
 
   const safeContents = Array.isArray(contents) ? contents : [];
   const filteredContents = safeContents.filter(c => {
+    const isItemFutureScheduled = Boolean(
+      (c.schedule_type === 'date_time' || (!c.schedule_type && c.scheduled_publish_date && moment(c.scheduled_publish_date).format('HH:mm:ss') !== '00:00:00')) &&
+      c.scheduled_publish_date &&
+      moment(c.scheduled_publish_date).isAfter(moment())
+    );
     const matchesStatus = statusFilter === 'all' ||
-      (statusFilter === 'published' ? (c.status === 'published' || c.status === 'approved') : c.status === statusFilter);
+      (statusFilter === 'scheduled' ? (c.status === 'scheduled' || isItemFutureScheduled) :
+      (statusFilter === 'published' ? ((c.status === 'published' || c.status === 'approved') && !isItemFutureScheduled) : c.status === statusFilter));
     const matchesType = activeTypeTab === 'all' || (c.content_type || 'article').toLowerCase() === activeTypeTab;
     const matchesSearch = !searchQuery ||
       c.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -518,7 +529,14 @@ const MyContent = () => {
         <div className="c-stagger-3">
           <Row gutter={[18, 18]}>
             {visibleItems.map((article) => {
-              const status = statusConfig[article.status] || { color: '#64748B', bg: 'rgba(100, 116, 139, 0.12)', text: article.status };
+              const isFutureScheduled = Boolean(
+                (article.schedule_type === 'date_time' || (!article.schedule_type && article.scheduled_publish_date && moment(article.scheduled_publish_date).format('HH:mm:ss') !== '00:00:00')) &&
+                article.scheduled_publish_date &&
+                moment(article.scheduled_publish_date).isAfter(moment())
+              );
+              const status = ((article.status === 'approved' || article.status === 'scheduled') && isFutureScheduled)
+                ? { color: '#9333EA', bg: 'rgba(147, 51, 234, 0.12)', text: 'Approved & Scheduled' }
+                : (statusConfig[article.status] || { color: '#64748B', bg: 'rgba(100, 116, 139, 0.12)', text: article.status });
               const canEdit = article.status === 'draft' || article.status === 'changes_requested';
 
               return (
@@ -678,6 +696,33 @@ const MyContent = () => {
                             <EyeOutlined />
                             <span>Preview</span>
                           </button>
+
+                          {(article.status === 'approved' || article.status === 'published' || article.status === 'scheduled') && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const route = resolveContentRoute(article);
+                                window.open(route.url, '_blank', 'noopener,noreferrer');
+                              }}
+                              style={{
+                                background: 'rgba(147, 51, 234, 0.08)',
+                                border: '1px solid rgba(147, 51, 234, 0.25)',
+                                color: '#9333EA',
+                                padding: '5px 8px',
+                                borderRadius: 8,
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                              title="Open Live Article URL"
+                            >
+                              <GlobalOutlined />
+                              <span>Live</span>
+                            </button>
+                          )}
 
                           {canEdit && (
                             <button

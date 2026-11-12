@@ -15,7 +15,22 @@ class Category {
         if (filters.type) { query += ' AND c.type = ?'; values.push(filters.type); }
         if (filters.parent_id) { query += ' AND c.parent_id = ?'; values.push(filters.parent_id); }
 
-        query += ' GROUP BY c.id, c.name, c.slug, c.type, c.parent_id ORDER BY c.name';
+        query += `
+            GROUP BY c.id, c.name, c.slug, c.type, c.parent_id 
+            ORDER BY 
+                CASE WHEN c.type = 'industry' THEN 
+                    CASE 
+                        WHEN LOWER(REPLACE(c.name, ' ', '')) = 'itech' THEN 1
+                        WHEN LOWER(REPLACE(c.name, ' ', '')) = 'fintech' THEN 2
+                        WHEN LOWER(REPLACE(c.name, ' ', '')) = 'hrtech' THEN 3
+                        WHEN LOWER(REPLACE(c.name, ' ', '')) = 'martech' THEN 4
+                        WHEN LOWER(REPLACE(c.name, ' ', '')) = 'healthtech' THEN 5
+                        WHEN LOWER(REPLACE(c.name, ' ', '')) = 'edtech' THEN 6
+                        ELSE 7
+                    END
+                ELSE 0 END,
+                c.name ASC
+        `;
         const [rows] = await pool.query(query, values);
         return rows;
     }
@@ -28,8 +43,15 @@ class Category {
     }
 
     static async findBySlug(slug) {
+        if (!slug) return null;
+        const normalized = String(slug).trim().toLowerCase();
+        let targetSlug = normalized;
+        if (normalized === 'healthcare' || normalized === 'healthcare-it') targetSlug = 'healthtech';
+        if (normalized === 'hrtech') targetSlug = 'hr-tech';
+
         const [rows] = await pool.query(
-            'SELECT id, name, slug, type, parent_id FROM categories WHERE slug = ?', [slug]
+            'SELECT id, name, slug, type, parent_id FROM categories WHERE slug = ? OR slug = ?',
+            [targetSlug, normalized]
         );
         return rows[0];
     }

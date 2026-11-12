@@ -113,7 +113,8 @@ export const TrackingProvider = ({ children }) => {
 
       console.log('Tracking page view with data:', pageViewData);
       const response = await trackingApi.trackPageView(pageViewData);
-      setCurrentPageViewId(response.pageView.id);
+      const pageViewId = response?.pageView?.id || response?.data?.pageView?.id || response?.id;
+      if (pageViewId) setCurrentPageViewId(pageViewId);
       setPageEnterTime(Date.now());
 
       console.log('Page view tracked:', response.pageView);

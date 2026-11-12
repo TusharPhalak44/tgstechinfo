@@ -489,6 +489,8 @@ function AppContent() {
                 <Route path="/whitepapers" element={<CategoryList />} />
 
                 <Route path="/category/:slug" element={<CategoryList />} />
+                <Route path="/industry/:slug" element={<CategoryList />} />
+                <Route path="/industries/:slug" element={<CategoryList />} />
 
                 <Route path="/articles" element={<CategoryList />} />
 

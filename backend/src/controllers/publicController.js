@@ -289,13 +289,9 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
-        // Public content must be published
-        if (content.status !== 'published') {
-            return res.status(404).json({ message: 'Content not found' });
-        }
-
-        // If scheduled for future, do not expose on public site
-        if (content.scheduled_publish_date && new Date(content.scheduled_publish_date) > new Date()) {
+        // Public content must be published, or approved/scheduled (accessible via direct live URL)
+        const allowedLiveStatuses = ['published', 'approved', 'scheduled'];
+        if (!allowedLiveStatuses.includes(content.status)) {
             return res.status(404).json({ message: 'Content not found' });
         }
 
@@ -1512,9 +1508,23 @@ exports.getCategoriesWithCount = async (req, res) => {
         }
 
         // Get all categories with parent info
-        const [categories] = await pool.query(
-            'SELECT id, name, slug, parent_id FROM categories ORDER BY parent_id ASC, name ASC'
-        );
+        const [categories] = await pool.query(`
+            SELECT id, name, slug, type, parent_id 
+            FROM categories 
+            ORDER BY parent_id ASC, 
+                CASE WHEN type = 'industry' THEN 
+                    CASE 
+                        WHEN LOWER(REPLACE(name, ' ', '')) = 'itech' THEN 1
+                        WHEN LOWER(REPLACE(name, ' ', '')) = 'fintech' THEN 2
+                        WHEN LOWER(REPLACE(name, ' ', '')) = 'hrtech' THEN 3
+                        WHEN LOWER(REPLACE(name, ' ', '')) = 'martech' THEN 4
+                        WHEN LOWER(REPLACE(name, ' ', '')) = 'healthtech' THEN 5
+                        WHEN LOWER(REPLACE(name, ' ', '')) = 'edtech' THEN 6
+                        ELSE 7
+                    END
+                ELSE 0 END,
+                name ASC
+        `);
 
         // Get count per category
         const countQuery = `

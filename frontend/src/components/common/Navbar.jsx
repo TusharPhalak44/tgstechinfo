@@ -46,7 +46,17 @@ const STATIC_NAV = [
     ]
   },
   { key: 'technology', label: 'Technology', dynamic: true, icon: <AppstoreOutlined /> },
-  { key: 'industries', label: 'Industries', dynamic: true, icon: <BuildOutlined /> },
+  {
+    key: 'industries', label: 'Industries', dynamic: true, icon: <BuildOutlined />,
+    children: [
+      { label: 'ITech', to: '/category/itech' },
+      { label: 'FinTech', to: '/category/fintech' },
+      { label: 'HRTech', to: '/category/hr-tech' },
+      { label: 'MarTech', to: '/category/martech' },
+      { label: 'HealthTech', to: '/category/healthtech' },
+      { label: 'EdTech', to: '/category/edtech' },
+    ]
+  },
   { key: 'about', label: 'About Us', to: '/about' },
 ];
 
@@ -481,9 +491,40 @@ const Navbar = () => {
           .filter(c => c.type === type || (!c.type && type === 'technology'))
           .map(c => ({ label: c.name, to: `/category/${c.slug}` }));
 
+      const industrySequence = ['itech', 'fintech', 'hrtech', 'martech', 'healthtech', 'edtech'];
+      const normalizeCat = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+      const getIndustryChildren = () => {
+        const indItems = data
+          .filter(c => c.type === 'industry')
+          .map(c => {
+            let label = c.name;
+            if (label.toLowerCase() === 'healthcare' || label.toLowerCase() === 'healthcare it') {
+              label = 'HealthTech';
+            } else if (label.toLowerCase() === 'hr tech') {
+              label = 'HRTech';
+            }
+            return {
+              label,
+              to: `/category/${c.slug}`
+            };
+          });
+
+        return indItems.sort((a, b) => {
+          const aKey = normalizeCat(a.label);
+          const bKey = normalizeCat(b.label);
+          const aIndex = industrySequence.indexOf(aKey);
+          const bIndex = industrySequence.indexOf(bKey);
+          if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
+          if (aIndex !== -1) return -1;
+          if (bIndex !== -1) return 1;
+          return a.label.localeCompare(b.label);
+        });
+      };
+
       setNavItems(STATIC_NAV.map(item => {
         if (item.key === 'technology') return { ...item, children: toChildren('technology') };
-        if (item.key === 'industries') return { ...item, children: toChildren('industry') };
+        if (item.key === 'industries') return { ...item, children: getIndustryChildren() };
         return item;
       }));
     }).catch(() => { });

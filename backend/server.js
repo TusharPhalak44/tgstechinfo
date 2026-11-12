@@ -397,45 +397,18 @@ app.listen(PORT, () => {
 
     console.log(`[Startup] CSP connectSrc: ${CSP_CONNECT_SRC.join(', ')}`);
 
-    // Scheduled publishing runner (runs on startup and every 60 seconds)
+    // Scheduled publishing runner (runs on startup and every 30 seconds)
+    const ScheduledPublishingService = require('./src/services/scheduledPublishingService');
     const runScheduledPublisher = async () => {
         try {
-            const { pool } = require('./src/config/database');
-            const [dueItems] = await pool.query(`
-                SELECT id FROM contents 
-                WHERE (status = 'scheduled' OR status = 'approved')
-                  AND scheduled_publish_date IS NOT NULL 
-                  AND scheduled_publish_date <= CURRENT_TIMESTAMP
-            `);
-            if (dueItems.length > 0) {
-                const ids = dueItems.map(i => i.id);
-                await pool.query(`
-                    UPDATE contents 
-                    SET status = 'published', 
-                        published_date = COALESCE(published_date, scheduled_publish_date, CURRENT_TIMESTAMP)
-                    WHERE id IN (?)
-                `, [ids]);
-                console.log(`[Scheduled Publisher] Automatically published ${ids.length} scheduled content item(s).`);
-
-                // Automated Subscriber Notification Trigger
-                try {
-                    const ContentNotificationService = require('./src/services/contentNotificationService');
-                    for (const item of dueItems) {
-                        ContentNotificationService.notifySubscribersOnPublication(item.id).catch(err => {
-                            console.error(`[Scheduled Publisher] Notification error for content ${item.id}:`, err.message);
-                        });
-                    }
-                } catch (notifErr) {
-                    console.error('[Scheduled Publisher] ContentNotificationService error:', notifErr.message);
-                }
-            }
+            await ScheduledPublishingService.checkAndPublishDueContent();
         } catch (err) {
-            console.error('[Scheduled Publisher] Error checking scheduled content:', err.message);
+            console.error('[Scheduled Publisher] Error running scheduler:', err.message);
         }
     };
 
     runScheduledPublisher();
-    const scheduledPublisherInterval = setInterval(runScheduledPublisher, 60 * 1000);
+    const scheduledPublisherInterval = setInterval(runScheduledPublisher, 30 * 1000);
     if (scheduledPublisherInterval.unref) scheduledPublisherInterval.unref();
 
     // Auto-start newsletter email queue worker (processes background publication emails)

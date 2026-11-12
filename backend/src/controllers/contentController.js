@@ -59,6 +59,7 @@ exports.createContent = async (req, res) => {
             reading_time: parseOptionalId(req.body.reading_time),
             status: String(req.body.status || 'draft').trim(),
             scheduled_publish_date: req.body.scheduled_publish_date || null,
+            schedule_type: req.body.schedule_type || (req.body.scheduled_publish_date && req.body.scheduled_publish_date.includes(':') && !req.body.scheduled_publish_date.includes('00:00:00') ? 'date_time' : 'date_only'),
             published_date: req.body.published_date || (req.body.status === 'published' ? (req.body.scheduled_publish_date || new Date()) : (req.body.scheduled_publish_date || null)),
             created_at: req.body.scheduled_publish_date || req.body.published_date || req.body.created_at || undefined,
             banner_image: existingBanner?.filename || bannerFile?.filename || null,
@@ -492,11 +493,14 @@ exports.updateContent = async (req, res) => {
             }
         }
         if (req.body.tags) updateData.tags = req.body.tags.split(',').map(t => t.trim()).filter(Boolean);
-        if (req.body.scheduled_publish_date) {
-            updateData.scheduled_publish_date = req.body.scheduled_publish_date;
+        if (req.body.scheduled_publish_date !== undefined) {
+            updateData.scheduled_publish_date = req.body.scheduled_publish_date || null;
             if (content.status === 'published' || req.body.status === 'published') {
                 updateData.published_date = req.body.scheduled_publish_date;
             }
+        }
+        if (req.body.schedule_type !== undefined) {
+            updateData.schedule_type = req.body.schedule_type;
         }
         updateData = stripEmDash(updateData);
 

@@ -1437,7 +1437,7 @@ const SectionRenderer = ({ type, props, darkMode = false }) => {
             <span className="section-title" style={{ fontSize: 11, fontWeight: 600, color: darkMode ? '#94a3b8' : '#8c8c8c', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Schedule</span>
           </div>
           <Form.Item name="scheduled_publish_date" label={<span style={{ color: darkMode ? '#cbd5e1' : '#1a1a2e' }}>Schedule</span>} style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
-            <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
+            <DatePicker showTime={{ format: 'HH:mm' }} format="YYYY-MM-DD HH:mm" placeholder="Select publish date & time" popupClassName="modern-schedule-dropdown" style={{ width: '100%', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#cbd5e1' : '#1a1a2e', borderColor: darkMode ? '#334155' : '#e8e8e8' }} />
           </Form.Item>
         </div>
       );

@@ -33,13 +33,16 @@ import {
   CheckSquareOutlined,
   CloseOutlined,
   CheckOutlined,
-  MessageOutlined
+  MessageOutlined,
+  GlobalOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import api from '../../services/api';
 import moment from 'moment';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { formatDateForTable, formatDateForTableWithDraft } from '../../utils/dateHelper';
+import { resolveContentRoute } from '../../lib/contentRoute';
 
 const { Option } = Select;
 const { RangePicker } = DatePicker;
@@ -501,7 +504,19 @@ const ContentReview = () => {
       key: 'status',
       width: 115,
       align: 'center',
-      render: (status) => {
+      render: (status, record) => {
+        const isFutureScheduled = Boolean(
+          (record.schedule_type === 'date_time' || (!record.schedule_type && record.scheduled_publish_date && moment(record.scheduled_publish_date).format('HH:mm:ss') !== '00:00:00')) &&
+          record.scheduled_publish_date &&
+          moment(record.scheduled_publish_date).isAfter(moment())
+        );
+        if ((status === 'approved' || status === 'scheduled') && isFutureScheduled) {
+          return (
+            <Tag color="purple" style={{ borderRadius: 6, fontWeight: 700, padding: '2px 7px', fontSize: '0.7rem', margin: 0 }}>
+              Approved (Scheduled)
+            </Tag>
+          );
+        }
         const map = {
           draft: { color: 'default', text: 'Draft' },
           pending: { color: 'gold', text: 'Pending' },
@@ -596,25 +611,71 @@ const ContentReview = () => {
                 Edit
               </Button>
             </>
-          ) : record.status === 'approved' ? (
-            <Button 
-              type="primary" 
-              size="small" 
-              icon={<SendOutlined />}
-              loading={publishingId === record.id}
-              onClick={() => handleDirectPublish(record.id)}
-              style={{ 
-                borderRadius: 6,
-                background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
-                border: 'none',
-                fontWeight: 700,
-                fontSize: '0.72rem',
-                padding: '0 10px',
-                height: 28,
-              }}
-            >
-              Publish
-            </Button>
+          ) : (record.status === 'approved' || record.status === 'scheduled') ? (
+            (() => {
+              const isFutureScheduled = Boolean(
+                record.scheduled_publish_date &&
+                moment(record.scheduled_publish_date).isAfter(moment())
+              );
+              if (isFutureScheduled) {
+                const resolved = resolveContentRoute(record);
+                const fullUrl = `${window.location.origin}${resolved.url}`;
+                return (
+                  <Space size={4}>
+                    <Tooltip title={`Scheduled for ${moment(record.scheduled_publish_date).format('MMM D, h:mm A')}. Direct link is active.`}>
+                      <Button
+                        size="small"
+                        icon={<GlobalOutlined />}
+                        onClick={() => window.open(resolved.url, '_blank', 'noopener,noreferrer')}
+                        style={{
+                          borderRadius: 6,
+                          background: 'linear-gradient(135deg, #7C3AED 0%, #9333EA 100%)',
+                          color: '#fff',
+                          border: 'none',
+                          fontWeight: 700,
+                          fontSize: '0.72rem',
+                          padding: '0 8px',
+                          height: 28,
+                        }}
+                      >
+                        Live URL
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title="Copy Live URL">
+                      <Button
+                        size="small"
+                        icon={<CopyOutlined />}
+                        onClick={() => {
+                          navigator.clipboard.writeText(fullUrl);
+                          message.success('Live URL copied to clipboard!');
+                        }}
+                        style={{ borderRadius: 6, height: 28, width: 28, padding: 0 }}
+                      />
+                    </Tooltip>
+                  </Space>
+                );
+              }
+              return (
+                <Button 
+                  type="primary" 
+                  size="small" 
+                  icon={<SendOutlined />}
+                  loading={publishingId === record.id}
+                  onClick={() => handleDirectPublish(record.id)}
+                  style={{ 
+                    borderRadius: 6,
+                    background: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)',
+                    border: 'none',
+                    fontWeight: 700,
+                    fontSize: '0.72rem',
+                    padding: '0 10px',
+                    height: 28,
+                  }}
+                >
+                  Publish
+                </Button>
+              );
+            })()
           ) : (
             <Button
               size="small"
@@ -843,20 +904,29 @@ const ContentReview = () => {
             open={reviewModalVisible}
             onCancel={() => { setReviewModalVisible(false); setSelectedContent(null); setAdminComment(''); }}
             width={720}
-            footer={[
-              <Button key="reject" danger icon={<CloseOutlined />} onClick={() => handleReview('reject', selectedContent.id)} style={{ borderRadius: 8 }}>
-                Reject
-              </Button>,
-              <Button key="changes" icon={<EditOutlined />} onClick={() => handleReview('request_changes', selectedContent.id)} style={{ borderRadius: 8 }}>
-                Request Changes
-              </Button>,
-              <Button key="approve" icon={<CheckOutlined />} onClick={() => handleReview('approve', selectedContent.id)} style={{ borderRadius: 8, background: '#10B981', color: '#fff', border: 'none' }}>
-                Approve
-              </Button>,
-              <Button key="publish" type="primary" icon={<SendOutlined />} onClick={() => handleReview('publish', selectedContent.id)} style={{ borderRadius: 8, background: 'linear-gradient(135deg, #0B1F4D 0%, #2563EB 100%)', border: 'none' }}>
-                Approve & Publish
-              </Button>,
-            ]}
+            footer={(() => {
+              const isSelectedFutureScheduled = Boolean(
+                (selectedContent?.schedule_type === 'date_time' || (!selectedContent?.schedule_type && selectedContent?.scheduled_publish_date && moment(selectedContent.scheduled_publish_date).format('HH:mm:ss') !== '00:00:00')) &&
+                selectedContent?.scheduled_publish_date &&
+                moment(selectedContent.scheduled_publish_date).isAfter(moment())
+              );
+              return [
+                <Button key="reject" danger icon={<CloseOutlined />} onClick={() => handleReview('reject', selectedContent.id)} style={{ borderRadius: 8 }}>
+                  Reject
+                </Button>,
+                <Button key="changes" icon={<EditOutlined />} onClick={() => handleReview('request_changes', selectedContent.id)} style={{ borderRadius: 8 }}>
+                  Request Changes
+                </Button>,
+                <Button key="approve" icon={<CheckOutlined />} onClick={() => handleReview('approve', selectedContent.id)} style={{ borderRadius: 8, background: '#10B981', color: '#fff', border: 'none' }}>
+                  {isSelectedFutureScheduled ? 'Approve Schedule' : 'Approve'}
+                </Button>,
+                !isSelectedFutureScheduled && (
+                  <Button key="publish" type="primary" icon={<SendOutlined />} onClick={() => handleReview('publish', selectedContent.id)} style={{ borderRadius: 8, background: 'linear-gradient(135deg, #0B1F4D 0%, #2563EB 100%)', border: 'none' }}>
+                    Approve & Publish
+                  </Button>
+                ),
+              ].filter(Boolean);
+            })()}
           >
             <div style={{ marginTop: 16 }}>
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: D ? '#F8FAFC' : '#0F172A', marginBottom: 8 }}>
@@ -867,6 +937,24 @@ const ContentReview = () => {
                 <Tag color="geekblue">{selectedContent.category_name || 'General'}</Tag>
                 <Tag color="gold">Pending Approval</Tag>
               </div>
+
+              {(selectedContent?.schedule_type === 'date_time' || (!selectedContent?.schedule_type && selectedContent?.scheduled_publish_date && moment(selectedContent.scheduled_publish_date).format('HH:mm:ss') !== '00:00:00')) && selectedContent?.scheduled_publish_date && moment(selectedContent.scheduled_publish_date).isAfter(moment()) && (
+                <div style={{
+                  background: D ? 'rgba(147, 51, 234, 0.15)' : '#F3E8FF',
+                  border: `1px solid ${D ? 'rgba(147, 51, 234, 0.3)' : '#D8B4FE'}`,
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  marginBottom: 16
+                }}>
+                  <div style={{ fontWeight: 700, color: '#9333EA', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, fontSize: '0.85rem' }}>
+                    <ClockCircleOutlined /> Scheduled Content
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: D ? '#E9D5FF' : '#581C87', lineHeight: 1.4 }}>
+                    Requested to auto-publish on: <strong>{moment(selectedContent.scheduled_publish_date).format('MMM D, YYYY h:mm A')}</strong>.
+                    <br />Approving will generate the live URL immediately, and the article will automatically publish on the website at this exact time.
+                  </div>
+                </div>
+              )}
 
               <div style={{ background: D ? '#0F172A' : '#F8FAFC', padding: 16, borderRadius: 12, border: `1px solid ${D ? 'rgba(51, 65, 85, 0.6)' : 'rgba(226, 232, 240, 0.8)'}`, marginBottom: 16 }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 700, color: D ? '#94A3B8' : '#64748B', textTransform: 'uppercase', marginBottom: 6 }}>

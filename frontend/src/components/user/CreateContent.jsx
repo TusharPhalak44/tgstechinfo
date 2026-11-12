@@ -113,6 +113,7 @@ const CreateContent = () => {
     { id: 'sec-4', type: 'content' }
   ]);
   const [duplicateWarning, setDuplicateWarning] = useState(null);
+  const [scheduleMode, setScheduleMode] = useState('date_only'); // 'date_only' | 'date_time'
 
   const [selectedTypeName, setSelectedTypeName] = useState('');
   const [standardLayout, setStandardLayout] = useState(STANDARD_SECTIONS.map(s => s.key));
@@ -193,7 +194,7 @@ const CreateContent = () => {
         seo_meta_keywords: data.seo_meta_keywords
           ? data.seo_meta_keywords.split(',').map(k => k.trim()).filter(Boolean)
           : [],
-        scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : (data.published_date ? moment(data.published_date) : null),
+        scheduled_publish_date: data.scheduled_publish_date ? moment(data.scheduled_publish_date) : null,
         hosted_by: data.hosted_by || '',
         platform: data.platform || 'Zoom',
         webinar_type: data.webinar_type || 'live',
@@ -204,6 +205,13 @@ const CreateContent = () => {
         setWebinarTypeMode(data.webinar_type);
       }
       setContentStatus(data.status || 'draft');
+      if (data.schedule_type) {
+        setScheduleMode(data.schedule_type);
+      } else if (data.scheduled_publish_date && moment(data.scheduled_publish_date).format('HH:mm:ss') !== '00:00:00') {
+        setScheduleMode('date_time');
+      } else {
+        setScheduleMode('date_only');
+      }
 
       // Restore layout first to determine which tab to use
       if (data.builder_layout) {
@@ -518,7 +526,7 @@ const CreateContent = () => {
       }
 
       if (values.scheduled_publish_date) {
-        formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
+        formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD HH:mm:ss'));
       }
 
       // Banner image for webinar
@@ -602,7 +610,15 @@ const CreateContent = () => {
     }
     if (values.tags?.length) formData.append('tags', values.tags.join(','));
     if (values.seo_meta_keywords?.length) formData.set('seo_meta_keywords', values.seo_meta_keywords.join(','));
-    if (values.scheduled_publish_date) formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
+    formData.append('schedule_type', scheduleMode);
+    if (values.scheduled_publish_date) {
+      if (scheduleMode === 'date_time') {
+        formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD HH:mm:ss'));
+      } else {
+        formData.append('scheduled_publish_date', values.scheduled_publish_date.format('YYYY-MM-DD 00:00:00'));
+        formData.append('published_date', values.scheduled_publish_date.format('YYYY-MM-DD'));
+      }
+    }
 
     // Generate content based on active tab
     let finalContent = content;
@@ -1160,7 +1176,7 @@ const CreateContent = () => {
                   content_type: contentTypes.find(t => t.id === v.content_type_id)?.name || '',
                   category: categories.find(c => c.id === v.category_id)?.name || '',
                   title: v.title || 'Untitled',
-                  scheduled_publish_date: v.scheduled_publish_date ? v.scheduled_publish_date.format('MMMM D, YYYY') : null,
+                  scheduled_publish_date: v.scheduled_publish_date ? v.scheduled_publish_date.format('MMMM D, YYYY h:mm A') : null,
                   reading_time: Math.ceil(wordCount / 200) || 1,
                   banner_image: bannerImageUrl,
                   short_description: v.short_description || '',
@@ -2815,13 +2831,179 @@ const CreateContent = () => {
                       </Form.Item>
                     </div>
 
-                    {/* Schedule */}
-                    <div style={{ background: darkMode ? '#1e293b' : '#fff', borderRadius: 12, padding: 20, marginBottom: 16, border: darkMode ? '1px solid #334155' : '1px solid #e8e8e8' }}>
-                      <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 12, color: darkMode ? '#f1f5f9' : '#111827' }}>
-                        <CalendarOutlined style={{ marginRight: 6, color: '#4a7cff' }} />Schedule
-                      </Text>
-                      <Form.Item name="scheduled_publish_date" style={{ marginBottom: 0 }} help="Leave empty to publish after approval">
-                        <DatePicker format="YYYY-MM-DD" placeholder="Select publish date" style={{ width: '100%' }} />
+                    {/* Publishing Schedule & Date Settings */}
+                    <div style={{
+                      background: darkMode ? '#1e293b' : '#ffffff',
+                      borderRadius: 14,
+                      padding: '18px 20px',
+                      marginBottom: 16,
+                      border: darkMode ? '1px solid #334155' : '1px solid #e2e8f0',
+                      boxShadow: darkMode ? '0 4px 20px rgba(0,0,0,0.2)' : '0 4px 16px rgba(0,0,0,0.03)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <Text strong style={{ fontSize: 13, color: darkMode ? '#f1f5f9' : '#111827', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <CalendarOutlined style={{ color: '#3b82f6' }} /> Publishing Schedule
+                        </Text>
+                        <Tag color={scheduleMode === 'date_time' ? 'purple' : 'blue'} style={{ borderRadius: 12, margin: 0, fontWeight: 700, fontSize: 11 }}>
+                          {scheduleMode === 'date_time' ? '⏰ Auto-Schedule' : '📅 Date Only'}
+                        </Tag>
+                      </div>
+
+                      {/* Mode Switcher Buttons */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr',
+                        gap: 8,
+                        background: darkMode ? '#0f172a' : '#f1f5f9',
+                        padding: 4,
+                        borderRadius: 10,
+                        marginBottom: 14
+                      }}>
+                        <button
+                          type="button"
+                          onClick={() => setScheduleMode('date_only')}
+                          style={{
+                            border: 'none',
+                            borderRadius: 8,
+                            padding: '8px 10px',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            fontWeight: scheduleMode === 'date_only' ? 700 : 500,
+                            background: scheduleMode === 'date_only'
+                              ? (darkMode ? '#3b82f6' : '#ffffff')
+                              : 'transparent',
+                            color: scheduleMode === 'date_only'
+                              ? (darkMode ? '#ffffff' : '#1d4ed8')
+                              : (darkMode ? '#94a3b8' : '#64748b'),
+                            boxShadow: scheduleMode === 'date_only' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <CalendarOutlined />
+                          <span>Date Only</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setScheduleMode('date_time')}
+                          style={{
+                            border: 'none',
+                            borderRadius: 8,
+                            padding: '8px 10px',
+                            cursor: 'pointer',
+                            fontSize: 12,
+                            fontWeight: scheduleMode === 'date_time' ? 700 : 500,
+                            background: scheduleMode === 'date_time'
+                              ? (darkMode ? '#7c3aed' : '#ffffff')
+                              : 'transparent',
+                            color: scheduleMode === 'date_time'
+                              ? (darkMode ? '#ffffff' : '#6d28d9')
+                              : (darkMode ? '#94a3b8' : '#64748b'),
+                            boxShadow: scheduleMode === 'date_time' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <ClockCircleOutlined />
+                          <span>Date & Time</span>
+                        </button>
+                      </div>
+
+                      {/* The Modern DatePicker Input */}
+                      <Form.Item
+                        name="scheduled_publish_date"
+                        style={{ marginBottom: 0 }}
+                      >
+                        {scheduleMode === 'date_only' ? (
+                          <DatePicker
+                            format="YYYY-MM-DD"
+                            placeholder="Select publication date (Date Only)"
+                            popupClassName="modern-schedule-dropdown"
+                            style={{
+                              width: '100%',
+                              height: 40,
+                              borderRadius: 8,
+                              background: darkMode ? '#0f172a' : '#fff',
+                              borderColor: darkMode ? '#334155' : '#cbd5e1',
+                              color: darkMode ? '#f8fafc' : '#0f172a'
+                            }}
+                          />
+                        ) : (
+                          <DatePicker
+                            showTime={{ format: 'HH:mm', minuteStep: 5 }}
+                            format="YYYY-MM-DD HH:mm"
+                            placeholder="Select publish date & exact time"
+                            popupClassName="modern-schedule-dropdown"
+                            style={{
+                              width: '100%',
+                              height: 40,
+                              borderRadius: 8,
+                              background: darkMode ? '#0f172a' : '#fff',
+                              borderColor: darkMode ? '#334155' : '#cbd5e1',
+                              color: darkMode ? '#f8fafc' : '#0f172a'
+                            }}
+                          />
+                        )}
+                      </Form.Item>
+
+                      {/* Live Selected Schedule Summary Preview */}
+                      <Form.Item
+                        noStyle
+                        shouldUpdate={(prevValues, currentValues) =>
+                          prevValues.scheduled_publish_date !== currentValues.scheduled_publish_date
+                        }
+                      >
+                        {({ getFieldValue }) => {
+                          const val = getFieldValue('scheduled_publish_date');
+                          if (!val) return null;
+                          return (
+                            <div style={{
+                              marginTop: 12,
+                              padding: '10px 12px',
+                              borderRadius: 8,
+                              background: scheduleMode === 'date_time'
+                                ? (darkMode ? 'rgba(147, 51, 234, 0.12)' : '#FAF5FF')
+                                : (darkMode ? 'rgba(37, 99, 235, 0.12)' : '#EFF6FF'),
+                              border: scheduleMode === 'date_time'
+                                ? (darkMode ? '1px solid rgba(147, 51, 234, 0.3)' : '1px solid #E9D5FF')
+                                : (darkMode ? '1px solid rgba(37, 99, 235, 0.3)' : '1px solid #BFDBFE'),
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                                <span style={{
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  color: scheduleMode === 'date_time' ? '#9333EA' : '#2563EB',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6
+                                }}>
+                                  {scheduleMode === 'date_time' ? <ClockCircleOutlined /> : <CalendarOutlined />}
+                                  {scheduleMode === 'date_time' ? 'Scheduled Auto-Publish' : 'Direct Publication Date'}
+                                </span>
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  onClick={() => form.setFieldsValue({ scheduled_publish_date: null })}
+                                  style={{ height: 20, padding: '0 4px', fontSize: 11, color: '#ef4444' }}
+                                >
+                                  Clear
+                                </Button>
+                              </div>
+                              <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#1e3a8a' }}>
+                                {scheduleMode === 'date_time'
+                                  ? moment(val).format('dddd, MMMM D, YYYY [at] h:mm A')
+                                  : moment(val).format('dddd, MMMM D, YYYY')}
+                              </div>
+                            </div>
+                          );
+                        }}
                       </Form.Item>
                     </div>
 

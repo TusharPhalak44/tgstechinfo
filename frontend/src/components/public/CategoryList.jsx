@@ -63,10 +63,25 @@ const CATEGORY_ACCENT_MAP = {
   'machine-learning': '#a29bfe',
   'software-development': '#00cec9',
   'healthcare': '#00b894',
+  'healthtech': '#00b894',
+  'itech': '#0AAEEF',
   'fintech': '#fdcb6e',
   'hr-tech': '#e17055',
+  'hrtech': '#e17055',
+  'martech': '#fd79a8',
   'edtech': '#6c5ce7',
   'whitepaper': '#0AAEEF'
+};
+
+const CUSTOM_TITLES = {
+  itech: 'ITech',
+  fintech: 'FinTech',
+  hrtech: 'HRTech',
+  'hr-tech': 'HRTech',
+  martech: 'MarTech',
+  healthtech: 'HealthTech',
+  healthcare: 'HealthTech',
+  edtech: 'EdTech'
 };
 
 // ── Helper to format "(contentType - category)" metadata label ───────
@@ -772,9 +787,14 @@ const CategoryList = () => {
   const isTabletOrMobile = windowWidth < 1024;
 
   const typeInfo = TYPE_MAP[slug];
-  const isCategoryPage = !typeInfo || location.pathname.startsWith('/category/');
+  const isCategoryPage = !typeInfo || location.pathname.startsWith('/category/') || location.pathname.startsWith('/industry/') || location.pathname.startsWith('/industries/');
   const accent = typeInfo?.accent || CATEGORY_ACCENT_MAP[slug] || '#0AAEEF';
-  const pageTitle = typeInfo?.title || (slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())) || 'Articles';
+  const matchedCategory = categoriesTree.find(c => (c.slug || '').toLowerCase() === (slug || '').toLowerCase());
+  const pageTitle = typeInfo?.title
+    || CUSTOM_TITLES[(slug || '').toLowerCase()]
+    || matchedCategory?.name
+    || (slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
+    || 'Articles';
   const trendingTitle = typeInfo?.title
     ? `Trending ${typeInfo.title}`
     : (pageTitle ? `Trending ${pageTitle}` : 'Trending Articles');
@@ -1197,7 +1217,7 @@ const CategoryList = () => {
               {loading
                 ? <Skeleton active paragraph={{ rows: 6 }} />
                 : filteredContents.length === 0
-                  ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>No articles matched your search query.</div>
+                  ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>{searchTerm ? 'No articles matched your search query.' : `No articles published yet in ${pageTitle}.`}</div>
                   : filteredContents.slice(0, visibleCount).map(item => (
                     <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} isMobile={isMobile} isCategoryPage={isCategoryPage} />
                   ))
