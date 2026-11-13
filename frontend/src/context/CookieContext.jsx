@@ -16,8 +16,8 @@ const CURRENT_BANNER_VERSION = '1.0';
 
 // Tracking script IDs (configure with actual IDs)
 const SCRIPT_IDS = {
-  googleAnalytics4: import.meta.env.VITE_GA4_ID || '',
-  googleTagManager: import.meta.env.VITE_GTM_ID || '',
+  googleAnalytics4: import.meta.env.VITE_GA4_ID || 'G-YQQGJH8LT4',
+  googleTagManager: import.meta.env.VITE_GTM_ID || 'GTM-KKTZ98FP',
   hubSpot: import.meta.env.VITE_HUBSPOT_ID || '',
   metaPixel: import.meta.env.VITE_META_PIXEL_ID || '',
   linkedinInsight: import.meta.env.VITE_LINKEDIN_ID || '',

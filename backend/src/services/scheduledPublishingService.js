@@ -7,14 +7,32 @@ class ScheduledPublishingService {
      */
     static async checkAndPublishDueContent() {
         try {
-            const [dueItems] = await pool.query(`
-                SELECT id, title, slug, user_id, scheduled_publish_date 
-                FROM contents 
-                WHERE (status = 'scheduled' OR status = 'approved')
-                  AND scheduled_publish_date IS NOT NULL 
-                  AND (schedule_type = 'date_time' OR (schedule_type IS NULL AND TIME(scheduled_publish_date) != '00:00:00'))
-                  AND scheduled_publish_date <= CURRENT_TIMESTAMP
-            `);
+            let dueItems;
+            try {
+                [dueItems] = await pool.query(`
+                    SELECT id, title, slug, user_id, scheduled_publish_date 
+                    FROM contents 
+                    WHERE (status = 'scheduled' OR status = 'approved')
+                      AND scheduled_publish_date IS NOT NULL 
+                      AND (schedule_type = 'date_time' OR (schedule_type IS NULL AND TIME(scheduled_publish_date) != '00:00:00'))
+                      AND scheduled_publish_date <= CURRENT_TIMESTAMP
+                `);
+            } catch (queryErr) {
+                // Defensive fallback if 'schedule_type' column does not exist yet
+                if ((queryErr.code === 'ER_BAD_FIELD_ERROR' || queryErr.errno === 1054) && String(queryErr.message).includes('schedule_type')) {
+                    [dueItems] = await pool.query(`
+                        SELECT id, title, slug, user_id, scheduled_publish_date 
+                        FROM contents 
+                        WHERE (status = 'scheduled' OR status = 'approved')
+                          AND scheduled_publish_date IS NOT NULL 
+                          AND TIME(scheduled_publish_date) != '00:00:00'
+                          AND scheduled_publish_date <= CURRENT_TIMESTAMP
+                    `);
+                    pool.query("ALTER TABLE contents ADD COLUMN schedule_type VARCHAR(50) DEFAULT 'date_only' AFTER scheduled_publish_date").catch(() => {});
+                } else {
+                    throw queryErr;
+                }
+            }
 
             if (!dueItems || dueItems.length === 0) {
                 return { count: 0, publishedIds: [] };

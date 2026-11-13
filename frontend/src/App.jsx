@@ -381,6 +381,22 @@ function AppContent() {
 
   }, []);
 
+  // Track Google Analytics pageviews on SPA route changes
+  useEffect(() => {
+    if (typeof window.gtag === 'function') {
+      window.gtag('config', 'G-YQQGJH8LT4', {
+        page_path: location.pathname + location.search,
+        page_location: window.location.href,
+        page_title: document.title
+      });
+      window.gtag('event', 'page_view', {
+        page_path: location.pathname + location.search,
+        page_location: window.location.href,
+        page_title: document.title
+      });
+    }
+  }, [location.pathname, location.search]);
+
 
 
   return (

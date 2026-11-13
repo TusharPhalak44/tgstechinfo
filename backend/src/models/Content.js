@@ -444,7 +444,26 @@ class Content {
             console.error('[Content.create] FATAL: Column/value mismatch!', insertColumns.length, 'vs', insertValues.length);
         }
 
-        const [result] = await pool.query(query, insertValues);
+        let result;
+        try {
+            [result] = await pool.query(query, insertValues);
+        } catch (insertError) {
+            // Defensive fallback if database table does not yet have 'schedule_type' column
+            if ((insertError.code === 'ER_BAD_FIELD_ERROR' || insertError.errno === 1054) && String(insertError.message).includes('schedule_type')) {
+                console.warn('[Content.create] `schedule_type` column missing in contents table; retrying insert without schedule_type');
+                const scheduleIdx = insertColumns.indexOf('schedule_type');
+                const fallbackColumns = insertColumns.filter((_, i) => i !== scheduleIdx);
+                const fallbackValues = insertValues.filter((_, i) => i !== scheduleIdx);
+                const fallbackPlaceholders = fallbackColumns.map(() => '?').join(', ');
+                const fallbackQuery = `INSERT INTO contents (${fallbackColumns.join(', ')}) VALUES (${fallbackPlaceholders})`;
+                [result] = await pool.query(fallbackQuery, fallbackValues);
+
+                // Auto-heal table schema asynchronously
+                pool.query("ALTER TABLE contents ADD COLUMN schedule_type VARCHAR(50) DEFAULT 'date_only' AFTER scheduled_publish_date").catch(() => {});
+            } else {
+                throw insertError;
+            }
+        }
 
         // No need to replace placeholder anymore since we're using window.__CONTENT_ID
 
@@ -795,7 +814,30 @@ class Content {
             console.error('[Content.update] FATAL: Placeholder/value mismatch!', placeholderCount, 'vs', values.length);
         }
 
-        await pool.query(`UPDATE contents SET ${updates.join(', ')} WHERE id = ?`, values);
+        try {
+            await pool.query(`UPDATE contents SET ${updates.join(', ')} WHERE id = ?`, values);
+        } catch (updateError) {
+            // Defensive fallback if database table does not yet have 'schedule_type' column
+            if ((updateError.code === 'ER_BAD_FIELD_ERROR' || updateError.errno === 1054) && String(updateError.message).includes('schedule_type')) {
+                console.warn('[Content.update] `schedule_type` column missing in contents table; retrying update without schedule_type');
+                const filteredUpdates = [];
+                const filteredValues = [];
+                for (let i = 0; i < updates.length - 1; i++) {
+                    if (!updates[i].startsWith('schedule_type =')) {
+                        filteredUpdates.push(updates[i]);
+                        filteredValues.push(values[i]);
+                    }
+                }
+                filteredUpdates.push('updated_at = CURRENT_TIMESTAMP');
+                filteredValues.push(id);
+                await pool.query(`UPDATE contents SET ${filteredUpdates.join(', ')} WHERE id = ?`, filteredValues);
+
+                // Auto-heal table schema asynchronously
+                pool.query("ALTER TABLE contents ADD COLUMN schedule_type VARCHAR(50) DEFAULT 'date_only' AFTER scheduled_publish_date").catch(() => {});
+            } else {
+                throw updateError;
+            }
+        }
         const updatedContent = await Content.findById(id);
 
         // Update dynamic table if custom_fields changed

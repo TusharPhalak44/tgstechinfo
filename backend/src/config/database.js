@@ -86,6 +86,17 @@ const testConnection = async (retries = 15, delay = 3000) => {
                 try {
                     await conn.query('ALTER TABLE users ADD COLUMN github_url VARCHAR(500) DEFAULT NULL');
                 } catch (_) {}
+
+                // Ensure contents table has schedule_type column for flexible publishing
+                try {
+                    await conn.query("ALTER TABLE contents ADD COLUMN schedule_type VARCHAR(50) DEFAULT 'date_only' AFTER scheduled_publish_date");
+                    console.log('✅ Auto-migration: added `schedule_type` column to contents table');
+                } catch (colErr) {
+                    // Ignore error if column already exists (ER_DUP_FIELDNAME / 1060)
+                    if (colErr.code !== 'ER_DUP_FIELDNAME' && colErr.errno !== 1060) {
+                        console.warn('⚠️ Note on schedule_type column check:', colErr.message);
+                    }
+                }
             } catch (_) {}
             conn.release();
             return true;
