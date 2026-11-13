@@ -282,9 +282,23 @@ const SEO = () => {
     }
   };
 
+  const [syncingSitemap, setSyncingSitemap] = useState(false);
+
+  const handleSyncLiveSitemap = async () => {
+    setSyncingSitemap(true);
+    try {
+      const res = await axios.post('/api/seo/sync-sitemap');
+      message.success(`Live sitemap synced! (${res.data?.totalUrls || 0} URLs updated)`);
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Failed to sync live sitemap');
+    } finally {
+      setSyncingSitemap(false);
+    }
+  };
+
   const handleGenerateSitemap = async () => {
     try {
-      const response = await axios.get('/api/seo/sitemap', { responseType: 'text' });
+      const response = await axios.get('/api/seo/sitemap?force=1', { responseType: 'text' });
       const blob = new Blob([response.data], { type: 'application/xml' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -463,6 +477,14 @@ const SEO = () => {
           </div>
 
           <Space size={10}>
+            <Button
+              icon={<ReloadOutlined spin={syncingSitemap} />}
+              loading={syncingSitemap}
+              onClick={handleSyncLiveSitemap}
+              style={{ borderRadius: 10, fontWeight: 700, background: D ? '#1E293B' : '#F1F5F9' }}
+            >
+              Sync Live Sitemap
+            </Button>
             <Button
               icon={<SaveOutlined />}
               onClick={handleGenerateSitemap}

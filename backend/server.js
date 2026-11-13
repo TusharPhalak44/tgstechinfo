@@ -357,10 +357,10 @@ app.use('/api/admin/events', require('./src/routes/eventRoutes'));
 app.use('/lp', require('./src/routes/fileLandingRoutes'));
 
 // Public Search Engine Endpoints
-app.get('/sitemap.xml', require('./src/controllers/seoController').generateSitemap);
+app.get(['/sitemap.xml', '/sitemap'], require('./src/controllers/seoController').generateSitemap);
 app.get('/robots.txt', (req, res) => {
-    const baseUrl = process.env.BASE_URL || 'https://tgstechinfo.com';
-    res.setHeader('Content-Type', 'text/plain');
+    const baseUrl = (process.env.BASE_URL || process.env.SITE_URL || 'https://tgstechinfo.com').replace(/\/+$/, '');
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     res.send(`User-agent: *\nAllow: /\n\nSitemap: ${baseUrl}/sitemap.xml\n`);
 });
 

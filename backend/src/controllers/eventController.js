@@ -1,5 +1,6 @@
 const { pool } = require('../config/database');
 const { sendEventConfirmationEmail, generateIcsCalendar } = require('../services/eventEmailService');
+const SitemapService = require('../services/sitemapService');
 const crypto = require('crypto');
 
 /**
@@ -586,6 +587,9 @@ exports.createEvent = async (req, res) => {
             req.user?.id || null
         ]);
 
+        // Automatically update sitemap whenever event is created
+        SitemapService.notifyContentChanged();
+
         res.status(201).json({
             success: true,
             message: 'Event created and published successfully!',
@@ -766,6 +770,9 @@ exports.updateEvent = async (req, res) => {
             id
         ]);
 
+        // Automatically update sitemap whenever event is updated
+        SitemapService.notifyContentChanged();
+
         res.json({ success: true, message: 'Event updated successfully!', slug: finalSlug });
     } catch (err) {
         console.error('[updateEvent] Error:', err);
@@ -780,6 +787,13 @@ exports.deleteEvent = async (req, res) => {
     try {
         const { id } = req.params;
         await pool.query('DELETE FROM events WHERE id = ?', [id]);
+
+        // Automatically update sitemap whenever event is deleted
+        SitemapService.notifyContentChanged();
+
+        // Automatically update sitemap whenever event is deleted
+        SitemapService.notifyContentChanged();
+
         res.json({ success: true, message: 'Event deleted successfully.' });
     } catch (err) {
         console.error('[deleteEvent] Error:', err);
@@ -923,6 +937,9 @@ exports.deleteEvent = async (req, res) => {
         if (event.slug) {
             await pool.query('DELETE FROM contents WHERE slug = ? AND content_type_id = 5', [event.slug]).catch(() => {});
         }
+
+        // Automatically update sitemap whenever event is deleted
+        SitemapService.notifyContentChanged();
 
         res.json({ success: true, message: 'Event deleted successfully.' });
     } catch (err) {

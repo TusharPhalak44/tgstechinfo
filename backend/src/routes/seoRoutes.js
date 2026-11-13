@@ -8,6 +8,7 @@ router.get('/settings', seoController.getSeoSettings);
 
 // Public: sitemap for search engines & web crawlers
 router.get('/sitemap', seoController.generateSitemap);
+router.get('/sitemap.xml', seoController.generateSitemap);
 
 // All other SEO routes require authentication and admin role
 router.use(authenticate);
@@ -21,5 +22,8 @@ router.get('/analysis', seoController.getPageSeoAnalysis);
 
 // Get overall SEO score
 router.get('/score', seoController.getSeoScore);
+
+// Admin: Force sync / regenerate sitemap
+router.post('/sync-sitemap', seoController.syncSitemap);
 
 module.exports = router;

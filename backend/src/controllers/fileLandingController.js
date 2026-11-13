@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { getLandingPagesRoot, isValidSlug, getFileLandingPageUrl, getLandingPageShareUrl, getMimeType, resolveLandingFolder, resolveAssetFile } = require('../utils/landingPageHelper');
 const { pool } = require('../config/database');
+const SitemapService = require('../services/sitemapService');
 
 // Blacklist of forbidden filenames or paths within landing pages
 const FORBIDDEN_FILENAMES = new Set([
@@ -594,6 +595,9 @@ exports.uploadZipLandingPage = async (req, res) => {
 
         const shareUrl = getLandingPageShareUrl(cleanSlug);
 
+        // Automatically update sitemap whenever a landing page is uploaded/published
+        SitemapService.notifyContentChanged();
+
         return res.json({
             success: true,
             message: `Landing page "${cleanSlug}" uploaded and stored in database successfully!`,
@@ -618,6 +622,9 @@ exports.syncAdminLandingPages = async (req, res) => {
     try {
         const { syncAllFileLandingPages } = require('../utils/landingPageHelper');
         const synced = await syncAllFileLandingPages();
+        // Automatically update sitemap whenever a landing page is uploaded/published
+        SitemapService.notifyContentChanged();
+
         return res.json({
             success: true,
             message: `Successfully synchronized ${synced.length} landing page(s) with database.`,

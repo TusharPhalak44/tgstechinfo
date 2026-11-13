@@ -43,6 +43,14 @@ class ScheduledPublishingService {
                 console.error('[Scheduled Publisher] ContentNotificationService error:', notifErr.message);
             }
 
+            // Automatically update sitemap whenever scheduled content publishes
+            try {
+                const SitemapService = require('./sitemapService');
+                SitemapService.notifyContentChanged();
+            } catch (sitemapErr) {
+                console.warn('[Scheduled Publisher] Sitemap update warning:', sitemapErr.message);
+            }
+
             return { count: ids.length, publishedIds: ids };
         } catch (err) {
             console.error('[Scheduled Publisher] Error checking scheduled content:', err.message);

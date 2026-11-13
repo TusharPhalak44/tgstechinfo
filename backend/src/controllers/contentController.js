@@ -11,6 +11,7 @@ const { sendEmail, accessGrantEmailTemplate, sendTemplatedEmail } = require('../
 const { notifyAdmins } = require('./notificationController');
 const logAudit = require('../utils/auditLogger');
 const { updateTagUsage, decreaseTagUsage } = require('./tagsController');
+const SitemapService = require('../services/sitemapService');
 
 // Replace em-dash (—) with hyphen (-) in any string or object
 const stripEmDash = (val) => {
@@ -334,6 +335,9 @@ exports.createContent = async (req, res) => {
 
         // Log to audit logs
         await logAudit(req, 'create', 'content', content.id, `Created content: ${content.title}`, 'success');
+
+        // Automatically update sitemap whenever new content is created
+        SitemapService.notifyContentChanged();
 
         res.status(201).json({ message: 'Content created successfully', content });
     } catch (error) {
@@ -732,6 +736,9 @@ exports.updateContent = async (req, res) => {
         // Log to audit logs
         await logAudit(req, 'update', 'content', id, `Updated content: ${updatedContent.title}`, 'success');
 
+        // Automatically update sitemap whenever content is updated
+        SitemapService.notifyContentChanged();
+
         res.json({ message: 'Content updated successfully', content: updatedContent });
     } catch (error) {
         console.error('Update content error:', error);
@@ -878,6 +885,10 @@ exports.deleteContent = async (req, res) => {
         }
 
         await Content.delete(id);
+
+        // Automatically update sitemap whenever content is deleted
+        SitemapService.notifyContentChanged();
+
         res.json({ message: 'Content deleted successfully' });
     } catch (error) {
         console.error('Delete content error:', error);

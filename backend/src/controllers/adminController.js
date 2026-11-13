@@ -9,6 +9,7 @@ const { sendEmail, accessGrantEmailTemplate, sendTemplatedEmail } = require('../
 const { createNotification } = require('./notificationController');
 const logAudit = require('../utils/auditLogger');
 const { formatDateForEmail } = require('../utils/dateHelper');
+const SitemapService = require('../services/sitemapService');
 
 const stripEmDash = (val) => {
     if (typeof val === 'string') return val.replace(/—/g, '-');
@@ -186,6 +187,9 @@ exports.reviewContent = async (req, res) => {
 
         // Log to audit logs
         await logAudit(req, action, 'content', id, `${action} content: ${content.title}${comment ? ' - ' + comment : ''}`, 'success');
+
+        // Automatically update sitemap whenever content status changes
+        SitemapService.notifyContentChanged();
 
         res.json({ message: responseMessage, content: updatedContent });
     } catch (error) {
@@ -854,6 +858,10 @@ exports.deleteContent = async (req, res) => {
         await Content.delete(id);
         // Also delete related notifications
         await pool.query('DELETE FROM notifications WHERE content_id = ?', [id]);
+
+        // Automatically update sitemap whenever content is deleted
+        SitemapService.notifyContentChanged();
+
         res.json({ message: 'Content deleted successfully' });
     } catch (error) {
         console.error('Delete content error:', error);
@@ -1525,6 +1533,9 @@ exports.toggleContentVisibility = async (req, res) => {
             `Changed content visibility to ${visibilityStatus}: ${content.title}`,
             'success'
         );
+
+        // Automatically update sitemap whenever visibility is toggled
+        SitemapService.notifyContentChanged();
 
         res.json({
             message: `Content ${visibilityStatus} on site successfully`,

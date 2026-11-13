@@ -68,6 +68,7 @@ const CategoryList = lazyWithRetry(() => import('./components/public/CategoryLis
 const SearchResults = lazyWithRetry(() => import('./components/public/SearchResults'));
 const Newsletter = lazyWithRetry(() => import('./components/public/Newsletter'));
 const SitemapXml = lazyWithRetry(() => import('./pages/SitemapXml'));
+const LegacySlugRedirect = lazyWithRetry(() => import('./pages/LegacySlugRedirect'));
 const EventsPage = lazyWithRetry(() => import('./pages/EventsPage'));
 const EventDetailPage = lazyWithRetry(() => import('./pages/EventDetailPage'));
 const AuthorsPage = lazyWithRetry(() => import('./pages/AuthorsPage'));
@@ -770,6 +771,9 @@ function AppContent() {
                 } />
 
 
+
+                {/* Legacy root slugs fallback for older indexed URLs */}
+                <Route path="/:slug" element={<LegacySlugRedirect />} />
 
                 {/* 404 catch-all */}
 

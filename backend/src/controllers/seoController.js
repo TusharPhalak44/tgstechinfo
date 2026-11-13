@@ -1,6 +1,7 @@
 const Content = require('../models/Content');
 const Category = require('../models/Category');
 const SiteSettings = require('../models/SiteSettings');
+const SitemapService = require('../services/sitemapService');
 
 // Get SEO settings
 exports.getSeoSettings = async (req, res) => {
@@ -289,114 +290,35 @@ exports.getSeoScore = async (req, res) => {
     }
 };
 
-// Generate sitemap
+// Generate sitemap dynamically with full content & page mapping
 exports.generateSitemap = async (req, res) => {
     try {
-        const { rows: content } = await Content.findAll({ status: 'published', is_visible_on_site: 1 });
-        const categories = await Category.findAll();
-        
-        const baseUrl = process.env.BASE_URL || 'https://tgstechinfo.com';
-        
-        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/audience</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/articles</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/interviews</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/news</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/ebooks</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/blogs</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/whitepapers</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/webinars</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/events</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/case-studies</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/about</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/contact</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.85</priority>
-  </url>
-  ${categories.map(cat => `
-  <url>
-    <loc>${baseUrl}/category/${cat.slug}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`).join('')}
-  ${content.map(item => `
-  <url>
-    <loc>${baseUrl}/${item.slug}</loc>
-    <lastmod>${item.updated_at || new Date().toISOString()}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`).join('')}
-</urlset>`;
-        
-        res.setHeader('Content-Type', 'application/xml');
-        res.send(sitemap);
+        const force = req.query.force === '1' || req.query.refresh === '1';
+        const { xml } = await SitemapService.getSitemapXml({ force });
+
+        res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+        res.setHeader('X-Robots-Tag', 'noindex');
+        res.setHeader('Cache-Control', 'public, max-age=900, stale-while-revalidate=3600');
+        res.send(xml);
     } catch (error) {
         console.error('Generate sitemap error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error generating sitemap' });
+    }
+};
+
+// Manually sync/regenerate sitemap file on disk and invalidate cache (Admin)
+exports.syncSitemap = async (req, res) => {
+    try {
+        const result = await SitemapService.syncSitemapFile();
+        SitemapService.invalidateCache();
+        res.json({
+            success: true,
+            message: 'Sitemap generated and synced successfully',
+            totalUrls: result.totalUrls,
+            locationsWritten: result.writtenCount
+        });
+    } catch (error) {
+        console.error('Sync sitemap error:', error);
+        res.status(500).json({ success: false, message: 'Failed to sync sitemap' });
     }
 };
