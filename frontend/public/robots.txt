@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://tgstechinfo.com/sitemap.xml
+Sitemap: https://tgstechinfo.com/api/seo/sitemap.xml

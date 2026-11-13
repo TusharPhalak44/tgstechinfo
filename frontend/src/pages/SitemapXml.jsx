@@ -6,7 +6,7 @@ import React, { useEffect } from 'react';
  */
 const SitemapXml = () => {
   useEffect(() => {
-    window.location.replace('/api/seo/sitemap');
+    window.location.replace('/api/seo/sitemap.xml');
   }, []);
 
   return (

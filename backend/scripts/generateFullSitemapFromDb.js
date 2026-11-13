@@ -142,53 +142,59 @@ async function run() {
     // 3. Published Content from live_contents.sql
     const contentSqlPath = path.resolve(__dirname, '../database/live_contents.sql');
     if (fs.existsSync(contentSqlPath)) {
-        const contentSql = fs.readFileSync(contentSqlPath, 'utf8');
-        // Parse INSERT INTO `contents`
-        // Columns: (`id`, `user_id`, `content_type_id`, `category_id`, `title`, `slug`, ..., `status`, ...)
-        // We match each row block:
-        // Format: (id, user_id, content_type_id, category_id, 'title', 'slug', ... 'status', ... 'is_visible_on_site', ...)
-        const rowRegex = /\((\d+),\s*(\d+|NULL),\s*(\d+|NULL),\s*(\d+|NULL),\s*'((?:\\.|[^'])*)',\s*'((?:\\.|[^'])*)'[\s\S]*?'(published|draft|pending|review|changes_requested|rejected)'/g;
-        let rm;
+        const contentLines = fs.readFileSync(contentSqlPath, 'utf8').split(/\r?\n/);
+        let nextIsRow = false;
         let count = 0;
-        while ((rm = rowRegex.exec(contentSql)) !== null) {
-            const id = parseInt(rm[1], 10);
-            const contentTypeId = rm[3] !== 'NULL' ? parseInt(rm[3], 10) : 2;
-            const categoryId = rm[4] !== 'NULL' ? parseInt(rm[4], 10) : null;
-            const title = rm[5].replace(/\\'/g, "'");
-            const slug = rm[6].replace(/\\'/g, "'").trim();
-            const status = rm[7];
 
-            if (status !== 'published' || !slug) continue;
-
-            const category = categoryId ? categoriesMap.get(categoryId) : null;
-            const catSlug = category ? category.slug : '';
-            const type = CONTENT_TYPE_ROUTE_MAP[contentTypeId] || 'article';
-
-            let itemLoc;
-            if (type === 'event' || contentTypeId === 5) {
-                itemLoc = `${baseUrl}/events/${encodeURIComponent(slug)}`;
-            } else if (type === 'case-study' || contentTypeId === 11) {
-                itemLoc = catSlug
-                    ? `${baseUrl}/case-study/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`
-                    : `${baseUrl}/case-study/${encodeURIComponent(slug)}`;
-            } else if (catSlug) {
-                itemLoc = `${baseUrl}/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`;
-            } else {
-                itemLoc = `${baseUrl}/${type}/${encodeURIComponent(slug)}`;
+        for (const line of contentLines) {
+            if (line.startsWith('INSERT INTO `contents`')) {
+                nextIsRow = true;
+                continue;
             }
+            if (nextIsRow) {
+                nextIsRow = false;
+                const m = line.match(/^\((\d+),\s*(\d+|NULL),\s*(\d+|NULL),\s*(\d+|NULL),\s*'((?:\\.|[^'])*)',\s*'((?:\\.|[^'])*)'/);
+                if (m) {
+                    const id = parseInt(m[1], 10);
+                    const contentTypeId = m[3] !== 'NULL' ? parseInt(m[3], 10) : 2;
+                    const categoryId = m[4] !== 'NULL' ? parseInt(m[4], 10) : null;
+                    const slug = m[6].replace(/\\'/g, "'").trim();
 
-            let priority = '0.75';
-            let changefreq = 'weekly';
-            if (type === 'news') { priority = '0.85'; changefreq = 'daily'; }
-            else if (type === 'article' || type === 'blog') { priority = '0.8'; changefreq = 'weekly'; }
+                    // Check if published or approved
+                    const isPublished = line.includes("'published'") || line.includes("'approved'") || !line.includes("'draft'");
+                    if (!isPublished || !slug) continue;
 
-            urlsMap.set(itemLoc, {
-                loc: itemLoc,
-                lastmod: nowIso,
-                changefreq,
-                priority
-            });
-            count++;
+                    const category = categoryId ? categoriesMap.get(categoryId) : null;
+                    const catSlug = category ? category.slug : '';
+                    const type = CONTENT_TYPE_ROUTE_MAP[contentTypeId] || 'article';
+
+                    let itemLoc;
+                    if (type === 'event' || contentTypeId === 5) {
+                        itemLoc = `${baseUrl}/events/${encodeURIComponent(slug)}`;
+                    } else if (type === 'case-study' || contentTypeId === 11) {
+                        itemLoc = catSlug
+                            ? `${baseUrl}/case-study/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`
+                            : `${baseUrl}/case-study/${encodeURIComponent(slug)}`;
+                    } else if (catSlug) {
+                        itemLoc = `${baseUrl}/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`;
+                    } else {
+                        itemLoc = `${baseUrl}/${type}/${encodeURIComponent(slug)}`;
+                    }
+
+                    let priority = '0.75';
+                    let changefreq = 'weekly';
+                    if (type === 'news') { priority = '0.85'; changefreq = 'daily'; }
+                    else if (type === 'article' || type === 'blog') { priority = '0.8'; changefreq = 'weekly'; }
+
+                    urlsMap.set(itemLoc, {
+                        loc: itemLoc,
+                        lastmod: nowIso,
+                        changefreq,
+                        priority
+                    });
+                    count++;
+                }
+            }
         }
         console.log(`Parsed ${count} published content items from live_contents.sql`);
     }

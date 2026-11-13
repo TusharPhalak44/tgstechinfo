@@ -30,6 +30,20 @@ const CONTENT_TYPE_ROUTE_MAP = {
     'landing page': 'article'
 };
 
+const CONTENT_TYPE_ID_MAP = {
+    1: 'news',
+    2: 'article',
+    3: 'blog',
+    4: 'webinar',
+    5: 'event',
+    6: 'interview',
+    7: 'ebook',
+    8: 'article',
+    9: 'report',
+    10: 'whitepaper',
+    11: 'case-study'
+};
+
 // In-memory cache variables
 let cachedSitemapXml = null;
 let lastCacheTime = 0;
@@ -109,7 +123,19 @@ function resolveItemUrl(baseUrl, item) {
         return `${baseUrl}/content/${encodeURIComponent(slug)}`;
     }
 
-    const type = CONTENT_TYPE_ROUTE_MAP[String(item.content_type || item.content_type_name || 'article').toLowerCase().trim()] || 'article';
+    let type = null;
+    if (item.content_type) {
+        type = CONTENT_TYPE_ROUTE_MAP[String(item.content_type).toLowerCase().trim()];
+    }
+    if (!type && item.content_type_name) {
+        type = CONTENT_TYPE_ROUTE_MAP[String(item.content_type_name).toLowerCase().trim()];
+    }
+    if (!type && item.content_type_id) {
+        type = CONTENT_TYPE_ID_MAP[item.content_type_id];
+    }
+    if (!type) {
+        type = 'article';
+    }
 
     if (type === 'event' || item.content_type_id === 5) {
         return `${baseUrl}/events/${encodeURIComponent(slug)}`;
@@ -229,9 +255,10 @@ class SitemapService {
                     FROM contents c
                     LEFT JOIN content_types ct ON c.content_type_id = ct.id
                     LEFT JOIN categories cat ON c.category_id = cat.id
-                    WHERE c.status = 'published'
+                    WHERE (c.status = 'published' OR c.status = 'approved' OR LOWER(c.status) = 'published')
                       AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
                       AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
+                      AND c.slug IS NOT NULL AND TRIM(c.slug) != ''
                     ORDER BY COALESCE(c.published_date, c.created_at) DESC
                 `);
                 contents = rows;
@@ -246,8 +273,9 @@ class SitemapService {
                     FROM contents c
                     LEFT JOIN content_types ct ON c.content_type_id = ct.id
                     LEFT JOIN categories cat ON c.category_id = cat.id
-                    WHERE c.status = 'published'
+                    WHERE (c.status = 'published' OR c.status = 'approved' OR LOWER(c.status) = 'published')
                       AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+                      AND c.slug IS NOT NULL AND TRIM(c.slug) != ''
                     ORDER BY COALESCE(c.published_date, c.created_at) DESC
                 `);
                 contents = fallbackRows;
