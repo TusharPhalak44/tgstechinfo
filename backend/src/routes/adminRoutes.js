@@ -128,6 +128,10 @@ router.get('/categories', hasPermission('content.read'), async (req, res) => {
 router.post('/categories', hasPermission('content.create'), async (req, res) => {
     try {
         const category = await Category.create(req.body);
+        try {
+            const SitemapService = require('../services/sitemapService');
+            SitemapService.notifyContentChanged();
+        } catch (_) {}
         res.status(201).json(category);
     } catch (error) {
         console.error('Create category error:', error);
@@ -138,6 +142,10 @@ router.post('/categories', hasPermission('content.create'), async (req, res) => 
 router.put('/categories/:id', hasPermission('content.update'), async (req, res) => {
     try {
         const category = await Category.update(req.params.id, req.body);
+        try {
+            const SitemapService = require('../services/sitemapService');
+            SitemapService.notifyContentChanged();
+        } catch (_) {}
         res.json(category);
     } catch (error) {
         console.error('Update category error:', error);
@@ -151,6 +159,10 @@ router.delete('/categories/:id', hasPermission('content.delete'), async (req, re
         if (!deleted) {
             return res.status(404).json({ message: 'Category not found' });
         }
+        try {
+            const SitemapService = require('../services/sitemapService');
+            SitemapService.notifyContentChanged();
+        } catch (_) {}
         res.json({ message: 'Category deleted successfully' });
     } catch (error) {
         console.error('Delete category error:', error);

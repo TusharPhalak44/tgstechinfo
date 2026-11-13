@@ -442,6 +442,14 @@ app.listen(PORT, () => {
     } catch (e) {
         console.warn('[Startup] Live event expiration cron notice:', e.message);
     }
+
+    // Auto-sync dynamic sitemap on server startup (generates fresh sitemap.xml with all content)
+    try {
+        const SitemapService = require('./src/services/sitemapService');
+        SitemapService.syncSitemapFile().catch(e => console.warn('[Startup] Sitemap initial sync notice:', e.message));
+    } catch (e) {
+        console.warn('[Startup] Sitemap service error:', e.message);
+    }
 });
 
 

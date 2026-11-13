@@ -572,6 +572,9 @@ exports.adminEditContent = async (req, res) => {
 
         const updated = await Content.update(id, stripEmDash(updateData));
 
+        // Automatically update sitemap whenever content is updated by admin
+        SitemapService.notifyContentChanged();
+
         // Save PDF to media_files
         if (req.files?.pdf_file?.[0]) {
             try {

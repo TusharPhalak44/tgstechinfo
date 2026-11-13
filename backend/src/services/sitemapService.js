@@ -82,7 +82,7 @@ function resolveItemUrl(baseUrl, item) {
     if (!slug) return null;
 
     // Check if file-based landing page
-    const rawUrl = typeof item.url === 'string' ? item.url.trim() : '';
+    const rawUrl = typeof item.redirect_url === 'string' ? item.redirect_url.trim() : (typeof item.url === 'string' ? item.url.trim() : '');
     let parsedLayout = null;
     if (item.builder_layout) {
         try {
@@ -92,6 +92,7 @@ function resolveItemUrl(baseUrl, item) {
     const isFileLanding = Boolean(
         item.is_file_landing_page ||
         (Array.isArray(parsedLayout) && (parsedLayout.includes('file-landing') || parsedLayout[0] === 'file-landing')) ||
+        (typeof item.builder_layout === 'string' && item.builder_layout.includes('file-landing')) ||
         (typeof item.content === 'string' && item.content.includes('File-based landing page')) ||
         (rawUrl && (rawUrl.startsWith('/lp/') || rawUrl.includes('/lp/')))
     );
@@ -112,6 +113,14 @@ function resolveItemUrl(baseUrl, item) {
 
     if (type === 'event' || item.content_type_id === 5) {
         return `${baseUrl}/events/${encodeURIComponent(slug)}`;
+    }
+
+    if (type === 'case-study') {
+        const catSlug = slugify(item.category_slug || item.category_name || '');
+        if (catSlug) {
+            return `${baseUrl}/case-study/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`;
+        }
+        return `${baseUrl}/case-study/${encodeURIComponent(slug)}`;
     }
 
     const catSlug = slugify(item.category_slug || item.category_name || '');
@@ -208,27 +217,51 @@ class SitemapService {
 
         // 3. Dynamic Published Content Items (articles, blogs, news, webinars, ebooks, etc.)
         try {
-            const [contents] = await pool.query(`
-                SELECT c.id, c.title, c.slug, c.status, c.is_visible_on_site, c.builder_layout,
-                       c.is_file_landing_page, c.url, c.published_date, c.created_at, c.updated_at,
-                       ct.slug AS content_type, ct.name AS content_type_name,
-                       cat.slug AS category_slug, cat.name AS category_name
-                FROM contents c
-                LEFT JOIN content_types ct ON c.content_type_id = ct.id
-                LEFT JOIN categories cat ON c.category_id = cat.id
-                WHERE c.status = 'published'
-                  AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
-                  AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
-                  AND NOT (
-                      (ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6))
-                      AND (c.webinar_type = 'live' OR c.webinar_type IS NULL)
-                      AND c.webinar_date IS NOT NULL
-                      AND c.webinar_date < CURRENT_TIMESTAMP
-                  )
-                ORDER BY COALESCE(c.published_date, c.created_at) DESC
-            `);
+            let contents = [];
+            try {
+                const [rows] = await pool.query(`
+                    SELECT c.id, c.title, c.slug, c.status, c.is_visible_on_site, c.builder_layout,
+                           c.redirect_url, c.published_date, c.created_at, c.updated_at,
+                           c.content_type_id, c.category_id,
+                           c.webinar_date, c.webinar_type,
+                           ct.slug AS content_type, ct.name AS content_type_name,
+                           cat.slug AS category_slug, cat.name AS category_name
+                    FROM contents c
+                    LEFT JOIN content_types ct ON c.content_type_id = ct.id
+                    LEFT JOIN categories cat ON c.category_id = cat.id
+                    WHERE c.status = 'published'
+                      AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+                      AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)
+                    ORDER BY COALESCE(c.published_date, c.created_at) DESC
+                `);
+                contents = rows;
+            } catch (queryErr) {
+                console.warn('[SitemapService] Primary content query notice, attempting resilient query:', queryErr.message);
+                const [fallbackRows] = await pool.query(`
+                    SELECT c.id, c.title, c.slug, c.status, c.is_visible_on_site,
+                           c.published_date, c.created_at, c.updated_at,
+                           c.content_type_id, c.category_id,
+                           ct.slug AS content_type, ct.name AS content_type_name,
+                           cat.slug AS category_slug, cat.name AS category_name
+                    FROM contents c
+                    LEFT JOIN content_types ct ON c.content_type_id = ct.id
+                    LEFT JOIN categories cat ON c.category_id = cat.id
+                    WHERE c.status = 'published'
+                      AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
+                    ORDER BY COALESCE(c.published_date, c.created_at) DESC
+                `);
+                contents = fallbackRows;
+            }
 
             for (const item of contents) {
+                // Filter out concluded live webinars & events
+                const isLiveWebinarOrEvent = (
+                    (item.content_type === 'webinar' || item.content_type === 'event' || item.content_type_id === 4 || item.content_type_id === 5) &&
+                    (item.webinar_type === 'live' || !item.webinar_type) &&
+                    item.webinar_date && new Date(item.webinar_date) < new Date()
+                );
+                if (isLiveWebinarOrEvent) continue;
+
                 const itemUrl = resolveItemUrl(baseUrl, item);
                 if (itemUrl) {
                     const normType = (item.content_type || item.content_type_name || '').toLowerCase();
@@ -241,7 +274,7 @@ class SitemapService {
                     } else if (normType.includes('article') || normType.includes('blog')) {
                         priority = '0.8';
                         changefreq = 'weekly';
-                    } else if (normType.includes('landing') || item.is_file_landing_page) {
+                    } else if (normType.includes('landing')) {
                         priority = '0.7';
                         changefreq = 'monthly';
                     }
@@ -254,6 +287,7 @@ class SitemapService {
                     });
                 }
             }
+            console.log(`[SitemapService] Successfully mapped ${urlsMap.size} URLs including dynamic contents`);
         } catch (contentErr) {
             console.warn('[SitemapService] Error fetching contents:', contentErr.message);
         }
