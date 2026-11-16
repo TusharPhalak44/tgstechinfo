@@ -286,6 +286,18 @@ class SitemapService {
                     }
                 }
             }
+            // Ensure known recently published articles are included
+            const liveServerArticles = [
+                'https://tgstechinfo.com/blog/martech/what-is-changing-as-ai-agents-take-over-routine-campaign-work',
+                'https://tgstechinfo.com/blog/technology/why-cloud-bills-are-becoming-a-boardroom-topic',
+                'https://tgstechinfo.com/blog/hr-tech/what-is-changing-as-ai-screens-matches-and-schedules-candidates-7-ai-recruiting-trends-for-2026'
+            ];
+            for (const url of liveServerArticles) {
+                if (!urlsMap.has(url)) {
+                    urlsMap.set(url, { loc: url, lastmod: nowIso, changefreq: 'weekly', priority: '0.8' });
+                }
+            }
+
             console.log(`[SitemapService] Populated ${urlsMap.size} URLs via database dumps fallback.`);
         } catch (dumpErr) {
             console.warn('[SitemapService] Dump fallback warning:', dumpErr.message);

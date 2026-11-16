@@ -265,6 +265,23 @@ async function run() {
         console.warn('Notice preserving baseline URLs:', err.message);
     }
 
+    // 6. Explicitly ensure latest known published articles are in the sitemap baseline
+    const liveServerArticles = [
+        'https://tgstechinfo.com/blog/martech/what-is-changing-as-ai-agents-take-over-routine-campaign-work',
+        'https://tgstechinfo.com/blog/technology/why-cloud-bills-are-becoming-a-boardroom-topic',
+        'https://tgstechinfo.com/blog/hr-tech/what-is-changing-as-ai-screens-matches-and-schedules-candidates-7-ai-recruiting-trends-for-2026'
+    ];
+    for (const url of liveServerArticles) {
+        if (!urlsMap.has(url)) {
+            urlsMap.set(url, {
+                loc: url,
+                lastmod: nowIso,
+                changefreq: 'weekly',
+                priority: '0.8'
+            });
+        }
+    }
+
     // Build XML
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n';
