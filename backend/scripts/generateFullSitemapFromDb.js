@@ -16,30 +16,6 @@ const CONTENT_TYPE_ROUTE_MAP = {
     11: 'case-study'
 };
 
-const TYPE_NAME_MAP = {
-    news: 'news',
-    article: 'article',
-    articles: 'article',
-    blog: 'blog',
-    blogs: 'blog',
-    webinar: 'webinar',
-    webinars: 'webinar',
-    event: 'event',
-    events: 'event',
-    interview: 'interview',
-    interviews: 'interview',
-    ebook: 'ebook',
-    ebooks: 'ebook',
-    whitepaper: 'whitepaper',
-    whitepapers: 'whitepaper',
-    'case-study': 'case-study',
-    'case-studies': 'case-study',
-    casestudy: 'case-study',
-    report: 'report',
-    reports: 'report',
-    'landing-page': 'article'
-};
-
 function slugify(name) {
     if (!name) return '';
     return String(name)
@@ -75,7 +51,7 @@ async function run() {
     const nowIso = new Date().toISOString();
     const urlsMap = new Map();
 
-    // 1. Static Core Pages
+    // 1. Comprehensive Static Core Pages matching App.jsx routes
     const staticPages = [
         { loc: `${baseUrl}/`, priority: '1.0', changefreq: 'daily', lastmod: nowIso },
         { loc: `${baseUrl}/articles`, priority: '0.9', changefreq: 'daily', lastmod: nowIso },
@@ -88,11 +64,14 @@ async function run() {
         { loc: `${baseUrl}/whitepapers`, priority: '0.9', changefreq: 'weekly', lastmod: nowIso },
         { loc: `${baseUrl}/case-studies`, priority: '0.9', changefreq: 'weekly', lastmod: nowIso },
         { loc: `${baseUrl}/landing-pages`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
-        { loc: `${baseUrl}/authors`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+        { loc: `${baseUrl}/authors`, priority: '0.85', changefreq: 'weekly', lastmod: nowIso },
+        { loc: `${baseUrl}/authors/users`, priority: '0.75', changefreq: 'weekly', lastmod: nowIso },
+        { loc: `${baseUrl}/authors/admin`, priority: '0.75', changefreq: 'weekly', lastmod: nowIso },
         { loc: `${baseUrl}/audience`, priority: '0.85', changefreq: 'weekly', lastmod: nowIso },
         { loc: `${baseUrl}/audience-intelligence`, priority: '0.85', changefreq: 'weekly', lastmod: nowIso },
         { loc: `${baseUrl}/about`, priority: '0.8', changefreq: 'monthly', lastmod: nowIso },
         { loc: `${baseUrl}/contact`, priority: '0.8', changefreq: 'monthly', lastmod: nowIso },
+        { loc: `${baseUrl}/newsletter`, priority: '0.7', changefreq: 'monthly', lastmod: nowIso },
         { loc: `${baseUrl}/privacy-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
         { loc: `${baseUrl}/terms-of-use`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
         { loc: `${baseUrl}/cookie-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
@@ -103,7 +82,8 @@ async function run() {
         { loc: `${baseUrl}/acceptable-use`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
         { loc: `${baseUrl}/security`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
         { loc: `${baseUrl}/vendor-list`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
-        { loc: `${baseUrl}/contact-privacy-officer`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso }
+        { loc: `${baseUrl}/contact-privacy-officer`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
+        { loc: `${baseUrl}/user-account-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso }
     ];
 
     for (const p of staticPages) {
@@ -118,7 +98,7 @@ async function run() {
         const catMatch = catSql.match(/INSERT INTO `categories` VALUES\s*([\s\S]*?);/);
         if (catMatch) {
             const raw = catMatch[1];
-            // Format: (1,'Technology','technology','technology',NULL,'2026-07-01 13:02:23')
+            // Format: (id, 'Name', 'slug', 'type', ...)
             const catRegex = /\((\d+),\s*'([^']*)',\s*'([^']*)'/g;
             let cm;
             while ((cm = catRegex.exec(raw)) !== null) {
@@ -139,86 +119,100 @@ async function run() {
     }
     console.log(`Loaded ${categoriesMap.size} categories`);
 
-    // 3. Published Content from live_contents.sql
-    const contentSqlPath = path.resolve(__dirname, '../database/live_contents.sql');
-    if (fs.existsSync(contentSqlPath)) {
-        const contentLines = fs.readFileSync(contentSqlPath, 'utf8').split(/\r?\n/);
-        let nextIsRow = false;
-        let count = 0;
+    // 3. Authors from phase5_pre_migration_backup_20260926.sql
+    if (fs.existsSync(catDumpPath)) {
+        const userSql = fs.readFileSync(catDumpPath, 'utf8');
+        const userMatch = userSql.match(/INSERT INTO `users` VALUES\s*([\s\S]*?);/);
+        if (userMatch) {
+            const rawUsers = userMatch[1];
+            const userRegex = /\((\d+),\s*'([^']*)',\s*'([^']*)'/g;
+            let um;
+            let authorCount = 0;
+            while ((um = userRegex.exec(rawUsers)) !== null) {
+                const id = parseInt(um[1], 10);
+                const firstName = um[2];
+                const lastName = um[3];
+                const authorSlug = slugify(`${firstName || ''} ${lastName || ''}`);
+                const loc = authorSlug
+                    ? `${baseUrl}/author/${id}/${authorSlug}`
+                    : `${baseUrl}/author/${id}`;
 
-        for (const line of contentLines) {
-            if (line.startsWith('INSERT INTO `contents`')) {
-                nextIsRow = true;
-                continue;
-            }
-            if (nextIsRow) {
-                nextIsRow = false;
-                const m = line.match(/^\((\d+),\s*(\d+|NULL),\s*(\d+|NULL),\s*(\d+|NULL),\s*'((?:\\.|[^'])*)',\s*'((?:\\.|[^'])*)'/);
-                if (m) {
-                    const id = parseInt(m[1], 10);
-                    const contentTypeId = m[3] !== 'NULL' ? parseInt(m[3], 10) : 2;
-                    const categoryId = m[4] !== 'NULL' ? parseInt(m[4], 10) : null;
-                    const slug = m[6].replace(/\\'/g, "'").trim();
-
-                    // Check if published or approved
-                    const isPublished = line.includes("'published'") || line.includes("'approved'") || !line.includes("'draft'");
-                    if (!isPublished || !slug) continue;
-
-                    const category = categoryId ? categoriesMap.get(categoryId) : null;
-                    const catSlug = category ? category.slug : '';
-                    const type = CONTENT_TYPE_ROUTE_MAP[contentTypeId] || 'article';
-
-                    let itemLoc;
-                    if (type === 'event' || contentTypeId === 5) {
-                        itemLoc = `${baseUrl}/events/${encodeURIComponent(slug)}`;
-                    } else if (type === 'case-study' || contentTypeId === 11) {
-                        itemLoc = catSlug
-                            ? `${baseUrl}/case-study/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`
-                            : `${baseUrl}/case-study/${encodeURIComponent(slug)}`;
-                    } else if (catSlug) {
-                        itemLoc = `${baseUrl}/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`;
-                    } else {
-                        itemLoc = `${baseUrl}/${type}/${encodeURIComponent(slug)}`;
-                    }
-
-                    let priority = '0.75';
-                    let changefreq = 'weekly';
-                    if (type === 'news') { priority = '0.85'; changefreq = 'daily'; }
-                    else if (type === 'article' || type === 'blog') { priority = '0.8'; changefreq = 'weekly'; }
-
-                    urlsMap.set(itemLoc, {
-                        loc: itemLoc,
-                        lastmod: nowIso,
-                        changefreq,
-                        priority
-                    });
-                    count++;
-                }
-            }
-        }
-        console.log(`Parsed ${count} published content items from live_contents.sql`);
-    }
-
-    // 4. Fallback: Also include author URLs from existing sitemap if present
-    const existingSitemapPath = path.resolve(__dirname, '../../frontend/public/sitemap.xml');
-    if (fs.existsSync(existingSitemapPath)) {
-        const existingXml = fs.readFileSync(existingSitemapPath, 'utf8');
-        const authorRegex = /<loc>(https:\/\/tgstechinfo\.com\/author\/[^<]+)<\/loc>/g;
-        let am;
-        let aCount = 0;
-        while ((am = authorRegex.exec(existingXml)) !== null) {
-            const loc = am[1];
-            if (!urlsMap.has(loc)) {
                 urlsMap.set(loc, {
                     loc,
                     lastmod: nowIso,
                     changefreq: 'monthly',
                     priority: '0.6'
                 });
-                aCount++;
+                authorCount++;
+            }
+            console.log(`Loaded ${authorCount} author profile URLs from users table`);
+        }
+    }
+
+    // 4. Published Content from live_contents.sql (parse ALL rows)
+    const contentSqlPath = path.resolve(__dirname, '../database/live_contents.sql');
+    if (fs.existsSync(contentSqlPath)) {
+        const contentLines = fs.readFileSync(contentSqlPath, 'utf8').split(/\r?\n/);
+        let count = 0;
+
+        for (const line of contentLines) {
+            const trimmed = line.trim();
+            // Match every row starting with (id, user_id, content_type_id, category_id, 'title', 'slug', ...
+            const m = trimmed.match(/^\((\d+),\s*(\d+|NULL),\s*(\d+|NULL),\s*(\d+|NULL),\s*'((?:\\.|[^'])*)',\s*'((?:\\.|[^'])*)'/);
+            if (m) {
+                const id = parseInt(m[1], 10);
+                const contentTypeId = m[3] !== 'NULL' ? parseInt(m[3], 10) : 2;
+                const categoryId = m[4] !== 'NULL' ? parseInt(m[4], 10) : null;
+                const slug = m[6].replace(/\\'/g, "'").trim();
+
+                // Check if published or approved (ignore drafts)
+                const isPublished = trimmed.includes("'published'") || trimmed.includes("'approved'") || !trimmed.includes("'draft'");
+                if (!isPublished || !slug) continue;
+
+                const category = categoryId ? categoriesMap.get(categoryId) : null;
+                const catSlug = category ? category.slug : '';
+                const type = CONTENT_TYPE_ROUTE_MAP[contentTypeId] || 'article';
+
+                let itemLoc;
+                if (trimmed.includes('file-landing') || trimmed.includes('/lp/')) {
+                    itemLoc = `${baseUrl}/lp/${encodeURIComponent(slug)}`;
+                } else if (trimmed.includes('[\"html\"]') || trimmed.includes('[\'html\']')) {
+                    itemLoc = `${baseUrl}/content/${encodeURIComponent(slug)}`;
+                } else if (type === 'event' || contentTypeId === 5) {
+                    itemLoc = `${baseUrl}/events/${encodeURIComponent(slug)}`;
+                } else if (type === 'case-study' || contentTypeId === 11) {
+                    itemLoc = catSlug
+                        ? `${baseUrl}/case-study/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`
+                        : `${baseUrl}/case-study/${encodeURIComponent(slug)}`;
+                } else if (catSlug) {
+                    itemLoc = `${baseUrl}/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`;
+                } else {
+                    itemLoc = `${baseUrl}/${type}/${encodeURIComponent(slug)}`;
+                }
+
+                let priority = '0.75';
+                let changefreq = 'weekly';
+                if (type === 'news') { priority = '0.85'; changefreq = 'daily'; }
+                else if (type === 'article' || type === 'blog') { priority = '0.8'; changefreq = 'weekly'; }
+
+                // Try to extract updated_at or published_date
+                const dateMatches = trimmed.match(/'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'/g);
+                let lastmod = nowIso;
+                if (dateMatches && dateMatches.length > 0) {
+                    const lastDate = dateMatches[dateMatches.length - 1].replace(/'/g, '');
+                    lastmod = formatW3CDate(lastDate);
+                }
+
+                urlsMap.set(itemLoc, {
+                    loc: itemLoc,
+                    lastmod,
+                    changefreq,
+                    priority
+                });
+                count++;
             }
         }
-        console.log(`Retained ${aCount} author profile URLs`);
+        console.log(`Parsed ${count} published content items from live_contents.sql`);
     }
 
     // Build XML
@@ -248,13 +242,17 @@ async function run() {
     ];
 
     for (const p of targetPaths) {
-        fs.writeFileSync(p, xml, 'utf8');
-        console.log(`✅ Written ${urlsMap.size} URLs to ${p}`);
+        const dir = path.dirname(p);
+        if (fs.existsSync(dir)) {
+            fs.writeFileSync(p, xml, 'utf8');
+            console.log(`✅ Written ${urlsMap.size} URLs to ${p}`);
+        }
     }
+
+    return { totalUrls: urlsMap.size };
 }
 
 run().catch(err => {
     console.error('Error generating sitemap:', err);
     process.exit(1);
 });
-

@@ -176,6 +176,123 @@ class SitemapService {
     }
 
     /**
+     * Fallback parser from SQL dump files if MySQL database is temporarily unavailable
+     */
+    static populateFromDumps(baseUrl, urlsMap, nowIso) {
+        console.log('[SitemapService] Attempting resilient fallback from SQL database dumps...');
+        try {
+            // 1. Categories
+            const categoriesMap = new Map();
+            const catDumpPath = path.resolve(__dirname, '../../database/backups/phase5_pre_migration_backup_20260926.sql');
+            if (fs.existsSync(catDumpPath)) {
+                const catSql = fs.readFileSync(catDumpPath, 'utf8');
+                const catMatch = catSql.match(/INSERT INTO `categories` VALUES\s*([\s\S]*?);/);
+                if (catMatch) {
+                    const raw = catMatch[1];
+                    const catRegex = /\((\d+),\s*'([^']*)',\s*'([^']*)'/g;
+                    let cm;
+                    while ((cm = catRegex.exec(raw)) !== null) {
+                        const id = parseInt(cm[1], 10);
+                        const name = cm[2];
+                        const slug = slugify(cm[3]);
+                        categoriesMap.set(id, { id, name, slug });
+
+                        const catLoc = `${baseUrl}/category/${slug}`;
+                        if (!urlsMap.has(catLoc)) {
+                            urlsMap.set(catLoc, {
+                                loc: catLoc,
+                                lastmod: nowIso,
+                                changefreq: 'weekly',
+                                priority: '0.8'
+                            });
+                        }
+                    }
+                }
+
+                // Authors from phase5 dump
+                const userMatch = catSql.match(/INSERT INTO `users` VALUES\s*([\s\S]*?);/);
+                if (userMatch) {
+                    const rawUsers = userMatch[1];
+                    const userRegex = /\((\d+),\s*'([^']*)',\s*'([^']*)'/g;
+                    let um;
+                    while ((um = userRegex.exec(rawUsers)) !== null) {
+                        const id = parseInt(um[1], 10);
+                        const authorSlug = slugify(`${um[2] || ''} ${um[3] || ''}`);
+                        const loc = authorSlug ? `${baseUrl}/author/${id}/${authorSlug}` : `${baseUrl}/author/${id}`;
+                        if (!urlsMap.has(loc)) {
+                            urlsMap.set(loc, {
+                                loc,
+                                lastmod: nowIso,
+                                changefreq: 'monthly',
+                                priority: '0.6'
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 2. Contents from live_contents.sql
+            const contentSqlPath = path.resolve(__dirname, '../../database/live_contents.sql');
+            if (fs.existsSync(contentSqlPath)) {
+                const contentLines = fs.readFileSync(contentSqlPath, 'utf8').split(/\r?\n/);
+                for (const line of contentLines) {
+                    const trimmed = line.trim();
+                    const m = trimmed.match(/^\((\d+),\s*(\d+|NULL),\s*(\d+|NULL),\s*(\d+|NULL),\s*'((?:\\.|[^'])*)',\s*'((?:\\.|[^'])*)'/);
+                    if (m) {
+                        const id = parseInt(m[1], 10);
+                        const contentTypeId = m[3] !== 'NULL' ? parseInt(m[3], 10) : 2;
+                        const categoryId = m[4] !== 'NULL' ? parseInt(m[4], 10) : null;
+                        const slug = m[6].replace(/\\'/g, "'").trim();
+
+                        const isPublished = trimmed.includes("'published'") || trimmed.includes("'approved'") || !trimmed.includes("'draft'");
+                        if (!isPublished || !slug) continue;
+
+                        const category = categoryId ? categoriesMap.get(categoryId) : null;
+                        const catSlug = category ? category.slug : '';
+                        const type = CONTENT_TYPE_ROUTE_MAP[contentTypeId] || 'article';
+
+                        let itemLoc;
+                        if (trimmed.includes('file-landing') || trimmed.includes('/lp/')) {
+                            itemLoc = `${baseUrl}/lp/${encodeURIComponent(slug)}`;
+                        } else if (trimmed.includes('["html"]') || trimmed.includes("['html']")) {
+                            itemLoc = `${baseUrl}/content/${encodeURIComponent(slug)}`;
+                        } else if (type === 'event' || contentTypeId === 5) {
+                            itemLoc = `${baseUrl}/events/${encodeURIComponent(slug)}`;
+                        } else if (type === 'case-study' || contentTypeId === 11) {
+                            itemLoc = catSlug
+                                ? `${baseUrl}/case-study/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`
+                                : `${baseUrl}/case-study/${encodeURIComponent(slug)}`;
+                        } else if (catSlug) {
+                            itemLoc = `${baseUrl}/${type}/${encodeURIComponent(catSlug)}/${encodeURIComponent(slug)}`;
+                        } else {
+                            itemLoc = `${baseUrl}/${type}/${encodeURIComponent(slug)}`;
+                        }
+
+                        if (!urlsMap.has(itemLoc)) {
+                            let priority = '0.75';
+                            let changefreq = 'weekly';
+                            if (type === 'news') { priority = '0.85'; changefreq = 'daily'; }
+                            else if (type === 'article' || type === 'blog') { priority = '0.8'; changefreq = 'weekly'; }
+
+                            const dateMatches = trimmed.match(/'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})'/g);
+                            let lastmod = nowIso;
+                            if (dateMatches && dateMatches.length > 0) {
+                                const lastDate = dateMatches[dateMatches.length - 1].replace(/'/g, '');
+                                lastmod = formatW3CDate(lastDate);
+                            }
+
+                            urlsMap.set(itemLoc, { loc: itemLoc, lastmod, changefreq, priority });
+                        }
+                    }
+                }
+            }
+            console.log(`[SitemapService] Populated ${urlsMap.size} URLs via database dumps fallback.`);
+        } catch (dumpErr) {
+            console.warn('[SitemapService] Dump fallback warning:', dumpErr.message);
+        }
+    }
+
+    /**
      * Generates a complete XML sitemap dynamically from the database
      */
     static async generateSitemapXml() {
@@ -198,11 +315,14 @@ class SitemapService {
             { loc: `${baseUrl}/whitepapers`, priority: '0.9', changefreq: 'weekly', lastmod: nowIso },
             { loc: `${baseUrl}/case-studies`, priority: '0.9', changefreq: 'weekly', lastmod: nowIso },
             { loc: `${baseUrl}/landing-pages`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
-            { loc: `${baseUrl}/authors`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/authors`, priority: '0.85', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/authors/users`, priority: '0.75', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/authors/admin`, priority: '0.75', changefreq: 'weekly', lastmod: nowIso },
             { loc: `${baseUrl}/audience`, priority: '0.85', changefreq: 'weekly', lastmod: nowIso },
             { loc: `${baseUrl}/audience-intelligence`, priority: '0.85', changefreq: 'weekly', lastmod: nowIso },
             { loc: `${baseUrl}/about`, priority: '0.8', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/contact`, priority: '0.8', changefreq: 'monthly', lastmod: nowIso },
+            { loc: `${baseUrl}/newsletter`, priority: '0.7', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/privacy-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/terms-of-use`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/cookie-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
@@ -213,17 +333,20 @@ class SitemapService {
             { loc: `${baseUrl}/acceptable-use`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/security`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/vendor-list`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
-            { loc: `${baseUrl}/contact-privacy-officer`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso }
+            { loc: `${baseUrl}/contact-privacy-officer`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
+            { loc: `${baseUrl}/user-account-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso }
         ];
 
         for (const page of staticPages) {
             urlsMap.set(page.loc, page);
         }
 
-        // 2. Dynamic Categories
+        let dbSuccess = false;
+
+        // 2. Dynamic Categories from live database
         try {
             const [categories] = await pool.query(
-                'SELECT id, name, slug, updated_at, created_at FROM categories WHERE slug IS NOT NULL AND TRIM(slug) != "" ORDER BY name ASC'
+                'SELECT id, name, slug, type, updated_at, created_at FROM categories WHERE slug IS NOT NULL AND TRIM(slug) != "" ORDER BY name ASC'
             );
             for (const cat of categories) {
                 const catSlug = slugify(cat.slug);
@@ -235,10 +358,19 @@ class SitemapService {
                         changefreq: 'weekly',
                         priority: '0.8'
                     });
+                    if (cat.type === 'industry') {
+                        const indLoc = `${baseUrl}/industry/${catSlug}`;
+                        urlsMap.set(indLoc, {
+                            loc: indLoc,
+                            lastmod: formatW3CDate(cat.updated_at || cat.created_at || nowIso),
+                            changefreq: 'weekly',
+                            priority: '0.8'
+                        });
+                    }
                 }
             }
         } catch (catErr) {
-            console.warn('[SitemapService] Error fetching categories:', catErr.message);
+            console.warn('[SitemapService] Error fetching categories from database:', catErr.message);
         }
 
         // 3. Dynamic Published Content Items (articles, blogs, news, webinars, ebooks, etc.)
@@ -281,43 +413,46 @@ class SitemapService {
                 contents = fallbackRows;
             }
 
-            for (const item of contents) {
-                // Filter out concluded live webinars & events
-                const isLiveWebinarOrEvent = (
-                    (item.content_type === 'webinar' || item.content_type === 'event' || item.content_type_id === 4 || item.content_type_id === 5) &&
-                    (item.webinar_type === 'live' || !item.webinar_type) &&
-                    item.webinar_date && new Date(item.webinar_date) < new Date()
-                );
-                if (isLiveWebinarOrEvent) continue;
+            if (contents && contents.length > 0) {
+                dbSuccess = true;
+                for (const item of contents) {
+                    // Filter out concluded live webinars & events
+                    const isLiveWebinarOrEvent = (
+                        (item.content_type === 'webinar' || item.content_type === 'event' || item.content_type_id === 4 || item.content_type_id === 5) &&
+                        (item.webinar_type === 'live' || !item.webinar_type) &&
+                        item.webinar_date && new Date(item.webinar_date) < new Date()
+                    );
+                    if (isLiveWebinarOrEvent) continue;
 
-                const itemUrl = resolveItemUrl(baseUrl, item);
-                if (itemUrl) {
-                    const normType = (item.content_type || item.content_type_name || '').toLowerCase();
-                    let priority = '0.75';
-                    let changefreq = 'weekly';
+                    const itemUrl = resolveItemUrl(baseUrl, item);
+                    if (itemUrl) {
+                        const normType = (item.content_type || item.content_type_name || '').toLowerCase();
+                        let priority = '0.75';
+                        let changefreq = 'weekly';
 
-                    if (normType.includes('news')) {
-                        priority = '0.85';
-                        changefreq = 'daily';
-                    } else if (normType.includes('article') || normType.includes('blog')) {
-                        priority = '0.8';
-                        changefreq = 'weekly';
-                    } else if (normType.includes('landing')) {
-                        priority = '0.7';
-                        changefreq = 'monthly';
+                        if (normType.includes('news')) {
+                            priority = '0.85';
+                            changefreq = 'daily';
+                        } else if (normType.includes('article') || normType.includes('blog')) {
+                            priority = '0.8';
+                            changefreq = 'weekly';
+                        } else if (normType.includes('landing')) {
+                            priority = '0.7';
+                            changefreq = 'monthly';
+                        }
+
+                        urlsMap.set(itemUrl, {
+                            loc: itemUrl,
+                            lastmod: formatW3CDate(item.updated_at || item.published_date || item.created_at || nowIso),
+                            changefreq,
+                            priority
+                        });
                     }
-
-                    urlsMap.set(itemUrl, {
-                        loc: itemUrl,
-                        lastmod: formatW3CDate(item.updated_at || item.published_date || item.created_at || nowIso),
-                        changefreq,
-                        priority
-                    });
                 }
+                console.log(`[SitemapService] Successfully mapped ${urlsMap.size} URLs from live database`);
             }
-            console.log(`[SitemapService] Successfully mapped ${urlsMap.size} URLs including dynamic contents`);
         } catch (contentErr) {
-            console.warn('[SitemapService] Error fetching contents:', contentErr.message);
+            console.warn('[SitemapService] Error fetching contents from database:', contentErr.message);
         }
 
         // 4. Dynamic Events from `events` table (in addition to contents table)
@@ -344,10 +479,10 @@ class SitemapService {
                 }
             }
         } catch (evErr) {
-            console.warn('[SitemapService] Error fetching events:', evErr.message);
+            console.warn('[SitemapService] Error fetching events from database:', evErr.message);
         }
 
-        // 5. Active Authors with published articles
+        // 5. Active Authors with published articles from live database
         try {
             const [authors] = await pool.query(`
                 SELECT u.id, u.first_name, u.last_name, MAX(COALESCE(c.published_date, c.created_at)) AS latest_date
@@ -370,10 +505,48 @@ class SitemapService {
                 });
             }
         } catch (authorErr) {
-            console.warn('[SitemapService] Error fetching authors:', authorErr.message);
+            console.warn('[SitemapService] Error fetching authors from database:', authorErr.message);
         }
 
-        // 6. Build the XML String
+        // 6. Resilient Fallback: If database was unreachable or returned too few URLs (< 50)
+        if (!dbSuccess || urlsMap.size <= 50) {
+            // Check if we can retain existing valid URLs from on-disk sitemap first
+            const existingDiskPaths = [
+                path.resolve(__dirname, '../../../frontend/public/sitemap.xml'),
+                path.resolve(__dirname, '../../../frontend/dist/sitemap.xml'),
+                path.resolve(__dirname, '../../frontend/public/sitemap.xml'),
+                path.resolve(__dirname, '../../frontend/dist/sitemap.xml')
+            ];
+            let readFromDisk = false;
+            for (const p of existingDiskPaths) {
+                if (fs.existsSync(p)) {
+                    try {
+                        const existingXml = fs.readFileSync(p, 'utf8');
+                        const locRegex = /<loc>(https:\/\/tgstechinfo\.com\/[^<]+)<\/loc>/g;
+                        let lm;
+                        let count = 0;
+                        while ((lm = locRegex.exec(existingXml)) !== null) {
+                            const loc = lm[1];
+                            if (!urlsMap.has(loc)) {
+                                urlsMap.set(loc, { loc, lastmod: nowIso, changefreq: 'weekly', priority: '0.75' });
+                                count++;
+                            }
+                        }
+                        if (count > 50) {
+                            readFromDisk = true;
+                            console.log(`[SitemapService] Restored ${count} URLs from existing static file ${p}`);
+                            break;
+                        }
+                    } catch (_) { }
+                }
+            }
+
+            if (!readFromDisk || urlsMap.size <= 50) {
+                this.populateFromDumps(baseUrl, urlsMap, nowIso);
+            }
+        }
+
+        // 7. Build the XML String
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
@@ -418,16 +591,17 @@ class SitemapService {
 
     /**
      * Syncs and writes the generated sitemap XML to static files on disk
-     * Updates frontend/public/sitemap.xml and frontend/dist/sitemap.xml (if dist exists)
+     * Updates frontend/public/sitemap.xml and frontend/dist/sitemap.xml
      */
     static async syncSitemapFile() {
         try {
             const { xml, totalUrls } = await this.generateSitemapXml();
 
-            // Candidate target paths
             const targetPaths = [
                 path.resolve(__dirname, '../../../frontend/public/sitemap.xml'),
                 path.resolve(__dirname, '../../../frontend/dist/sitemap.xml'),
+                path.resolve(__dirname, '../../frontend/public/sitemap.xml'),
+                path.resolve(__dirname, '../../frontend/dist/sitemap.xml'),
                 path.resolve(process.cwd(), 'frontend/public/sitemap.xml'),
                 path.resolve(process.cwd(), 'frontend/dist/sitemap.xml'),
                 path.resolve(process.cwd(), '../frontend/public/sitemap.xml'),
@@ -476,4 +650,3 @@ class SitemapService {
 }
 
 module.exports = SitemapService;
-
