@@ -10,8 +10,7 @@ async function expirePastLiveEventsAndWebinars() {
         const [contentResult] = await pool.query(`
             UPDATE contents c
             JOIN content_types ct ON c.content_type_id = ct.id
-            SET c.is_visible_on_site = 0,
-                c.status = 'archived'
+            SET c.status = 'archived'
             WHERE (ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6))
               AND (c.webinar_type = 'live' OR c.webinar_type IS NULL)
               AND c.webinar_date IS NOT NULL

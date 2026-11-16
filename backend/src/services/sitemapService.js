@@ -439,14 +439,6 @@ class SitemapService {
             if (contents && contents.length > 0) {
                 dbSuccess = true;
                 for (const item of contents) {
-                    // Filter out concluded live webinars & events
-                    const isLiveWebinarOrEvent = (
-                        (item.content_type === 'webinar' || item.content_type === 'event' || item.content_type_id === 4 || item.content_type_id === 5) &&
-                        (item.webinar_type === 'live' || !item.webinar_type) &&
-                        item.webinar_date && new Date(item.webinar_date) < new Date()
-                    );
-                    if (isLiveWebinarOrEvent) continue;
-
                     const itemUrl = resolveItemUrl(baseUrl, item);
                     if (itemUrl) {
                         const normType = (item.content_type || item.content_type_name || '').toLowerCase();
@@ -483,7 +475,7 @@ class SitemapService {
             const [events] = await pool.query(`
                 SELECT id, title, slug, status, start_date, created_at, updated_at
                 FROM events
-                WHERE status = 'published'
+                WHERE status IN ('published', 'archived')
                 ORDER BY start_date DESC
             `);
 
