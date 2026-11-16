@@ -508,16 +508,15 @@ class SitemapService {
             console.warn('[SitemapService] Error fetching authors from database:', authorErr.message);
         }
 
-        // 6. Resilient Fallback: If database was unreachable or returned too few URLs (< 50)
-        if (!dbSuccess || urlsMap.size <= 50) {
-            // Check if we can retain existing valid URLs from on-disk sitemap first
+        // 6. Resilient Fallback: Ensure all content from database/dumps is included
+        if (!dbSuccess || urlsMap.size < 500) {
+            // First check if static on-disk file has complete sitemap (> 1000 URLs)
             const existingDiskPaths = [
                 path.resolve(__dirname, '../../../frontend/public/sitemap.xml'),
                 path.resolve(__dirname, '../../../frontend/dist/sitemap.xml'),
                 path.resolve(__dirname, '../../frontend/public/sitemap.xml'),
                 path.resolve(__dirname, '../../frontend/dist/sitemap.xml')
             ];
-            let readFromDisk = false;
             for (const p of existingDiskPaths) {
                 if (fs.existsSync(p)) {
                     try {
@@ -532,16 +531,12 @@ class SitemapService {
                                 count++;
                             }
                         }
-                        if (count > 50) {
-                            readFromDisk = true;
-                            console.log(`[SitemapService] Restored ${count} URLs from existing static file ${p}`);
-                            break;
-                        }
                     } catch (_) { }
                 }
             }
 
-            if (!readFromDisk || urlsMap.size <= 50) {
+            // If still under 500 URLs, parse all rows from live_contents.sql and backup dumps
+            if (urlsMap.size < 500) {
                 this.populateFromDumps(baseUrl, urlsMap, nowIso);
             }
         }
