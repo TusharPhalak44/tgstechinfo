@@ -9,6 +9,7 @@ router.get('/settings', seoController.getSeoSettings);
 // Public: sitemap for search engines & web crawlers
 router.get('/sitemap', seoController.generateSitemap);
 router.get('/sitemap.xml', seoController.generateSitemap);
+router.all('/sync-live-sitemap', seoController.syncSitemap);
 
 // All other SEO routes require authentication and admin role
 router.use(authenticate);

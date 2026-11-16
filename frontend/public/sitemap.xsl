@@ -79,10 +79,37 @@
             color: #0f172a;
             margin-top: 4px;
           }
-          .search-bar {
-            margin-bottom: 20px;
+          .filter-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
           }
-          .search-bar input {
+          .chip {
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+          }
+          .chip:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+          }
+          .chip.active {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+          }
+          .search-bar-wrap {
+            position: relative;
+            margin-bottom: 12px;
+          }
+          .search-bar-wrap input {
             width: 100%;
             padding: 12px 18px;
             font-size: 14px;
@@ -93,9 +120,18 @@
             background: #ffffff;
             transition: all 0.2s;
           }
-          .search-bar input:focus {
+          .search-bar-wrap input:focus {
             border-color: #2563eb;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+          }
+          .search-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #64748b;
+            margin-bottom: 16px;
+            padding: 0 4px;
           }
           .table-wrapper {
             overflow-x: auto;
@@ -168,7 +204,7 @@
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-title">Total URLs in Sitemap</div>
-              <div class="stat-value"><xsl:value-of select="count(sitemap:urlset/sitemap:url)"/></div>
+              <div class="stat-value" id="statTotal"><xsl:value-of select="count(sitemap:urlset/sitemap:url)"/></div>
             </div>
             <div class="stat-card">
               <div class="stat-title">Protocol Version</div>
@@ -179,9 +215,26 @@
               <div class="stat-value" style="font-size: 18px; color: #16a34a; line-height: 32px;">Active &amp; Valid</div>
             </div>
           </div>
-          <div class="search-bar">
-            <input type="text" id="sitemapSearch" placeholder="Filter URLs by keyword (e.g. article, news, blog, author, slug)..." onkeyup="filterSitemap()" />
+
+          <div class="filter-chips">
+            <button class="chip active" onclick="setChipFilter('', this)">All URLs</button>
+            <button class="chip" onclick="setChipFilter('/article/', this)">Articles</button>
+            <button class="chip" onclick="setChipFilter('/news/', this)">News</button>
+            <button class="chip" onclick="setChipFilter('/blog/', this)">Blogs</button>
+            <button class="chip" onclick="setChipFilter('/whitepaper/', this)">Whitepapers</button>
+            <button class="chip" onclick="setChipFilter('/case-study/', this)">Case Studies</button>
+            <button class="chip" onclick="setChipFilter('/category/', this)">Categories</button>
+            <button class="chip" onclick="setChipFilter('/author/', this)">Authors</button>
           </div>
+
+          <div class="search-bar-wrap">
+            <input type="text" id="sitemapSearch" placeholder="Search by title, keywords, or URL (e.g. aiot, erp, news, artificial intelligence, cloud)..." onkeyup="filterSitemap()" />
+          </div>
+          <div class="search-meta">
+            <span id="matchCount">Showing all URLs</span>
+            <span style="font-size: 12px; color: #94a3b8;">Tip: searches match words, slugs, or titles even with spaces.</span>
+          </div>
+
           <div class="table-wrapper">
             <table id="sitemapTable">
               <thead>
@@ -224,17 +277,70 @@
           </div>
         </div>
         <script type="text/javascript">
+          var currentChip = "";
+
+          function setChipFilter(chip, btn) {
+            currentChip = chip;
+            var chips = document.querySelectorAll(".chip");
+            for (var i = 0; i &lt; chips.length; i++) {
+              chips[i].classList.remove("active");
+            }
+            if (btn) btn.classList.add("active");
+            filterSitemap();
+          }
+
           function filterSitemap() {
-            var input = document.getElementById("sitemapSearch");
-            var filter = input.value.toLowerCase();
+            var rawInput = document.getElementById("sitemapSearch").value;
+            // Normalize query: remove domain, trailing slashes, extra spaces
+            var cleanQuery = rawInput.toLowerCase()
+              .replace("https://tgstechinfo.com", "")
+              .replace("http://tgstechinfo.com", "")
+              .replace(/\/+$/, "")
+              .trim();
+
+            var searchWords = cleanQuery.replace(/[-_/]/g, " ").split(/\s+/).filter(Boolean);
+
             var table = document.getElementById("sitemapTable");
             var tr = table.getElementsByTagName("tr");
+            var matchCount = 0;
+            var totalCount = tr.length - 1;
+
             for (var i = 1; i &lt; tr.length; i++) {
               var td = tr[i].getElementsByTagName("td")[1];
-              if (td) {
-                var txt = td.textContent || td.innerText;
-                tr[i].style.display = txt.toLowerCase().indexOf(filter) &gt; -1 ? "" : "none";
+              if (!td) continue;
+
+              var urlText = (td.textContent || td.innerText || "").toLowerCase().trim();
+
+              // Chip filter check
+              var passesChip = !currentChip || urlText.indexOf(currentChip) &gt; -1;
+
+              // Search query check
+              var passesSearch = true;
+              if (searchWords.length &gt; 0) {
+                // Check both exact substring and word-by-word with hyphen conversion
+                var normalizedUrl = urlText.replace(/[-_/]/g, " ");
+                for (var w = 0; w &lt; searchWords.length; w++) {
+                  var word = searchWords[w];
+                  if (urlText.indexOf(word) === -1 &amp;&amp; normalizedUrl.indexOf(word) === -1) {
+                    passesSearch = false;
+                    break;
+                  }
+                }
               }
+
+              if (passesChip &amp;&amp; passesSearch) {
+                tr[i].style.display = "";
+                matchCount++;
+              } else {
+                tr[i].style.display = "none";
+              }
+            }
+
+            var countEl = document.getElementById("matchCount");
+            if (cleanQuery || currentChip) {
+              countEl.innerText = "Showing " + matchCount + " of " + totalCount + " URLs";
+            } else {
+              countEl.innerText = "Showing all " + totalCount + " URLs";
             }
           }
         </script>
@@ -242,4 +348,3 @@
     </html>
   </xsl:template>
 </xsl:stylesheet>
-

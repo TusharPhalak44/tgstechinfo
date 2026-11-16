@@ -334,7 +334,18 @@ class SitemapService {
             { loc: `${baseUrl}/security`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/vendor-list`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
             { loc: `${baseUrl}/contact-privacy-officer`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
-            { loc: `${baseUrl}/user-account-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso }
+            { loc: `${baseUrl}/user-account-policy`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
+            { loc: `${baseUrl}/do-not-sell`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
+            { loc: `${baseUrl}/subscriber-preferences`, priority: '0.5', changefreq: 'monthly', lastmod: nowIso },
+            { loc: `${baseUrl}/category/itech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/category/healthtech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/category/retail-tech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/industry/itech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/industry/fintech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/industry/hr-tech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/industry/martech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/industry/healthtech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso },
+            { loc: `${baseUrl}/industry/edtech`, priority: '0.8', changefreq: 'weekly', lastmod: nowIso }
         ];
 
         for (const page of staticPages) {
