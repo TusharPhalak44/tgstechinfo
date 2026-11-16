@@ -290,7 +290,7 @@ exports.getContentBySlug = async (req, res) => {
         }
 
         // Public content must be published, or approved/scheduled (accessible via direct live URL)
-        const allowedLiveStatuses = ['published', 'approved', 'scheduled'];
+        const allowedLiveStatuses = ['published', 'approved', 'scheduled', 'archived'];
         if (!allowedLiveStatuses.includes(content.status)) {
             return res.status(404).json({ message: 'Content not found' });
         }
@@ -302,7 +302,7 @@ exports.getContentBySlug = async (req, res) => {
             content.content_type_id === 5 || content.content_type_id === 6
         ) && (content.webinar_type === 'live' || !content.webinar_type);
         if (isLiveWebinarOrEvent && content.webinar_date && new Date(content.webinar_date) < new Date()) {
-            return res.status(404).json({ message: 'This live session has concluded and is no longer available.' });
+            content.is_past = true;
         }
 
         const isStandardEditorial = [1, 2, 3, 4, 6, 7, 8, 9, 11].includes(content.content_type_id);

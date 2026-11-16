@@ -274,8 +274,24 @@ export default function EventDetailPage() {
           
           {/* ── LEFT COLUMN: MAIN EVENT DETAILS ─────────────────── */}
           <div className="event-main-content">
+            {/* Concluded Event Notification */}
+            {isPast && (
+              <Alert
+                message="This Event Has Concluded"
+                description={`This event was scheduled for ${dayjs(event.start_date).format('MMMM D, YYYY h:mm A')} and has concluded. Registrations are now closed.`}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 20, borderRadius: 8 }}
+              />
+            )}
+
             {/* Badges */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+              {isPast && (
+                <Tag color="default" style={{ borderRadius: 6, fontWeight: 700, padding: '4px 10px', fontSize: 13 }}>
+                  CONCLUDED
+                </Tag>
+              )}
               <Tag color={isOnline ? 'cyan' : 'purple'} style={{ borderRadius: 6, fontWeight: 700, padding: '4px 10px', fontSize: 13 }}>
                 {isOnline ? <VideoCameraOutlined /> : <EnvironmentOutlined />} {event.event_mode?.toUpperCase()}
               </Tag>

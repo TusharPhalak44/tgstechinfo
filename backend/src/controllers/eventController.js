@@ -156,27 +156,54 @@ exports.getPublicEventBySlug = async (req, res) => {
                    (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status != 'cancelled') AS registered_count
             FROM events e
             LEFT JOIN contents c ON c.slug = e.slug COLLATE utf8mb4_unicode_ci AND c.content_type_id = 5
-            WHERE e.slug = ? AND e.status = 'published'
+            WHERE e.slug = ? AND (e.status = 'published' OR e.status = 'archived')
             LIMIT 1
         `, [slug]);
 
-        if (!rows || rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Event not found or not published.' });
+        let event = rows && rows.length > 0 ? rows[0] : null;
+
+        // Fallback: Check contents table if event does not exist in events table yet
+        if (!event) {
+            const [contentRows] = await pool.query(`
+                SELECT c.id, c.title, c.slug, 
+                       COALESCE(c.content, c.excerpt) AS description,
+                       c.excerpt AS short_description,
+                       COALESCE(c.banner_image, c.featured_image) AS banner_image,
+                       COALESCE(c.webinar_date, c.published_date, c.created_at) AS start_date,
+                       COALESCE(c.webinar_date, c.published_date, c.created_at) AS end_date,
+                       'IST (UTC+5:30)' AS timezone,
+                       COALESCE(c.platform, 'Zoom') AS online_platform,
+                       c.hosted_by AS speaker_name,
+                       c.status,
+                       c.created_at, c.updated_at,
+                       'online' AS event_mode,
+                       COALESCE(c.webinar_type, 'conference') AS event_type,
+                       'tgs' AS registration_type,
+                       0 AS max_capacity,
+                       0 AS registered_count
+                FROM contents c
+                LEFT JOIN content_types ct ON c.content_type_id = ct.id
+                WHERE c.slug = ? AND (ct.slug = 'event' OR c.content_type_id = 5)
+                  AND (c.status = 'published' OR c.status = 'archived')
+                LIMIT 1
+            `, [slug]);
+
+            if (contentRows && contentRows.length > 0) {
+                event = contentRows[0];
+            }
         }
 
-        const event = rows[0];
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found.' });
+        }
 
         // Increment view count
         pool.query('UPDATE events SET view_count = view_count + 1 WHERE id = ?', [event.id]).catch(() => {});
 
-        // Concluded events must not be accessible publicly
-        const eventEnd = event.end_date ? new Date(event.end_date) : new Date(event.start_date);
-        if (eventEnd < new Date()) {
-            return res.status(404).json({ success: false, message: 'This event has concluded and is no longer available.' });
-        }
-
+        // Concluded events remain accessible for info/SEO, but registration is marked concluded
+        const eventEnd = event.end_date ? new Date(event.end_date) : (event.start_date ? new Date(event.start_date) : new Date());
+        const isPast = Boolean(eventEnd < new Date() || event.status === 'archived');
         const isFull = event.max_capacity > 0 && event.registered_count >= event.max_capacity;
-        const isPast = false;
 
         const safeEvent = { ...event };
         // SECURITY: Never expose private virtual join urls in public detail before registration
