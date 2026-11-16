@@ -59,7 +59,7 @@ exports.getPublicEvents = async (req, res) => {
                    (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status != 'cancelled') AS registered_count
             FROM events e
             LEFT JOIN contents c ON c.slug = e.slug COLLATE utf8mb4_unicode_ci AND c.content_type_id = 5
-            WHERE (e.status = 'published' OR e.status = 'archived')
+            WHERE e.status = 'published'
         `;
         const params = [];
 
@@ -82,15 +82,21 @@ exports.getPublicEvents = async (req, res) => {
             params.push(mode);
         }
 
-        // Timeline filtering
+        // Concluded events are not shown anywhere on public site
         if (timeline === 'past') {
-            query += ` AND (COALESCE(e.end_date, e.start_date) < NOW() OR e.status = 'archived')`;
-            query += ` ORDER BY e.start_date DESC`;
-        } else if (timeline === 'all') {
+            return res.json({
+                success: true,
+                events: [],
+                pagination: { total: 0, page: 1, limit: limitNum, totalPages: 1 }
+            });
+        }
+        // Only show upcoming/live active events
+        query += ` AND COALESCE(e.end_date, e.start_date) >= NOW()`;
+
+        // Ordering: upcoming events soonest first, past events most recent first
+        if (timeline === 'past') {
             query += ` ORDER BY e.start_date DESC`;
         } else {
-            // Default: upcoming active events
-            query += ` AND COALESCE(e.end_date, e.start_date) >= NOW() AND e.status = 'published'`;
             query += ` ORDER BY e.featured DESC, e.start_date ASC`;
         }
 
@@ -107,8 +113,6 @@ exports.getPublicEvents = async (req, res) => {
         // Sanitize sensitive URLs before returning publicly
         const sanitizedEvents = events.map(evt => {
             const isFull = evt.max_capacity > 0 && evt.registered_count >= evt.max_capacity;
-            const eventEnd = evt.end_date ? new Date(evt.end_date) : new Date(evt.start_date);
-            const isPast = Boolean(eventEnd < new Date() || evt.status === 'archived');
             const safe = { ...evt };
             
             // SECURITY: Never expose private virtual join urls in public listings
@@ -119,7 +123,6 @@ exports.getPublicEvents = async (req, res) => {
                 ...safe,
                 banner_image: formatBannerUrl(safe.banner_image),
                 is_full: Boolean(isFull),
-                is_past: isPast,
                 seats_left: evt.max_capacity > 0 ? Math.max(0, evt.max_capacity - evt.registered_count) : null
             };
         });
@@ -150,97 +153,30 @@ exports.getPublicEventBySlug = async (req, res) => {
         const [rows] = await pool.query(`
             SELECT e.*, 
                    COALESCE(e.banner_image, c.banner_image) AS banner_image,
-                   COALESCE(c.webinar_date, e.start_date) AS synchronized_event_date,
                    (SELECT COUNT(*) FROM event_registrations r WHERE r.event_id = e.id AND r.status != 'cancelled') AS registered_count
             FROM events e
             LEFT JOIN contents c ON c.slug = e.slug COLLATE utf8mb4_unicode_ci AND c.content_type_id = 5
-            WHERE e.slug = ? AND (e.status = 'published' OR e.status = 'archived')
+            WHERE e.slug = ? AND e.status = 'published'
             LIMIT 1
         `, [slug]);
 
-        let event = rows && rows.length > 0 ? rows[0] : null;
-
-        // Fallback: Check contents table if event does not exist in events table yet
-        if (!event) {
-            const [contentRows] = await pool.query(`
-                SELECT c.id, c.title, c.slug, 
-                       COALESCE(c.content, c.excerpt) AS description,
-                       c.excerpt AS short_description,
-                       COALESCE(c.banner_image, c.featured_image) AS banner_image,
-                       COALESCE(c.webinar_date, c.start_date, c.scheduled_publish_date) AS start_date,
-                       COALESCE(c.webinar_date, c.start_date, c.scheduled_publish_date) AS end_date,
-                       'IST (UTC+5:30)' AS timezone,
-                       COALESCE(c.platform, 'Zoom') AS online_platform,
-                       c.hosted_by AS speaker_name,
-                       c.status,
-                       c.created_at, c.updated_at,
-                       'online' AS event_mode,
-                       COALESCE(c.webinar_type, 'conference') AS event_type,
-                       'tgs' AS registration_type,
-                       0 AS max_capacity,
-                       0 AS registered_count
-                FROM contents c
-                LEFT JOIN content_types ct ON c.content_type_id = ct.id
-                WHERE c.slug = ? AND (ct.slug = 'event' OR c.content_type_id = 5)
-                  AND (c.status = 'published' OR c.status = 'archived')
-                LIMIT 1
-            `, [slug]);
-
-            if (contentRows && contentRows.length > 0) {
-                event = contentRows[0];
-                // Auto-sync into events table for registration support
-                try {
-                    const [insRes] = await pool.query(`
-                        INSERT INTO events 
-                        (title, slug, short_description, description, event_type, event_mode, start_date, end_date, timezone,
-                         online_platform, banner_image, speaker_name, status, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE 
-                            title = VALUES(title),
-                            start_date = VALUES(start_date),
-                            status = VALUES(status)
-                    `, [
-                        event.title,
-                        event.slug,
-                        event.short_description,
-                        event.description,
-                        event.event_type || 'conference',
-                        event.event_mode || 'online',
-                        event.start_date ? new Date(event.start_date) : new Date(),
-                        event.end_date ? new Date(event.end_date) : null,
-                        event.timezone || 'IST (UTC+5:30)',
-                        event.online_platform || 'Zoom',
-                        event.banner_image,
-                        event.speaker_name,
-                        event.status,
-                        event.created_at || new Date(),
-                        event.updated_at || new Date()
-                    ]);
-                    if (insRes && insRes.insertId) {
-                        event.id = insRes.insertId;
-                    }
-                } catch (syncErr) {
-                    console.warn('[getPublicEventBySlug] Auto-sync notice:', syncErr.message);
-                }
-            }
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Event not found or not published.' });
         }
 
-        if (!event) {
-            return res.status(404).json({ success: false, message: 'Event not found.' });
-        }
+        const event = rows[0];
 
         // Increment view count
         pool.query('UPDATE events SET view_count = view_count + 1 WHERE id = ?', [event.id]).catch(() => {});
 
-        // Prefer latest future date between events.start_date and contents.webinar_date
-        const effectiveStartDate = (event.synchronized_event_date && new Date(event.synchronized_event_date) > new Date())
-            ? event.synchronized_event_date
-            : (event.start_date || event.synchronized_event_date);
+        // Concluded events must not be accessible publicly
+        const eventEnd = event.end_date ? new Date(event.end_date) : new Date(event.start_date);
+        if (eventEnd < new Date()) {
+            return res.status(404).json({ success: false, message: 'This event has concluded and is no longer available.' });
+        }
 
-        // Concluded events remain accessible for info/SEO, but registration is marked concluded
-        const eventEnd = event.end_date ? new Date(event.end_date) : (effectiveStartDate ? new Date(effectiveStartDate) : new Date());
-        const isPast = Boolean(eventEnd < new Date() || event.status === 'archived');
         const isFull = event.max_capacity > 0 && event.registered_count >= event.max_capacity;
+        const isPast = false;
 
         const safeEvent = { ...event };
         // SECURITY: Never expose private virtual join urls in public detail before registration

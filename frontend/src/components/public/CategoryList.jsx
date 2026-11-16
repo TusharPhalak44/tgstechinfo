@@ -836,15 +836,7 @@ const CategoryList = () => {
       const recentRes = results[0];
       const catRes = results[1];
       const ctRes = results[2];
-      const isItemActive = (it) => {
-        const isEv = it.content_type === 'event' || it.content_type_slug === 'event' || it.content_type_id === 5;
-        if (isEv) {
-          const t = it.end_date || it.start_date || it.webinar_date;
-          if (t && new Date(t) < new Date()) return false;
-        }
-        return true;
-      };
-      let trendingList = (recentRes.data?.data || []).filter(isItemActive);
+      let trendingList = recentRes.data?.data || [];
       if (trendingList.length < 3) {
         try {
           const fallbackRes = await axios.get('/api/public/content', {
@@ -901,34 +893,17 @@ const CategoryList = () => {
     }
   };
 
-  // Filter contents by inline search term and omit concluded events & live sessions
+  // Filter contents by inline search term and omit concluded live sessions
   const rawContents = Array.isArray(contents) ? contents : [];
   const safeContents = rawContents.filter(item => {
-    const isEvent = (
-      item.content_type === 'event' || item.content_type_slug === 'event' ||
-      item.content_type_id === 5 || (typeInfo && typeInfo.type === 'event')
-    );
-    const isWebinar = (
-      item.content_type === 'webinar' || item.content_type_slug === 'webinar' ||
-      item.content_type_id === 4 || (typeInfo && typeInfo.type === 'webinar')
-    );
-
-    // Concluded events MUST automatically disappear from the public events list
-    if (isEvent) {
-      const eventTime = item.end_date || item.start_date || item.webinar_date;
-      if (eventTime && new Date(eventTime) < new Date()) {
-        return false;
-      }
+    const isLiveWebinarOrEvent = (
+      item.content_type === 'webinar' || item.content_type === 'event' ||
+      item.content_type_slug === 'webinar' || item.content_type_slug === 'event' ||
+      item.content_type_id === 5 || item.content_type_id === 6
+    ) && (item.webinar_type === 'live' || !item.webinar_type);
+    if (isLiveWebinarOrEvent && item.webinar_date && new Date(item.webinar_date) < new Date()) {
+      return false;
     }
-
-    // Concluded live webinars MUST automatically disappear from the public webinars list
-    if (isWebinar && (item.webinar_type === 'live' || !item.webinar_type)) {
-      const webinarTime = item.webinar_date || item.start_date;
-      if (webinarTime && new Date(webinarTime) < new Date()) {
-        return false;
-      }
-    }
-
     return true;
   });
   const filteredContents = safeContents.filter(item => {

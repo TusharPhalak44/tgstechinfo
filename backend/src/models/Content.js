@@ -563,22 +563,12 @@ class Content {
             values.push(filters.status);
             if (filters.status === 'published') {
                 baseWhere += ' AND (c.scheduled_publish_date IS NULL OR c.scheduled_publish_date <= CURRENT_TIMESTAMP)';
-                // Automatically hide concluded events and concluded live webinars once scheduled date/time has passed
+                // Automatically hide concluded live webinars and live events once scheduled date/time has passed
                 baseWhere += ` AND NOT (
-                    (
-                        (ct.slug = 'event' OR c.content_type_id = 5)
-                        AND (
-                            (c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)
-                            OR (c.start_date IS NOT NULL AND c.start_date < CURRENT_TIMESTAMP)
-                        )
-                    )
-                    OR
-                    (
-                        (ct.slug = 'webinar' OR c.content_type_id = 4)
-                        AND (c.webinar_type = 'live' OR c.webinar_type IS NULL)
-                        AND c.webinar_date IS NOT NULL
-                        AND c.webinar_date < CURRENT_TIMESTAMP
-                    )
+                    (ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6))
+                    AND (c.webinar_type = 'live' OR c.webinar_type IS NULL)
+                    AND c.webinar_date IS NOT NULL
+                    AND c.webinar_date < CURRENT_TIMESTAMP
                 )`;
             }
         }
