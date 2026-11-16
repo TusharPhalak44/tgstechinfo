@@ -215,8 +215,48 @@ async function run() {
         console.log(`Parsed ${count} published content items from live_contents.sql`);
     }
 
+    // 5. Merge existing URLs from commit 3e0d105 / disk so newly created articles are preserved
+    try {
+        const cp = require('child_process');
+        let rawXml = '';
+        try {
+            rawXml = cp.execSync('git show 3e0d105:frontend/public/sitemap.xml', { stdio: ['pipe', 'pipe', 'ignore'] }).toString('utf8');
+        } catch (_) {}
+        if (!rawXml && fs.existsSync(path.resolve(__dirname, '../../frontend/public/sitemap.xml'))) {
+            rawXml = fs.readFileSync(path.resolve(__dirname, '../../frontend/public/sitemap.xml'), 'utf8');
+        }
+        if (rawXml) {
+            const urlBlockRegex = /<url>([\s\S]*?)<\/url>/g;
+            let match;
+            let mergedCount = 0;
+            while ((match = urlBlockRegex.exec(rawXml)) !== null) {
+                const block = match[1];
+                const locM = block.match(/<loc>(https:\/\/tgstechinfo\.com\/[^<]+)<\/loc>/);
+                if (locM) {
+                    const loc = locM[1];
+                    if (!urlsMap.has(loc)) {
+                        const lastmodM = block.match(/<lastmod>([^<]+)<\/lastmod>/);
+                        const changefreqM = block.match(/<changefreq>([^<]+)<\/changefreq>/);
+                        const priorityM = block.match(/<priority>([^<]+)<\/priority>/);
+                        urlsMap.set(loc, {
+                            loc,
+                            lastmod: lastmodM ? lastmodM[1] : nowIso,
+                            changefreq: changefreqM ? changefreqM[1] : 'weekly',
+                            priority: priorityM ? priorityM[1] : '0.75'
+                        });
+                        mergedCount++;
+                    }
+                }
+            }
+            console.log(`Preserved ${mergedCount} additional existing URLs from sitemap baseline`);
+        }
+    } catch (err) {
+        console.warn('Notice preserving baseline URLs:', err.message);
+    }
+
     // Build XML
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    xml += '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n';
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
 
     for (const entry of urlsMap.values()) {
