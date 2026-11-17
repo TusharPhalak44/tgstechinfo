@@ -5,7 +5,8 @@ const LoginHistory = require('../models/LoginHistory');
 const { hashPassword, comparePassword, generateToken, generateRefreshToken, generateCSRFToken } = require('../config/auth');
 const { parseUserAgent, generateSessionToken, generateRefreshToken: genRefreshToken, getClientIP } = require('../utils/deviceFingerprint');
 const { validationResult } = require('express-validator');
-const { sendTemplatedEmail } = require('../config/email');
+const { sendEmail, sendTemplatedEmail, userRegistrationAdminTemplate } = require('../config/email');
+const { notifyAdmins } = require('./notificationController');
 const logAudit = require('../utils/auditLogger');
 const { setAuthCookies, clearAuthCookies, getCookieOptions } = require('../utils/cookieOptions');
 
@@ -97,6 +98,48 @@ exports.register = async (req, res) => {
             }
         } catch (emailError) {
             console.error('Registration email error:', emailError);
+        }
+
+        // 1. Audit Log for new registration
+        try {
+            await logAudit(req, 'register', 'user', user.id, `New user registered: ${user.email} (${user.first_name || ''} ${user.last_name || ''})`, 'success');
+        } catch (auditError) {
+            console.error('[authController.register] Audit log error (non-fatal):', auditError.message);
+        }
+
+        // 2. Send instant Email Notification to Admin(s)
+        try {
+            const rawFrontend = process.env.SITE_URL || process.env.FRONTEND_URL || 'http://localhost:5173';
+            const frontendUrl = rawFrontend.split(',')[0].trim();
+            const adminEmailConfig = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || 'info@tgstechinfo.com';
+            const adminRecipients = adminEmailConfig.split(',').map(e => e.trim()).filter(Boolean);
+
+            const adminEmailHtml = userRegistrationAdminTemplate(user, {
+                ip: ipAddress,
+                device: deviceInfo.device_name,
+                adminUrl: `${frontendUrl}/admin/users`,
+                registeredAt: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+            });
+
+            const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+            for (const adminTo of adminRecipients) {
+                await sendEmail(adminTo, `🔔 New User Registration: ${userName} (${user.email})`, adminEmailHtml, { isTransactional: true });
+            }
+        } catch (adminEmailError) {
+            console.error('[authController.register] Admin notification email error (non-fatal):', adminEmailError.message);
+        }
+
+        // 3. Send in-app notification to all Admins
+        try {
+            const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+            await notifyAdmins(
+                null,
+                'user',
+                'New User Registered',
+                `${userName} (${user.email}) has registered a new account.`
+            );
+        } catch (notifError) {
+            console.error('[authController.register] Admin in-app notification error (non-fatal):', notifError.message);
         }
 
         res.status(201).json({

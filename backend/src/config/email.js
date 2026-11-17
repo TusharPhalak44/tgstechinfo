@@ -816,6 +816,104 @@ const chatbotQueryAdminTemplate = (email, query, submittedAt) => {
     `;
 };
 
+// Template for notifying admin when a new user registers
+const userRegistrationAdminTemplate = (userData, meta = {}) => {
+    const safeFirstName = escapeHtml(userData.first_name || '');
+    const safeLastName = escapeHtml(userData.last_name || '');
+    const fullName = `${safeFirstName} ${safeLastName}`.trim() || 'Not provided';
+    const safeEmail = escapeHtml(userData.email || '');
+    const safeCompany = escapeHtml(userData.company_name || 'Not provided');
+    const safeJobTitle = escapeHtml(userData.job_title || 'Not provided');
+    const safeCountry = escapeHtml(userData.country || 'Not provided');
+    const safePhone = escapeHtml(userData.phone || 'Not provided');
+    const safeIp = escapeHtml(meta.ip || 'Unknown');
+    const safeDevice = escapeHtml(meta.device || 'Unknown');
+    const registeredAt = escapeHtml(meta.registeredAt || new Date().toLocaleString());
+    const adminUrl = escapeHtml(meta.adminUrl || 'https://tgstechinfo.com/admin/users');
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f1f5f9; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+                .header { background: linear-gradient(135deg, #F7941D 0%, #E67E00 100%); color: #ffffff; padding: 25px 20px; text-align: center; }
+                .header h2 { margin: 0; font-size: 22px; font-weight: 700; color: #ffffff; }
+                .content { padding: 30px 25px; }
+                .badge { display: inline-block; padding: 4px 12px; background: #FEF3C7; color: #92400E; border-radius: 9999px; font-size: 13px; font-weight: 600; margin-bottom: 15px; }
+                .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #f8fafc; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+                .info-table td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+                .info-table tr:last-child td { border-bottom: none; }
+                .info-table .label { font-weight: 600; color: #64748b; width: 35%; }
+                .info-table .value { color: #0f172a; font-weight: 500; }
+                .btn { display: inline-block; padding: 12px 24px; background: #F7941D; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; text-align: center; }
+                .footer { padding: 18px 20px; text-align: center; background: #f8fafc; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>🎉 New User Registration Alert</h2>
+                </div>
+                <div class="content">
+                    <span class="badge">New Signup</span>
+                    <p style="margin: 0 0 16px 0; font-size: 15px; color: #334155;">
+                        A new user has just registered an account on <strong>TGSTechInfo</strong>. Below are the registered account details:
+                    </p>
+                    
+                    <table class="info-table">
+                        <tr>
+                            <td class="label">Full Name:</td>
+                            <td class="value"><strong>${fullName}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Email Address:</td>
+                            <td class="value"><a href="mailto:${safeEmail}" style="color: #F7941D; text-decoration: none;">${safeEmail}</a></td>
+                        </tr>
+                        <tr>
+                            <td class="label">Job Title:</td>
+                            <td class="value">${safeJobTitle}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Company:</td>
+                            <td class="value">${safeCompany}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Country:</td>
+                            <td class="value">${safeCountry}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Phone:</td>
+                            <td class="value">${safePhone}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Registered At:</td>
+                            <td class="value">${registeredAt}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">Device & Browser:</td>
+                            <td class="value">${safeDevice}</td>
+                        </tr>
+                        <tr>
+                            <td class="label">IP Address:</td>
+                            <td class="value">${safeIp}</td>
+                        </tr>
+                    </table>
+
+                    <div style="text-align: center; margin-top: 25px;">
+                        <a href="${adminUrl}" class="btn" target="_blank" style="color: #ffffff;">Manage User in Admin Panel →</a>
+                    </div>
+                </div>
+                <div class="footer">
+                    <p style="margin: 0;">This is an automated administrative notification from TGSTechInfo Platform.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+};
+
 // Template for admin response to user
 const chatbotQueryResponseTemplate = (query, adminResponse) => {
     const safeQuery = escapeHtml(query);
@@ -1051,6 +1149,7 @@ module.exports = {
     renderCaseStudyEmail,
     chatbotQueryAdminTemplate,
     chatbotQueryResponseTemplate,
+    userRegistrationAdminTemplate,
     getWebsiteLogoUrl,
     buildLogoHtml,
     convertLogoToPublicUrl,
