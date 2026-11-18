@@ -33,7 +33,7 @@ class ContentNotificationService {
 
             // 2. Strict Publication Validation
             const isStatusPublished = content.status === 'published';
-            const isVisible = content.is_visible_on_site === 1 || content.is_visible_on_site === true;
+            const isVisible = content.is_visible_on_site !== 0 && content.is_visible_on_site !== false && content.is_visible_on_site !== '0';
             const hasSlug = Boolean(content.slug && content.slug.trim());
 
             if (!isStatusPublished || !isVisible || !hasSlug) {
@@ -45,14 +45,18 @@ class ContentNotificationService {
             const rawTypeSlug = (content.content_type_slug || 'article').toLowerCase().replace(/-/g, '_');
             const settingKey = `notify_${rawTypeSlug}`;
 
-            const [typeSettings] = await pool.query(
-                'SELECT setting_value FROM newsletter_notification_settings WHERE setting_key = ?',
-                [settingKey]
-            );
+            try {
+                const [typeSettings] = await pool.query(
+                    'SELECT setting_value FROM newsletter_notification_settings WHERE setting_key = ?',
+                    [settingKey]
+                );
 
-            if (typeSettings.length > 0 && String(typeSettings[0].setting_value) === '0') {
-                console.log(`[ContentNotification] Notifications disabled in master settings for type "${settingKey}". Skipping.`);
-                return { success: false, reason: 'content_type_notifications_disabled' };
+                if (typeSettings.length > 0 && String(typeSettings[0].setting_value) === '0') {
+                    console.log(`[ContentNotification] Notifications disabled in master settings for type "${settingKey}". Skipping.`);
+                    return { success: false, reason: 'content_type_notifications_disabled' };
+                }
+            } catch (settingErr) {
+                console.warn(`[ContentNotification] Notice checking ${settingKey}:`, settingErr.message);
             }
 
             // Check master toggles for topics and general alerts
@@ -66,17 +70,10 @@ class ContentNotificationService {
             const notifyTopicsEnabled = topSetting.length === 0 || String(topSetting[0].setting_value) !== '0';
             const notifyGeneralEnabled = genSetting.length === 0 || String(genSetting[0].setting_value) !== '0';
 
-            // 4. Extract Taxonomy Matching Keys (Category, Technology, Industry, and Tags)
+            // 4. Extract Taxonomy Matching Keys (Category Slug, Name, ID, and Tags)
             const matchedCategorySlug = (content.category_slug || '').toLowerCase().trim();
-            const matchedCategoryType = (content.category_type || '').toLowerCase().trim(); // 'technology' | 'industry'
-
-            // Determine if this content belongs to a specific Category / Technology / Industry
-            const hasSpecificTopic = Boolean(matchedCategorySlug && matchedCategorySlug !== 'general' && matchedCategorySlug !== 'all');
-
-            // Topic-based content should ONLY notify subscribers who explicitly subscribed to that topic/technology.
-            // General subscribers are NOT spammed on every specific category publish (they receive the Weekly Digest).
-            // General subscribers only receive instant alerts if the content is general/editorial or if no specific topic exists.
-            const allowGeneralSubscribers = !hasSpecificTopic && notifyGeneralEnabled;
+            const matchedCategoryName = (content.category_name || '').toLowerCase().trim();
+            const matchedCategoryId = content.category_id ? String(content.category_id) : null;
 
             // Parse tags into lowercase strings
             let parsedTags = [];
@@ -93,9 +90,40 @@ class ContentNotificationService {
                 }
             }
 
+            // Collect all matching topic/category keys for this content
+            const topicKeysSet = new Set();
+            if (matchedCategorySlug && matchedCategorySlug !== 'all' && matchedCategorySlug !== 'general') {
+                topicKeysSet.add(matchedCategorySlug);
+                topicKeysSet.add(matchedCategorySlug.replace(/[-_]+/g, ' '));
+                topicKeysSet.add(matchedCategorySlug.replace(/[-_ ]+/g, '-'));
+                topicKeysSet.add(matchedCategorySlug.replace(/[-_ ]+/g, ''));
+            }
+            if (matchedCategoryName && matchedCategoryName !== 'all' && matchedCategoryName !== 'general') {
+                topicKeysSet.add(matchedCategoryName);
+                topicKeysSet.add(matchedCategoryName.replace(/[-_]+/g, ' '));
+                topicKeysSet.add(matchedCategoryName.replace(/[-_ ]+/g, '-'));
+                topicKeysSet.add(matchedCategoryName.replace(/[-_ ]+/g, ''));
+            }
+            if (matchedCategoryId) {
+                topicKeysSet.add(matchedCategoryId);
+            }
+            for (const tag of parsedTags) {
+                if (tag && tag.length >= 2) {
+                    topicKeysSet.add(tag);
+                    topicKeysSet.add(tag.replace(/[-_]+/g, ' '));
+                    topicKeysSet.add(tag.replace(/[-_ ]+/g, '-'));
+                }
+            }
+
+            const topicKeys = Array.from(topicKeysSet).filter(Boolean);
+            const hasSpecificTopic = topicKeys.length > 0;
+
+            // Topic-based content should notify subscribers who subscribed to that topic/category.
+            // General subscribers only receive alerts if the content is general/editorial or if no specific topic exists.
+            const allowGeneralSubscribers = !hasSpecificTopic && notifyGeneralEnabled;
+
             // 5. Query All Matching Eligible Subscribers with Topic-First Priority
-            // - When content has a specific topic (e.g. Data Science), ONLY topic subscribers get instant notification.
-            // - Space vs Hyphen normalization ensures "data-science" matches "data science" 100% reliably.
+            // Matches any active subscriber who subscribed to this category (slug/name/ID) or any matching tag.
             const matchingQuery = `
                 SELECT 
                     s.id as subscriber_id,
@@ -105,51 +133,40 @@ class ContentNotificationService {
                     i.interest_type,
                     i.interest_value,
                     CASE 
-                        WHEN i.interest_type IN ('technology', 'industry') THEN 1
+                        WHEN LOWER(TRIM(i.interest_value)) != 'all' AND LOWER(TRIM(i.interest_value)) != 'general' THEN 1
                         ELSE 0
                     END as is_topic_match
                 FROM newsletter_subscribers s
                 JOIN newsletter_subscription_interests i ON s.id = i.subscriber_id AND i.is_active = 1
                 WHERE s.is_active = 1 
-                  AND s.preferences_instant_alerts = 1
+                  AND COALESCE(s.preferences_instant_alerts, 1) = 1
                   AND (
-                      -- Condition 1: Topic Subscribers (Technology / Industry)
+                      -- Condition 1: Category / Topic / Tag Subscribers
                       (? = 1 AND (
-                          (i.interest_type = 'technology' AND s.preferences_technology_alerts = 1 AND (
-                              LOWER(i.interest_value) = ? 
-                              OR REPLACE(LOWER(i.interest_value), '-', ' ') = REPLACE(?, '-', ' ')
-                              OR REPLACE(LOWER(i.interest_value), ' ', '-') = REPLACE(?, ' ', '-')
-                              OR LOWER(i.interest_value) IN (?)
-                          ))
-                          OR
-                          (i.interest_type = 'industry' AND s.preferences_industry_alerts = 1 AND (
-                              LOWER(i.interest_value) = ? 
-                              OR REPLACE(LOWER(i.interest_value), '-', ' ') = REPLACE(?, '-', ' ')
-                              OR REPLACE(LOWER(i.interest_value), ' ', '-') = REPLACE(?, ' ', '-')
-                              OR LOWER(i.interest_value) IN (?)
-                          ))
+                          LOWER(TRIM(i.interest_value)) IN (?)
+                          OR REPLACE(LOWER(TRIM(i.interest_value)), '-', ' ') IN (?)
+                          OR REPLACE(LOWER(TRIM(i.interest_value)), ' ', '-') IN (?)
                       ))
-                      -- Condition 2: General Subscribers (only when content is general/non-topic or general alerts allowed)
-                      OR (? = 1 AND (i.interest_type = 'general' AND s.preferences_general_alerts = 1))
+                      -- Condition 2: General Subscribers (only when content is general/non-topic)
+                      OR (
+                          ? = 1 AND (
+                              LOWER(TRIM(i.interest_value)) IN ('all', 'general')
+                              AND COALESCE(s.preferences_general_alerts, 1) = 1
+                          )
+                      )
                   )
                 ORDER BY is_topic_match DESC, s.id DESC
             `;
 
-            const techTagList = parsedTags.length > 0 ? parsedTags : ['__none__'];
-            const indTagList = parsedTags.length > 0 ? parsedTags : ['__none__'];
-
-            const [candidates] = await pool.query(matchingQuery, [
-                notifyTopicsEnabled ? 1 : 0,
-                matchedCategoryType === 'technology' ? matchedCategorySlug : '__none__',
-                matchedCategoryType === 'technology' ? matchedCategorySlug : '__none__',
-                matchedCategoryType === 'technology' ? matchedCategorySlug : '__none__',
-                techTagList,
-                matchedCategoryType === 'industry' ? matchedCategorySlug : '__none__',
-                matchedCategoryType === 'industry' ? matchedCategorySlug : '__none__',
-                matchedCategoryType === 'industry' ? matchedCategorySlug : '__none__',
-                indTagList,
+            const queryParams = [
+                hasSpecificTopic && notifyTopicsEnabled ? 1 : 0,
+                hasSpecificTopic ? topicKeys : ['__none__'],
+                hasSpecificTopic ? topicKeys : ['__none__'],
+                hasSpecificTopic ? topicKeys : ['__none__'],
                 allowGeneralSubscribers ? 1 : 0
-            ]);
+            ];
+
+            const [candidates] = await pool.query(matchingQuery, queryParams);
 
             // Deduplicate by subscriber_id while preserving Topic match over General match
             const uniqueSubscribersMap = new Map();
@@ -240,8 +257,8 @@ class ContentNotificationService {
                     // Insert job into newsletter_email_queue
                     await pool.query(
                         `INSERT INTO newsletter_email_queue 
-                         (subscriber_id, recipient_email, recipient_name, subject, html_content, content_id, job_type, status, created_at)
-                         VALUES (?, ?, ?, ?, ?, ?, 'instant_content_alert', 'pending', ?)`,
+                         (subscriber_id, recipient_email, recipient_name, subject, html_content, content_id, job_type, status, scheduled_for, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?, 'instant_content_alert', 'pending', CURRENT_TIMESTAMP, ?)`,
                         [
                             sub.subscriber_id,
                             sub.email,

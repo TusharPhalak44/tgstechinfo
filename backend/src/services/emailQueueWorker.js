@@ -152,7 +152,7 @@ async function processEmailQueue() {
             `SELECT id, subscriber_id, recipient_email, recipient_name, subject, html_content, 
                     content_id, job_type, attempt_count, max_attempts
              FROM newsletter_email_queue 
-             WHERE status = 'pending' AND scheduled_for <= NOW() 
+             WHERE status = 'pending' AND (scheduled_for IS NULL OR scheduled_for <= NOW() OR scheduled_for <= CURRENT_TIMESTAMP) 
              ORDER BY 
                  CASE 
                      WHEN job_type LIKE 'welcome%' THEN 1

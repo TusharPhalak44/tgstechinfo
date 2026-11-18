@@ -59,12 +59,20 @@ class NewsletterService {
         const currentIstTime = getNowInIST();
 
         // 1. Normalize requested interest
-        const normalizedInterestType = ['general', 'technology', 'industry'].includes(interest_type)
+        const hasSpecificTopic = Boolean(
+            interest_value && 
+            String(interest_value).trim() && 
+            String(interest_value).trim().toLowerCase() !== 'all' && 
+            String(interest_value).trim().toLowerCase() !== 'general'
+        );
+
+        const normalizedInterestType = ['technology', 'industry'].includes(interest_type)
             ? interest_type
-            : 'general';
-        const normalizedInterestValue = (interest_value && String(interest_value).trim())
+            : (hasSpecificTopic ? 'technology' : 'general');
+            
+        const normalizedInterestValue = hasSpecificTopic
             ? String(interest_value).trim().toLowerCase()
-            : (normalizedInterestType === 'general' ? 'all' : 'general');
+            : 'all';
 
         // 2. Check if subscriber already exists in newsletter_subscribers
         const [existing] = await pool.query(
@@ -102,11 +110,11 @@ class NewsletterService {
 
         // 3. Strict Duplicate Check for Active Subscribers (when not reactivating)
         if (subscriber && subscriber.is_active && !wasReactivated) {
-            // Case A: General Newsletter subscription attempt (from homepage, footer, insight/resource pages)
-            if (normalizedInterestType === 'general' || normalizedInterestValue === 'all') {
+            // Case A: General Newsletter subscription attempt (only when interest is explicitly general/all)
+            if (!hasSpecificTopic && (normalizedInterestType === 'general' || normalizedInterestValue === 'all')) {
                 const [genInterests] = await pool.query(
                     `SELECT id FROM newsletter_subscription_interests 
-                     WHERE subscriber_id = ? AND interest_type = 'general' AND is_active = 1`,
+                     WHERE subscriber_id = ? AND interest_type = 'general' AND interest_value = 'all' AND is_active = 1`,
                     [subscriber.id]
                 );
 
@@ -141,12 +149,12 @@ class NewsletterService {
                 }
             }
 
-            // Case B: Technology or Industry Specific Subscription attempt
-            if (normalizedInterestType === 'technology' || normalizedInterestType === 'industry') {
+            // Case B: Category / Technology / Industry Specific Subscription attempt
+            if (hasSpecificTopic) {
                 const [topicInterests] = await pool.query(
                     `SELECT id FROM newsletter_subscription_interests 
-                     WHERE subscriber_id = ? AND interest_type = ? AND interest_value = ? AND is_active = 1`,
-                    [subscriber.id, normalizedInterestType, normalizedInterestValue]
+                     WHERE subscriber_id = ? AND LOWER(interest_value) = ? AND is_active = 1`,
+                    [subscriber.id, normalizedInterestValue]
                 );
 
                 if (topicInterests.length > 0) {
@@ -208,6 +216,14 @@ class NewsletterService {
             };
             isNewSubscriber = true;
         }
+
+        // Ensure subscriber alert preferences are enabled
+        await pool.query(
+            `UPDATE newsletter_subscribers 
+             SET is_active = 1, preferences_instant_alerts = 1, preferences_technology_alerts = 1, preferences_industry_alerts = 1, preferences_general_alerts = 1 
+             WHERE id = ?`,
+            [subscriber.id]
+        ).catch(() => {});
 
         // 5. Register Topic / Category / General Interest in newsletter_subscription_interests
         await pool.query(
