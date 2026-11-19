@@ -314,27 +314,61 @@ class NewsletterService {
             jobType = 'welcome_general';
         }
 
-        // Enqueue welcome email into newsletter_email_queue
-        await pool.query(
-            `INSERT INTO newsletter_email_queue 
-             (subscriber_id, recipient_email, recipient_name, subject, html_content, job_type, status, created_at) 
-             VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
-            [
-                subscriber.id,
-                normalizedEmail,
-                greetingName,
-                welcomeSubject,
-                welcomeEmailHtml,
-                jobType,
-                currentIstTime
-            ]
-        );
+        // 6b. Sync to Benchmark Email (Marketing / Subscription Lists)
+        let benchmarkSynced = false;
+        try {
+            const BenchmarkService = require('./benchmarkService');
+            if (BenchmarkService.isConfigured()) {
+                const syncRes = await BenchmarkService.syncSubscriber({
+                    email: normalizedEmail,
+                    name: greetingName,
+                    interestType: normalizedInterestType,
+                    interestValue: normalizedInterestValue,
+                    source,
+                    contentTitle: source_page_title || ''
+                });
+                if (syncRes && syncRes.success) {
+                    benchmarkSynced = true;
+                    console.log(`[NewsletterService] ✅ Successfully synced subscriber ${normalizedEmail} to Benchmark List #${syncRes.listId}`);
+                }
+            }
+        } catch (bmErr) {
+            console.warn('[NewsletterService] Benchmark sync warning (non-fatal):', bmErr.message);
+        }
 
-        // Trigger immediate background dispatch
-        const { processEmailQueue } = require('./emailQueueWorker');
-        setImmediate(() => {
-            processEmailQueue().catch(err => console.warn('[NewsletterService] Queue trigger note:', err.message));
-        });
+        // 7b. Welcome Email Dispatch Logic (Flow A):
+        // - General Newsletter: Handled by Benchmark Welcome Automation on List #24359602.
+        // - Category / Topic Subscription: Handled by dynamic Category Welcome Email (with exact Category Name)!
+        // - Content Specific Subscription: Handled by dynamic Content Welcome Email (with exact Article Title)!
+        const isBenchmarkWelcomeActive = String(process.env.BENCHMARK_WELCOME_AUTOMATION_ACTIVE || '').toLowerCase() === 'true';
+        const isGeneralNewsletter = (jobType === 'welcome_general');
+
+        if (isBenchmarkWelcomeActive && isGeneralNewsletter) {
+            console.log(`[NewsletterService] ✅ General Newsletter: Benchmark Welcome Automation active for ${normalizedEmail}. Hostinger welcome queue skipped.`);
+        } else {
+            // Enqueue Category-Specific or Content-Specific Welcome Email
+            await pool.query(
+                `INSERT INTO newsletter_email_queue 
+                 (subscriber_id, recipient_email, recipient_name, subject, html_content, job_type, status, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
+                [
+                    subscriber.id,
+                    normalizedEmail,
+                    greetingName,
+                    welcomeSubject,
+                    welcomeEmailHtml,
+                    jobType,
+                    currentIstTime
+                ]
+            );
+
+            // Trigger immediate background dispatch
+            const { processEmailQueue } = require('./emailQueueWorker');
+            setImmediate(() => {
+                processEmailQueue().catch(err => console.warn('[NewsletterService] Queue trigger note:', err.message));
+            });
+            console.log(`[NewsletterService] 🚀 Specific ${jobType} email queued for ${normalizedEmail} (Subject: "${welcomeSubject}")`);
+        }
 
         const formattedTopic = formatTopicName(normalizedInterestValue);
         let successMessage = '';

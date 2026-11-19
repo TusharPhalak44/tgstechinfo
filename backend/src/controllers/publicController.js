@@ -1134,9 +1134,28 @@ exports.subscribeContent = async (req, res) => {
             await forwardToWebhook(content.webhook_url, webhookPayload);
         }
 
+        // Sync to Benchmark Email for content subscription
+        try {
+            const BenchmarkService = require('../services/benchmarkService');
+            if (BenchmarkService.isConfigured() && emailValue) {
+                await BenchmarkService.syncSubscriber({
+                    email: emailValue,
+                    name: fullName,
+                    interestType: 'content',
+                    interestValue: contentTitle,
+                    source: 'content_detail',
+                    contentTitle: contentTitle
+                });
+            }
+        } catch (bmErr) {
+            console.warn('[subscribeContent] Benchmark sync warning (non-fatal):', bmErr.message);
+        }
+
+        // Flow A: Always send specific content subscription confirmation with the exact article title
         try {
             const emailHtml = subscriptionEmailTemplate(fullName, contentTitle);
             await sendEmail(emailValue, `Subscription Confirmed - ${contentTitle}`, emailHtml);
+            console.log(`[subscribeContent] ✅ Content subscription confirmed for ${emailValue} ("${contentTitle}")`);
         } catch (e) {
             console.warn('Subscription email failed:', e.message);
         }
