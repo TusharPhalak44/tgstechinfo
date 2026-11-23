@@ -41,16 +41,26 @@ const navigateContent = (item, navigate) => {
 
 const TYPE_MAP = {
   articles:       { type: 'article',      title: 'Articles',      accent: '#0AAEEF' },
+  article:        { type: 'article',      title: 'Articles',      accent: '#0AAEEF' },
   blogs:          { type: 'blog',         title: 'Blogs',         accent: '#6c5ce7' },
+  blog:           { type: 'blog',         title: 'Blogs',         accent: '#6c5ce7' },
   news:           { type: 'news',         title: 'News',          accent: '#00b894' },
   interviews:     { type: 'interview',    title: 'Interviews',    accent: '#e17055' },
+  interview:      { type: 'interview',    title: 'Interviews',    accent: '#e17055' },
   webinars:       { type: 'webinar',      title: 'Webinars',      accent: '#fd79a8' },
+  webinar:        { type: 'webinar',      title: 'Webinars',      accent: '#fd79a8' },
   events:         { type: 'event',        title: 'Events',        accent: '#fdcb6e' },
+  event:          { type: 'event',        title: 'Events',        accent: '#fdcb6e' },
   ebooks:         { type: 'ebook',        title: 'eBooks',        accent: '#00cec9' },
+  ebook:          { type: 'ebook',        title: 'eBooks',        accent: '#00cec9' },
   whitepapers:    { type: 'whitepaper',   title: 'Whitepapers',   accent: '#e84393' },
+  whitepaper:     { type: 'whitepaper',   title: 'Whitepapers',   accent: '#e84393' },
+  reports:        { type: 'report',       title: 'Reports',       accent: '#0AAEEF' },
+  report:         { type: 'report',       title: 'Reports',       accent: '#0AAEEF' },
   'case-studies': { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF' },
   'case-study':   { type: 'case-study',   title: 'Case Studies',  accent: '#0AAEEF' },
   'landing-pages': { type: 'landing-page', title: 'Landing Pages', accent: '#6c5ce7' },
+  'landing-page': { type: 'landing-page', title: 'Landing Pages', accent: '#6c5ce7' },
 };
 
 const CATEGORY_ACCENT_MAP = {
@@ -754,11 +764,9 @@ const SidebarPost = ({ item, index = 0, navigate, accent, darkMode, isCategoryPa
 
 // ── Main CategoryList Component ─────────────────────────────────────
 const CategoryList = () => {
-  const { slug: paramSlug } = useParams();
+  const { slug: paramSlug, category: paramCategory, contentType: paramContentType } = useParams();
   const location = useLocation();
   const pathParts = location.pathname.split('/').filter(Boolean);
-  const pathSlug = pathParts[pathParts.length - 1] || '';
-  const slug = paramSlug || pathSlug;
   const navigate = useNavigate();
   const { darkMode } = useTheme();
   const { showSuccess, showInfo, showError } = useFeedbackModal();
@@ -786,18 +794,61 @@ const CategoryList = () => {
   const isTablet = windowWidth >= 768 && windowWidth < 1024;
   const isTabletOrMobile = windowWidth < 1024;
 
-  const typeInfo = TYPE_MAP[slug];
-  const isCategoryPage = !typeInfo || location.pathname.startsWith('/category/') || location.pathname.startsWith('/industry/') || location.pathname.startsWith('/industries/');
-  const accent = typeInfo?.accent || CATEGORY_ACCENT_MAP[slug] || '#0AAEEF';
-  const matchedCategory = categoriesTree.find(c => (c.slug || '').toLowerCase() === (slug || '').toLowerCase());
-  const pageTitle = typeInfo?.title
-    || CUSTOM_TITLES[(slug || '').toLowerCase()]
-    || matchedCategory?.name
-    || (slug?.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
-    || 'Articles';
-  const trendingTitle = typeInfo?.title
-    ? `Trending ${typeInfo.title}`
-    : (pageTitle ? `Trending ${pageTitle}` : 'Trending Articles');
+  // Determine active contentType and active categorySlug from URL structure
+  let activeContentType = null;
+  let activeCategorySlug = null;
+  let typeInfo = null;
+
+  if (pathParts[0] === 'category' || pathParts[0] === 'industry' || pathParts[0] === 'industries') {
+    activeCategorySlug = pathParts[1] || paramSlug || '';
+  } else if (pathParts.length >= 2 && TYPE_MAP[pathParts[0]?.toLowerCase()]) {
+    typeInfo = TYPE_MAP[pathParts[0]?.toLowerCase()];
+    activeContentType = typeInfo.type;
+    activeCategorySlug = pathParts[1] || paramCategory || '';
+  } else if (pathParts.length === 1 && TYPE_MAP[pathParts[0]?.toLowerCase()]) {
+    typeInfo = TYPE_MAP[pathParts[0]?.toLowerCase()];
+    activeContentType = typeInfo.type;
+  } else if (paramContentType && TYPE_MAP[paramContentType.toLowerCase()]) {
+    typeInfo = TYPE_MAP[paramContentType.toLowerCase()];
+    activeContentType = typeInfo.type;
+    activeCategorySlug = paramCategory || paramSlug || '';
+  } else {
+    const fallbackSlug = paramSlug || pathParts[pathParts.length - 1] || '';
+    if (TYPE_MAP[fallbackSlug.toLowerCase()]) {
+      typeInfo = TYPE_MAP[fallbackSlug.toLowerCase()];
+      activeContentType = typeInfo.type;
+    } else {
+      activeCategorySlug = fallbackSlug;
+    }
+  }
+
+  const isCompositePage = Boolean(activeContentType && activeCategorySlug);
+  const isCategoryPage = Boolean(activeCategorySlug);
+  const matchedCategory = categoriesTree.find(
+    c => (c.slug || '').toLowerCase() === (activeCategorySlug || '').toLowerCase()
+  );
+  const categoryTitle = activeCategorySlug
+    ? (CUSTOM_TITLES[activeCategorySlug.toLowerCase()]
+      || matchedCategory?.name
+      || activeCategorySlug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()))
+    : '';
+
+  const accent = (activeCategorySlug && CATEGORY_ACCENT_MAP[activeCategorySlug.toLowerCase()])
+    || typeInfo?.accent
+    || '#0AAEEF';
+
+  let pageTitle = 'Articles';
+  if (isCompositePage && typeInfo) {
+    pageTitle = `${categoryTitle} ${typeInfo.title}`;
+  } else if (typeInfo) {
+    pageTitle = typeInfo.title;
+  } else if (activeCategorySlug) {
+    pageTitle = categoryTitle || 'Articles';
+  }
+
+  const trendingTitle = isCompositePage
+    ? `Trending ${pageTitle}`
+    : (typeInfo?.title ? `Trending ${typeInfo.title}` : (categoryTitle ? `Trending ${categoryTitle}` : 'Trending Articles'));
 
   useEffect(() => {
     setCurrentPage(1);
@@ -806,30 +857,33 @@ const CategoryList = () => {
     setSelectedCategory(null);
     setSelectedContentType(null);
     fetchSidebar();
-  }, [slug]);
+  }, [location.pathname]);
 
   useEffect(() => {
     setVisibleCount(INITIAL_SHOW);
     fetchMainList();
-  }, [slug, currentPage, selectedCategory, selectedContentType]);
+  }, [location.pathname, currentPage, selectedCategory, selectedContentType]);
 
   const fetchSidebar = async () => {
     try {
-      const catCountParams = typeInfo ? { content_type: typeInfo.type } : {};
+      const trendingParams = {
+        status: 'published',
+        limit: 5,
+        sort_by: 'views',
+      };
+      if (activeContentType) trendingParams.content_type = activeContentType;
+      if (activeCategorySlug) trendingParams.category = activeCategorySlug;
+
+      const catCountParams = activeContentType ? { content_type: activeContentType } : {};
+      const ctCountParams = activeCategorySlug ? { category: activeCategorySlug } : {};
+
       const requests = [
-        axios.get('/api/public/content', {
-          params: {
-            status: 'published',
-            limit: 5,
-            sort_by: 'views',
-            ...(typeInfo ? { content_type: typeInfo.type } : { category: slug })
-          }
-        }),
+        axios.get('/api/public/content', { params: trendingParams }),
         axios.get('/api/public/categories-with-count', { params: catCountParams }),
       ];
 
-      if (!typeInfo) {
-        requests.push(axios.get('/api/public/content-types-with-count', { params: { category: slug } }));
+      if (activeCategorySlug || !typeInfo) {
+        requests.push(axios.get('/api/public/content-types-with-count', { params: ctCountParams }));
       }
 
       const results = await Promise.all(requests);
@@ -839,13 +893,15 @@ const CategoryList = () => {
       let trendingList = recentRes.data?.data || [];
       if (trendingList.length < 3) {
         try {
-          const fallbackRes = await axios.get('/api/public/content', {
-            params: {
-              status: 'published',
-              limit: 5,
-              sort_by: 'views'
-            }
-          });
+          const fallbackParams = {
+            status: 'published',
+            limit: 5,
+            sort_by: 'views',
+          };
+          if (activeContentType) fallbackParams.content_type = activeContentType;
+          else if (activeCategorySlug) fallbackParams.category = activeCategorySlug;
+
+          const fallbackRes = await axios.get('/api/public/content', { params: fallbackParams });
           const existingIds = new Set(trendingList.map(d => d.id));
           for (const it of fallbackRes.data?.data || []) {
             if (!existingIds.has(it.id)) {
@@ -872,17 +928,20 @@ const CategoryList = () => {
     setLoading(true);
     try {
       const params = { status: 'published', limit: PAGE_SIZE, offset: (currentPage - 1) * PAGE_SIZE };
-      if (typeInfo) {
-        params.content_type = typeInfo.type;
-        if (selectedCategory) {
-          params.category = selectedCategory;
-        }
-      } else {
-        params.category = slug;
-        if (selectedContentType) {
-          params.content_type = selectedContentType;
-        }
+      if (activeContentType) {
+        params.content_type = activeContentType;
       }
+      if (activeCategorySlug) {
+        params.category = activeCategorySlug;
+      }
+
+      if (selectedCategory) {
+        params.category = selectedCategory;
+      }
+      if (selectedContentType) {
+        params.content_type = selectedContentType;
+      }
+
       const mainRes = await axios.get('/api/public/content', { params });
       setContents(mainRes.data?.data || []);
       setTotal(mainRes.data?.total || 0);
@@ -978,25 +1037,28 @@ const CategoryList = () => {
                       // ── INSIGHTS & RESOURCES: In-place Category Filter Pills ──
                       (() => {
                         const totalCatCount = categoriesTree.reduce((sum, parent) => sum + (Number(parent.count) || 0), 0);
+                        const currentCatFilter = selectedCategory || (isCompositePage ? activeCategorySlug : null);
                         return (
                           <>
                             <button
                               type="button"
                               onClick={() => {
-                                if (selectedCategory) {
+                                if (isCompositePage) {
+                                  navigate('/' + (pathParts[0] || 'articles'));
+                                } else if (selectedCategory) {
                                   setSelectedCategory(null);
                                   setCurrentPage(1);
                                 }
                               }}
-                              className={`topic-cat-pill ${!selectedCategory ? 'is-active' : ''}`}
+                              className={`topic-cat-pill ${!currentCatFilter ? 'is-active' : ''}`}
                               style={{
                                 padding: isMobile ? '6px 12px' : '8px 16px',
-                                background: !selectedCategory ? accent : (darkMode ? '#1e293b' : '#fff'),
-                                border: `1.5px solid ${!selectedCategory ? accent : `${accent}33`}`,
+                                background: !currentCatFilter ? accent : (darkMode ? '#1e293b' : '#fff'),
+                                border: `1.5px solid ${!currentCatFilter ? accent : `${accent}33`}`,
                                 borderRadius: 20,
                                 fontSize: isMobile ? 12 : 13,
                                 fontWeight: 600,
-                                color: !selectedCategory ? '#fff' : (darkMode ? '#f1f5f9' : '#0f172a'),
+                                color: !currentCatFilter ? '#fff' : (darkMode ? '#f1f5f9' : '#0f172a'),
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1004,13 +1066,13 @@ const CategoryList = () => {
                                 flexShrink: 0
                               }}
                             >
-                              All {pageTitle}
+                              All {typeInfo?.title || 'Articles'}
                               <span
                                 className="topic-cat-count"
                                 style={{
                                   fontSize: isMobile ? 10 : 11,
                                   fontWeight: 700,
-                                  background: !selectedCategory ? '#ffffff' : `${accent}18`,
+                                  background: !currentCatFilter ? '#ffffff' : `${accent}18`,
                                   color: accent,
                                   borderRadius: 12,
                                   padding: '1px 6px',
@@ -1024,14 +1086,18 @@ const CategoryList = () => {
                             </button>
 
                             {categoriesTree.filter(parent => parent.count > 0).map(parent => {
-                              const isActive = selectedCategory === parent.slug;
+                              const isActive = (currentCatFilter || '').toLowerCase() === (parent.slug || '').toLowerCase();
                               return (
                                 <button
                                   key={parent.id}
                                   type="button"
                                   onClick={() => {
-                                    setSelectedCategory(prev => prev === parent.slug ? null : parent.slug);
-                                    setCurrentPage(1);
+                                    if (isCompositePage) {
+                                      navigate('/' + (pathParts[0] || 'articles') + '/' + parent.slug);
+                                    } else {
+                                      setSelectedCategory(prev => prev === parent.slug ? null : parent.slug);
+                                      setCurrentPage(1);
+                                    }
                                   }}
                                   className={`topic-cat-pill ${isActive ? 'is-active' : ''}`}
                                   style={{

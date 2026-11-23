@@ -73,6 +73,7 @@ const EventsPage = lazyWithRetry(() => import('./pages/EventsPage'));
 const EventDetailPage = lazyWithRetry(() => import('./pages/EventDetailPage'));
 const AuthorsPage = lazyWithRetry(() => import('./pages/AuthorsPage'));
 const AuthorProfilePage = lazyWithRetry(() => import('./pages/AuthorProfilePage'));
+const ContentOrCategoryDispatcher = lazyWithRetry(() => import('./components/public/ContentOrCategoryDispatcher'));
 
 // Lazy-loaded dashboard & admin routes
 const Dashboard = lazyWithRetry(() => import('./components/user/Dashboard'));
@@ -468,22 +469,29 @@ function AppContent() {
 
                 <Route path="/forgot-password" element={<ForgotPassword />} />
 
+                {/* 3-segment canonical content detail routes */}
                 <Route path="/article/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/article/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-
                 <Route path="/blog/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/blog/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-
                 <Route path="/news/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/news/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-
                 <Route path="/interview/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/interview/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-
                 <Route path="/webinar/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/webinar/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-
                 <Route path="/event/:category/:slug" element={<EventDetailPage />} />
+                <Route path="/ebook/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/whitepaper/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/report/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/case-study/:category/:slug" element={<CaseStudyPage />} />
+
+                {/* 2-segment singular routes: if slug is category -> CategoryList, else detail page */}
+                <Route path="/article/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/blog/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/news/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/interview/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/webinar/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/event/:slug" element={<ContentOrCategoryDispatcher detailElement={<EventDetailPage />} />} />
+                <Route path="/ebook/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/whitepaper/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/report/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
+                <Route path="/case-study/:slug" element={<ContentOrCategoryDispatcher detailElement={<CaseStudyPage />} />} />
 
                 {/* Authors Hub & Profile Routes */}
                 <Route path="/authors" element={<AuthorsPage />} />
@@ -492,63 +500,42 @@ function AppContent() {
                 <Route path="/author/:id" element={<AuthorProfilePage />} />
                 <Route path="/author/:id/:slug" element={<AuthorProfilePage />} />
                 <Route path="/authors/:id" element={<AuthorProfilePage />} />
-                <Route path="/event/:slug" element={<EventDetailPage />} />
 
-                <Route path="/ebook/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/ebook/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                {/* Plural listing routes + Category-filtered plural routes */}
+                <Route path="/articles" element={<CategoryList />} />
+                <Route path="/articles/:category" element={<CategoryList />} />
 
-                <Route path="/whitepaper/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/whitepaper/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/blogs" element={<CategoryList />} />
+                <Route path="/blogs/:category" element={<CategoryList />} />
 
-                <Route path="/report/:category/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
-                <Route path="/report/:slug" element={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />
+                <Route path="/news/:category" element={<CategoryList />} />
+
+                <Route path="/interviews" element={<CategoryList />} />
+                <Route path="/interviews/:category" element={<CategoryList />} />
+
+                <Route path="/webinars" element={<CategoryList />} />
+                <Route path="/webinars/:category" element={<CategoryList />} />
+
+                <Route path="/events" element={<CategoryList />} />
+                <Route path="/events/:slug" element={<ContentOrCategoryDispatcher detailElement={<EventDetailPage />} />} />
+
+                <Route path="/ebooks" element={<CategoryList />} />
+                <Route path="/ebooks/:category" element={<CategoryList />} />
 
                 <Route path="/whitepapers" element={<CategoryList />} />
+                <Route path="/whitepapers/:category" element={<CategoryList />} />
 
+                <Route path="/reports" element={<CategoryList />} />
+                <Route path="/reports/:category" element={<CategoryList />} />
+
+                <Route path="/case-studies" element={<CategoryList />} />
+                <Route path="/case-studies/:category" element={<CategoryList />} />
+                <Route path="/case-study" element={<Navigate to="/case-studies" replace />} />
+
+                {/* Direct category routes */}
                 <Route path="/category/:slug" element={<CategoryList />} />
                 <Route path="/industry/:slug" element={<CategoryList />} />
                 <Route path="/industries/:slug" element={<CategoryList />} />
-
-                <Route path="/articles" element={<CategoryList />} />
-
-                <Route path="/ebooks" element={<CategoryList />} />
-
-                <Route path="/blogs" element={<CategoryList />} />
-
-                <Route path="/news" element={<CategoryList />} />
-
-                <Route path="/interviews" element={<CategoryList />} />
-
-                 <Route path="/user-account-policy" element={<UserAccountPolicy />} />
-
-
-
-                <Route path="/webinars" element={<CategoryList />} />
-
-                <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
-
-                <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
-
-                <Route path="/unsubscribe" element={<Unsubscribe />} />
-                <Route path="/subscriber-preferences" element={<SubscriberPreferences />} />
-
-                <Route path="/contact" element={<ContactUs />} />
-                <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
-
-                <Route path="/about" element={<About />} />
-
-                <Route path="/case-study/:category/:slug" element={<CaseStudyPage />} />
-                <Route path="/case-study/:slug" element={<CaseStudyPage />} />
-
-                <Route path="/case-study" element={<Navigate to="/case-studies" replace />} />
-
-                <Route path="/case-studies" element={<CategoryList />} />
-
-                {/* Events Hub Routes */}
-                <Route path="/events" element={<CategoryList />} />
-                <Route path="/events/:slug" element={<EventDetailPage />} />
-                <Route path="/event/:slug" element={<EventDetailPage />} />
-                <Route path="/event/:category/:slug" element={<EventDetailPage />} />
 
                 {/* Landing pages listing + direct access */}
 

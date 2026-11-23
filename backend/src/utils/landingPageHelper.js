@@ -249,11 +249,11 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
             return existing[0];
         }
 
-        // 1b. Fallback: search by prefix pattern if not found
+        // 1b. Fallback: search by prefix pattern if not found among landing pages
         if (slugCleanAlphanumeric.length >= 10) {
             const searchKey = `%${slugCleanAlphanumeric.slice(0, 30)}%`;
             const [fuzzy] = await pool.query(
-                `SELECT * FROM contents WHERE slug LIKE ? OR title LIKE ? LIMIT 1`,
+                `SELECT * FROM contents WHERE (slug LIKE ? OR title LIKE ?) AND (is_file_landing_page = 1 OR content_type_id NOT IN (1, 2, 3, 4, 6, 7, 8, 9, 11)) LIMIT 1`,
                 [searchKey, searchKey]
             );
             if (fuzzy && fuzzy.length > 0) {
