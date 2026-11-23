@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { resolveContentRoute } from '../lib/contentRoute';
+import { isCategorySlug } from '../components/public/ContentOrCategoryDispatcher';
+
+const KNOWN_TOP_LEVEL = new Set([
+  'articles', 'article', 'blogs', 'blog', 'news', 'interviews', 'interview',
+  'webinars', 'webinar', 'events', 'event', 'ebooks', 'ebook',
+  'whitepapers', 'whitepaper', 'reports', 'report', 'case-studies', 'case-study'
+]);
 
 /**
  * Handles legacy root URLs like /my-article-slug that were previously generated in old sitemaps.
@@ -18,6 +25,16 @@ const LegacySlugRedirect = () => {
 
     if (!slug) {
       setNotFound(true);
+      return;
+    }
+
+    const clean = String(slug || '').toLowerCase().trim();
+    if (KNOWN_TOP_LEVEL.has(clean)) {
+      navigate(`/${clean}`, { replace: true });
+      return;
+    }
+    if (isCategorySlug(clean)) {
+      navigate(`/category/${clean}`, { replace: true });
       return;
     }
 

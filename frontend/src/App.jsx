@@ -493,6 +493,15 @@ function AppContent() {
                 <Route path="/report/:slug" element={<ContentOrCategoryDispatcher detailElement={<div style={{ padding: '24px' }}><ArticleDetail /></div>} />} />
                 <Route path="/case-study/:slug" element={<ContentOrCategoryDispatcher detailElement={<CaseStudyPage />} />} />
 
+                {/* Top-level singular aliases redirect to plural listings */}
+                <Route path="/article" element={<Navigate to="/articles" replace />} />
+                <Route path="/blog" element={<Navigate to="/blogs" replace />} />
+                <Route path="/interview" element={<Navigate to="/interviews" replace />} />
+                <Route path="/webinar" element={<Navigate to="/webinars" replace />} />
+                <Route path="/ebook" element={<Navigate to="/ebooks" replace />} />
+                <Route path="/whitepaper" element={<Navigate to="/whitepapers" replace />} />
+                <Route path="/report" element={<Navigate to="/reports" replace />} />
+
                 {/* Authors Hub & Profile Routes */}
                 <Route path="/authors" element={<AuthorsPage />} />
                 <Route path="/authors/users" element={<AuthorsPage defaultType="user" />} />
@@ -508,6 +517,7 @@ function AppContent() {
                 <Route path="/blogs" element={<CategoryList />} />
                 <Route path="/blogs/:category" element={<CategoryList />} />
 
+                <Route path="/news" element={<CategoryList />} />
                 <Route path="/news/:category" element={<CategoryList />} />
 
                 <Route path="/interviews" element={<CategoryList />} />
@@ -536,6 +546,16 @@ function AppContent() {
                 <Route path="/category/:slug" element={<CategoryList />} />
                 <Route path="/industry/:slug" element={<CategoryList />} />
                 <Route path="/industries/:slug" element={<CategoryList />} />
+
+                {/* Informational & Utility Public Pages */}
+                <Route path="/user-account-policy" element={<UserAccountPolicy />} />
+                <Route path="/search" element={<div style={{ padding: '24px' }}><SearchResults /></div>} />
+                <Route path="/newsletter" element={<div style={{ padding: '24px' }}><Newsletter /></div>} />
+                <Route path="/unsubscribe" element={<Unsubscribe />} />
+                <Route path="/subscriber-preferences" element={<SubscriberPreferences />} />
+                <Route path="/contact" element={<ContactUs />} />
+                <Route path="/contact-us" element={<Navigate to="/contact" replace />} />
+                <Route path="/about" element={<About />} />
 
                 {/* Landing pages listing + direct access */}
 
