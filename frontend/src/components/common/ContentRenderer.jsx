@@ -38,9 +38,13 @@ const getSectionOrder = (builderLayout) => {
   } catch { return null; }
 };
 
-// Strip <a> tags but keep their inner text
-const stripLinks = (html = '') =>
-  html.replace(/<a\b[^>]*>(.*?)<\/a>/gis, '$1');
+// Ensure hyperlinks in content open safely in a new tab with security attributes
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A' && node.hasAttribute('href')) {
+    node.setAttribute('target', '_blank');
+    node.setAttribute('rel', 'noopener noreferrer');
+  }
+});
 
 // Restore two-col layout: replace <div data-raw-html="..."> with actual innerHTML
 const restoreRawHtml = (html = '') =>
@@ -212,10 +216,10 @@ const ContentRenderer = ({ content, renderBanner, contentHtml, extraAfter, darkM
     ) : null,
 
     content: (() => {
-      const rawHtml = restoreRawHtml(stripLinks(contentHtml || content.content || '<p>No content available</p>'));
+      const rawHtml = restoreRawHtml(contentHtml || content.content || '<p>No content available</p>');
       const cleanHtml = DOMPurify.sanitize(rawHtml, {
         ADD_TAGS: ['iframe'],
-        ADD_ATTR: ['target', 'allow', 'allowfullscreen', 'frameborder', 'scrolling', 'data-raw-html']
+        ADD_ATTR: ['target', 'allow', 'allowfullscreen', 'frameborder', 'scrolling', 'data-raw-html', 'rel', 'href']
       });
       return (
         <div key="content">

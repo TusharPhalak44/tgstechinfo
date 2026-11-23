@@ -222,9 +222,19 @@
   text-decoration: underline;
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
+  cursor: pointer;
   transition: color 0.15s;
 }
 .prose-content a:hover { color: #1d4ed8; }
+
+[data-theme="dark"] .prose-content a,
+.dark-mode .prose-content a {
+  color: #60a5fa;
+}
+[data-theme="dark"] .prose-content a:hover,
+.dark-mode .prose-content a:hover {
+  color: #93c5fd;
+}
 
 /* ── Code ── */
 .prose-content code {
