@@ -1065,7 +1065,7 @@ const PIPELINE_CARDS = [
   {
     step: '05',
     tag: 'COMMUNITY & SCALE',
-    status: '195 COUNTRIES',
+    status: '115+ COUNTRIES',
     icon: '🌐',
     title: 'Global Tech Intelligence Hub',
     desc: '2.4M+ Annual Readers • 500+ Top Contributors • Weekly Briefings',
@@ -1073,7 +1073,7 @@ const PIPELINE_CARDS = [
     accentColor: '#06B6D4',
     leftHeader: '🌍 Global Readership',
     leftSubtitle: 'Worldwide',
-    leftTitle: '195 Countries Connected',
+    leftTitle: '115+ Countries Connected',
     leftDesc: 'Read by CIOs, CTOs, engineers, startup founders, and enterprise IT leaders worldwide.',
     leftBadges: ['500+ Writers', 'Global Edge CDN', 'Fast Loading'],
     rightHeader: '📈 Trusted Media',
