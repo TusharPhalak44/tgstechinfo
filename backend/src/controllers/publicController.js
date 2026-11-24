@@ -11,6 +11,7 @@ const { getFrontendUrl } = require('../utils/urlHelper');
 const axios = require('axios');
 const { insertIntoDynamicTable, getDynamicTableSubmissions, sanitizeColumnName } = require('../utils/dynamicTable');
 const { getNowInIST } = require('../utils/dateHelper');
+const { validateProfessionalEmail, sanitizeCountryCode, formatFullContact } = require('../utils/validationHelper');
 const fs = require('fs');
 const path = require('path');
 
@@ -1966,17 +1967,21 @@ exports.getCaseStudyBySlug = async (req, res) => {
  */
 exports.submitCaseStudyGate = async (req, res) => {
     try {
-        const { slug, name, email, contact } = req.body;
+        const { slug, name, email, contact, country_code } = req.body;
 
         if (!slug || !name || !email || !contact) {
-            return res.status(400).json({ message: 'slug, name, email, and contact are required.' });
+            return res.status(400).json({ message: 'Name, professional work email, and contact number are required.' });
         }
 
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ message: 'Invalid email address.' });
+        // Validate professional / business email strictly (reject free webmail domains)
+        const emailValidation = validateProfessionalEmail(email);
+        if (!emailValidation.valid) {
+            return res.status(400).json({ message: emailValidation.error });
         }
+
+        // Format country code and contact phone number
+        const cleanCountryCode = sanitizeCountryCode(country_code);
+        const fullContact = formatFullContact(cleanCountryCode, contact);
 
         // Fetch case study (any status so staging previews also work)
         const [rows] = await pool.query(
@@ -1996,16 +2001,17 @@ exports.submitCaseStudyGate = async (req, res) => {
         const caseStudy = rows[0];
         const currentIstTime = getNowInIST();
 
-        // Store lead
+        // Store lead with country code and full contact number
         await pool.query(
             `INSERT INTO case_study_submissions
-                (content_id, name, email, contact, ip_address, user_agent, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                (content_id, name, email, country_code, contact, ip_address, user_agent, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 caseStudy.id,
                 name.trim(),
                 email.trim().toLowerCase(),
-                contact.trim(),
+                cleanCountryCode || null,
+                fullContact,
                 req.ip || null,
                 req.headers['user-agent'] || null,
                 currentIstTime
@@ -2033,7 +2039,8 @@ exports.submitCaseStudyGate = async (req, res) => {
             name,
             title: caseStudy.title,
             email,
-            contact,
+            contact: fullContact,
+            country_code: cleanCountryCode || '',
             slug: caseStudy.slug,
             download_url: downloadUrl,
             downloadUrl: downloadUrl,

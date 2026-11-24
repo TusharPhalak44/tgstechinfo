@@ -11,6 +11,7 @@ import {
 import axios from 'axios';
 import moment from 'moment';
 import { formatDateForCSV, formatDateForDisplay, DATE_FORMATS, formatTimestampForFilename } from '../../utils/dateHelper';
+import { formatDisplayPhone } from '../../utils/countryCodes';
 
 const StatCard = ({ icon, label, value, color }) => (
   <div style={{
@@ -1437,6 +1438,7 @@ const AdminSubmissions = () => {
           return (
             (item.name && item.name.toLowerCase().includes(q)) ||
             (item.email && item.email.toLowerCase().includes(q)) ||
+            (item.country_code && item.country_code.toLowerCase().includes(q)) ||
             (item.contact && item.contact.toLowerCase().includes(q)) ||
             (item.case_study_title && item.case_study_title.toLowerCase().includes(q)) ||
             (item.case_study_slug && item.case_study_slug.toLowerCase().includes(q))
@@ -1469,15 +1471,19 @@ const AdminSubmissions = () => {
           },
           {
             title: 'Phone / Contact',
-            dataIndex: 'contact',
             key: 'contact',
-            width: 170,
-            render: (v) => v ? (
-              <span style={{ fontSize: 13, color: '#334155' }}>
-                <PhoneOutlined style={{ marginRight: 6, color: '#10b981' }} />
-                <a href={`tel:${v}`} style={{ color: '#334155' }}>{v}</a>
-              </span>
-            ) : <span style={{ color: '#cbd5e1' }}>—</span>
+            width: 190,
+            render: (_, r) => {
+              const fullPhone = formatDisplayPhone(r.country_code, r.contact);
+              return fullPhone ? (
+                <span style={{ fontSize: 13, color: '#334155', display: 'flex', alignItems: 'center' }}>
+                  <PhoneOutlined style={{ marginRight: 6, color: '#10b981' }} />
+                  <a href={`tel:${fullPhone.replace(/\s+/g, '')}`} style={{ color: '#0f172a', fontWeight: 600 }}>
+                    {fullPhone}
+                  </a>
+                </span>
+              ) : <span style={{ color: '#cbd5e1' }}>—</span>;
+            }
           },
           {
             title: 'Case Study Asset',
@@ -1604,13 +1610,17 @@ const AdminSubmissions = () => {
                     { field: 'id', title: 'Lead ID' },
                     { field: 'name', title: 'Lead Name' },
                     { field: 'email', title: 'Work Email' },
+                    { field: 'country_code', title: 'Country Code' },
                     { field: 'contact', title: 'Phone / Contact' },
                     { field: 'case_study_title', title: 'Case Study Title' },
                     { field: 'content_id', title: 'Case Study ID' },
                     { field: 'ip_address', title: 'IP Address' },
                     { field: 'user_agent', title: 'Browser User Agent' },
                     { field: 'created_at', title: 'Submission Date' }
-                  ], filteredCaseStudies, 'case_study_leads')}
+                  ], filteredCaseStudies.map(r => ({
+                    ...r,
+                    contact: formatDisplayPhone(r.country_code, r.contact)
+                  })), 'case_study_leads')}
                   style={{ background: '#0ea5e9', borderColor: '#0ea5e9', borderRadius: 8 }}
                 >
                   Export Leads to Excel
@@ -1952,9 +1962,17 @@ const AdminSubmissions = () => {
                 <a href={`mailto:${selectedCaseStudyLead.email}`}>{selectedCaseStudyLead.email}</a>
               </Descriptions.Item>
               <Descriptions.Item label="Phone / Contact">
-                {selectedCaseStudyLead.contact ? (
-                  <a href={`tel:${selectedCaseStudyLead.contact}`}>{selectedCaseStudyLead.contact}</a>
-                ) : '—'}
+                {selectedCaseStudyLead.contact ? (() => {
+                  const fullPhone = formatDisplayPhone(selectedCaseStudyLead.country_code, selectedCaseStudyLead.contact);
+                  return (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <PhoneOutlined style={{ color: '#10b981' }} />
+                      <a href={`tel:${fullPhone.replace(/\s+/g, '')}`} style={{ fontWeight: 600, color: '#0f172a' }}>
+                        {fullPhone}
+                      </a>
+                    </span>
+                  );
+                })() : '—'}
               </Descriptions.Item>
               <Descriptions.Item label="Submission Date">
                 {formatDateForDisplay(selectedCaseStudyLead.created_at, DATE_FORMATS.DATE_TIME)}

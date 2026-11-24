@@ -97,6 +97,16 @@ const testConnection = async (retries = 15, delay = 3000) => {
                         console.warn('⚠️ Note on schedule_type column check:', colErr.message);
                     }
                 }
+
+                // Ensure case_study_submissions table has country_code column
+                try {
+                    await conn.query("ALTER TABLE case_study_submissions ADD COLUMN country_code VARCHAR(10) NULL AFTER email");
+                    console.log('✅ Auto-migration: added `country_code` column to case_study_submissions table');
+                } catch (colErr) {
+                    if (colErr.code !== 'ER_DUP_FIELDNAME' && colErr.errno !== 1060) {
+                        console.warn('⚠️ Note on case_study_submissions country_code column check:', colErr.message);
+                    }
+                }
             } catch (_) {}
             conn.release();
             return true;

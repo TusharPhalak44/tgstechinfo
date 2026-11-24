@@ -1685,57 +1685,7 @@ exports.getCaseStudySubmissions = async (req, res) => {
     try {
         const { search, content_id } = req.query;
         let query = `
-            SELECT css.id, css.content_id, css.name, css.email, css.contact, 
-                   css.ip_address, css.user_agent, css.created_at,
-                   c.title as case_study_title, c.slug as case_study_slug,
-                   c.pdf_file as case_study_pdf
-            FROM case_study_submissions css
-            LEFT JOIN contents c ON css.content_id = c.id
-            WHERE 1=1
-        `;
-        const values = [];
-
-        if (content_id) {
-            query += ' AND css.content_id = ?';
-            values.push(content_id);
-        }
-
-        if (search) {
-            query += ' AND (css.name LIKE ? OR css.email LIKE ? OR css.contact LIKE ? OR c.title LIKE ?)';
-            const q = `%${search}%`;
-            values.push(q, q, q, q);
-        }
-
-        query += ' ORDER BY css.created_at DESC, css.id DESC';
-
-        const [rows] = await pool.query(query, values);
-        res.json({ success: true, submissions: rows, total: rows.length });
-    } catch (error) {
-        console.error('[getCaseStudySubmissions] Error:', error);
-        res.status(500).json({ message: 'Failed to fetch case study submissions.' });
-    }
-};
-
-exports.deleteCaseStudySubmission = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const [result] = await pool.query('DELETE FROM case_study_submissions WHERE id = ?', [id]);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Submission not found' });
-        }
-        res.json({ success: true, message: 'Case study lead deleted successfully' });
-    } catch (error) {
-        console.error('[deleteCaseStudySubmission] Error:', error);
-        res.status(500).json({ message: 'Failed to delete case study submission.' });
-    }
-};
-
-
-exports.getCaseStudySubmissions = async (req, res) => {
-    try {
-        const { search, content_id } = req.query;
-        let query = `
-            SELECT css.id, css.content_id, css.name, css.email, css.contact, 
+            SELECT css.id, css.content_id, css.name, css.email, css.country_code, css.contact, 
                    css.ip_address, css.user_agent, css.created_at,
                    c.title as case_study_title, c.slug as case_study_slug,
                    c.pdf_file as case_study_pdf

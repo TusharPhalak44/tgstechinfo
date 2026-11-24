@@ -6,6 +6,7 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTheme } from '../context/ThemeContext';
 import { useFeedbackModal } from '../context/FeedbackModalContext';
 import { formatDateForLongDisplay } from '../utils/dateHelper';
+import { COUNTRY_CODES, validateProfessionalEmail } from '../utils/countryCodes';
 
 const CaseStudyPage = () => {
   const { slug } = useParams();
@@ -19,7 +20,7 @@ const CaseStudyPage = () => {
   const [gateVisible, setGateVisible] = useState(true);
   const [gateSubmitted, setGateSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [formValues, setFormValues] = useState({ name: '', email: '', contact: '' });
+  const [formValues, setFormValues] = useState({ name: '', email: '', country_code: '+91', contact: '' });
   const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
@@ -48,10 +49,19 @@ const CaseStudyPage = () => {
 
   const validate = () => {
     const errs = {};
-    if (!formValues.name.trim()) errs.name = 'Name is required';
-    if (!formValues.email.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email)) errs.email = 'Invalid email';
-    if (!formValues.contact.trim()) errs.contact = 'Contact is required';
+    if (!formValues.name.trim()) errs.name = 'Full name is required';
+
+    // Strict professional / business email validation
+    const emailResult = validateProfessionalEmail(formValues.email);
+    if (!emailResult.valid) {
+      errs.email = emailResult.error;
+    }
+
+    if (!formValues.contact.trim()) {
+      errs.contact = 'Phone / Contact number is required';
+    } else if (formValues.contact.trim().length < 5) {
+      errs.contact = 'Please enter a valid contact number';
+    }
     return errs;
   };
 
@@ -60,9 +70,16 @@ const CaseStudyPage = () => {
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
     setSubmitting(true);
     try {
+      const fullContact = formValues.contact.trim().startsWith('+')
+        ? formValues.contact.trim()
+        : `${formValues.country_code} ${formValues.contact.trim()}`;
+
       await axios.post('/api/public/case-study-gate', {
         slug: slug,
-        ...formValues,
+        name: formValues.name.trim(),
+        email: formValues.email.trim(),
+        country_code: formValues.country_code,
+        contact: fullContact,
       });
       try {
         localStorage.setItem(`cs_gated_${slug}`, 'true');
@@ -196,10 +213,12 @@ const CaseStudyPage = () => {
                 {formErrors.name && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.name}</span>}
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#0D2B4E', display: 'block', marginBottom: 5 }}>Work Email *</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#0D2B4E', display: 'block', marginBottom: 5 }}>
+                  Work Email * <span style={{ fontSize: 11, fontWeight: 400, color: darkMode ? '#94a3b8' : '#64748b' }}>(Corporate email only)</span>
+                </label>
                 <input
                   type="email"
-                  placeholder="you@company.com"
+                  placeholder="name@company.com"
                   value={formValues.email}
                   onChange={e => { setFormValues(p => ({ ...p, email: e.target.value })); setFormErrors(p => ({ ...p, email: '' })); }}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.email ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
@@ -208,13 +227,36 @@ const CaseStudyPage = () => {
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : '#0D2B4E', display: 'block', marginBottom: 5 }}>Phone / Contact *</label>
-                <input
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  value={formValues.contact}
-                  onChange={e => { setFormValues(p => ({ ...p, contact: e.target.value })); setFormErrors(p => ({ ...p, contact: '' })); }}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
-                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select
+                    value={formValues.country_code}
+                    onChange={e => setFormValues(p => ({ ...p, country_code: e.target.value }))}
+                    style={{
+                      width: '135px',
+                      padding: '10px 6px',
+                      borderRadius: 8,
+                      border: `1px solid ${darkMode ? '#475569' : '#d9d9d9'}`,
+                      background: darkMode ? '#0f172a' : '#fff',
+                      color: darkMode ? '#f1f5f9' : '#000',
+                      fontSize: 13,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {COUNTRY_CODES.map(c => (
+                      <option key={`${c.code}-${c.dial_code}`} value={c.dial_code}>
+                        {c.flag} {c.dial_code} ({c.code})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    placeholder="98765 43210"
+                    value={formValues.contact}
+                    onChange={e => { setFormValues(p => ({ ...p, contact: e.target.value })); setFormErrors(p => ({ ...p, contact: '' })); }}
+                    style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
+                  />
+                </div>
                 {formErrors.contact && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.contact}</span>}
               </div>
 

@@ -9,12 +9,13 @@ ADD COLUMN email_template LONGTEXT NULL,
 ADD COLUMN case_study_headline VARCHAR(500) NULL,
 ADD COLUMN case_study_summary VARCHAR(1000) NULL;
 
--- Store case study lead submissions (name, email, contact)
+-- Store case study lead submissions (name, email, country_code, contact)
 CREATE TABLE IF NOT EXISTS case_study_submissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     content_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
+    country_code VARCHAR(10) NULL,
     contact VARCHAR(50) NOT NULL,
     ip_address VARCHAR(100) NULL,
     user_agent TEXT NULL,

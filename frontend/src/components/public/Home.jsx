@@ -16,6 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { navigateContentItem, resolveContentRoute } from '../../lib/contentRoute';
 import { formatContentPublishDate, sortContentByDate } from '../../utils/dateHelper';
 import { formatViewsToM } from '../../utils/numberHelper';
+import { COUNTRY_CODES, validateProfessionalEmail } from '../../utils/countryCodes';
 import { useFeedbackModal } from '../../context/FeedbackModalContext';
 
 // Newsletter Subscribe Form Component
@@ -564,7 +565,7 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
       console.error(e);
     }
     setSelectedCs(cs);
-    setFormValues({ name: '', email: '', contact: '' });
+    setFormValues({ name: '', email: '', country_code: '+91', contact: '' });
     setFormErrors({});
     setGateVisible(true);
   };
@@ -583,9 +584,16 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
     setSubmitting(true);
     try {
-      const res = await axios.post('/api/public/case-study-gate', {
+      const fullContact = formValues.contact.trim().startsWith('+')
+        ? formValues.contact.trim()
+        : `${formValues.country_code} ${formValues.contact.trim()}`;
+
+      await axios.post('/api/public/case-study-gate', {
         slug: selectedCs.slug,
-        ...formValues,
+        name: formValues.name.trim(),
+        email: formValues.email.trim(),
+        country_code: formValues.country_code,
+        contact: fullContact,
       });
       try {
         localStorage.setItem(`cs_gated_${selectedCs.slug}`, 'true');
@@ -777,10 +785,12 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
                 {formErrors.name && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.name}</span>}
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Work Email *</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', display: 'block', marginBottom: 5 }}>
+                  Work Email * <span style={{ fontSize: 11, fontWeight: 400, color: darkMode ? '#94a3b8' : 'var(--color-muted)' }}>(Corporate email only)</span>
+                </label>
                 <input
                   type="email"
-                  placeholder="you@company.com"
+                  placeholder="name@company.com"
                   value={formValues.email}
                   onChange={e => { setFormValues(p => ({ ...p, email: e.target.value })); setFormErrors(p => ({ ...p, email: '' })); }}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.email ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
@@ -789,13 +799,36 @@ const CaseStudiesSection = ({ navigate, darkMode = false }) => {
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#f1f5f9' : 'var(--color-heading)', display: 'block', marginBottom: 5 }}>Phone / Contact *</label>
-                <input
-                  type="tel"
-                  placeholder="+1 (555) 000-0000"
-                  value={formValues.contact}
-                  onChange={e => { setFormValues(p => ({ ...p, contact: e.target.value })); setFormErrors(p => ({ ...p, contact: '' })); }}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
-                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <select
+                    value={formValues.country_code}
+                    onChange={e => setFormValues(p => ({ ...p, country_code: e.target.value }))}
+                    style={{
+                      width: '135px',
+                      padding: '10px 6px',
+                      borderRadius: 8,
+                      border: `1px solid ${darkMode ? '#475569' : '#d9d9d9'}`,
+                      background: darkMode ? '#0f172a' : '#fff',
+                      color: darkMode ? '#f1f5f9' : '#000',
+                      fontSize: 13,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {COUNTRY_CODES.map(c => (
+                      <option key={`${c.code}-${c.dial_code}`} value={c.dial_code}>
+                        {c.flag} {c.dial_code} ({c.code})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    placeholder="98765 43210"
+                    value={formValues.contact}
+                    onChange={e => { setFormValues(p => ({ ...p, contact: e.target.value })); setFormErrors(p => ({ ...p, contact: '' })); }}
+                    style={{ flex: 1, padding: '10px 14px', borderRadius: 8, border: `1px solid ${formErrors.contact ? '#ff4d4f' : darkMode ? '#475569' : '#d9d9d9'}`, fontSize: 14, outline: 'none', boxSizing: 'border-box', background: darkMode ? '#0f172a' : '#fff', color: darkMode ? '#f1f5f9' : '#000' }}
+                  />
+                </div>
                 {formErrors.contact && <span style={{ fontSize: 11, color: '#ff4d4f', marginTop: 3, display: 'block' }}>{formErrors.contact}</span>}
               </div>
 
