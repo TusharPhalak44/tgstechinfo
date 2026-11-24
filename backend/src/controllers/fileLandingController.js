@@ -583,15 +583,21 @@ exports.uploadZipLandingPage = async (req, res) => {
             category_id: req.body.category_id || null
         });
 
-        // Ensure status is published and visible
-        if (contentRecord) {
-            await pool.query(
-                `UPDATE contents SET status = 'published', is_visible_on_site = 1 WHERE id = ?`,
-                [contentRecord.id]
-            ).catch(() => {});
-            contentRecord.status = 'published';
-            contentRecord.is_visible_on_site = 1;
+        if (!contentRecord) {
+            console.error(`[uploadZipLandingPage] Failed to register content record for ${cleanSlug}`);
+            return res.status(500).json({
+                success: false,
+                message: 'Files were extracted, but failed to register the landing page in the database. Please try syncing landing pages.'
+            });
         }
+
+        // Ensure status is published and visible
+        await pool.query(
+            `UPDATE contents SET status = 'published', is_visible_on_site = 1 WHERE id = ?`,
+            [contentRecord.id]
+        ).catch(() => {});
+        contentRecord.status = 'published';
+        contentRecord.is_visible_on_site = 1;
 
         const shareUrl = getLandingPageShareUrl(cleanSlug);
 

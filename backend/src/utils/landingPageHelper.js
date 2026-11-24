@@ -253,7 +253,7 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
         if (slugCleanAlphanumeric.length >= 10) {
             const searchKey = `%${slugCleanAlphanumeric.slice(0, 30)}%`;
             const [fuzzy] = await pool.query(
-                `SELECT * FROM contents WHERE (slug LIKE ? OR title LIKE ?) AND (is_file_landing_page = 1 OR content_type_id NOT IN (1, 2, 3, 4, 6, 7, 8, 9, 11)) LIMIT 1`,
+                `SELECT * FROM contents WHERE (slug LIKE ? OR title LIKE ?) AND (builder_layout LIKE '%file-landing%' OR content_type_id NOT IN (1, 2, 3, 4, 6, 7, 8, 9, 11)) LIMIT 1`,
                 [searchKey, searchKey]
             );
             if (fuzzy && fuzzy.length > 0) {
@@ -328,8 +328,8 @@ async function getOrCreateContentForLandingPage(slug, extraContext = {}) {
 
         // 3. Insert newly auto-provisioned content row into `contents`
         const [insertRes] = await pool.query(
-            `INSERT INTO contents (title, slug, content_type_id, category_id, status, webhook_url, redirect_url, content, builder_layout, published_date)
-             VALUES (?, ?, 10, 1, 'published', ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            `INSERT INTO contents (title, slug, content_type_id, category_id, status, is_visible_on_site, webhook_url, redirect_url, content, builder_layout, published_date)
+             VALUES (?, ?, 10, 1, 'published', 1, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
             [
                 title,
                 dbSlug,
