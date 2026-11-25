@@ -35,6 +35,19 @@ const PAGE_SIZE = 15;
 const INITIAL_SHOW = 9;
 const SEE_MORE_STEP = 3;
 
+const normalizePublicEventItem = (evt) => ({
+  ...evt,
+  content_type: 'event',
+  content_type_slug: 'event',
+  content_type_name: 'Event',
+  content_type_id: 5,
+  category_name: evt.event_type ? evt.event_type.charAt(0).toUpperCase() + evt.event_type.slice(1) : 'Event',
+  webinar_date: evt.end_date || evt.start_date,
+  published_date: evt.start_date || evt.created_at,
+  views_count: evt.view_count || 0,
+  url: `/events/${encodeURIComponent(evt.slug)}`
+});
+
 const navigateContent = (item, navigate) => {
   navigateContentItem(item, navigate, { newTab: true });
 };
@@ -896,7 +909,16 @@ const CategoryList = () => {
       const catRes = results[1];
       const ctRes = results[2];
       let trendingList = recentRes.data?.data || [];
-      if (trendingList.length < 3) {
+      if (activeContentType === 'event' && trendingList.length === 0) {
+        try {
+          const evTrendRes = await axios.get('/api/public/events', {
+            params: { timeline: 'upcoming', page: 1, limit: 5 }
+          });
+          trendingList = (evTrendRes.data?.events || []).map(normalizePublicEventItem);
+        } catch (evTrendErr) {
+          console.warn('Events trending fetch error:', evTrendErr);
+        }
+      } else if (trendingList.length < 3) {
         try {
           const fallbackParams = {
             status: 'published',
@@ -954,6 +976,17 @@ const CategoryList = () => {
       }
       if (selectedContentType) {
         params.content_type = selectedContentType;
+      }
+
+      const effectiveType = selectedContentType || activeContentType;
+      if (effectiveType === 'event') {
+        const eventsRes = await axios.get('/api/public/events', {
+          params: { timeline: 'upcoming', page: currentPage, limit: PAGE_SIZE }
+        });
+        const mappedEvents = (eventsRes.data?.events || []).map(normalizePublicEventItem);
+        setContents(mappedEvents);
+        setTotal(eventsRes.data?.pagination?.total ?? mappedEvents.length);
+        return;
       }
 
       const mainRes = await axios.get('/api/public/content', { params });
