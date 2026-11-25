@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { pool } = require('../config/database');
 const slugify = require('slugify');
 const { createDynamicTable, updateDynamicTable, dropDynamicTable } = require('../utils/dynamicTable');
@@ -913,6 +915,14 @@ class Content {
                 if (item.content_type_id === 5 || item.slug) {
                     await pool.query('DELETE FROM events WHERE slug = ? OR title = ?', [item.slug, item.title]);
                     console.log('✓ Cascade deleted event from events table for content id:', id);
+                }
+                // If it has a physical file landing page folder on disk, delete it so auto-sync does not recreate it on reload
+                if (item.slug) {
+                    const landingDir = path.resolve(process.env.LANDING_PAGES_DIR || path.join(__dirname, '../../landing-pages'), item.slug);
+                    if (fs.existsSync(landingDir)) {
+                        fs.rmSync(landingDir, { recursive: true, force: true });
+                        console.log('✓ Cascade deleted physical landing page folder on disk:', landingDir);
+                    }
                 }
             }
         } catch (eventDeleteError) {
