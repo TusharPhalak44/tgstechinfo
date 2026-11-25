@@ -179,9 +179,13 @@ export default function EventsPage() {
   };
 
   // Helper for countdown
-  const getCountdownText = (startDate) => {
-    const diffMs = new Date(startDate) - new Date();
-    if (diffMs < 0) return 'Concluded';
+  const getCountdownText = (startDate, endDate) => {
+    const now = new Date();
+    const diffMs = new Date(startDate) - now;
+    if (diffMs < 0) {
+      if (endDate && new Date(endDate) > now) return 'Live / Ongoing';
+      return 'Concluded';
+    }
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     if (diffDays === 0) {
@@ -448,7 +452,7 @@ export default function EventsPage() {
               gap: 28
             }}>
               {events.map((event) => {
-                const countdown = getCountdownText(event.start_date);
+                const countdown = getCountdownText(event.start_date, event.end_date);
                 const isOnline = event.event_mode === 'online';
                 const isOffline = event.event_mode === 'offline';
 

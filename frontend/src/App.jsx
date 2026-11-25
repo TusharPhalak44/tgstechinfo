@@ -526,7 +526,8 @@ function AppContent() {
                 <Route path="/webinars" element={<CategoryList />} />
                 <Route path="/webinars/:category" element={<CategoryList />} />
 
-                <Route path="/events" element={<CategoryList />} />
+                <Route path="/events" element={<EventsPage />} />
+                <Route path="/event" element={<Navigate to="/events" replace />} />
                 <Route path="/events/:slug" element={<ContentOrCategoryDispatcher detailElement={<EventDetailPage />} />} />
 
                 <Route path="/ebooks" element={<CategoryList />} />
