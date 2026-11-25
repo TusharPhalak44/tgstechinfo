@@ -70,9 +70,11 @@ export default function EventDetailPage() {
 
   // Real-time countdown clock
   useEffect(() => {
-    if (!event?.start_date) return;
+    if (!event?.start_date && !event?.end_date) return;
 
-    const targetDate = new Date(event.start_date).getTime();
+    const startMs = event?.start_date ? new Date(event.start_date).getTime() : 0;
+    const endMs = event?.end_date ? new Date(event.end_date).getTime() : 0;
+    const targetDate = startMs > Date.now() ? startMs : (endMs || startMs);
 
     const updateTimer = () => {
       const now = new Date().getTime();
@@ -94,7 +96,7 @@ export default function EventDetailPage() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [event?.start_date]);
+  }, [event?.start_date, event?.end_date]);
 
   // Handle Form Submission
   const handleRegisterSubmit = async (values) => {
@@ -170,7 +172,8 @@ export default function EventDetailPage() {
 
   const isOnline = event.event_mode === 'online' || event.event_mode === 'hybrid';
   const isOffline = event.event_mode === 'offline' || event.event_mode === 'hybrid';
-  const isPast = event.is_past || new Date(event.start_date) < new Date();
+  const effectiveEndDate = event.end_date || event.start_date;
+  const isPast = Boolean(event.is_past || (effectiveEndDate && new Date(effectiveEndDate) < new Date()));
 
   // JSON-LD Schema for Google Search Event snippet (Public SEO - NEVER expose private meeting join links)
   const jsonLdSchema = {
@@ -279,7 +282,7 @@ export default function EventDetailPage() {
             {isPast && (
               <Alert
                 message="This Event Has Concluded"
-                description={`This event was scheduled for ${dayjs(event.start_date).format('MMMM D, YYYY h:mm A')} and has concluded. Registrations are now closed.`}
+                description={`This event was scheduled for ${dayjs(event.end_date || event.start_date).format('MMMM D, YYYY h:mm A')} and has concluded. Registrations are now closed.`}
                 type="warning"
                 showIcon
                 style={{ marginBottom: 20, borderRadius: 8 }}
