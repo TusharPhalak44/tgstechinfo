@@ -512,6 +512,7 @@ const DashboardLayout = () => {
       /* ── 2. CONTENT STUDIO (Royal Indigo & Purple) ── */
       navGroup('g-content', '✍️ Content Studio', [
         navItem('/dashboard/content', <FileTextOutlined style={{ color: D ? '#818CF8' : '#4F46E5' }} />, 'All Content'),
+        navItem('/dashboard/events', <CalendarOutlined style={{ color: D ? '#F59E0B' : '#D97706' }} />, 'Events & RSVPs'),
         navItem('/dashboard/drafts', <UnorderedListOutlined style={{ color: D ? '#FBBF24' : '#D97706' }} />, 'Draft Articles'),
         navItem('/dashboard/pending-review', <CheckCircleOutlined style={{ color: D ? '#34D399' : '#059669' }} />, 'Review Queue', pendingCount > 0 ? pendingCount : null, '#10B981'),
         navItem('/dashboard/create-post', <EditOutlined style={{ color: D ? '#A78BFA' : '#7C3AED' }} />, 'Create Article'),

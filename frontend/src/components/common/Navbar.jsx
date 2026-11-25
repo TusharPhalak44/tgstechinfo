@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Dropdown, Button, Avatar, Badge, List, Typography, Empty, Tag } from 'antd';
+import { Dropdown, Button, Avatar, Badge, List, Typography, Empty, Tag, Spin } from 'antd';
 import {
   UserOutlined, LogoutOutlined, DashboardOutlined,
   MenuOutlined, CloseOutlined, SearchOutlined, BellOutlined,
@@ -15,6 +15,7 @@ import { useSiteSettings } from '../../context/SiteSettingsContext';
 import { ButtonWithIcon } from '@/components/ui/button-with-icon';
 import { PhoneCall } from 'lucide-react';
 import axios from 'axios';
+import { resolveContentRoute } from '../../lib/contentRoute';
 
 const { Text } = Typography;
 
@@ -467,6 +468,10 @@ const Navbar = () => {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [liveResults, setLiveResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showLiveDropdown, setShowLiveDropdown] = useState(false);
+  const searchDebounceRef = useRef(null);
   const [scrolled, setScrolled] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -558,10 +563,37 @@ const Navbar = () => {
     };
   }, [mobileOpen]);
 
+  // Live search query debounced fetch
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setLiveResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const { data } = await axios.get('/api/public/search', { params: { q, limit: 6 } });
+        setLiveResults(Array.isArray(data) ? data : []);
+      } catch {
+        setLiveResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 250);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchQuery]);
+
   // Close mobile drawer and mobile search on route navigation
   useEffect(() => {
     setMobileOpen(false);
     setMobileSearchOpen(false);
+    setShowLiveDropdown(false);
   }, [location.pathname]);
 
   // Close mobile drawer if resized to desktop/laptop
@@ -585,6 +617,7 @@ const Navbar = () => {
         setMobileOpen(false);
         setMobileSearchOpen(false);
         setSearchVisible(false);
+        setShowLiveDropdown(false);
       }
     };
     const handleClickOutside = (e) => {
@@ -593,6 +626,7 @@ const Navbar = () => {
       }
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setSearchVisible(false);
+        setShowLiveDropdown(false);
         if (!searchQuery) setSearchQuery('');
       }
     };
@@ -630,10 +664,25 @@ const Navbar = () => {
   const handleSearch = () => {
     if (searchQuery.trim().length >= 2) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setShowLiveDropdown(false);
       setSearchVisible(false);
       setMobileSearchOpen(false);
       setMobileOpen(false);
       setSearchQuery('');
+    }
+  };
+
+  const handleSelectResult = (item) => {
+    setShowLiveDropdown(false);
+    setSearchVisible(false);
+    setMobileSearchOpen(false);
+    setMobileOpen(false);
+    setSearchQuery('');
+    try {
+      const route = resolveContentRoute(item);
+      navigate(route.url);
+    } catch {
+      navigate(`/search?q=${encodeURIComponent(item.title)}`);
     }
   };
 
@@ -703,10 +752,10 @@ const Navbar = () => {
             height: 12px !important;
           }
           .nav-search-input {
-            width: 45px !important;
+            width: 60px !important;
           }
-          .nav-search-input:focus {
-            width: 85px !important;
+          .nav-search-input:focus, .nav-search-input.has-query {
+            width: 120px !important;
           }
           .nav-theme-btn {
             width: 34px !important;
@@ -760,10 +809,10 @@ const Navbar = () => {
             height: 13px !important;
           }
           .nav-search-input {
-            width: 55px !important;
+            width: 75px !important;
           }
-          .nav-search-input:focus {
-            width: 105px !important;
+          .nav-search-input:focus, .nav-search-input.has-query {
+            width: 160px !important;
           }
           .nav-theme-btn {
             width: 36px !important;
@@ -817,10 +866,10 @@ const Navbar = () => {
             height: 15px !important;
           }
           .nav-search-input {
-            width: 65px !important;
+            width: 90px !important;
           }
-          .nav-search-input:focus {
-            width: 130px !important;
+          .nav-search-input:focus, .nav-search-input.has-query {
+            width: 210px !important;
           }
           .nav-theme-btn {
             width: 38px !important;
@@ -927,16 +976,17 @@ const Navbar = () => {
 
               {/* 1. Search Bar */}
               {!isMobile ? (
-                <div ref={searchRef} style={{ display: 'flex', alignItems: 'center' }}>
+                <div ref={searchRef} style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     background: darkMode ? 'rgba(255,255,255,0.06)' : '#EAF2FF',
                     borderRadius: 24,
-                    padding: '0 8px',
+                    padding: '0 10px',
                     border: darkMode ? '1px solid #334155' : '1.5px solid #CBD5E1',
                     height: 36,
-                    transition: 'all .25s ease'
+                    transition: 'all .25s ease',
+                    boxShadow: (showLiveDropdown && searchQuery.trim().length >= 2) ? '0 0 0 2px rgba(59, 130, 246, 0.25)' : 'none'
                   }}>
                     <SearchOutlined
                       aria-label="Search"
@@ -954,22 +1004,33 @@ const Navbar = () => {
 
                     <input
                       value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                      placeholder="Search..."
-                      aria-label="Search articles and publications"
-                      className="nav-search-input"
+                      onChange={e => {
+                        setSearchQuery(e.target.value);
+                        if (!showLiveDropdown) setShowLiveDropdown(true);
+                      }}
+                      onFocus={() => {
+                        setSearchVisible(true);
+                        setShowLiveDropdown(true);
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          handleSearch();
+                        } else if (e.key === 'Escape') {
+                          setShowLiveDropdown(false);
+                        }
+                      }}
+                      placeholder="Search title, author, category, type..."
+                      aria-label="Search articles, authors, categories and publications"
+                      className={`nav-search-input ${searchQuery ? 'has-query' : ''}`}
                       style={{
                         border: 'none',
                         background: 'transparent',
                         outline: 'none',
                         fontSize: 12,
-                        padding: '0 5px',
+                        padding: '0 6px',
                         color: darkMode ? '#F1F5F9' : '#0F172A',
                         transition: 'width .25s ease',
                       }}
-                      onFocus={() => setSearchVisible(true)}
-                      onBlur={() => { if (!searchQuery) setSearchVisible(false); }}
                     />
 
                     {searchQuery && (
@@ -983,11 +1044,159 @@ const Navbar = () => {
                           cursor: 'pointer',
                           flexShrink: 0
                         }}
-                        onClick={() => { setSearchQuery(''); setSearchVisible(false); }}
-                        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { setSearchQuery(''); setSearchVisible(false); } }}
+                        onClick={() => {
+                          setSearchQuery('');
+                          setShowLiveDropdown(false);
+                          setLiveResults([]);
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setSearchQuery('');
+                            setShowLiveDropdown(false);
+                            setLiveResults([]);
+                          }
+                        }}
                       />
                     )}
                   </div>
+
+                  {/* Desktop Live Search Dropdown */}
+                  {showLiveDropdown && searchQuery.trim().length >= 2 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 8px)',
+                        right: 0,
+                        width: 400,
+                        maxWidth: 'calc(100vw - 32px)',
+                        background: darkMode ? '#0F172A' : '#FFFFFF',
+                        borderRadius: 14,
+                        border: darkMode ? '1px solid #334155' : '1.5px solid #E2E8F0',
+                        boxShadow: darkMode ? '0 16px 40px rgba(0,0,0,0.6)' : '0 16px 40px rgba(11,31,77,0.14)',
+                        zIndex: 10001,
+                        overflow: 'hidden',
+                        animation: 'navFadeDown .15s ease-out'
+                      }}
+                    >
+                      {/* Dropdown Header */}
+                      <div style={{
+                        padding: '8px 12px',
+                        background: darkMode ? '#1E293B' : '#F8FAFC',
+                        borderBottom: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: darkMode ? '#94A3B8' : '#64748B', letterSpacing: '0.5px' }}>
+                          SEARCH SUGGESTIONS
+                        </span>
+                        {searchLoading && <Spin size="small" />}
+                      </div>
+
+                      {/* Dropdown Results */}
+                      {searchLoading && liveResults.length === 0 ? (
+                        <div style={{ padding: '24px 16px', textAlign: 'center', color: darkMode ? '#94A3B8' : '#64748B', fontSize: 12.5 }}>
+                          Searching across title, author, category & content type...
+                        </div>
+                      ) : liveResults.length === 0 ? (
+                        <div style={{ padding: '20px 16px', textAlign: 'center', color: darkMode ? '#94A3B8' : '#64748B', fontSize: 12.5 }}>
+                          <div>No immediate results for "<strong>{searchQuery}</strong>"</div>
+                          <div style={{ fontSize: 11, marginTop: 4, color: darkMode ? '#64748B' : '#94A3B8' }}>
+                            Press <strong style={{ color: '#F7941D' }}>Enter</strong> to search all articles
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ maxHeight: 330, overflowY: 'auto' }}>
+                          {liveResults.map((item) => (
+                            <div
+                              key={item.id}
+                              onClick={() => handleSelectResult(item)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                padding: '10px 14px',
+                                cursor: 'pointer',
+                                borderBottom: darkMode ? '1px solid #1E293B' : '1px solid #F1F5F9',
+                                transition: 'background .15s ease'
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.06)' : '#F8FAFC'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              {item.banner_image ? (
+                                <img
+                                  src={`/uploads/${item.banner_image}`}
+                                  alt=""
+                                  style={{ width: 44, height: 34, objectFit: 'cover', borderRadius: 5, flexShrink: 0 }}
+                                />
+                              ) : (
+                                <div style={{
+                                  width: 44, height: 34, borderRadius: 5, flexShrink: 0,
+                                  background: darkMode ? '#1E293B' : '#EFF6FF',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: '#3B82F6', fontSize: 14
+                                }}>
+                                  <FileTextOutlined />
+                                </div>
+                              )}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+                                  {item.content_type_name && (
+                                    <Tag color="geekblue" style={{ fontSize: 10, lineHeight: '16px', padding: '0 5px', margin: 0, borderRadius: 3 }}>
+                                      {item.content_type_name}
+                                    </Tag>
+                                  )}
+                                  {item.category_name && (
+                                    <Tag color="blue" style={{ fontSize: 10, lineHeight: '16px', padding: '0 5px', margin: 0, borderRadius: 3 }}>
+                                      {item.category_name}
+                                    </Tag>
+                                  )}
+                                </div>
+                                <div style={{
+                                  fontSize: 12.5,
+                                  fontWeight: 600,
+                                  color: darkMode ? '#F1F5F9' : '#0F172A',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {item.title}
+                                </div>
+                                {item.author_name && (
+                                  <div style={{ fontSize: 11, color: darkMode ? '#94A3B8' : '#64748B', marginTop: 1 }}>
+                                    By <strong style={{ color: darkMode ? '#CBD5E1' : '#475569' }}>{item.author_name}</strong>
+                                  </div>
+                                )}
+                              </div>
+                              <RightOutlined style={{ fontSize: 10, color: darkMode ? '#64748B' : '#94A3B8', flexShrink: 0 }} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Dropdown Footer */}
+                      <div
+                        onClick={handleSearch}
+                        style={{
+                          padding: '9px 14px',
+                          background: darkMode ? 'rgba(59, 130, 246, 0.12)' : '#F0F7FF',
+                          color: darkMode ? '#60A5FA' : '#0B1F4D',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          borderTop: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6
+                        }}
+                      >
+                        <span>View all results for "{searchQuery}"</span>
+                        <RightOutlined style={{ fontSize: 10 }} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 /* Mobile Search Icon Button */
@@ -1198,63 +1407,128 @@ const Navbar = () => {
                 borderBottom: darkMode ? '1px solid #334155' : '1px solid #CBD5E1',
                 boxShadow: darkMode ? '0 12px 30px rgba(0,0,0,0.5)' : '0 12px 30px rgba(11,31,77,0.1)',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: 'column',
                 gap: 8,
                 animation: 'navSlideDown .2s cubic-bezier(0.16, 1, 0.3, 1)'
               }}
             >
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                background: darkMode ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
-                borderRadius: 20,
-                padding: '0 12px',
-                border: darkMode ? '1px solid #334155' : '1.5px solid #CBD5E1',
-                height: 38
-              }}>
-                <SearchOutlined style={{ color: darkMode ? '#94A3B8' : '#0B1F4D', fontSize: 14 }} />
-                <input
-                  ref={mobileSearchInputRef}
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="Search articles, topics, ebooks..."
-                  aria-label="Search articles"
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    outline: 'none',
-                    fontSize: 13,
-                    padding: '0 8px',
-                    width: '100%',
-                    color: darkMode ? '#F1F5F9' : '#0F172A'
-                  }}
-                />
-                {searchQuery && (
-                  <CloseOutlined
-                    style={{ color: 'var(--color-muted)', fontSize: 12, cursor: 'pointer' }}
-                    onClick={() => setSearchQuery('')}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: darkMode ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                  borderRadius: 20,
+                  padding: '0 12px',
+                  border: darkMode ? '1px solid #334155' : '1.5px solid #CBD5E1',
+                  height: 38
+                }}>
+                  <SearchOutlined style={{ color: darkMode ? '#94A3B8' : '#0B1F4D', fontSize: 14 }} />
+                  <input
+                    ref={mobileSearchInputRef}
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                    placeholder="Search title, author, category, type..."
+                    aria-label="Search articles"
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      outline: 'none',
+                      fontSize: 13,
+                      padding: '0 8px',
+                      width: '100%',
+                      color: darkMode ? '#F1F5F9' : '#0F172A'
+                    }}
                   />
-                )}
+                  {searchQuery && (
+                    <CloseOutlined
+                      style={{ color: 'var(--color-muted)', fontSize: 12, cursor: 'pointer' }}
+                      onClick={() => setSearchQuery('')}
+                    />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSearch}
+                  style={{
+                    background: '#F7941D',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: 18,
+                    padding: '8px 14px',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    flexShrink: 0
+                  }}
+                >
+                  Go
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleSearch}
-                style={{
-                  background: '#F7941D',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: 18,
-                  padding: '8px 14px',
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-              >
-                Go
-              </button>
+
+              {/* Mobile Live Suggestions */}
+              {searchQuery.trim().length >= 2 && (
+                <div style={{
+                  background: darkMode ? '#1E293B' : '#FFFFFF',
+                  borderRadius: 12,
+                  border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  maxHeight: 260,
+                  overflowY: 'auto'
+                }}>
+                  {searchLoading && liveResults.length === 0 ? (
+                    <div style={{ padding: '14px', textAlign: 'center', fontSize: 12, color: darkMode ? '#94A3B8' : '#64748B' }}>
+                      <Spin size="small" style={{ marginRight: 6 }} /> Searching...
+                    </div>
+                  ) : liveResults.length > 0 ? (
+                    liveResults.map(item => (
+                      <div
+                        key={item.id}
+                        onClick={() => handleSelectResult(item)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '9px 12px',
+                          borderBottom: darkMode ? '1px solid #334155' : '1px solid #F1F5F9',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', gap: 4, marginBottom: 2 }}>
+                            {item.content_type_name && <Tag color="geekblue" style={{ fontSize: 9, lineHeight: '14px', margin: 0, padding: '0 4px' }}>{item.content_type_name}</Tag>}
+                            {item.category_name && <Tag color="blue" style={{ fontSize: 9, lineHeight: '14px', margin: 0, padding: '0 4px' }}>{item.category_name}</Tag>}
+                          </div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#F1F5F9' : '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.title}
+                          </div>
+                          {item.author_name && <div style={{ fontSize: 10.5, color: darkMode ? '#94A3B8' : '#64748B' }}>By {item.author_name}</div>}
+                        </div>
+                        <RightOutlined style={{ fontSize: 10, color: '#94A3B8' }} />
+                      </div>
+                    ))
+                  ) : (
+                    <div style={{ padding: '12px', textAlign: 'center', fontSize: 12, color: darkMode ? '#94A3B8' : '#64748B' }}>
+                      No direct matches. Tap "View all results" below.
+                    </div>
+                  )}
+                  <div
+                    onClick={handleSearch}
+                    style={{
+                      padding: '8px 12px',
+                      background: darkMode ? '#0F172A' : '#F0F7FF',
+                      color: darkMode ? '#60A5FA' : '#0B1F4D',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      textAlign: 'center',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    View all results for "{searchQuery}" →
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </header>
@@ -1293,7 +1567,7 @@ const Navbar = () => {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                placeholder="Search articles, ebooks, news..."
+                placeholder="Search title, author, category, type..."
                 aria-label="Search articles"
                 style={{
                   border: 'none',
@@ -1330,6 +1604,70 @@ const Navbar = () => {
                 Go
               </button>
             </div>
+
+            {/* Mobile Drawer Live Suggestions */}
+            {searchQuery.trim().length >= 2 && (
+              <div style={{
+                marginTop: 8,
+                background: darkMode ? '#1E293B' : '#FFFFFF',
+                borderRadius: 12,
+                border: darkMode ? '1px solid #334155' : '1px solid #E2E8F0',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                maxHeight: 260,
+                overflowY: 'auto'
+              }}>
+                {searchLoading && liveResults.length === 0 ? (
+                  <div style={{ padding: '14px', textAlign: 'center', fontSize: 12, color: darkMode ? '#94A3B8' : '#64748B' }}>
+                    <Spin size="small" style={{ marginRight: 6 }} /> Searching...
+                  </div>
+                ) : liveResults.length > 0 ? (
+                  liveResults.map(item => (
+                    <div
+                      key={item.id}
+                      onClick={() => handleSelectResult(item)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '9px 12px',
+                        borderBottom: darkMode ? '1px solid #334155' : '1px solid #F1F5F9',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: 4, marginBottom: 2 }}>
+                          {item.content_type_name && <Tag color="geekblue" style={{ fontSize: 9, lineHeight: '14px', margin: 0, padding: '0 4px' }}>{item.content_type_name}</Tag>}
+                          {item.category_name && <Tag color="blue" style={{ fontSize: 9, lineHeight: '14px', margin: 0, padding: '0 4px' }}>{item.category_name}</Tag>}
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: darkMode ? '#F1F5F9' : '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.title}
+                        </div>
+                        {item.author_name && <div style={{ fontSize: 10.5, color: darkMode ? '#94A3B8' : '#64748B' }}>By {item.author_name}</div>}
+                      </div>
+                      <RightOutlined style={{ fontSize: 10, color: '#94A3B8' }} />
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '12px', textAlign: 'center', fontSize: 12, color: darkMode ? '#94A3B8' : '#64748B' }}>
+                    No direct matches. Tap "View all results" below.
+                  </div>
+                )}
+                <div
+                  onClick={handleSearch}
+                  style={{
+                    padding: '8px 12px',
+                    background: darkMode ? '#0F172A' : '#F0F7FF',
+                    color: darkMode ? '#60A5FA' : '#0B1F4D',
+                    fontSize: 11.5,
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    cursor: 'pointer'
+                  }}
+                >
+                  View all results for "{searchQuery}" →
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Navigation Links with smooth Accordion */}

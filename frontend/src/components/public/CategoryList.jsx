@@ -565,7 +565,7 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
           ) : isLandingPage ? (
             'Landing Page'
           ) : isEvent ? (
-            'EVENT'
+            item.webinar_date && new Date(item.webinar_date) < new Date() ? 'EVENT • CONCLUDED' : 'UPCOMING EVENT'
           ) : (
             item.content_type_name || item.content_type || ''
           )}
@@ -621,8 +621,13 @@ const ListItem = ({ item, navigate, accent, darkMode, isMobile: propIsMobile, is
 
         {/* Event Schedule preview line */}
         {isEvent && item.webinar_date && (
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             <CalendarOutlined /> Scheduled Event: {formatWebinarDate(item.webinar_date)}
+            {new Date(item.webinar_date) < new Date() && (
+              <span style={{ fontSize: 10.5, fontWeight: 600, color: darkMode ? '#cbd5e1' : '#64748b', background: darkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0', padding: '1px 6px', borderRadius: 4, marginLeft: 2 }}>
+                Concluded
+              </span>
+            )}
           </div>
         )}
 
@@ -914,6 +919,15 @@ const CategoryList = () => {
           console.warn('Fallback trending fetch error:', fbErr);
         }
       }
+      // Filter out concluded events and live sessions from trending posts
+      trendingList = (trendingList || []).filter(item => {
+        const isEv = (item.content_type === 'event' || item.content_type_slug === 'event' || item.content_type_id === 5 || typeInfo?.type === 'event');
+        if (isEv && item.webinar_date && new Date(item.webinar_date) < new Date()) return false;
+        const isLiveWeb = (item.content_type === 'webinar' || item.content_type_slug === 'webinar' || item.content_type_id === 4 || typeInfo?.type === 'webinar') && (item.webinar_type === 'live' || !item.webinar_type);
+        if (isLiveWeb && item.webinar_date && new Date(item.webinar_date) < new Date()) return false;
+        return true;
+      });
+
       setRecentPosts(trendingList);
       setCategoriesTree(catRes.data || []);
       if (ctRes?.data) {
@@ -959,14 +973,17 @@ const CategoryList = () => {
       item.content_type === 'event' || item.content_type_slug === 'event' ||
       item.content_type_id === 5 || (typeInfo && typeInfo.type === 'event')
     );
+    // Hide events whose scheduled date has concluded
+    if (isEvent && item.webinar_date && new Date(item.webinar_date) < new Date()) {
+      return false;
+    }
+
     const isLiveWebinar = (
       item.content_type === 'webinar' || item.content_type_slug === 'webinar' ||
       item.content_type_id === 4 || (typeInfo && typeInfo.type === 'webinar')
     ) && (item.webinar_type === 'live' || !item.webinar_type);
 
-    if (isEvent && item.webinar_date && new Date(item.webinar_date) < new Date()) {
-      return false;
-    }
+    // Only hide live webinars whose live broadcast has concluded
     if (isLiveWebinar && item.webinar_date && new Date(item.webinar_date) < new Date()) {
       return false;
     }
@@ -1081,7 +1098,7 @@ const CategoryList = () => {
                                   transition: 'all 0.2s ease'
                                 }}
                               >
-                                {totalCatCount || total}
+                                {totalCatCount !== undefined && totalCatCount !== null ? totalCatCount : (filteredContents.length === 0 ? 0 : total)}
                               </span>
                             </button>
 
@@ -1281,7 +1298,7 @@ const CategoryList = () => {
                 )}
               </span>
               <span style={{ fontSize: isMobile ? 12 : 13, color: darkMode ? '#94a3b8' : '#94a3b8' }}>
-                {total} {selectedContentType ? (contentTypesTree.find(c => c.slug === selectedContentType)?.name || 'items') : (typeInfo ? pageTitle.toLowerCase() : 'items')} found
+                {filteredContents.length === 0 ? 0 : total} {selectedContentType ? (contentTypesTree.find(c => c.slug === selectedContentType)?.name || 'items') : (typeInfo ? pageTitle.toLowerCase() : 'items')} found
               </span>
             </div>
 
@@ -1290,7 +1307,7 @@ const CategoryList = () => {
               {loading
                 ? <Skeleton active paragraph={{ rows: 6 }} />
                 : filteredContents.length === 0
-                  ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>{searchTerm ? 'No articles matched your search query.' : `No articles published yet in ${pageTitle}.`}</div>
+                  ? <div style={{ textAlign: 'center', padding: isMobile ? '40px 0' : '60px 0', color: darkMode ? '#94a3b8' : '#94a3b8', fontSize: isMobile ? 14 : 15 }}>{searchTerm ? 'No articles matched your search query.' : (typeInfo?.type === 'event' || pageTitle.toLowerCase().includes('event')) ? 'No upcoming events scheduled right now.' : `No articles published yet in ${pageTitle}.`}</div>
                   : filteredContents.slice(0, visibleCount).map(item => (
                     <ListItem key={item.id} item={item} navigate={navigate} accent={accent} darkMode={darkMode} isMobile={isMobile} isCategoryPage={isCategoryPage} />
                   ))
@@ -1454,9 +1471,13 @@ const CategoryList = () => {
                 </div>
                 {loading
                   ? <Skeleton active paragraph={{ rows: 6 }} />
-                  : recentPosts.map((item, index) => (
-                    <SidebarPost key={item.id} item={item} index={index} navigate={navigate} accent={accent} darkMode={darkMode} isCategoryPage={isCategoryPage} />
-                  ))
+                  : recentPosts.length === 0
+                    ? <div style={{ textAlign: 'center', padding: '24px 12px', fontSize: 13, color: darkMode ? '#94a3b8' : '#64748b' }}>
+                        No upcoming {trendingTitle.toLowerCase()} at this time.
+                      </div>
+                    : recentPosts.map((item, index) => (
+                      <SidebarPost key={item.id} item={item} index={index} navigate={navigate} accent={accent} darkMode={darkMode} isCategoryPage={isCategoryPage} />
+                    ))
                 }
               </div>
             </div>

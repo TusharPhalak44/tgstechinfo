@@ -440,12 +440,16 @@ class SitemapService {
                 dbSuccess = true;
                 for (const item of contents) {
                     // Filter out concluded live webinars & events
-                    const isLiveWebinarOrEvent = (
-                        (item.content_type === 'webinar' || item.content_type === 'event' || item.content_type_id === 4 || item.content_type_id === 5) &&
+                    const isPastEvent = (
+                        (item.content_type === 'event' || item.content_type_slug === 'event' || item.content_type_id === 5) &&
+                        item.webinar_date && new Date(item.webinar_date) < new Date()
+                    );
+                    const isPastLiveWebinar = (
+                        (item.content_type === 'webinar' || item.content_type_slug === 'webinar' || item.content_type_id === 4) &&
                         (item.webinar_type === 'live' || !item.webinar_type) &&
                         item.webinar_date && new Date(item.webinar_date) < new Date()
                     );
-                    if (isLiveWebinarOrEvent) continue;
+                    if (isPastEvent || isPastLiveWebinar) continue;
 
                     const itemUrl = resolveItemUrl(baseUrl, item);
                     if (itemUrl) {

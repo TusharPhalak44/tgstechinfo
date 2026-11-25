@@ -296,13 +296,16 @@ exports.getContentBySlug = async (req, res) => {
             return res.status(404).json({ message: 'Content not found' });
         }
 
-        // If live webinar or live event has concluded (scheduled date/time passed), hide from public website
-        const isLiveWebinarOrEvent = (
-            content.content_type === 'webinar' || content.content_type === 'event' ||
-            content.content_type_slug === 'webinar' || content.content_type_slug === 'event' ||
-            content.content_type_id === 5 || content.content_type_id === 6
-        ) && (content.webinar_type === 'live' || !content.webinar_type);
-        if (isLiveWebinarOrEvent && content.webinar_date && new Date(content.webinar_date) < new Date()) {
+        // If live webinar or event has concluded (scheduled date/time passed), flag as past
+        const isPastLiveWebinar = (
+            content.content_type === 'webinar' || content.content_type_slug === 'webinar' || content.content_type_id === 4
+        ) && (content.webinar_type === 'live' || !content.webinar_type) && content.webinar_date && new Date(content.webinar_date) < new Date();
+
+        const isPastEvent = (
+            content.content_type === 'event' || content.content_type_slug === 'event' || content.content_type_id === 5
+        ) && content.webinar_date && new Date(content.webinar_date) < new Date();
+
+        if (isPastLiveWebinar || isPastEvent) {
             content.is_past = true;
         }
 
@@ -1489,7 +1492,11 @@ exports.getContentTypesWithCount = async (req, res) => {
              LEFT JOIN contents c ON c.content_type_id = ct.id 
                   AND (c.status = 'published' OR c.status IS NULL)
                   AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL)
-                   AND NOT ((ct.slug IN ('webinar', 'event') OR c.content_type_id IN (5, 6)) AND (c.webinar_type = 'live' OR c.webinar_type IS NULL) AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)
+                   AND NOT (
+                       ((ct.slug = 'event' OR c.content_type_id = 5) AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)
+                       OR
+                       ((ct.slug = 'webinar' OR c.content_type_id = 4) AND (c.webinar_type = 'live' OR c.webinar_type IS NULL) AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)
+                   )
                   ${categoryFilter}
              GROUP BY ct.id, ct.name, ct.slug
              ORDER BY ct.id ASC`,
@@ -1550,7 +1557,14 @@ exports.getCategoriesWithCount = async (req, res) => {
         const countQuery = `
             SELECT cat.id, COUNT(c.id) as count
             FROM categories cat
-            LEFT JOIN contents c ON c.category_id = cat.id AND c.status = 'published' AND c.is_visible_on_site = 1 AND NOT ((c.content_type_id IN (5, 6)) AND (c.webinar_type = 'live' OR c.webinar_type IS NULL) AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)${contentTypeFilter}
+            LEFT JOIN contents c ON c.category_id = cat.id 
+                AND c.status = 'published' 
+                AND (c.is_visible_on_site = 1 OR c.is_visible_on_site IS NULL) 
+                AND NOT (
+                    (c.content_type_id = 5 AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)
+                    OR
+                    (c.content_type_id = 4 AND (c.webinar_type = 'live' OR c.webinar_type IS NULL) AND c.webinar_date IS NOT NULL AND c.webinar_date < CURRENT_TIMESTAMP)
+                )${contentTypeFilter}
             GROUP BY cat.id
         `;
         const [counts] = await pool.query(countQuery, values);
