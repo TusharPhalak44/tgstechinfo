@@ -29,6 +29,22 @@ class LandingPage {
         return rows[0];
     }
 
+    // Find by company / company_name stored in extra_fields for a specific content_id
+    static async findByCompanyAndContent(company, content_id) {
+        if (!company || !content_id) return null;
+        const normalized = String(company).toLowerCase().trim();
+        const [rows] = await pool.query(
+            `SELECT * FROM landing_page_submissions 
+             WHERE content_id = ? 
+               AND (
+                 LOWER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(extra_fields, '$.company')))) = ?
+                 OR LOWER(TRIM(JSON_UNQUOTE(JSON_EXTRACT(extra_fields, '$.company_name')))) = ?
+               ) LIMIT 1`,
+            [content_id, normalized, normalized]
+        );
+        return rows[0];
+    }
+
     // Find any previous submission across all landing pages by email
     static async findByEmail(email) {
         if (!email) return null;

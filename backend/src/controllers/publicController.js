@@ -597,6 +597,53 @@ exports.submitLandingPage = async (req, res) => {
             }
         }
 
+        // ── Check if this company name has already been submitted ───────────────
+        const submittedCompany = normalizedExtraData.company || normalizedExtraData.company_name || extraData.company || extraData.company_name;
+        const normalizedSubmittedCompany = String(submittedCompany || '').toLowerCase().trim();
+        const isConsultationLandingPage = [
+            content?.title,
+            content?.slug,
+            fileLandingSlug,
+            extraData?.landing_slug,
+            extraData?.asset_type,
+            extraData?.lead_type,
+            extraData?.campaign_name
+        ].some(val => typeof val === 'string' && /appointment|consultation|faststart|advisor/i.test(val));
+
+        if (normalizedSubmittedCompany && (!isExemptFromDuplicateCheck || isConsultationLandingPage) && normalizedContentId) {
+            let duplicateCompany = false;
+
+            const existingCompany = await LandingPage.findByCompanyAndContent(normalizedSubmittedCompany, normalizedContentId);
+            if (existingCompany) {
+                duplicateCompany = true;
+            } else {
+                // Check dynamic submission table (column may be `company` or `company_name`)
+                for (const col of ['company', 'company_name']) {
+                    try {
+                        const [dynCompanyRows] = await pool.query(
+                            `SELECT id FROM form_submissions_${normalizedContentId} WHERE LOWER(TRIM(${col})) = ? LIMIT 1`,
+                            [normalizedSubmittedCompany]
+                        );
+                        if (dynCompanyRows && dynCompanyRows.length > 0) {
+                            duplicateCompany = true;
+                            break;
+                        }
+                    } catch (e) { /* column or dynamic table may not exist */ }
+                }
+            }
+
+            if (duplicateCompany) {
+                console.log(`[submitLandingPage] Company '${normalizedSubmittedCompany}' already exists for content #${normalizedContentId}. Blocking duplicate.`);
+                return res.status(409).json({
+                    success: false,
+                    alreadySubscribed: true,
+                    already_submitted: true,
+                    duplicate_company: true,
+                    message: 'Duplicate entry: This company name has already been submitted.'
+                });
+            }
+        }
+
         // Validate required fields — only for standard CMS pages when customFieldsDef has entries
         // HTML file-based landing pages have their own form structure and client-side validation
         if (!fileLandingSlug && customFieldsDef.length > 0) {
