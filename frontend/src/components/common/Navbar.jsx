@@ -755,7 +755,7 @@ const Navbar = () => {
             width: 60px !important;
           }
           .nav-search-input:focus, .nav-search-input.has-query {
-            width: 120px !important;
+            width: 95px !important;
           }
           .nav-theme-btn {
             width: 34px !important;
@@ -809,10 +809,10 @@ const Navbar = () => {
             height: 13px !important;
           }
           .nav-search-input {
-            width: 75px !important;
+            width: 80px !important;
           }
           .nav-search-input:focus, .nav-search-input.has-query {
-            width: 160px !important;
+            width: 120px !important;
           }
           .nav-theme-btn {
             width: 36px !important;
@@ -830,14 +830,14 @@ const Navbar = () => {
         @media (min-width: 1261px) {
           .nav-link-item {
             font-size: 13.5px !important;
-            padding: 5px 10px !important;
+            padding: 5px 8px !important;
           }
           .desktop-nav-container {
-            gap: 4px !important;
+            gap: 2px !important;
           }
           .navbar-logo-img {
-            height: 48px !important;
-            max-width: 200px !important;
+            height: 46px !important;
+            max-width: 185px !important;
           }
           .nav-contact-btn {
             height: 40px !important;
@@ -866,10 +866,10 @@ const Navbar = () => {
             height: 15px !important;
           }
           .nav-search-input {
-            width: 90px !important;
+            width: 105px !important;
           }
           .nav-search-input:focus, .nav-search-input.has-query {
-            width: 210px !important;
+            width: 155px !important;
           }
           .nav-theme-btn {
             width: 38px !important;

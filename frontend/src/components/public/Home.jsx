@@ -2679,9 +2679,9 @@ const LatestArticlesSection = ({ items, articles, blogs, navigate }) => {
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-7px)'; e.currentTarget.style.boxShadow = '0 16px 40px rgba(11,31,77,0.16)'; e.currentTarget.style.borderColor = 'var(--color-primary)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 16px rgba(0,0,0,0.07)'; e.currentTarget.style.borderColor = 'var(--color-border)'; }}
               >
-                <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, height: 'clamp(140px, 12vw, 160px)', background: '#f3f4f6' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', lineHeight: 0, aspectRatio: '16 / 9', width: '100%', background: '#f8fafc' }}>
                   {article.banner_image
-                    ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                    ? <img src={`/uploads/${article.banner_image}`} alt={article.title} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block', transition: 'transform .45s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
                     : <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, var(--color-primary-light) 0%, #e8edff 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ReadOutlined style={{ fontSize: 36, color: 'var(--color-primary)', opacity: 0.5 }} /></div>
                   }
                 </div>
@@ -3015,9 +3015,9 @@ const Home = () => {
                             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.015)'; e.currentTarget.style.boxShadow = `0 24px 48px ${activeCat?.color || 'var(--color-primary)'}33, 0 12px 24px rgba(0,0,0,0.1)`; }}
                             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(0,0,0,0.06)'; }}
                           >
-                            <div style={{ position: 'relative', overflow: 'hidden', height: 'clamp(160px, 14vw, 200px)', lineHeight: 0 }}>
+                            <div style={{ position: 'relative', overflow: 'hidden', aspectRatio: '16 / 9', width: '100%', background: '#f8fafc', lineHeight: 0 }}>
                               {a.banner_image
-                                ? <img src={`/uploads/${a.banner_image}`} alt={a.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform .4s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
+                                ? <img src={`/uploads/${a.banner_image}`} alt={a.title} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'center', display: 'block', transition: 'transform .4s ease' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
                                 : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${activeCat?.color || 'var(--color-primary)'}22 0%, #e8edff 100%)` }}><ReadOutlined style={{ fontSize: 40, color: activeCat?.color || 'var(--color-primary)', opacity: 0.4 }} /></div>
                               }
                               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 4, background: activeCat?.color || 'var(--color-primary)' }} />
@@ -3209,7 +3209,7 @@ const Home = () => {
         @media (max-width: 480px) {
           .hero-grid h1 { font-size: 26px !important; }
           .hero-grid p { font-size: 14px !important; }
-          .latest-article-card > div:first-child { height: 140px !important; }
+          .latest-article-card > div:first-child { height: auto !important; aspect-ratio: 16 / 9; }
           .case-study-card > div:first-child { height: 130px !important; }
           .featured-article-card > div:first-child { height: 160px !important; }
           .trending-card > div:first-child { padding-top: 40% !important; }
